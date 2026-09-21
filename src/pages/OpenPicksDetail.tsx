@@ -5,6 +5,13 @@ import type { ShipmentRecord } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
+  // Keyed so navigating directly between two orders on this same route
+  // remounts fresh instead of reusing local edit state from a previous order.
+  return <OpenPicksDetailInner key={soNumber} />;
+}
+
+function OpenPicksDetailInner() {
+  const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
   const order = soNumber ? getOrder(soNumber) : undefined;
   const pending = order?.pendingShipment ?? [];

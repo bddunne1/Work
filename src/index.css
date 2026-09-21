@@ -915,6 +915,7 @@ a {
 /* Buttons */
 .button-row {
   display: flex;
+  align-items: center;
   gap: 10px;
   margin-top: 20px;
 }
@@ -1141,6 +1142,10 @@ a {
 
   .print-only {
     display: block;
+  }
+
+  .batch-page-break {
+    page-break-after: always;
   }
 
   body,

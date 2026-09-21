@@ -7,6 +7,13 @@ import { emptyCustomer, emptyShippingLocation } from "../types";
 
 export default function CustomerForm() {
   const { id } = useParams<{ id: string }>();
+  // Keyed so navigating directly between "new" and two different customers'
+  // edit pages remounts fresh instead of reusing another record's form state.
+  return <CustomerFormInner key={id ?? "new"} />;
+}
+
+function CustomerFormInner() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
   const [customer, setCustomer] = useState<Customer>(() => {

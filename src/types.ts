@@ -70,6 +70,7 @@ export interface PurchaseOrder {
   labelPrintedAt?: string;
   pickedAt?: string;
   pendingShipment?: ShipmentLine[];
+  batchPrintedAt?: string;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   createdAt: string;

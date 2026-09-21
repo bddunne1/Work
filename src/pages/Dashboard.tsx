@@ -58,8 +58,13 @@ const LANES: Lane[] = [
     modules: [
       {
         name: "Pick & Pack",
-        description: "Pick list for allocated orders, using the allocated quantities",
+        description: "Select lines and quantities from allocated orders, then queue for print",
         to: "/pick-pack",
+      },
+      {
+        name: "Print Batch",
+        description: "Print pick lists or packing slips for the whole queue at once",
+        to: "/print-batch",
       },
       {
         name: "Open Picks",

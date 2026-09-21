@@ -6,6 +6,13 @@ import { emptyItem } from "../types";
 
 export default function ItemForm() {
   const { id } = useParams<{ id: string }>();
+  // Keyed so navigating directly between "new" and two different items'
+  // edit pages remounts fresh instead of reusing another record's form state.
+  return <ItemFormInner key={id ?? "new"} />;
+}
+
+function ItemFormInner() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
   const [item, setItem] = useState<Item>(() => {

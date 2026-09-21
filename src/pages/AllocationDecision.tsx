@@ -11,6 +11,13 @@ function remainingToShip(order: PurchaseOrder, li: LineItem): number {
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
+  // Keyed so navigating directly between two orders on this same route
+  // remounts fresh instead of reusing local edit state from a previous order.
+  return <AllocationDecisionInner key={soNumber} />;
+}
+
+function AllocationDecisionInner() {
+  const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
   const order = soNumber ? getOrder(soNumber) : undefined;
   const customer = order?.customerId ? getCustomer(order.customerId) : undefined;

@@ -15,6 +15,7 @@ import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
 import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
+import PrintBatch from "./pages/PrintBatch";
 import ScheduleShipments from "./pages/ScheduleShipments";
 import ShippingLabel from "./pages/ShippingLabel";
 import Storage from "./pages/Storage";
@@ -45,6 +46,7 @@ function App() {
           <Route path="labels/:soNumber" element={<ShippingLabel />} />
           <Route path="pick-pack" element={<PickPack />} />
           <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
+          <Route path="print-batch" element={<PrintBatch />} />
           <Route path="open-picks" element={<OpenPicks />} />
           <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
           <Route path="schedule" element={<ScheduleShipments />} />
