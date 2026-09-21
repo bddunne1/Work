@@ -61,6 +61,11 @@ const LANES: Lane[] = [
         description: "Pick list for allocated orders, using the allocated quantities",
         to: "/pick-pack",
       },
+      {
+        name: "Open Picks",
+        description: "Packed orders staged and waiting on shipment confirmation",
+        to: "/open-picks",
+      },
       { name: "Check Order & Wrap / Pack", description: "Final QC, wrap, and pack" },
     ],
   },
@@ -68,7 +73,11 @@ const LANES: Lane[] = [
     lane: "Logistics",
     color: "#f06595",
     modules: [
-      { name: "Schedule Shipment", description: "Contact customer, book carrier pickup" },
+      {
+        name: "Schedule Shipment",
+        description: "Set an estimated ship date for each order",
+        to: "/schedule",
+      },
       { name: "Truck / UPS / FedEx Pickup", description: "Hand off to carrier with BOL" },
     ],
   },
@@ -112,6 +121,10 @@ export default function Dashboard() {
             }
           </div>
           <div className="stat-label">Ready to Pick</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{orders.filter((o) => o.status === "Pick & Packed").length}</div>
+          <div className="stat-label">Open Picks</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{customerCount}</div>

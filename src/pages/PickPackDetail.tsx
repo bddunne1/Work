@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getOrder, updateOrder } from "../lib/orderStore";
-import type { LineItem, ShipmentRecord } from "../types";
+import type { LineItem } from "../types";
 import { allocatedQtyFor, shippedQtyFor } from "../types";
 
 type DocumentMode = "pick" | "slip" | null;
@@ -38,8 +38,7 @@ export default function PickPackDetail() {
   }
 
   const selectedLines = pickableLines.filter((li) => selected[li.id]);
-  const readyToComplete =
-    selectedLines.length > 0 && selectedLines.every((li) => picked[li.id]);
+  const readyToComplete = pickableLines.length > 0 && pickableLines.every((li) => picked[li.id]);
 
   function toggleSelected(lineItemId: string) {
     setSelected((s) => ({ ...s, [lineItemId]: !s[lineItemId] }));
@@ -72,40 +71,25 @@ export default function PickPackDetail() {
   function completePickPack() {
     if (!order || !readyToComplete) return;
 
-    const shipmentLines = selectedLines
+    const pendingShipment = pickableLines
       .map((li) => ({ lineItemId: li.id, qty: packQty[li.id] ?? 0 }))
       .filter((l) => l.qty > 0);
 
-    const shipmentHistory: ShipmentRecord[] = [
-      ...(order.shipmentHistory ?? []),
-      ...(shipmentLines.length > 0
-        ? [{ id: crypto.randomUUID(), shippedAt: new Date().toISOString(), lines: shipmentLines }]
-        : []),
-    ];
-
-    const shippedFor = (lineItemId: string) =>
-      shipmentHistory.reduce((sum, rec) => {
-        const line = rec.lines.find((l) => l.lineItemId === lineItemId);
-        return sum + (line?.qty ?? 0);
-      }, 0);
-
-    const fullyShipped = order.lineItems.every((li) => shippedFor(li.id) >= li.ordered);
-
     const newAllocationLines = order.lineItems.map((li) => ({
       lineItemId: li.id,
-      allocatedQty: selected[li.id] ? 0 : allocatedQtyFor(order, li.id),
+      allocatedQty: 0,
     }));
 
     updateOrder({
       ...order,
-      status: fullyShipped ? "Pick & Packed" : "Backordered",
+      status: "Pick & Packed",
       pickedAt: new Date().toISOString(),
-      shipmentHistory,
+      pendingShipment,
       allocation: order.allocation
         ? { ...order.allocation, lines: newAllocationLines }
         : order.allocation,
     });
-    navigate(`/storage/${order.soNumber}`);
+    navigate("/open-picks");
   }
 
   return (
@@ -143,8 +127,9 @@ export default function PickPackDetail() {
 
         <div className="line-items">
           <div className="ship-locations-header">
-            <h3>Select lines to pick, pack, and print</h3>
+            <h3>Line items</h3>
             <div className="inline-actions">
+              <span className="muted select-hint">Select lines to include on the printed documents</span>
               <button type="button" className="secondary-btn" onClick={selectAll}>
                 Select All
               </button>
@@ -171,7 +156,7 @@ export default function PickPackDetail() {
                 const allocated = allocatedQtyFor(order, li.id);
                 const isSelected = Boolean(selected[li.id]);
                 const qty = packQty[li.id] ?? 0;
-                const short = isSelected && qty < allocated;
+                const short = qty < allocated;
                 return (
                   <tr key={li.id}>
                     <td>
@@ -194,7 +179,6 @@ export default function PickPackDetail() {
                         min={0}
                         max={allocated}
                         value={qty}
-                        disabled={!isSelected}
                         onChange={(e) => setQty(li.id, Number(e.target.value), allocated)}
                       />
                     </td>
@@ -202,7 +186,6 @@ export default function PickPackDetail() {
                       <input
                         type="checkbox"
                         checked={Boolean(picked[li.id])}
-                        disabled={!isSelected}
                         onChange={() => togglePicked(li.id)}
                         aria-label={`Mark ${li.item} picked`}
                       />

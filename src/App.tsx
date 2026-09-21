@@ -9,10 +9,13 @@ import Customers from "./pages/Customers";
 import Dashboard from "./pages/Dashboard";
 import ItemForm from "./pages/ItemForm";
 import Items from "./pages/Items";
+import OpenPicks from "./pages/OpenPicks";
+import OpenPicksDetail from "./pages/OpenPicksDetail";
 import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
 import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
+import ScheduleShipments from "./pages/ScheduleShipments";
 import ShippingLabel from "./pages/ShippingLabel";
 import Storage from "./pages/Storage";
 import Validation from "./pages/Validation";
@@ -42,6 +45,9 @@ function App() {
           <Route path="labels/:soNumber" element={<ShippingLabel />} />
           <Route path="pick-pack" element={<PickPack />} />
           <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
+          <Route path="open-picks" element={<OpenPicks />} />
+          <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
+          <Route path="schedule" element={<ScheduleShipments />} />
         </Route>
       </Routes>
     </HashRouter>

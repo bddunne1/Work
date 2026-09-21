@@ -69,7 +69,9 @@ export interface PurchaseOrder {
   allocation?: AllocationDecision;
   labelPrintedAt?: string;
   pickedAt?: string;
+  pendingShipment?: ShipmentLine[];
   shipmentHistory?: ShipmentRecord[];
+  estimatedShipDate?: string;
   createdAt: string;
 }
 

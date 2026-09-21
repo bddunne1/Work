@@ -48,6 +48,7 @@ export default function OrderDetail() {
                 <tr>
                   <th>Order Date</th>
                   <th>Due Date</th>
+                  <th>Est. Ship</th>
                   <th>S.O. No.</th>
                 </tr>
               </thead>
@@ -55,6 +56,7 @@ export default function OrderDetail() {
                 <tr>
                   <td>{order.orderDate}</td>
                   <td>{order.dueDate}</td>
+                  <td>{order.estimatedShipDate || "—"}</td>
                   <td className="so-number-view">{order.soNumber}</td>
                 </tr>
               </tbody>

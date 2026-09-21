@@ -684,7 +684,22 @@ a {
 
 .inline-actions {
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.select-hint {
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.schedule-date-input {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: var(--panel-bg);
+  color: var(--text);
 }
 
 .allocate-qty-input.short {
