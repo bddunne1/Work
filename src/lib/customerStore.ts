@@ -1,12 +1,26 @@
-import type { Customer } from "../types";
+import type { Address, Customer } from "../types";
+import { emptyShippingLocation } from "../types";
 
 const CUSTOMERS_KEY = "erp_customers";
+
+// Older saved records may still have a single `shipTo` address instead of
+// `shipToLocations` - normalize them on read so the app never sees the old shape.
+function normalizeCustomer(raw: Customer & { shipTo?: Address }): Customer {
+  if (Array.isArray(raw.shipToLocations) && raw.shipToLocations.length > 0) {
+    return raw;
+  }
+  const location = raw.shipTo
+    ? { id: crypto.randomUUID(), label: "Primary", address: raw.shipTo }
+    : emptyShippingLocation();
+  return { ...raw, shipToLocations: [location] };
+}
 
 function readCustomers(): Customer[] {
   try {
     const raw = localStorage.getItem(CUSTOMERS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as Customer[];
+    const parsed = JSON.parse(raw) as Customer[];
+    return parsed.map(normalizeCustomer);
   } catch {
     return [];
   }

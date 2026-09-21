@@ -513,6 +513,64 @@ a {
   font-size: 12px;
 }
 
+.ship-location-select {
+  flex: 1;
+  max-width: 420px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  background: var(--panel-bg);
+  color: var(--text);
+}
+
+.ship-locations {
+  margin-bottom: 20px;
+}
+
+.ship-locations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ship-locations-header h3 {
+  font-size: 14px;
+}
+
+.ship-location-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: var(--bg);
+}
+
+.ship-location-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ship-location-name input {
+  flex: 1;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  background: var(--panel-bg);
+  color: var(--text-h);
+}
+
+.ship-location-actions {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+}
+
 .so-addresses {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

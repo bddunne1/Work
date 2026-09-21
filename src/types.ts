@@ -31,6 +31,7 @@ export interface PurchaseOrder {
   orderDate: string;
   dueDate: string;
   customerId?: string;
+  shipToLocationId?: string;
   billTo: Address;
   shipTo: Address;
   fob: string;
@@ -44,12 +45,18 @@ export interface PurchaseOrder {
   createdAt: string;
 }
 
+export interface ShippingLocation {
+  id: string;
+  label: string;
+  address: Address;
+}
+
 export interface Customer {
   id: string;
   name: string;
   accountNumber: string;
   billTo: Address;
-  shipTo: Address;
+  shipToLocations: ShippingLocation[];
   terms: string;
   shipVia: string;
   fob: string;
@@ -70,13 +77,17 @@ export function emptyAddress(): Address {
   return { name: "", addressLine1: "", addressLine2: "", city: "", state: "", zip: "", notes: "" };
 }
 
+export function emptyShippingLocation(): ShippingLocation {
+  return { id: crypto.randomUUID(), label: "", address: emptyAddress() };
+}
+
 export function emptyCustomer(): Customer {
   return {
     id: crypto.randomUUID(),
     name: "",
     accountNumber: "",
     billTo: emptyAddress(),
-    shipTo: emptyAddress(),
+    shipToLocations: [emptyShippingLocation()],
     terms: "",
     shipVia: "",
     fob: "",

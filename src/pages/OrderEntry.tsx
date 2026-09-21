@@ -44,16 +44,20 @@ export default function OrderEntry() {
     setOrder((o) => ({ ...o, [key]: value }));
   }
 
+  const selectedCustomer = customers.find((c) => c.id === order.customerId);
+
   function handleSelectCustomer(id: string) {
     const customer = customers.find((c) => c.id === id);
     if (!customer) return;
     setCustomerQuery(customer.name);
     setSameAsBillTo(false);
+    const defaultLocation = customer.shipToLocations[0];
     setOrder((o) => ({
       ...o,
       customerId: customer.id,
+      shipToLocationId: defaultLocation?.id,
       billTo: { ...customer.billTo },
-      shipTo: { ...customer.shipTo },
+      shipTo: defaultLocation ? { ...defaultLocation.address } : emptyAddress(),
       terms: customer.terms,
       shipVia: customer.shipVia,
       fob: customer.fob,
@@ -61,18 +65,26 @@ export default function OrderEntry() {
     }));
   }
 
+  function handleSelectShipLocation(locationId: string) {
+    const location = selectedCustomer?.shipToLocations.find((loc) => loc.id === locationId);
+    if (!location) return;
+    setSameAsBillTo(false);
+    setOrder((o) => ({ ...o, shipToLocationId: location.id, shipTo: { ...location.address } }));
+  }
+
   function handleBillToChange(addr: PurchaseOrder["billTo"]) {
     setOrder((o) => ({
       ...o,
       billTo: addr,
       shipTo: sameAsBillTo ? { ...addr, notes: o.shipTo.notes } : o.shipTo,
+      shipToLocationId: sameAsBillTo ? undefined : o.shipToLocationId,
     }));
   }
 
   function toggleSameAsBillTo(checked: boolean) {
     setSameAsBillTo(checked);
     if (checked) {
-      setOrder((o) => ({ ...o, shipTo: { ...o.billTo, notes: o.shipTo.notes } }));
+      setOrder((o) => ({ ...o, shipTo: { ...o.billTo, notes: o.shipTo.notes }, shipToLocationId: undefined }));
     }
   }
 
@@ -133,6 +145,27 @@ export default function OrderEntry() {
             + New Customer
           </Link>
         </div>
+
+        {selectedCustomer && selectedCustomer.shipToLocations.length > 0 && (
+          <div className="customer-picker">
+            <label htmlFor="ship-location-select">Ship To Location</label>
+            <select
+              id="ship-location-select"
+              className="ship-location-select"
+              value={order.shipToLocationId ?? ""}
+              onChange={(e) => handleSelectShipLocation(e.target.value)}
+            >
+              {selectedCustomer.shipToLocations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.label || "Unnamed location"}
+                </option>
+              ))}
+            </select>
+            <Link to={`/customers/${selectedCustomer.id}/edit`} target="_blank" className="link-btn">
+              + Add Location
+            </Link>
+          </div>
+        )}
 
         <div className="so-header">
           <div className="so-company">

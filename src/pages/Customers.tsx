@@ -51,6 +51,7 @@ export default function Customers() {
               <th>Terms</th>
               <th>Ship Via</th>
               <th>City / State</th>
+              <th>Locations</th>
               <th></th>
             </tr>
           </thead>
@@ -66,6 +67,7 @@ export default function Customers() {
                   {c.billTo.city && c.billTo.state ? ", " : ""}
                   {c.billTo.state}
                 </td>
+                <td>{c.shipToLocations.length}</td>
                 <td className="row-actions">
                   <Link to={`/customers/${c.id}/edit`}>Edit</Link>
                   <button type="button" className="link-btn danger-link" onClick={() => handleDelete(c.id)}>
