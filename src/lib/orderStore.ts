@@ -5,9 +5,9 @@ const SO_COUNTER_KEY = "erp_so_counter";
 const SO_START = 10001;
 
 function readOrders(): PurchaseOrder[] {
-  const raw = localStorage.getItem(ORDERS_KEY);
-  if (!raw) return [];
   try {
+    const raw = localStorage.getItem(ORDERS_KEY);
+    if (!raw) return [];
     return JSON.parse(raw) as PurchaseOrder[];
   } catch {
     return [];
@@ -15,19 +15,31 @@ function readOrders(): PurchaseOrder[] {
 }
 
 function writeOrders(orders: PurchaseOrder[]): void {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  try {
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  } catch {
+    // storage unavailable (private mode, blocked site data, etc.) - no-op
+  }
 }
 
 export function nextSalesOrderNumber(): string {
-  const raw = localStorage.getItem(SO_COUNTER_KEY);
-  const current = raw ? parseInt(raw, 10) : SO_START;
-  return String(current);
+  try {
+    const raw = localStorage.getItem(SO_COUNTER_KEY);
+    const current = raw ? parseInt(raw, 10) : SO_START;
+    return String(current);
+  } catch {
+    return String(SO_START);
+  }
 }
 
 function commitSalesOrderNumber(): void {
-  const raw = localStorage.getItem(SO_COUNTER_KEY);
-  const current = raw ? parseInt(raw, 10) : SO_START;
-  localStorage.setItem(SO_COUNTER_KEY, String(current + 1));
+  try {
+    const raw = localStorage.getItem(SO_COUNTER_KEY);
+    const current = raw ? parseInt(raw, 10) : SO_START;
+    localStorage.setItem(SO_COUNTER_KEY, String(current + 1));
+  } catch {
+    // storage unavailable - no-op
+  }
 }
 
 export function listOrders(): PurchaseOrder[] {
