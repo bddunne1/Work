@@ -66,6 +66,10 @@
   opacity: 1;
 }
 
+.print-only {
+  display: none;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -854,6 +858,14 @@ a {
   white-space: pre-wrap;
 }
 
+.shipment-history {
+  margin-bottom: 20px;
+}
+
+.shipment-history .data-table {
+  margin-top: 8px;
+}
+
 .totals-table {
   border-collapse: collapse;
   min-width: 260px;
@@ -1110,6 +1122,10 @@ a {
   .topbar,
   .no-print {
     display: none !important;
+  }
+
+  .print-only {
+    display: block;
   }
 
   body,

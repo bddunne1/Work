@@ -37,6 +37,17 @@ export interface AllocationDecision {
   decidedAt: string;
 }
 
+export interface ShipmentLine {
+  lineItemId: string;
+  qty: number;
+}
+
+export interface ShipmentRecord {
+  id: string;
+  shippedAt: string;
+  lines: ShipmentLine[];
+}
+
 export interface PurchaseOrder {
   soNumber: string;
   poNumber: string;
@@ -58,6 +69,7 @@ export interface PurchaseOrder {
   allocation?: AllocationDecision;
   labelPrintedAt?: string;
   pickedAt?: string;
+  shipmentHistory?: ShipmentRecord[];
   createdAt: string;
 }
 
@@ -146,6 +158,13 @@ export function allocatedQtyFor(order: Pick<PurchaseOrder, "allocation">, lineIt
 
 export function hasAnyAllocatedQty(order: Pick<PurchaseOrder, "allocation">): boolean {
   return (order.allocation?.lines ?? []).some((l) => l.allocatedQty > 0);
+}
+
+export function shippedQtyFor(order: Pick<PurchaseOrder, "shipmentHistory">, lineItemId: string): number {
+  return (order.shipmentHistory ?? []).reduce((sum, rec) => {
+    const line = rec.lines.find((l) => l.lineItemId === lineItemId);
+    return sum + (line?.qty ?? 0);
+  }, 0);
 }
 
 export function orderSubtotal(order: Pick<PurchaseOrder, "lineItems">): number {

@@ -2,8 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCustomer } from "../lib/customerStore";
 import { getOrder, updateOrder } from "../lib/orderStore";
-import type { OrderStatus } from "../types";
-import { orderTotal } from "../types";
+import type { LineItem, OrderStatus, PurchaseOrder } from "../types";
+import { orderTotal, shippedQtyFor } from "../types";
+
+function remainingToShip(order: PurchaseOrder, li: LineItem): number {
+  return Math.max(0, li.ordered - shippedQtyFor(order, li.id));
+}
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -16,7 +20,8 @@ export default function AllocationDecision() {
     const saved = new Map(order.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
     const initial: Record<string, number> = {};
     for (const li of order.lineItems) {
-      initial[li.id] = saved.get(li.id) ?? li.ordered;
+      const remaining = remainingToShip(order, li);
+      initial[li.id] = Math.min(saved.get(li.id) ?? remaining, remaining);
     }
     return initial;
   });
@@ -40,7 +45,7 @@ export default function AllocationDecision() {
 
   function allocateAll() {
     const all: Record<string, number> = {};
-    for (const li of order!.lineItems) all[li.id] = li.ordered;
+    for (const li of order!.lineItems) all[li.id] = remainingToShip(order!, li);
     setQtys(all);
   }
 
@@ -50,7 +55,7 @@ export default function AllocationDecision() {
     setQtys(none);
   }
 
-  const fullyAllocated = order.lineItems.every((li) => (qtys[li.id] ?? 0) >= li.ordered);
+  const fullyAllocated = order.lineItems.every((li) => (qtys[li.id] ?? 0) >= remainingToShip(order, li));
 
   let outcomeStatus: OrderStatus | null = null;
   let outcomeLabel = "";
@@ -127,27 +132,33 @@ export default function AllocationDecision() {
                 <th className="col-desc">Description</th>
                 <th className="col-um">U/M</th>
                 <th className="col-qty">Ordered</th>
+                <th className="col-qty">Shipped</th>
+                <th className="col-qty">Remaining</th>
                 <th className="col-qty">Allocate</th>
               </tr>
             </thead>
             <tbody>
               {order.lineItems.map((li) => {
+                const shipped = shippedQtyFor(order, li.id);
+                const remaining = remainingToShip(order, li);
                 const qty = qtys[li.id] ?? 0;
-                const short = qty < li.ordered;
+                const short = qty < remaining;
                 return (
                   <tr key={li.id}>
                     <td>{li.item}</td>
                     <td>{li.description}</td>
                     <td>{li.um}</td>
                     <td className="amount-cell">{li.ordered}</td>
+                    <td className="amount-cell">{shipped}</td>
+                    <td className="amount-cell">{remaining}</td>
                     <td>
                       <input
                         type="number"
                         className={`num-input allocate-qty-input ${short ? "short" : ""}`}
                         min={0}
-                        max={li.ordered}
+                        max={remaining}
                         value={qty}
-                        onChange={(e) => setQty(li.id, Number(e.target.value), li.ordered)}
+                        onChange={(e) => setQty(li.id, Number(e.target.value), remaining)}
                       />
                     </td>
                   </tr>

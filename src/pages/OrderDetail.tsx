@@ -1,7 +1,13 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { getOrder } from "../lib/orderStore";
+import type { PurchaseOrder } from "../types";
 import { orderSubtotal, orderTax, orderTotal } from "../types";
+
+function itemLabel(order: PurchaseOrder, lineItemId: string): string {
+  const li = order.lineItems.find((l) => l.id === lineItemId);
+  return li ? li.item : lineItemId;
+}
 
 export default function OrderDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -108,6 +114,30 @@ export default function OrderDetail() {
         </table>
 
         <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly />
+
+        {order.shipmentHistory && order.shipmentHistory.length > 0 && (
+          <div className="shipment-history">
+            <div className="so-notes-label muted">Shipment History</div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Lines Shipped</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.shipmentHistory.map((rec) => (
+                  <tr key={rec.id}>
+                    <td>{new Date(rec.shippedAt).toLocaleString()}</td>
+                    <td>
+                      {rec.lines.map((l) => `${itemLabel(order, l.lineItemId)} × ${l.qty}`).join(", ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <div className="so-footer">
           <div className="so-notes">
