@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
+import { getLeadTimeDays, setLeadTimeDays } from "../lib/settingsStore";
 import { hasAnyAllocatedQty } from "../types";
 
 interface Module {
@@ -84,6 +86,11 @@ const LANES: Lane[] = [
         to: "/schedule",
       },
       { name: "Truck / UPS / FedEx Pickup", description: "Hand off to carrier with BOL" },
+      {
+        name: "Shipment History",
+        description: "Orders that have shipped complete",
+        to: "/shipment-history",
+      },
     ],
   },
 ];
@@ -93,12 +100,39 @@ export default function Dashboard() {
   const recent = orders.slice(0, 5);
   const customerCount = listCustomers().length;
   const itemCount = listItems().length;
+  const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
+
+  function handleLeadTimeChange(value: number) {
+    if (!Number.isFinite(value) || value < 0) return;
+    setLeadTime(value);
+    setLeadTimeDays(value);
+  }
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Dashboard</h1>
         <p className="muted">Pick a stage of the order workflow to get started.</p>
+      </div>
+
+      <div className="lead-time-panel">
+        <div>
+          <div className="lead-time-label">Current Lead Time</div>
+          <p className="muted lead-time-hint">
+            Days from order date to estimated ship date, applied to every new order at entry. Changing
+            this does not affect orders already entered.
+          </p>
+        </div>
+        <div className="lead-time-input-row">
+          <input
+            type="number"
+            min={0}
+            className="lead-time-input"
+            value={leadTime}
+            onChange={(e) => handleLeadTimeChange(Number(e.target.value))}
+          />
+          <span className="muted">days</span>
+        </div>
       </div>
 
       <div className="stat-row">

@@ -17,6 +17,7 @@ import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
 import PrintBatch from "./pages/PrintBatch";
 import ScheduleShipments from "./pages/ScheduleShipments";
+import ShipmentHistory from "./pages/ShipmentHistory";
 import ShippingLabel from "./pages/ShippingLabel";
 import Storage from "./pages/Storage";
 import Validation from "./pages/Validation";
@@ -50,6 +51,7 @@ function App() {
           <Route path="open-picks" element={<OpenPicks />} />
           <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
           <Route path="schedule" element={<ScheduleShipments />} />
+          <Route path="shipment-history" element={<ShipmentHistory />} />
         </Route>
       </Routes>
     </HashRouter>

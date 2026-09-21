@@ -4,7 +4,9 @@ import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import SearchSelect from "../components/SearchSelect";
 import { listCustomers } from "../lib/customerStore";
+import { addDays } from "../lib/dateUtils";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
+import { getLeadTimeDays } from "../lib/settingsStore";
 import type { Customer, PurchaseOrder } from "../types";
 import { emptyAddress, emptyLineItem, orderSubtotal, orderTax, orderTotal } from "../types";
 
@@ -90,7 +92,10 @@ export default function OrderEntry() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    saveOrder(order);
+    const estimatedShipDate = addDays(order.orderDate, getLeadTimeDays());
+    const finalOrder = { ...order, estimatedShipDate };
+    saveOrder(finalOrder);
+    setOrder(finalOrder);
     setSaved(true);
   }
 
@@ -180,6 +185,7 @@ export default function OrderEntry() {
                 <tr>
                   <th>Order Date</th>
                   <th>Due Date</th>
+                  <th>Est. Ship</th>
                   <th>S.O. No.</th>
                 </tr>
               </thead>
@@ -199,6 +205,9 @@ export default function OrderEntry() {
                       value={order.dueDate}
                       onChange={(e) => set("dueDate", e.target.value)}
                     />
+                  </td>
+                  <td className="muted">
+                    {order.orderDate ? addDays(order.orderDate, getLeadTimeDays()) : "—"}
                   </td>
                   <td>
                     <input value={order.soNumber} disabled className="so-number" />

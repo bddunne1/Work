@@ -164,6 +164,11 @@ export function hasAnyAllocatedQty(order: Pick<PurchaseOrder, "allocation">): bo
   return (order.allocation?.lines ?? []).some((l) => l.allocatedQty > 0);
 }
 
+export function itemLabel(order: Pick<PurchaseOrder, "lineItems">, lineItemId: string): string {
+  const li = order.lineItems.find((l) => l.id === lineItemId);
+  return li ? li.item : lineItemId;
+}
+
 export function shippedQtyFor(order: Pick<PurchaseOrder, "shipmentHistory">, lineItemId: string): number {
   return (order.shipmentHistory ?? []).reduce((sum, rec) => {
     const line = rec.lines.find((l) => l.lineItemId === lineItemId);

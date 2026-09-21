@@ -1,13 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { getOrder } from "../lib/orderStore";
-import type { PurchaseOrder } from "../types";
-import { orderSubtotal, orderTax, orderTotal } from "../types";
-
-function itemLabel(order: PurchaseOrder, lineItemId: string): string {
-  const li = order.lineItems.find((l) => l.id === lineItemId);
-  return li ? li.item : lineItemId;
-}
+import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
 
 export default function OrderDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
