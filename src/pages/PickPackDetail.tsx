@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getOrder, updateOrder } from "../lib/orderStore";
 import type { LineItem } from "../types";
-import { allocatedQtyFor } from "../types";
+import { allocatedQtyFor, remainingToShip } from "../types";
 
 export default function PickPackDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -73,9 +73,19 @@ function PickPackDetailInner() {
       allocatedQty: selected[li.id] ? 0 : allocatedQtyFor(order, li.id),
     }));
 
+    // Complete only once nothing remains owed on any line after this round's
+    // pack quantities ship; otherwise this pack still leaves the order short.
+    const pickPackStatus: "Partial" | "Complete" = order.lineItems.every((li) => {
+      const packedThisRound = selected[li.id] ? (packQty[li.id] ?? 0) : 0;
+      return remainingToShip(order, li) - packedThisRound <= 0;
+    })
+      ? "Complete"
+      : "Partial";
+
     updateOrder({
       ...order,
       status: "Pick & Packed",
+      pickPackStatus,
       pickedAt: new Date().toISOString(),
       pendingShipment,
       pickListPrintedAt: undefined,

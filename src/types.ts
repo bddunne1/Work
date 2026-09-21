@@ -74,6 +74,7 @@ export interface PurchaseOrder {
   packingSlipPrintedAt?: string;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
+  pickPackStatus?: "Partial" | "Complete";
   createdAt: string;
 }
 
@@ -160,10 +161,6 @@ export function allocatedQtyFor(order: Pick<PurchaseOrder, "allocation">, lineIt
   return order.allocation?.lines.find((l) => l.lineItemId === lineItemId)?.allocatedQty ?? 0;
 }
 
-export function hasAnyAllocatedQty(order: Pick<PurchaseOrder, "allocation">): boolean {
-  return (order.allocation?.lines ?? []).some((l) => l.allocatedQty > 0);
-}
-
 export function itemLabel(order: Pick<PurchaseOrder, "lineItems">, lineItemId: string): string {
   const li = order.lineItems.find((l) => l.id === lineItemId);
   return li ? li.item : lineItemId;
@@ -174,6 +171,13 @@ export function shippedQtyFor(order: Pick<PurchaseOrder, "shipmentHistory">, lin
     const line = rec.lines.find((l) => l.lineItemId === lineItemId);
     return sum + (line?.qty ?? 0);
   }, 0);
+}
+
+// How much of `li` is still owed on the order: what was ordered, less
+// whatever has actually shipped so far (allocation and packing are just
+// staging steps toward that shipment, so they don't reduce this).
+export function remainingToShip(order: Pick<PurchaseOrder, "shipmentHistory">, li: LineItem): number {
+  return Math.max(0, li.ordered - shippedQtyFor(order, li.id));
 }
 
 // Confirms a shipment of `lines` (typically the order's pendingShipment) and

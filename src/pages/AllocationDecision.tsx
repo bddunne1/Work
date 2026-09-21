@@ -2,12 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCustomer } from "../lib/customerStore";
 import { getOrder, updateOrder } from "../lib/orderStore";
-import type { LineItem, OrderStatus, PurchaseOrder } from "../types";
-import { orderTotal, shippedQtyFor } from "../types";
-
-function remainingToShip(order: PurchaseOrder, li: LineItem): number {
-  return Math.max(0, li.ordered - shippedQtyFor(order, li.id));
-}
+import type { OrderStatus } from "../types";
+import { orderTotal, remainingToShip, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -80,16 +76,17 @@ function AllocationDecisionInner() {
     outcomeDetail = "Held — awaiting full stock. Added to the Back Order Queue.";
     outcomeClass = "outcome-hold";
   } else if (shipCompleteOnly === false) {
-    outcomeStatus = "Backordered";
-    outcomeLabel = "Allocate what's available · back order the rest";
-    outcomeDetail = "Partial ship, now. Remainder added to the Back Order Queue.";
+    outcomeStatus = "Allocated";
+    outcomeLabel = "Allocate what's available · release to Pick & Pack";
+    outcomeDetail =
+      "Partial ship, now. Moves on to Pick & Pack for what's on hand; anything left unshipped lands in the Back Order Queue automatically once this partial ships.";
     outcomeClass = "outcome-warning";
   }
 
   function applyDecision() {
     if (!order || !outcomeStatus) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
-    const hold = outcomeStatus === "Backordered" && shipCompleteOnly === true;
+    const hold = outcomeStatus === "Backordered";
     const lines = order.lineItems.map((li) => ({
       lineItemId: li.id,
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),

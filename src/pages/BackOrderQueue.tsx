@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
 import { orderTotal } from "../types";
 
@@ -35,7 +36,7 @@ export default function BackOrderQueue() {
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>
-                  <span className="status-pill">{o.status}</span>
+                  <StatusPill order={o} />
                 </td>
                 <td>${orderTotal(o).toFixed(2)}</td>
                 <td>

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import StatusPill from "../components/StatusPill";
 import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { getLeadTimeDays, setLeadTimeDays } from "../lib/settingsStore";
-import { hasAnyAllocatedQty } from "../types";
 
 interface Module {
   name: string;
@@ -119,8 +119,8 @@ export default function Dashboard() {
         <div>
           <div className="lead-time-label">Current Lead Time</div>
           <p className="muted lead-time-hint">
-            Days from order date to estimated ship date, applied to every new order at entry. Changing
-            this does not affect orders already entered.
+            Business days (weekends excluded) from order date to estimated ship date, applied to every
+            new order at entry. Changing this does not affect orders already entered.
           </p>
         </div>
         <div className="lead-time-input-row">
@@ -131,7 +131,7 @@ export default function Dashboard() {
             value={leadTime}
             onChange={(e) => handleLeadTimeChange(Number(e.target.value))}
           />
-          <span className="muted">days</span>
+          <span className="muted">business days</span>
         </div>
       </div>
 
@@ -153,12 +153,7 @@ export default function Dashboard() {
           <div className="stat-label">Back Order Queue</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">
-            {
-              orders.filter((o) => o.status === "Allocated" || (o.status === "Backordered" && hasAnyAllocatedQty(o)))
-                .length
-            }
-          </div>
+          <div className="stat-value">{orders.filter((o) => o.status === "Allocated").length}</div>
           <div className="stat-label">Ready to Pick</div>
         </div>
         <div className="stat-card">
@@ -226,7 +221,7 @@ export default function Dashboard() {
                   <td>{o.billTo.name}</td>
                   <td>{o.orderDate}</td>
                   <td>
-                    <span className="status-pill">{o.status}</span>
+                    <StatusPill order={o} />
                   </td>
                 </tr>
               ))}

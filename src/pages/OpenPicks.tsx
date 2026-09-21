@@ -80,6 +80,7 @@ export default function OpenPicks() {
                 <th>P.O. #</th>
                 <th>Customer</th>
                 <th>Packed</th>
+                <th>Pick &amp; Pack</th>
                 <th></th>
               </tr>
             </thead>
@@ -98,6 +99,13 @@ export default function OpenPicks() {
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
                   <td>{o.pickedAt ? new Date(o.pickedAt).toLocaleString() : "—"}</td>
+                  <td>
+                    {o.pickPackStatus && (
+                      <span className={`pickpack-flag pickpack-flag-${o.pickPackStatus.toLowerCase()}`}>
+                        {o.pickPackStatus}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <Link to={`/open-picks/${o.soNumber}`} className="link-btn">
                       View

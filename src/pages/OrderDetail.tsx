@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
+import StatusPill from "../components/StatusPill";
 import { getOrder } from "../lib/orderStore";
 import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
 
@@ -103,7 +104,7 @@ export default function OrderDetail() {
               <td>{order.fob}</td>
               <td>{order.shipVia}</td>
               <td>
-                <span className="status-pill">{order.status}</span>
+                <StatusPill order={order} />
               </td>
             </tr>
           </tbody>

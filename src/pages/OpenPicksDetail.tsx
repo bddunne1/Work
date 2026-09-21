@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
+import StatusPill from "../components/StatusPill";
 import { getOrder, updateOrder } from "../lib/orderStore";
 import { confirmShipment, orderSubtotal, orderTax, orderTotal } from "../types";
 
@@ -142,7 +143,7 @@ function OpenPicksDetailInner() {
               <td>{order.fob}</td>
               <td>{order.shipVia}</td>
               <td>
-                <span className="status-pill">{order.status}</span>
+                <StatusPill order={order} />
               </td>
             </tr>
           </tbody>

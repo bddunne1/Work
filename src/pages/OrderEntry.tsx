@@ -4,7 +4,7 @@ import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import SearchSelect from "../components/SearchSelect";
 import { listCustomers } from "../lib/customerStore";
-import { addDays } from "../lib/dateUtils";
+import { addBusinessDays } from "../lib/dateUtils";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
 import { getLeadTimeDays } from "../lib/settingsStore";
 import type { Customer, PurchaseOrder } from "../types";
@@ -92,7 +92,7 @@ export default function OrderEntry() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const estimatedShipDate = addDays(order.orderDate, getLeadTimeDays());
+    const estimatedShipDate = addBusinessDays(order.orderDate, getLeadTimeDays());
     const finalOrder = { ...order, estimatedShipDate };
     saveOrder(finalOrder);
     setOrder(finalOrder);
@@ -207,7 +207,7 @@ export default function OrderEntry() {
                     />
                   </td>
                   <td className="muted">
-                    {order.orderDate ? addDays(order.orderDate, getLeadTimeDays()) : "—"}
+                    {order.orderDate ? addBusinessDays(order.orderDate, getLeadTimeDays()) : "—"}
                   </td>
                   <td>
                     <input value={order.soNumber} disabled className="so-number" />
