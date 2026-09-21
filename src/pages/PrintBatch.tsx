@@ -1,27 +1,32 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import BatchPrintDocs from "../components/BatchPrintDocs";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { shippedQtyFor } from "../types";
 
-type DocumentMode = "pick" | "slip" | null;
+function isFullyPrinted(o: PurchaseOrder): boolean {
+  return Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
+}
 
-function lineFor(order: PurchaseOrder, lineItemId: string) {
-  return order.lineItems.find((li) => li.id === lineItemId);
+function queuedOrders(): PurchaseOrder[] {
+  return listOrders().filter(
+    (o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0 && !isFullyPrinted(o)
+  );
 }
 
 export default function PrintBatch() {
-  const [orders, setOrders] = useState<PurchaseOrder[]>(() =>
-    listOrders().filter((o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0)
-  );
+  const [orders, setOrders] = useState<PurchaseOrder[]>(() => queuedOrders());
   const [selected, setSelected] = useState<Record<string, boolean>>(() => {
     const s: Record<string, boolean> = {};
     for (const o of orders) s[o.soNumber] = true;
     return s;
   });
-  const [document, setDocument] = useState<DocumentMode>(null);
+  const [includePick, setIncludePick] = useState(true);
+  const [includeSlip, setIncludeSlip] = useState(true);
+  const [printing, setPrinting] = useState(false);
 
   const selectedOrders = orders.filter((o) => selected[o.soNumber]);
+  const canPrint = selectedOrders.length > 0 && (includePick || includeSlip);
 
   function toggleSelected(soNumber: string) {
     setSelected((s) => ({ ...s, [soNumber]: !s[soNumber] }));
@@ -37,16 +42,34 @@ export default function PrintBatch() {
     setSelected({});
   }
 
-  function printBatch(mode: DocumentMode) {
-    if (selectedOrders.length === 0) return;
-    setDocument(mode);
+  function printBatch() {
+    if (!canPrint) return;
+    setPrinting(true);
     setTimeout(() => {
       window.print();
       const now = new Date().toISOString();
+      const printedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
       for (const o of selectedOrders) {
-        updateOrder({ ...o, batchPrintedAt: now });
+        updateOrder({
+          ...o,
+          pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
+          packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
+        });
       }
-      setOrders((os) => os.map((o) => (selected[o.soNumber] ? { ...o, batchPrintedAt: now } : o)));
+      setOrders((os) =>
+        os
+          .map((o) =>
+            printedSoNumbers.has(o.soNumber)
+              ? {
+                  ...o,
+                  pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
+                  packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
+                }
+              : o
+          )
+          .filter((o) => !isFullyPrinted(o))
+      );
+      setPrinting(false);
     }, 50);
   }
 
@@ -54,27 +77,12 @@ export default function PrintBatch() {
     <div className="page">
       <div className="page-header no-print">
         <h1>Print Batch</h1>
-        <div className="inline-actions">
-          <button
-            className="secondary-btn print-btn"
-            disabled={selectedOrders.length === 0}
-            onClick={() => printBatch("pick")}
-          >
-            Print Pick Lists
-          </button>
-          <button
-            className="secondary-btn print-btn"
-            disabled={selectedOrders.length === 0}
-            onClick={() => printBatch("slip")}
-          >
-            Print Packing Slips
-          </button>
-        </div>
       </div>
 
       <div className="no-print">
         <p className="muted">
-          Orders completed in Pick &amp; Pack, staged here for a single combined print run.
+          Orders completed in Pick &amp; Pack, staged here until both documents are printed. A fully
+          printed order moves on to Open Picks automatically.
         </p>
 
         {orders.length === 0 ? (
@@ -101,7 +109,8 @@ export default function PrintBatch() {
                   <th>S.O. #</th>
                   <th>P.O. #</th>
                   <th>Customer</th>
-                  <th>Batch Printed</th>
+                  <th>Pick List</th>
+                  <th>Packing Slip</th>
                 </tr>
               </thead>
               <tbody>
@@ -121,7 +130,14 @@ export default function PrintBatch() {
                     <td>{o.poNumber}</td>
                     <td>{o.billTo.name}</td>
                     <td>
-                      {o.batchPrintedAt ? (
+                      {o.pickListPrintedAt ? (
+                        <span className="status-pill">Printed</span>
+                      ) : (
+                        <span className="muted">Not printed</span>
+                      )}
+                    </td>
+                    <td>
+                      {o.packingSlipPrintedAt ? (
                         <span className="status-pill">Printed</span>
                       ) : (
                         <span className="muted">Not printed</span>
@@ -131,128 +147,25 @@ export default function PrintBatch() {
                 ))}
               </tbody>
             </table>
+
+            <div className="button-row">
+              <label className="checkbox-line">
+                <input type="checkbox" checked={includePick} onChange={(e) => setIncludePick(e.target.checked)} />
+                Pick List
+              </label>
+              <label className="checkbox-line">
+                <input type="checkbox" checked={includeSlip} onChange={(e) => setIncludeSlip(e.target.checked)} />
+                Packing Slip
+              </label>
+              <button type="button" className="primary-btn" disabled={!canPrint} onClick={printBatch}>
+                Print
+              </button>
+            </div>
           </>
         )}
       </div>
 
-      {document === "pick" &&
-        selectedOrders.map((order, idx) => (
-          <div
-            key={order.soNumber}
-            className={`sales-order print-only ${idx < selectedOrders.length - 1 ? "batch-page-break" : ""}`}
-          >
-            <div className="so-header">
-              <div className="so-company">
-                <div className="so-company-name">Pick List</div>
-                <div className="muted">S.O. #{order.soNumber}</div>
-              </div>
-              <div className="so-meta">
-                <table className="meta-table">
-                  <thead>
-                    <tr>
-                      <th>P.O. No.</th>
-                      <th>Customer</th>
-                      <th>Ship Via</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>{order.poNumber || "—"}</td>
-                      <td>{order.billTo.name}</td>
-                      <td>{order.shipVia || "—"}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <table className="data-table line-item-table">
-              <thead>
-                <tr>
-                  <th className="col-item">Item</th>
-                  <th className="col-desc">Description</th>
-                  <th className="col-um">U/M</th>
-                  <th className="col-qty">Qty to Pick</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(order.pendingShipment ?? []).map((l) => {
-                  const li = lineFor(order, l.lineItemId);
-                  if (!li) return null;
-                  return (
-                    <tr key={l.lineItemId}>
-                      <td>{li.item}</td>
-                      <td>{li.description}</td>
-                      <td>{li.um}</td>
-                      <td className="amount-cell">{l.qty}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
-
-      {document === "slip" &&
-        selectedOrders.map((order, idx) => (
-          <div
-            key={order.soNumber}
-            className={`sales-order print-only ${idx < selectedOrders.length - 1 ? "batch-page-break" : ""}`}
-          >
-            <div className="so-header">
-              <div className="so-company">
-                <div className="so-company-name">Packing Slip</div>
-                <div className="muted">
-                  S.O. #{order.soNumber} · P.O. #{order.poNumber || "—"}
-                </div>
-              </div>
-            </div>
-
-            <div className="so-addresses">
-              <fieldset className="address-box">
-                <legend>Ship To</legend>
-                <div>{order.shipTo.name}</div>
-                <div>{order.shipTo.addressLine1}</div>
-                {order.shipTo.addressLine2 && <div>{order.shipTo.addressLine2}</div>}
-                <div>
-                  {order.shipTo.city}, {order.shipTo.state} {order.shipTo.zip}
-                </div>
-              </fieldset>
-            </div>
-
-            <table className="data-table line-item-table">
-              <thead>
-                <tr>
-                  <th className="col-item">Item</th>
-                  <th className="col-desc">Description</th>
-                  <th className="col-um">U/M</th>
-                  <th className="col-qty">Ordered</th>
-                  <th className="col-qty">Prev. Shipped</th>
-                  <th className="col-qty">Shipping Now</th>
-                  <th className="col-qty">Remaining</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(order.pendingShipment ?? []).map((l) => {
-                  const li = lineFor(order, l.lineItemId);
-                  if (!li) return null;
-                  const previouslyShipped = shippedQtyFor(order, li.id);
-                  const remaining = Math.max(0, li.ordered - previouslyShipped - l.qty);
-                  return (
-                    <tr key={l.lineItemId}>
-                      <td>{li.item}</td>
-                      <td>{li.description}</td>
-                      <td>{li.um}</td>
-                      <td className="amount-cell">{li.ordered}</td>
-                      <td className="amount-cell">{previouslyShipped}</td>
-                      <td className="amount-cell">{l.qty}</td>
-                      <td className="amount-cell">{remaining}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
+      {printing && <BatchPrintDocs orders={selectedOrders} includePick={includePick} includeSlip={includeSlip} />}
     </div>
   );
 }

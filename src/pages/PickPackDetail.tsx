@@ -78,6 +78,8 @@ function PickPackDetailInner() {
       status: "Pick & Packed",
       pickedAt: new Date().toISOString(),
       pendingShipment,
+      pickListPrintedAt: undefined,
+      packingSlipPrintedAt: undefined,
       allocation: order.allocation
         ? { ...order.allocation, lines: newAllocationLines }
         : order.allocation,

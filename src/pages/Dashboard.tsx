@@ -63,12 +63,12 @@ const LANES: Lane[] = [
       },
       {
         name: "Print Batch",
-        description: "Print pick lists or packing slips for the whole queue at once",
+        description: "Print pick lists and/or packing slips for the queue in one run",
         to: "/print-batch",
       },
       {
         name: "Open Picks",
-        description: "Packed orders staged and waiting on shipment confirmation",
+        description: "Fully printed orders, ready to confirm shipment (single or batch)",
         to: "/open-picks",
       },
       { name: "Check Order & Wrap / Pack", description: "Final QC, wrap, and pack" },

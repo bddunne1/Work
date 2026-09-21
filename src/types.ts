@@ -70,7 +70,8 @@ export interface PurchaseOrder {
   labelPrintedAt?: string;
   pickedAt?: string;
   pendingShipment?: ShipmentLine[];
-  batchPrintedAt?: string;
+  pickListPrintedAt?: string;
+  packingSlipPrintedAt?: string;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   createdAt: string;
@@ -168,6 +169,32 @@ export function shippedQtyFor(order: Pick<PurchaseOrder, "shipmentHistory">, lin
     const line = rec.lines.find((l) => l.lineItemId === lineItemId);
     return sum + (line?.qty ?? 0);
   }, 0);
+}
+
+// Confirms a shipment of `lines` (typically the order's pendingShipment) and
+// returns the updated order: Shipped once every line's cumulative shipped
+// quantity meets what was ordered, otherwise Backordered so any gap surfaces
+// in the Back Order Queue for reallocation.
+export function confirmShipment(order: PurchaseOrder, lines: ShipmentLine[]): PurchaseOrder {
+  const shippedLines = lines.filter((l) => l.qty > 0);
+  const shipmentHistory: ShipmentRecord[] = [
+    ...(order.shipmentHistory ?? []),
+    ...(shippedLines.length > 0
+      ? [{ id: crypto.randomUUID(), shippedAt: new Date().toISOString(), lines: shippedLines }]
+      : []),
+  ];
+  const shippedFor = (lineItemId: string) =>
+    shipmentHistory.reduce((sum, rec) => {
+      const line = rec.lines.find((l) => l.lineItemId === lineItemId);
+      return sum + (line?.qty ?? 0);
+    }, 0);
+  const fullyShipped = order.lineItems.every((li) => shippedFor(li.id) >= li.ordered);
+  return {
+    ...order,
+    status: fullyShipped ? "Shipped" : "Backordered",
+    shipmentHistory,
+    pendingShipment: [],
+  };
 }
 
 export function orderSubtotal(order: Pick<PurchaseOrder, "lineItems">): number {

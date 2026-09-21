@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getOrder, updateOrder } from "../lib/orderStore";
-import type { ShipmentRecord } from "../types";
+import { confirmShipment } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -42,32 +42,8 @@ function OpenPicksDetailInner() {
 
   function markShipped() {
     if (!order) return;
-
-    const shippedLines = pending
-      .map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 }))
-      .filter((l) => l.qty > 0);
-
-    const shipmentHistory: ShipmentRecord[] = [
-      ...(order.shipmentHistory ?? []),
-      ...(shippedLines.length > 0
-        ? [{ id: crypto.randomUUID(), shippedAt: new Date().toISOString(), lines: shippedLines }]
-        : []),
-    ];
-
-    const shippedFor = (lineItemId: string) =>
-      shipmentHistory.reduce((sum, rec) => {
-        const line = rec.lines.find((l) => l.lineItemId === lineItemId);
-        return sum + (line?.qty ?? 0);
-      }, 0);
-
-    const fullyShipped = order.lineItems.every((li) => shippedFor(li.id) >= li.ordered);
-
-    updateOrder({
-      ...order,
-      status: fullyShipped ? "Shipped" : "Backordered",
-      shipmentHistory,
-      pendingShipment: [],
-    });
+    const lines = pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 }));
+    updateOrder(confirmShipment(order, lines));
     navigate(`/storage/${order.soNumber}`);
   }
 
