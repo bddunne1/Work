@@ -61,9 +61,15 @@
   box-sizing: border-box;
 }
 
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
 body {
   margin: 0;
   background: var(--bg);
+  color: var(--text);
 }
 
 h1,
@@ -672,6 +678,17 @@ a {
   border-color: rgba(240, 101, 149, 0.4);
 }
 
+.inline-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.allocate-qty-input.short {
+  border-color: #f59f00;
+  color: #f59f00;
+  font-weight: 700;
+}
+
 .so-addresses {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -891,6 +908,16 @@ a {
 
 .primary-btn:hover {
   background: var(--accent-hover);
+}
+
+.primary-btn:disabled {
+  background: var(--border-strong);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.pick-row-skip {
+  opacity: 0.6;
 }
 
 .secondary-btn {

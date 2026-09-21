@@ -13,7 +13,11 @@ const LEGACY_STATUS_MAP: Record<string, PurchaseOrder["status"]> = {
   "Pick & Pack": "Pick & Packed",
 };
 
-function normalizeOrder(raw: PurchaseOrder & { validation?: PurchaseOrder["allocation"] }): PurchaseOrder {
+type LegacyAllocation = { fullyInStock?: boolean; shipCompleteOnly?: boolean; decidedAt?: string };
+
+function normalizeOrder(
+  raw: PurchaseOrder & { validation?: (PurchaseOrder["allocation"] & LegacyAllocation) | undefined }
+): PurchaseOrder {
   let order = raw;
   const mapped = LEGACY_STATUS_MAP[order.status as string];
   if (mapped) {
@@ -21,6 +25,22 @@ function normalizeOrder(raw: PurchaseOrder & { validation?: PurchaseOrder["alloc
   }
   if (!order.allocation && order.validation) {
     order = { ...order, allocation: order.validation };
+  }
+  const legacy = order.allocation as (PurchaseOrder["allocation"] & LegacyAllocation) | undefined;
+  if (legacy && !Array.isArray(legacy.lines)) {
+    const fullyAllocated = Boolean(legacy.fullyInStock);
+    order = {
+      ...order,
+      allocation: {
+        lines: order.lineItems.map((li) => ({
+          lineItemId: li.id,
+          allocatedQty: fullyAllocated ? li.ordered : 0,
+        })),
+        fullyAllocated,
+        shipCompleteOnly: legacy.shipCompleteOnly,
+        decidedAt: legacy.decidedAt ?? new Date().toISOString(),
+      },
+    };
   }
   return order;
 }

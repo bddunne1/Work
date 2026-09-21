@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import LineItemsTable from "../components/LineItemsTable";
 import { getCustomer } from "../lib/customerStore";
 import { getOrder, updateOrder } from "../lib/orderStore";
 import type { OrderStatus } from "../types";
@@ -12,7 +11,15 @@ export default function AllocationDecision() {
   const order = soNumber ? getOrder(soNumber) : undefined;
   const customer = order?.customerId ? getCustomer(order.customerId) : undefined;
 
-  const [fullyInStock, setFullyInStock] = useState<boolean | null>(order?.allocation?.fullyInStock ?? null);
+  const [qtys, setQtys] = useState<Record<string, number>>(() => {
+    if (!order) return {};
+    const saved = new Map(order.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
+    const initial: Record<string, number> = {};
+    for (const li of order.lineItems) {
+      initial[li.id] = saved.get(li.id) ?? li.ordered;
+    }
+    return initial;
+  });
   const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(
     order?.allocation?.shipCompleteOnly ?? customer?.shipCompleteOnly ?? null
   );
@@ -26,22 +33,41 @@ export default function AllocationDecision() {
     );
   }
 
+  function setQty(lineItemId: string, value: number, max: number) {
+    const clamped = Math.max(0, Math.min(value, max));
+    setQtys((q) => ({ ...q, [lineItemId]: clamped }));
+  }
+
+  function allocateAll() {
+    const all: Record<string, number> = {};
+    for (const li of order!.lineItems) all[li.id] = li.ordered;
+    setQtys(all);
+  }
+
+  function allocateNone() {
+    const none: Record<string, number> = {};
+    for (const li of order!.lineItems) none[li.id] = 0;
+    setQtys(none);
+  }
+
+  const fullyAllocated = order.lineItems.every((li) => (qtys[li.id] ?? 0) >= li.ordered);
+
   let outcomeStatus: OrderStatus | null = null;
   let outcomeLabel = "";
   let outcomeDetail = "";
   let outcomeClass = "";
 
-  if (fullyInStock === true) {
+  if (fullyAllocated) {
     outcomeStatus = "Allocated";
     outcomeLabel = "Allocate full qty · release to Order Prep";
     outcomeDetail = "Ships complete, on ETA.";
     outcomeClass = "outcome-success";
-  } else if (fullyInStock === false && shipCompleteOnly === true) {
+  } else if (shipCompleteOnly === true) {
     outcomeStatus = "Backordered";
     outcomeLabel = "Hold order. Log in awaiting inventory";
     outcomeDetail = "Held — awaiting full stock. Added to the Back Order Queue.";
     outcomeClass = "outcome-hold";
-  } else if (fullyInStock === false && shipCompleteOnly === false) {
+  } else if (shipCompleteOnly === false) {
     outcomeStatus = "Backordered";
     outcomeLabel = "Allocate what's available · back order the rest";
     outcomeDetail = "Partial ship, now. Remainder added to the Back Order Queue.";
@@ -49,14 +75,20 @@ export default function AllocationDecision() {
   }
 
   function applyDecision() {
-    if (!order || fullyInStock === null || !outcomeStatus) return;
-    if (fullyInStock === false && shipCompleteOnly === null) return;
+    if (!order || !outcomeStatus) return;
+    if (!fullyAllocated && shipCompleteOnly === null) return;
+    const hold = outcomeStatus === "Backordered" && shipCompleteOnly === true;
+    const lines = order.lineItems.map((li) => ({
+      lineItemId: li.id,
+      allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
+    }));
     updateOrder({
       ...order,
       status: outcomeStatus,
       allocation: {
-        fullyInStock,
-        shipCompleteOnly: fullyInStock ? false : (shipCompleteOnly as boolean),
+        lines,
+        fullyAllocated,
+        shipCompleteOnly: fullyAllocated ? undefined : (shipCompleteOnly as boolean),
         decidedAt: new Date().toISOString(),
       },
     });
@@ -76,30 +108,57 @@ export default function AllocationDecision() {
       </div>
 
       <div className="sales-order validation-panel">
-        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly />
-
-        <div className="decision-flow">
-          <div className="decision-step">
-            <div className="decision-question">Full ordered qty in stock?</div>
-            <div className="decision-buttons">
-              <button
-                type="button"
-                className={`decision-btn ${fullyInStock === true ? "selected" : ""}`}
-                onClick={() => setFullyInStock(true)}
-              >
-                Yes
+        <div className="line-items">
+          <div className="ship-locations-header">
+            <h3>Line Items</h3>
+            <div className="inline-actions">
+              <button type="button" className="secondary-btn" onClick={allocateAll}>
+                Allocate All
               </button>
-              <button
-                type="button"
-                className={`decision-btn ${fullyInStock === false ? "selected" : ""}`}
-                onClick={() => setFullyInStock(false)}
-              >
-                No
+              <button type="button" className="secondary-btn" onClick={allocateNone}>
+                Allocate None
               </button>
             </div>
           </div>
+          <table className="data-table line-item-table">
+            <thead>
+              <tr>
+                <th className="col-item">Item</th>
+                <th className="col-desc">Description</th>
+                <th className="col-um">U/M</th>
+                <th className="col-qty">Ordered</th>
+                <th className="col-qty">Allocate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.lineItems.map((li) => {
+                const qty = qtys[li.id] ?? 0;
+                const short = qty < li.ordered;
+                return (
+                  <tr key={li.id}>
+                    <td>{li.item}</td>
+                    <td>{li.description}</td>
+                    <td>{li.um}</td>
+                    <td className="amount-cell">{li.ordered}</td>
+                    <td>
+                      <input
+                        type="number"
+                        className={`num-input allocate-qty-input ${short ? "short" : ""}`}
+                        min={0}
+                        max={li.ordered}
+                        value={qty}
+                        onChange={(e) => setQty(li.id, Number(e.target.value), li.ordered)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-          {fullyInStock === false && (
+        <div className="decision-flow">
+          {!fullyAllocated && (
             <div className="decision-step">
               <div className="decision-question">
                 Ship-complete-only customer? <span className="muted">(Customer Master flag)</span>

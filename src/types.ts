@@ -25,9 +25,15 @@ export type OrderStatus =
   | "Pick & Packed"
   | "Shipped";
 
+export interface AllocationLine {
+  lineItemId: string;
+  allocatedQty: number;
+}
+
 export interface AllocationDecision {
-  fullyInStock: boolean;
-  shipCompleteOnly: boolean;
+  lines: AllocationLine[];
+  fullyAllocated: boolean;
+  shipCompleteOnly?: boolean;
   decidedAt: string;
 }
 
@@ -51,6 +57,7 @@ export interface PurchaseOrder {
   checkedAt?: string;
   allocation?: AllocationDecision;
   labelPrintedAt?: string;
+  pickedAt?: string;
   createdAt: string;
 }
 
@@ -131,6 +138,14 @@ export function emptyLineItem(): LineItem {
 
 export function lineAmount(li: LineItem): number {
   return (li.ordered || 0) * (li.rate || 0);
+}
+
+export function allocatedQtyFor(order: Pick<PurchaseOrder, "allocation">, lineItemId: string): number {
+  return order.allocation?.lines.find((l) => l.lineItemId === lineItemId)?.allocatedQty ?? 0;
+}
+
+export function hasAnyAllocatedQty(order: Pick<PurchaseOrder, "allocation">): boolean {
+  return (order.allocation?.lines ?? []).some((l) => l.allocatedQty > 0);
 }
 
 export function orderSubtotal(order: Pick<PurchaseOrder, "lineItems">): number {

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
+import { hasAnyAllocatedQty } from "../types";
 
 interface Module {
   name: string;
@@ -55,7 +56,11 @@ const LANES: Lane[] = [
     lane: "Fulfillment",
     color: "#7c6ff2",
     modules: [
-      { name: "Pick & Pack", description: "Pick list generation and packing" },
+      {
+        name: "Pick & Pack",
+        description: "Pick list for allocated orders, using the allocated quantities",
+        to: "/pick-pack",
+      },
       { name: "Check Order & Wrap / Pack", description: "Final QC, wrap, and pack" },
     ],
   },
@@ -98,6 +103,15 @@ export default function Dashboard() {
         <div className="stat-card">
           <div className="stat-value">{orders.filter((o) => o.status === "Backordered").length}</div>
           <div className="stat-label">Back Order Queue</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">
+            {
+              orders.filter((o) => o.status === "Allocated" || (o.status === "Backordered" && hasAnyAllocatedQty(o)))
+                .length
+            }
+          </div>
+          <div className="stat-label">Ready to Pick</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{customerCount}</div>

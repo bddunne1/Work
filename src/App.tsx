@@ -11,6 +11,8 @@ import ItemForm from "./pages/ItemForm";
 import Items from "./pages/Items";
 import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
+import PickPack from "./pages/PickPack";
+import PickPackDetail from "./pages/PickPackDetail";
 import ShippingLabel from "./pages/ShippingLabel";
 import Storage from "./pages/Storage";
 import Validation from "./pages/Validation";
@@ -38,6 +40,8 @@ function App() {
           <Route path="back-orders" element={<BackOrderQueue />} />
           <Route path="labels" element={<CreateLabels />} />
           <Route path="labels/:soNumber" element={<ShippingLabel />} />
+          <Route path="pick-pack" element={<PickPack />} />
+          <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
         </Route>
       </Routes>
     </HashRouter>
