@@ -29,7 +29,16 @@ const LANES: Lane[] = [
     color: "#12b886",
     modules: [
       { name: "Order Entry", description: "Enter a new sales order from a customer PO", to: "/order-entry" },
-      { name: "Validation", description: "Review submitted orders for accuracy" },
+      {
+        name: "Validation",
+        description: "Check stock and allocate full, partial, or hold each order",
+        to: "/validation",
+      },
+      {
+        name: "Back Order Queue",
+        description: "Partial-ship and held orders waiting on stock",
+        to: "/back-orders",
+      },
       { name: "Inventory Allocation", description: "Reserve stock against valid orders" },
       { name: "Create Labels", description: "Generate shipping labels when needed" },
     ],
@@ -74,6 +83,12 @@ export default function Dashboard() {
         <div className="stat-card">
           <div className="stat-value">{orders.filter((o) => o.status === "Entered").length}</div>
           <div className="stat-label">Awaiting Validation</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">
+            {orders.filter((o) => o.status === "Partial Ship" || o.status === "Held - Awaiting Stock").length}
+          </div>
+          <div className="stat-label">Back Order Queue</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{customerCount}</div>

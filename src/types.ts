@@ -19,11 +19,18 @@ export interface LineItem {
 
 export type OrderStatus =
   | "Entered"
-  | "Validation"
-  | "Inventory Allocation"
+  | "Ships Complete"
+  | "Partial Ship"
+  | "Held - Awaiting Stock"
   | "Pick & Pack"
   | "Fulfillment"
   | "Shipped";
+
+export interface ValidationDecision {
+  fullyInStock: boolean;
+  shipCompleteOnly: boolean;
+  decidedAt: string;
+}
 
 export interface PurchaseOrder {
   soNumber: string;
@@ -42,6 +49,7 @@ export interface PurchaseOrder {
   notes: string;
   lineItems: LineItem[];
   status: OrderStatus;
+  validation?: ValidationDecision;
   createdAt: string;
 }
 
@@ -61,6 +69,7 @@ export interface Customer {
   shipVia: string;
   fob: string;
   rep: string;
+  shipCompleteOnly: boolean;
   createdAt: string;
 }
 
@@ -92,6 +101,7 @@ export function emptyCustomer(): Customer {
     shipVia: "",
     fob: "",
     rep: "",
+    shipCompleteOnly: false,
     createdAt: new Date().toISOString(),
   };
 }

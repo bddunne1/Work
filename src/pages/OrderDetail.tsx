@@ -19,9 +19,12 @@ export default function OrderDetail() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header no-print">
         <button className="link-btn" onClick={() => navigate("/storage")}>
           &larr; Back to Storage
+        </button>
+        <button className="secondary-btn print-btn" onClick={() => window.print()}>
+          Print / Preview
         </button>
       </div>
 
@@ -108,7 +111,8 @@ export default function OrderDetail() {
 
         <div className="so-footer">
           <div className="so-notes">
-            <div className="muted">{order.notes}</div>
+            <div className="so-notes-label muted">Notes</div>
+            <div className="so-notes-text">{order.notes || "—"}</div>
           </div>
           <table className="totals-table">
             <tbody>

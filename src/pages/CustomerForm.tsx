@@ -109,6 +109,15 @@ export default function CustomerForm() {
 
         <AddressFields label="Bill To" value={customer.billTo} onChange={(addr) => set("billTo", addr)} />
 
+        <label className="checkbox-line shipcomplete-toggle">
+          <input
+            type="checkbox"
+            checked={customer.shipCompleteOnly}
+            onChange={(e) => set("shipCompleteOnly", e.target.checked)}
+          />
+          Ship-complete only — hold the whole order if it can't be fully allocated (no partial shipments)
+        </label>
+
         <div className="ship-locations">
           <div className="ship-locations-header">
             <h3>Shipping Locations</h3>
