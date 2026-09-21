@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
+import SearchSelect from "../components/SearchSelect";
+import { listCustomers } from "../lib/customerStore";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
-import type { PurchaseOrder } from "../types";
+import type { Customer, PurchaseOrder } from "../types";
 import { emptyAddress, emptyLineItem, orderSubtotal, orderTax, orderTotal } from "../types";
 
 function today(): string {
@@ -35,23 +37,42 @@ export default function OrderEntry() {
   const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder(nextSalesOrderNumber()));
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>(() => listCustomers());
+  const [customerQuery, setCustomerQuery] = useState("");
 
   function set<K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) {
     setOrder((o) => ({ ...o, [key]: value }));
+  }
+
+  function handleSelectCustomer(id: string) {
+    const customer = customers.find((c) => c.id === id);
+    if (!customer) return;
+    setCustomerQuery(customer.name);
+    setSameAsBillTo(false);
+    setOrder((o) => ({
+      ...o,
+      customerId: customer.id,
+      billTo: { ...customer.billTo },
+      shipTo: { ...customer.shipTo },
+      terms: customer.terms,
+      shipVia: customer.shipVia,
+      fob: customer.fob,
+      rep: customer.rep,
+    }));
   }
 
   function handleBillToChange(addr: PurchaseOrder["billTo"]) {
     setOrder((o) => ({
       ...o,
       billTo: addr,
-      shipTo: sameAsBillTo ? addr : o.shipTo,
+      shipTo: sameAsBillTo ? { ...addr, notes: o.shipTo.notes } : o.shipTo,
     }));
   }
 
   function toggleSameAsBillTo(checked: boolean) {
     setSameAsBillTo(checked);
     if (checked) {
-      setOrder((o) => ({ ...o, shipTo: o.billTo }));
+      setOrder((o) => ({ ...o, shipTo: { ...o.billTo, notes: o.shipTo.notes } }));
     }
   }
 
@@ -65,6 +86,8 @@ export default function OrderEntry() {
     setOrder(blankOrder(nextSalesOrderNumber()));
     setSameAsBillTo(false);
     setSaved(false);
+    setCustomerQuery("");
+    setCustomers(listCustomers());
   }
 
   if (saved) {
@@ -97,6 +120,20 @@ export default function OrderEntry() {
       </div>
 
       <form className="sales-order" onSubmit={handleSubmit}>
+        <div className="customer-picker">
+          <label htmlFor="customer-search">Customer</label>
+          <SearchSelect
+            options={customers.map((c) => ({ id: c.id, label: c.name, sublabel: c.accountNumber }))}
+            value={customerQuery}
+            onQueryChange={setCustomerQuery}
+            onSelect={handleSelectCustomer}
+            placeholder="Search customers by name or account #..."
+          />
+          <Link to="/customers/new" target="_blank" className="link-btn">
+            + New Customer
+          </Link>
+        </div>
+
         <div className="so-header">
           <div className="so-company">
             <div className="so-company-name">Aamstrand Ropes &amp; Twines</div>
@@ -146,6 +183,7 @@ export default function OrderEntry() {
               label="Ship To"
               value={order.shipTo}
               onChange={(addr) => set("shipTo", addr)}
+              showNotes
             />
             <label className="checkbox-line">
               <input

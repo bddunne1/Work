@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { listItems } from "../lib/itemStore";
 import type { LineItem } from "../types";
 import { lineAmount, emptyLineItem } from "../types";
 
@@ -7,7 +9,11 @@ interface Props {
   readOnly?: boolean;
 }
 
+const ITEM_DATALIST_ID = "item-catalog-options";
+
 export default function LineItemsTable({ items, onChange, readOnly }: Props) {
+  const [catalog] = useState(() => listItems());
+
   function update(id: string, patch: Partial<LineItem>) {
     onChange(items.map((li) => (li.id === id ? { ...li, ...patch } : li)));
   }
@@ -20,8 +26,24 @@ export default function LineItemsTable({ items, onChange, readOnly }: Props) {
     onChange([...items, emptyLineItem()]);
   }
 
+  function applyItemLookup(id: string, itemNumber: string) {
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === itemNumber.trim().toLowerCase());
+    if (match) {
+      update(id, { item: match.itemNumber, description: match.description, um: match.um });
+    }
+  }
+
   return (
     <div className="line-items">
+      {!readOnly && (
+        <datalist id={ITEM_DATALIST_ID}>
+          {catalog.map((c) => (
+            <option key={c.id} value={c.itemNumber}>
+              {c.description}
+            </option>
+          ))}
+        </datalist>
+      )}
       <table className="data-table line-item-table">
         <thead>
           <tr>
@@ -41,7 +63,9 @@ export default function LineItemsTable({ items, onChange, readOnly }: Props) {
                 <input
                   value={li.item}
                   disabled={readOnly}
+                  list={readOnly ? undefined : ITEM_DATALIST_ID}
                   onChange={(e) => update(li.id, { item: e.target.value })}
+                  onBlur={(e) => applyItemLookup(li.id, e.target.value)}
                 />
               </td>
               <td>

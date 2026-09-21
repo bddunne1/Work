@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { listCustomers } from "../lib/customerStore";
+import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 
 interface Module {
@@ -14,6 +16,14 @@ interface Lane {
 }
 
 const LANES: Lane[] = [
+  {
+    lane: "Master Data",
+    color: "#f59f00",
+    modules: [
+      { name: "Customers", description: "Manage customer billing, shipping, and terms", to: "/customers" },
+      { name: "Items", description: "Manage the item catalog for order entry", to: "/items" },
+    ],
+  },
   {
     lane: "Order Prep",
     color: "#12b886",
@@ -46,6 +56,8 @@ const LANES: Lane[] = [
 export default function Dashboard() {
   const orders = listOrders();
   const recent = orders.slice(0, 5);
+  const customerCount = listCustomers().length;
+  const itemCount = listItems().length;
 
   return (
     <div className="page">
@@ -62,6 +74,14 @@ export default function Dashboard() {
         <div className="stat-card">
           <div className="stat-value">{orders.filter((o) => o.status === "Entered").length}</div>
           <div className="stat-label">Awaiting Validation</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{customerCount}</div>
+          <div className="stat-label">Customers</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{itemCount}</div>
+          <div className="stat-label">Items</div>
         </div>
       </div>
 

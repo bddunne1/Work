@@ -4,9 +4,10 @@ interface Props {
   label: string;
   value: Address;
   onChange: (value: Address) => void;
+  showNotes?: boolean;
 }
 
-export default function AddressFields({ label, value, onChange }: Props) {
+export default function AddressFields({ label, value, onChange, showNotes }: Props) {
   function set<K extends keyof Address>(key: K, v: Address[K]) {
     onChange({ ...value, [key]: v });
   }
@@ -46,6 +47,15 @@ export default function AddressFields({ label, value, onChange }: Props) {
           onChange={(e) => set("zip", e.target.value)}
         />
       </div>
+      {showNotes && (
+        <textarea
+          className="address-notes"
+          placeholder="Shipping notes (e.g. dock hours, gate code, special handling)"
+          value={value.notes ?? ""}
+          onChange={(e) => set("notes", e.target.value)}
+          rows={2}
+        />
+      )}
     </fieldset>
   );
 }

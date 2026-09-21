@@ -5,6 +5,7 @@ export interface Address {
   city: string;
   state: string;
   zip: string;
+  notes?: string;
 }
 
 export interface LineItem {
@@ -29,6 +30,7 @@ export interface PurchaseOrder {
   poNumber: string;
   orderDate: string;
   dueDate: string;
+  customerId?: string;
   billTo: Address;
   shipTo: Address;
   fob: string;
@@ -42,8 +44,56 @@ export interface PurchaseOrder {
   createdAt: string;
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  accountNumber: string;
+  billTo: Address;
+  shipTo: Address;
+  terms: string;
+  shipVia: string;
+  fob: string;
+  rep: string;
+  createdAt: string;
+}
+
+export interface Item {
+  id: string;
+  itemNumber: string;
+  description: string;
+  um: string;
+  rate: number;
+  createdAt: string;
+}
+
 export function emptyAddress(): Address {
-  return { name: "", addressLine1: "", addressLine2: "", city: "", state: "", zip: "" };
+  return { name: "", addressLine1: "", addressLine2: "", city: "", state: "", zip: "", notes: "" };
+}
+
+export function emptyCustomer(): Customer {
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    accountNumber: "",
+    billTo: emptyAddress(),
+    shipTo: emptyAddress(),
+    terms: "",
+    shipVia: "",
+    fob: "",
+    rep: "",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function emptyItem(): Item {
+  return {
+    id: crypto.randomUUID(),
+    itemNumber: "",
+    description: "",
+    um: "EA",
+    rate: 0,
+    createdAt: new Date().toISOString(),
+  };
 }
 
 export function emptyLineItem(): LineItem {

@@ -71,6 +71,11 @@ export default function OrderDetail() {
             <div>
               {order.shipTo.city}, {order.shipTo.state} {order.shipTo.zip}
             </div>
+            {order.shipTo.notes && (
+              <div className="address-notes-view">
+                <span className="muted">Shipping notes:</span> {order.shipTo.notes}
+              </div>
+            )}
           </fieldset>
         </div>
 
