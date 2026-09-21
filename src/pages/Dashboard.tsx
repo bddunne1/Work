@@ -31,16 +31,24 @@ const LANES: Lane[] = [
       { name: "Order Entry", description: "Enter a new sales order from a customer PO", to: "/order-entry" },
       {
         name: "Validation",
-        description: "Check stock and allocate full, partial, or hold each order",
+        description: "Review each order for accuracy, then mark it checked",
         to: "/validation",
       },
       {
+        name: "Allocation",
+        description: "Check stock and allocate full, partial, or hold each checked order",
+        to: "/allocation",
+      },
+      {
         name: "Back Order Queue",
-        description: "Partial-ship and held orders waiting on stock",
+        description: "Backordered orders waiting on stock",
         to: "/back-orders",
       },
-      { name: "Inventory Allocation", description: "Reserve stock against valid orders" },
-      { name: "Create Labels", description: "Generate shipping labels when needed" },
+      {
+        name: "Create Labels",
+        description: "Generate a shipping label for each allocated order",
+        to: "/labels",
+      },
     ],
   },
   {
@@ -48,7 +56,6 @@ const LANES: Lane[] = [
     color: "#7c6ff2",
     modules: [
       { name: "Pick & Pack", description: "Pick list generation and packing" },
-      { name: "Fulfill Order", description: "Stage orders for shipment" },
       { name: "Check Order & Wrap / Pack", description: "Final QC, wrap, and pack" },
     ],
   },
@@ -85,9 +92,11 @@ export default function Dashboard() {
           <div className="stat-label">Awaiting Validation</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">
-            {orders.filter((o) => o.status === "Partial Ship" || o.status === "Held - Awaiting Stock").length}
-          </div>
+          <div className="stat-value">{orders.filter((o) => o.status === "Checked").length}</div>
+          <div className="stat-label">Awaiting Allocation</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{orders.filter((o) => o.status === "Backordered").length}</div>
           <div className="stat-label">Back Order Queue</div>
         </div>
         <div className="stat-card">

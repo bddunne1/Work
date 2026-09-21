@@ -24,6 +24,9 @@ export default function Layout() {
           <NavLink to="/validation" className={({ isActive }) => (isActive ? "active" : "")}>
             Validation
           </NavLink>
+          <NavLink to="/allocation" className={({ isActive }) => (isActive ? "active" : "")}>
+            Allocation
+          </NavLink>
           <NavLink to="/customers" className={({ isActive }) => (isActive ? "active" : "")}>
             Customers
           </NavLink>

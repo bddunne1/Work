@@ -982,6 +982,89 @@ a {
   }
 }
 
+.shipping-label {
+  width: 4in;
+  max-width: 100%;
+  margin: 0 auto;
+  background: var(--panel-bg);
+  border: 2px solid var(--text-h);
+  border-radius: 6px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.label-from {
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.label-from .muted {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.label-to .muted {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.label-to-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.label-to-line {
+  font-size: 16px;
+  color: var(--text-h);
+}
+
+.label-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.label-meta .muted {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.label-meta-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.label-notes {
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.label-printed-note {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 12.5px;
+}
+
 @media print {
   :root,
   :root[data-theme="dark"] {
@@ -1017,6 +1100,12 @@ a {
     border: none;
     box-shadow: none;
     padding: 0;
+  }
+
+  .shipping-label {
+    box-shadow: none;
+    width: 4in;
+    margin: 0;
   }
 
   .line-item-table input:disabled {

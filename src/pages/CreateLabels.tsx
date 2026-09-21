@@ -1,21 +1,18 @@
 import { Link } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
-import { orderTotal } from "../types";
 
-export default function BackOrderQueue() {
-  const orders = listOrders().filter((o) => o.status === "Backordered");
+export default function CreateLabels() {
+  const orders = listOrders().filter((o) => o.status === "Allocated");
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Back Order Queue</h1>
-        <p className="muted">
-          Orders that couldn't be fully allocated. Re-check stock to re-run the allocation decision.
-        </p>
+        <h1>Create Labels</h1>
+        <p className="muted">Allocated orders ready for a shipping label.</p>
       </div>
 
       {orders.length === 0 ? (
-        <p className="muted">No orders waiting on stock.</p>
+        <p className="muted">No allocated orders waiting on a label.</p>
       ) : (
         <table className="data-table">
           <thead>
@@ -23,8 +20,8 @@ export default function BackOrderQueue() {
               <th>S.O. #</th>
               <th>P.O. #</th>
               <th>Customer</th>
-              <th>Status</th>
-              <th>Total</th>
+              <th>Ship Via</th>
+              <th>Label</th>
               <th></th>
             </tr>
           </thead>
@@ -33,14 +30,18 @@ export default function BackOrderQueue() {
               <tr key={o.soNumber}>
                 <td>{o.soNumber}</td>
                 <td>{o.poNumber}</td>
-                <td>{o.billTo.name}</td>
+                <td>{o.shipTo.name}</td>
+                <td>{o.shipVia}</td>
                 <td>
-                  <span className="status-pill">{o.status}</span>
+                  {o.labelPrintedAt ? (
+                    <span className="status-pill">Printed</span>
+                  ) : (
+                    <span className="muted">Not printed</span>
+                  )}
                 </td>
-                <td>${orderTotal(o).toFixed(2)}</td>
                 <td>
-                  <Link to={`/allocation/${o.soNumber}`} className="link-btn">
-                    Re-check Stock
+                  <Link to={`/labels/${o.soNumber}`} className="link-btn">
+                    {o.labelPrintedAt ? "Reprint" : "Create Label"}
                   </Link>
                 </td>
               </tr>

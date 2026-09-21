@@ -9,19 +9,13 @@ export default function Validation() {
     <div className="page">
       <div className="page-header">
         <h1>Validation</h1>
-        <p className="muted">
-          Review each order, confirm stock availability, and allocate full, partial, or hold it per the
-          customer's shipping rules.
-        </p>
+        <p className="muted">Review each order for accuracy, then mark it checked to send it to allocation.</p>
       </div>
 
       <div className="toolbar">
         <p className="muted">
           {pending.length} order{pending.length === 1 ? "" : "s"} awaiting validation.
         </p>
-        <Link to="/back-orders" className="secondary-btn">
-          Back Order Queue
-        </Link>
       </div>
 
       {pending.length === 0 ? (

@@ -19,14 +19,13 @@ export interface LineItem {
 
 export type OrderStatus =
   | "Entered"
-  | "Ships Complete"
-  | "Partial Ship"
-  | "Held - Awaiting Stock"
-  | "Pick & Pack"
-  | "Fulfillment"
+  | "Checked"
+  | "Allocated"
+  | "Backordered"
+  | "Pick & Packed"
   | "Shipped";
 
-export interface ValidationDecision {
+export interface AllocationDecision {
   fullyInStock: boolean;
   shipCompleteOnly: boolean;
   decidedAt: string;
@@ -49,7 +48,9 @@ export interface PurchaseOrder {
   notes: string;
   lineItems: LineItem[];
   status: OrderStatus;
-  validation?: ValidationDecision;
+  checkedAt?: string;
+  allocation?: AllocationDecision;
+  labelPrintedAt?: string;
   createdAt: string;
 }
 

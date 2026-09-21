@@ -4,11 +4,33 @@ const ORDERS_KEY = "erp_orders";
 const SO_COUNTER_KEY = "erp_so_counter";
 const SO_START = 10001;
 
+// Earlier builds used a different status vocabulary and stored the
+// allocation decision under `validation`. Normalize old records on read.
+const LEGACY_STATUS_MAP: Record<string, PurchaseOrder["status"]> = {
+  "Ships Complete": "Allocated",
+  "Partial Ship": "Backordered",
+  "Held - Awaiting Stock": "Backordered",
+  "Pick & Pack": "Pick & Packed",
+};
+
+function normalizeOrder(raw: PurchaseOrder & { validation?: PurchaseOrder["allocation"] }): PurchaseOrder {
+  let order = raw;
+  const mapped = LEGACY_STATUS_MAP[order.status as string];
+  if (mapped) {
+    order = { ...order, status: mapped };
+  }
+  if (!order.allocation && order.validation) {
+    order = { ...order, allocation: order.validation };
+  }
+  return order;
+}
+
 function readOrders(): PurchaseOrder[] {
   try {
     const raw = localStorage.getItem(ORDERS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as PurchaseOrder[];
+    const parsed = JSON.parse(raw) as PurchaseOrder[];
+    return parsed.map(normalizeOrder);
   } catch {
     return [];
   }
