@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { listOrders } from "../lib/orderStore";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { useCanEdit } from "../lib/authContext";
+import { listOrders, undoShipment } from "../lib/orderStore";
+import type { PurchaseOrder } from "../types";
+import { itemLabel, matchesOrderQuery, orderTotal } from "../types";
 
 function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undefined {
   return shipmentHistory.reduce<string | undefined>(
@@ -10,16 +12,36 @@ function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undef
   );
 }
 
-export default function ShipmentHistory() {
-  const [query, setQuery] = useState("");
-  const orders = listOrders()
+function shippedOrders(): PurchaseOrder[] {
+  return listOrders()
     .filter((o) => o.status === "Shipped")
     .sort((a, b) => {
       const aDate = lastShippedAt(a.shipmentHistory ?? []) ?? "";
       const bDate = lastShippedAt(b.shipmentHistory ?? []) ?? "";
       return bDate.localeCompare(aDate);
     });
+}
+
+export default function ShipmentHistory() {
+  const canEdit = useCanEdit();
+  const [query, setQuery] = useState("");
+  const [orders, setOrders] = useState<PurchaseOrder[]>(() => shippedOrders());
   const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
+
+  function handleUndo(order: PurchaseOrder) {
+    const last = (order.shipmentHistory ?? []).at(-1);
+    if (!last) return;
+    const summary = last.lines.map((l) => `${itemLabel(order, l.lineItemId)} × ${l.qty}`).join(", ");
+    if (
+      !confirm(
+        `Undo the most recent shipment on S.O. #${order.soNumber}? This restores the shipped quantities (${summary}) to on-hand inventory and moves the order back to Open Picks.`
+      )
+    ) {
+      return;
+    }
+    undoShipment(order);
+    setOrders((os) => os.filter((o) => o.soNumber !== order.soNumber));
+  }
 
   return (
     <div className="page">
@@ -49,6 +71,7 @@ export default function ShipmentHistory() {
               <th>Ship To</th>
               <th>Last Shipped</th>
               <th>Total</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -66,6 +89,17 @@ export default function ShipmentHistory() {
                   </td>
                   <td>{shipped ? new Date(shipped).toLocaleString() : "—"}</td>
                   <td>${orderTotal(o).toFixed(2)}</td>
+                  <td>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="link-btn danger-link"
+                        onClick={() => handleUndo(o)}
+                      >
+                        Undo Shipment
+                      </button>
+                    )}
+                  </td>
                 </tr>
               );
             })}

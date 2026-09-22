@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { listOrders, updateOrder } from "../lib/orderStore";
+import { listOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { confirmShipment } from "../types";
 
 function openPickOrders(): PurchaseOrder[] {
   return listOrders().filter(
@@ -38,7 +37,7 @@ export default function OpenPicks() {
     if (selectedOrders.length === 0) return;
     const confirmedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
     for (const o of selectedOrders) {
-      updateOrder(confirmShipment(o, o.pendingShipment ?? []));
+      shipOrder(o, o.pendingShipment ?? []);
     }
     setOrders((os) => os.filter((o) => !confirmedSoNumbers.has(o.soNumber)));
     setSelected({});

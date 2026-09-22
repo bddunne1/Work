@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
+import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
+import { canUnallocate, unallocateOrder } from "../types";
 
 function isFullyPrinted(o: PurchaseOrder): boolean {
   return Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
@@ -21,8 +23,23 @@ function printQueue(): PurchaseOrder[] {
 
 export default function PickPack() {
   const navigate = useNavigate();
-  const pickable = readyToPick();
+  const canEdit = useCanEdit();
+  const [pickable, setPickable] = useState<PurchaseOrder[]>(() => readyToPick());
   const [queue, setQueue] = useState<PurchaseOrder[]>(() => printQueue());
+
+  function handleUnallocate(order: PurchaseOrder) {
+    if (!canUnallocate(order)) return;
+    if (
+      !confirm(
+        `Unallocate S.O. #${order.soNumber}? This releases its reserved stock and sends it back to Checked for a fresh allocation decision.`
+      )
+    ) {
+      return;
+    }
+    updateOrder(unallocateOrder(order));
+    setPickable((os) => os.filter((o) => o.soNumber !== order.soNumber));
+    setQueue((os) => os.filter((o) => o.soNumber !== order.soNumber));
+  }
 
   function startReviewQueue() {
     if (pickable.length === 0) return;
@@ -127,6 +144,7 @@ export default function PickPack() {
                 <th>Customer</th>
                 <th>Status</th>
                 <th></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -142,6 +160,17 @@ export default function PickPack() {
                     <Link to={`/pick-pack/${o.soNumber}`} className="link-btn">
                       Pick List
                     </Link>
+                  </td>
+                  <td>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="link-btn danger-link"
+                        onClick={() => handleUnallocate(o)}
+                      >
+                        Unallocate
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -178,6 +207,7 @@ export default function PickPack() {
                   <th>Customer</th>
                   <th>Pick List</th>
                   <th>Packing Slip</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -208,6 +238,17 @@ export default function PickPack() {
                         <span className="status-pill">Printed</span>
                       ) : (
                         <span className="muted">Not printed</span>
+                      )}
+                    </td>
+                    <td>
+                      {canEdit && canUnallocate(o) && (
+                        <button
+                          type="button"
+                          className="link-btn danger-link"
+                          onClick={() => handleUnallocate(o)}
+                        >
+                          Unallocate
+                        </button>
                       )}
                     </td>
                   </tr>

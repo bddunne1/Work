@@ -187,6 +187,25 @@ export function allocatedQtyFor(order: Pick<PurchaseOrder, "allocation">, lineIt
   return order.allocation?.lines.find((l) => l.lineItemId === lineItemId)?.allocatedQty ?? 0;
 }
 
+export function pendingShipmentQtyFor(
+  order: Pick<PurchaseOrder, "pendingShipment">,
+  lineItemId: string
+): number {
+  return order.pendingShipment?.find((l) => l.lineItemId === lineItemId)?.qty ?? 0;
+}
+
+// What's still reserved against physical stock for this line: whatever's
+// allocated but not yet packed, plus whatever's packed but not yet shipped.
+// Packing zeroes out the line's allocatedQty as it moves that quantity into
+// pendingShipment (see PickPackDetail), and shipping clears pendingShipment
+// as it's subtracted straight from qtyOnHand - so the two never overlap.
+export function reservedQtyFor(
+  order: Pick<PurchaseOrder, "allocation" | "pendingShipment">,
+  lineItemId: string
+): number {
+  return allocatedQtyFor(order, lineItemId) + pendingShipmentQtyFor(order, lineItemId);
+}
+
 export function itemLabel(order: Pick<PurchaseOrder, "lineItems">, lineItemId: string): string {
   const li = order.lineItems.find((l) => l.id === lineItemId);
   return li ? li.item : lineItemId;
@@ -225,9 +244,30 @@ export function qtyOnOpenSalesOrders(
 }
 
 // What's free to promise on a new order right now: on hand, less what's
-// already committed to open sales orders.
-export function availableQty(item: Pick<Item, "qtyOnHand">, qtyOnSalesOrder: number): number {
-  return item.qtyOnHand - qtyOnSalesOrder;
+// actually reserved (allocated or packed) against it - see qtyAllocatedOnOrders.
+export function availableQty(item: Pick<Item, "qtyOnHand">, qtyReserved: number): number {
+  return item.qtyOnHand - qtyReserved;
+}
+
+// Total quantity of `itemNumber` currently reserved against physical stock
+// across every order in `orders` - allocated-not-yet-packed plus
+// packed-not-yet-shipped. Unlike qtyOnOpenSalesOrders (every unit still owed,
+// including orders that haven't been allocated yet), this only counts units
+// actually committed to inventory, which is what "Available" should net
+// against.
+export function qtyAllocatedOnOrders(
+  itemNumber: string,
+  orders: Pick<PurchaseOrder, "lineItems" | "allocation" | "pendingShipment">[]
+): number {
+  const q = itemNumber.trim().toLowerCase();
+  return orders.reduce(
+    (sum, o) =>
+      sum +
+      o.lineItems
+        .filter((li) => li.item.trim().toLowerCase() === q)
+        .reduce((lineSum, li) => lineSum + reservedQtyFor(o, li.id), 0),
+    0
+  );
 }
 
 // Confirms a shipment of `lines` (typically the order's pendingShipment) and
@@ -253,6 +293,54 @@ export function confirmShipment(order: PurchaseOrder, lines: ShipmentLine[]): Pu
     status: fullyShipped ? "Shipped" : "Backordered",
     shipmentHistory,
     pendingShipment: [],
+  };
+}
+
+// Reverses the single most recent shipment record: restores those lines to
+// pendingShipment so the order lands back in Open Picks to be re-confirmed,
+// and puts it back to Pick & Packed. A no-op (returns `order` unchanged) if
+// there's no shipment to undo. Does not touch inventory - the caller is
+// responsible for adding the undone quantities back to qtyOnHand.
+export function undoLastShipment(order: PurchaseOrder): PurchaseOrder {
+  const history = order.shipmentHistory ?? [];
+  if (history.length === 0) return order;
+  const last = history[history.length - 1];
+  return {
+    ...order,
+    status: "Pick & Packed",
+    shipmentHistory: history.slice(0, -1),
+    pendingShipment: last.lines,
+  };
+}
+
+// Whether an order's allocation/pack can be released back to Checked without
+// leaving a physical document (pick list / packing slip) pointing at stock
+// that's no longer reserved. Allocated-but-not-yet-packed orders are always
+// eligible; a packed order only qualifies while neither document has printed.
+export function canUnallocate(
+  order: Pick<PurchaseOrder, "status" | "pickListPrintedAt" | "packingSlipPrintedAt">
+): boolean {
+  if (order.status === "Allocated") return true;
+  if (order.status === "Pick & Packed") {
+    return !order.pickListPrintedAt && !order.packingSlipPrintedAt;
+  }
+  return false;
+}
+
+// Releases an order's allocation and/or pack entirely, freeing whatever it
+// had reserved and sending it back to Checked for a fresh allocation
+// decision. Doesn't touch inventory - nothing was ever decremented from
+// qtyOnHand at allocation/pack time, only reserved via qtyAllocatedOnOrders.
+export function unallocateOrder(order: PurchaseOrder): PurchaseOrder {
+  return {
+    ...order,
+    status: "Checked",
+    allocation: undefined,
+    pendingShipment: [],
+    pickedAt: undefined,
+    pickPackStatus: undefined,
+    pickListPrintedAt: undefined,
+    packingSlipPrintedAt: undefined,
   };
 }
 

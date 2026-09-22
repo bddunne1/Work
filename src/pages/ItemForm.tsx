@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getItem, saveItem, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
-import { availableQty, emptyItem, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, emptyItem, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function ItemForm() {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +23,9 @@ function ItemFormInner() {
     }
     return emptyItem();
   });
-  const onSalesOrder = isEditing ? qtyOnOpenSalesOrders(item.itemNumber, listOrders()) : 0;
+  const allOrders = isEditing ? listOrders() : [];
+  const onSalesOrder = isEditing ? qtyOnOpenSalesOrders(item.itemNumber, allOrders) : 0;
+  const allocated = isEditing ? qtyAllocatedOnOrders(item.itemNumber, allOrders) : 0;
 
   function set<K extends keyof Item>(key: K, value: Item[K]) {
     setItem((i) => ({ ...i, [key]: value }));
@@ -78,6 +80,7 @@ function ItemFormInner() {
                 <tr>
                   <th>On Hand</th>
                   <th>On Sales Order</th>
+                  <th>Allocated</th>
                   <th>On Purchase Order</th>
                   <th>Available</th>
                 </tr>
@@ -86,8 +89,9 @@ function ItemFormInner() {
                 <tr>
                   <td>{item.qtyOnHand}</td>
                   <td>{onSalesOrder}</td>
+                  <td>{allocated}</td>
                   <td>{item.qtyOnPurchaseOrder}</td>
-                  <td>{availableQty(item, onSalesOrder)}</td>
+                  <td>{availableQty(item, allocated)}</td>
                 </tr>
               </tbody>
             </table>

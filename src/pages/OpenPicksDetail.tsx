@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
-import { getOrder, updateOrder } from "../lib/orderStore";
-import { confirmShipment, orderSubtotal, orderTax, orderTotal } from "../types";
+import { getOrder, shipOrder, updateOrder } from "../lib/orderStore";
+import { orderSubtotal, orderTax, orderTotal } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -49,7 +49,7 @@ function OpenPicksDetailInner() {
   function markShipped() {
     if (!order) return;
     const lines = pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 }));
-    updateOrder(confirmShipment(order, lines));
+    shipOrder(order, lines);
     navigate(`/storage/${order.soNumber}`);
   }
 

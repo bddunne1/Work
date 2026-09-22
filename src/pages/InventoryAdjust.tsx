@@ -4,7 +4,7 @@ import SearchSelect from "../components/SearchSelect";
 import { listItems, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
-import { availableQty, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function InventoryAdjust() {
   const [items, setItems] = useState<Item[]>(() => listItems());
@@ -14,7 +14,9 @@ export default function InventoryAdjust() {
   const [saved, setSaved] = useState<{ itemNumber: string; from: number; to: number } | null>(null);
 
   const selectedItem = items.find((i) => i.id === itemId);
-  const onSalesOrder = selectedItem ? qtyOnOpenSalesOrders(selectedItem.itemNumber, listOrders()) : 0;
+  const allOrders = listOrders();
+  const onSalesOrder = selectedItem ? qtyOnOpenSalesOrders(selectedItem.itemNumber, allOrders) : 0;
+  const allocated = selectedItem ? qtyAllocatedOnOrders(selectedItem.itemNumber, allOrders) : 0;
 
   function handleSelect(id: string) {
     const item = items.find((i) => i.id === id);
@@ -72,6 +74,7 @@ export default function InventoryAdjust() {
                 <tr>
                   <th>Current On Hand</th>
                   <th>On Sales Order</th>
+                  <th>Allocated</th>
                   <th>Available</th>
                 </tr>
               </thead>
@@ -79,7 +82,8 @@ export default function InventoryAdjust() {
                 <tr>
                   <td>{selectedItem.qtyOnHand}</td>
                   <td>{onSalesOrder}</td>
-                  <td>{availableQty(selectedItem, onSalesOrder)}</td>
+                  <td>{allocated}</td>
+                  <td>{availableQty(selectedItem, allocated)}</td>
                 </tr>
               </tbody>
             </table>

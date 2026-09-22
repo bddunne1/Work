@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
-import { useAuth } from "../lib/authContext";
-import { getOrder } from "../lib/orderStore";
+import { useAuth, useCanEdit } from "../lib/authContext";
+import { getOrder, undoShipment } from "../lib/orderStore";
 import { canView } from "../lib/permissions";
 import type { PurchaseOrder } from "../types";
 import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
@@ -31,9 +32,19 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
 
 export default function OrderDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
+  // Keyed so navigating directly between two orders on this same route
+  // remounts fresh instead of reusing local order state from a previous order.
+  return <OrderDetailInner key={soNumber} />;
+}
+
+function OrderDetailInner() {
+  const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
   const { account } = useAuth();
-  const order = soNumber ? getOrder(soNumber) : undefined;
+  const canEdit = useCanEdit();
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(() =>
+    soNumber ? getOrder(soNumber) : undefined
+  );
 
   if (!order) {
     return (
@@ -46,6 +57,22 @@ export default function OrderDetail() {
 
   const nextStage = nextStageFor(order);
   const showStageButton = nextStage && account && canView(nextStage.to, account.role);
+  const canUndoShipment = canEdit && (order.shipmentHistory?.length ?? 0) > 0;
+
+  function handleUndoShipment() {
+    if (!order) return;
+    const last = (order.shipmentHistory ?? []).at(-1);
+    if (!last) return;
+    const summary = last.lines.map((l) => `${itemLabel(order, l.lineItemId)} × ${l.qty}`).join(", ");
+    if (
+      !confirm(
+        `Undo the most recent shipment on S.O. #${order.soNumber}? This restores the shipped quantities (${summary}) to on-hand inventory and moves the order back to Open Picks.`
+      )
+    ) {
+      return;
+    }
+    setOrder(undoShipment(order));
+  }
 
   return (
     <div className="page">
@@ -198,6 +225,14 @@ export default function OrderDetail() {
         <div className="button-row no-print stage-nav-row">
           <button type="button" className="primary-btn" onClick={() => navigate(nextStage.to)}>
             {nextStage.label}
+          </button>
+        </div>
+      )}
+
+      {canUndoShipment && (
+        <div className="button-row no-print stage-nav-row">
+          <button type="button" className="secondary-btn danger-btn" onClick={handleUndoShipment}>
+            Undo Last Shipment
           </button>
         </div>
       )}

@@ -1,4 +1,6 @@
-import type { PurchaseOrder } from "../types";
+import type { PurchaseOrder, ShipmentLine } from "../types";
+import { confirmShipment, undoLastShipment } from "../types";
+import { adjustQtyOnHand } from "./itemStore";
 
 const ORDERS_KEY = "erp_orders";
 const SO_COUNTER_KEY = "erp_so_counter";
@@ -102,4 +104,34 @@ export function saveOrder(order: PurchaseOrder): void {
 export function updateOrder(order: PurchaseOrder): void {
   const orders = readOrders().map((o) => (o.soNumber === order.soNumber ? order : o));
   writeOrders(orders);
+}
+
+// Confirms a shipment and, unlike calling confirmShipment directly, also
+// subtracts what actually shipped from each item's qtyOnHand - physical
+// stock only really leaves the building once a shipment is confirmed.
+export function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): PurchaseOrder {
+  const updated = confirmShipment(order, lines);
+  for (const l of lines) {
+    if (l.qty <= 0) continue;
+    const li = order.lineItems.find((x) => x.id === l.lineItemId);
+    if (li) adjustQtyOnHand(li.item, -l.qty);
+  }
+  updateOrder(updated);
+  return updated;
+}
+
+// Undoes the most recent shipment on `order` (see undoLastShipment) and adds
+// those quantities back to qtyOnHand, reversing what shipOrder subtracted.
+export function undoShipment(order: PurchaseOrder): PurchaseOrder {
+  const history = order.shipmentHistory ?? [];
+  if (history.length === 0) return order;
+  const last = history[history.length - 1];
+  const updated = undoLastShipment(order);
+  for (const l of last.lines) {
+    if (l.qty <= 0) continue;
+    const li = order.lineItems.find((x) => x.id === l.lineItemId);
+    if (li) adjustQtyOnHand(li.item, l.qty);
+  }
+  updateOrder(updated);
+  return updated;
 }

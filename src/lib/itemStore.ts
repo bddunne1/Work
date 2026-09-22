@@ -60,3 +60,13 @@ export function updateItem(item: Item): void {
 export function deleteItem(id: string): void {
   writeItems(readItems().filter((i) => i.id !== id));
 }
+
+// Adjusts qtyOnHand by a signed delta (negative to ship out, positive to
+// undo a shipment or receive stock back in). A no-op if the item number
+// no longer exists in the catalog or the delta is zero.
+export function adjustQtyOnHand(itemNumber: string, delta: number): void {
+  if (delta === 0) return;
+  const item = getItemByNumber(itemNumber);
+  if (!item) return;
+  updateItem({ ...item, qtyOnHand: item.qtyOnHand + delta });
+}

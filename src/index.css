@@ -1294,6 +1294,17 @@ a {
   color: var(--accent);
 }
 
+.danger-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.danger-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--accent-bg);
+}
+
 .link-btn {
   background: none;
   border: none;

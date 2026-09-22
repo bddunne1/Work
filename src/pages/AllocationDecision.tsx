@@ -6,7 +6,7 @@ import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { OrderStatus } from "../types";
-import { availableQty, orderTotal, qtyOnOpenSalesOrders, remainingToShip, shippedQtyFor } from "../types";
+import { availableQty, orderTotal, qtyAllocatedOnOrders, remainingToShip, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -164,8 +164,8 @@ function AllocationDecisionInner() {
                 const qty = qtys[li.id] ?? 0;
                 const short = qty < remaining;
                 const catalogItem = getItemByNumber(li.item);
-                const onSalesOrder = qtyOnOpenSalesOrders(li.item, allOrders);
-                const available = catalogItem ? availableQty(catalogItem, onSalesOrder) : null;
+                const allocatedElsewhere = qtyAllocatedOnOrders(li.item, allOrders);
+                const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
                 return (
                   <tr key={li.id}>
                     <td>{li.item}</td>

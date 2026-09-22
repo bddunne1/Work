@@ -4,7 +4,7 @@ import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
-import { availableQty, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function Inventory() {
   const canEdit = useCanEdit();
@@ -27,8 +27,9 @@ export default function Inventory() {
         <p className="muted">
           On hand and on purchase order are reference figures here - adjust on hand from the dedicated
           screen, or import a spreadsheet to update many items at once. On purchase order will
-          auto-populate once outbound POs are tracked; on sales order is calculated automatically from
-          open orders.
+          auto-populate once outbound POs are tracked. On Sales Order is every unit still owed on an
+          order regardless of stage; Allocated is only what's actually reserved (allocated or packed but
+          not yet shipped) - Available is On Hand minus Allocated.
         </p>
       </div>
 
@@ -67,6 +68,7 @@ export default function Inventory() {
               <th>U/M</th>
               <th className="col-qty">On Hand</th>
               <th className="col-qty">On Sales Order</th>
+              <th className="col-qty">Allocated</th>
               <th className="col-qty">On Purchase Order</th>
               <th className="col-qty">Available</th>
             </tr>
@@ -74,7 +76,8 @@ export default function Inventory() {
           <tbody>
             {filtered.map((i) => {
               const onSalesOrder = qtyOnOpenSalesOrders(i.itemNumber, orders);
-              const available = availableQty(i, onSalesOrder);
+              const allocated = qtyAllocatedOnOrders(i.itemNumber, orders);
+              const available = availableQty(i, allocated);
               return (
                 <tr key={i.id}>
                   <td>{i.itemNumber}</td>
@@ -82,6 +85,7 @@ export default function Inventory() {
                   <td>{i.um}</td>
                   <td className="amount-cell">{i.qtyOnHand}</td>
                   <td className="amount-cell">{onSalesOrder}</td>
+                  <td className="amount-cell">{allocated}</td>
                   <td className="amount-cell">{i.qtyOnPurchaseOrder}</td>
                   <td className={`amount-cell ${available < 0 ? "qty-negative" : ""}`}>{available}</td>
                 </tr>
