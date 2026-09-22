@@ -12,9 +12,10 @@ interface Props {
   onQueryChange: (query: string) => void;
   onSelect: (id: string) => void;
   placeholder?: string;
+  id?: string;
 }
 
-export default function SearchSelect({ options, value, onQueryChange, onSelect, placeholder }: Props) {
+export default function SearchSelect({ options, value, onQueryChange, onSelect, placeholder, id }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +44,7 @@ export default function SearchSelect({ options, value, onQueryChange, onSelect, 
   return (
     <div className="search-select" ref={containerRef}>
       <input
+        id={id}
         value={value}
         placeholder={placeholder}
         onChange={(e) => {

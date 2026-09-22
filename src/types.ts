@@ -95,6 +95,9 @@ export interface Customer {
   fob: string;
   rep: string;
   shipCompleteOnly: boolean;
+  // When set, product labels printed for this customer show this brand
+  // name instead of ours - for customers who private-label our products.
+  privateLabelName?: string;
   createdAt: string;
 }
 

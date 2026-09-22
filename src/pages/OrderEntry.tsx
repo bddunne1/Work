@@ -140,6 +140,7 @@ export default function OrderEntry() {
         <div className="customer-picker">
           <label htmlFor="customer-search">Customer</label>
           <SearchSelect
+            id="customer-search"
             options={customers.map((c) => ({ id: c.id, label: c.name, sublabel: c.accountNumber }))}
             value={customerQuery}
             onQueryChange={setCustomerQuery}

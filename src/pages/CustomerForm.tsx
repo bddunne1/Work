@@ -125,6 +125,15 @@ function CustomerFormInner() {
           Ship-complete only — hold the whole order if it can't be fully allocated (no partial shipments)
         </label>
 
+        <label className="form-field">
+          Private Label Brand Name (optional)
+          <input
+            placeholder="Leave blank to use our own brand on product labels"
+            value={customer.privateLabelName ?? ""}
+            onChange={(e) => set("privateLabelName", e.target.value || undefined)}
+          />
+        </label>
+
         <div className="ship-locations">
           <div className="ship-locations-header">
             <h3>Shipping Locations</h3>

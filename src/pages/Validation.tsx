@@ -1,9 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
 import { orderTotal } from "../types";
 
 export default function Validation() {
+  const navigate = useNavigate();
   const pending = listOrders().filter((o) => o.status === "Entered");
+
+  function startQueue() {
+    if (pending.length === 0) return;
+    const queue = pending.map((o) => o.soNumber);
+    navigate(`/validation/${queue[0]}`, { state: { queue, pos: 0 } });
+  }
 
   return (
     <div className="page">
@@ -16,6 +23,9 @@ export default function Validation() {
         <p className="muted">
           {pending.length} order{pending.length === 1 ? "" : "s"} awaiting validation.
         </p>
+        <button type="button" className="primary-btn" disabled={pending.length === 0} onClick={startQueue}>
+          Review Queue
+        </button>
       </div>
 
       {pending.length === 0 ? (

@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getCustomer } from "../lib/customerStore";
-import { getOrder, updateOrder } from "../lib/orderStore";
+import { getItemByNumber } from "../lib/itemStore";
+import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
+import type { ReviewQueueState } from "../lib/reviewQueue";
+import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { OrderStatus } from "../types";
-import { orderTotal, remainingToShip, shippedQtyFor } from "../types";
+import { availableQty, orderTotal, qtyOnOpenSalesOrders, remainingToShip, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -15,8 +18,11 @@ export default function AllocationDecision() {
 function AllocationDecisionInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queueState = location.state as ReviewQueueState | undefined;
   const order = soNumber ? getOrder(soNumber) : undefined;
   const customer = order?.customerId ? getCustomer(order.customerId) : undefined;
+  const allOrders = listOrders();
 
   const [qtys, setQtys] = useState<Record<string, number>>(() => {
     if (!order) return {};
@@ -101,18 +107,26 @@ function AllocationDecisionInner() {
         decidedAt: new Date().toISOString(),
       },
     });
-    navigate(`/storage/${order.soNumber}`);
+    const next = nextQueueSoNumber(queueState);
+    if (next) {
+      navigate(`/allocation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+    } else if (queueState) {
+      navigate("/allocation");
+    } else {
+      navigate(`/storage/${order.soNumber}`);
+    }
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <Link to="/allocation" className="link-btn">
-          &larr; Back to Allocation
+          &larr; {queueState ? "Exit Queue" : "Back to Allocation"}
         </Link>
         <h1>Allocate S.O. #{order.soNumber}</h1>
         <p className="muted">
           P.O. #{order.poNumber || "—"} · {order.billTo.name} · ${orderTotal(order).toFixed(2)}
+          {queueState && <> · {queueProgressLabel(queueState)}</>}
         </p>
       </div>
 
@@ -138,6 +152,8 @@ function AllocationDecisionInner() {
                 <th className="col-qty">Ordered</th>
                 <th className="col-qty">Shipped</th>
                 <th className="col-qty">Remaining</th>
+                <th className="col-qty">On Hand</th>
+                <th className="col-qty">Available</th>
                 <th className="col-qty">Allocate</th>
               </tr>
             </thead>
@@ -147,6 +163,9 @@ function AllocationDecisionInner() {
                 const remaining = remainingToShip(order, li);
                 const qty = qtys[li.id] ?? 0;
                 const short = qty < remaining;
+                const catalogItem = getItemByNumber(li.item);
+                const onSalesOrder = qtyOnOpenSalesOrders(li.item, allOrders);
+                const available = catalogItem ? availableQty(catalogItem, onSalesOrder) : null;
                 return (
                   <tr key={li.id}>
                     <td>{li.item}</td>
@@ -155,6 +174,10 @@ function AllocationDecisionInner() {
                     <td className="amount-cell">{li.ordered}</td>
                     <td className="amount-cell">{shipped}</td>
                     <td className="amount-cell">{remaining}</td>
+                    <td className="amount-cell">{catalogItem ? catalogItem.qtyOnHand : "—"}</td>
+                    <td className={`amount-cell ${available !== null && available < 0 ? "qty-negative" : ""}`}>
+                      {available !== null ? available : "—"}
+                    </td>
                     <td>
                       <input
                         type="number"

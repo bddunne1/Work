@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
+import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import { orderTotal } from "../types";
 
 export default function ScheduleShipments() {
+  const canEdit = useCanEdit();
   const [orders, setOrders] = useState(() => listOrders());
 
   function setEstimatedShipDate(soNumber: string, value: string) {
@@ -54,12 +56,16 @@ export default function ScheduleShipments() {
                 </td>
                 <td>${orderTotal(o).toFixed(2)}</td>
                 <td>
-                  <input
-                    type="date"
-                    className="schedule-date-input"
-                    value={o.estimatedShipDate ?? ""}
-                    onChange={(e) => setEstimatedShipDate(o.soNumber, e.target.value)}
-                  />
+                  {canEdit ? (
+                    <input
+                      type="date"
+                      className="schedule-date-input"
+                      value={o.estimatedShipDate ?? ""}
+                      onChange={(e) => setEstimatedShipDate(o.soNumber, e.target.value)}
+                    />
+                  ) : (
+                    o.estimatedShipDate || "—"
+                  )}
                 </td>
               </tr>
             ))}

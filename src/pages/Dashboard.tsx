@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
+import { useAuth } from "../lib/authContext";
 import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
+import { getAccessLevel } from "../lib/permissions";
 import { getLeadTimeDays, setLeadTimeDays } from "../lib/settingsStore";
 
 interface Module {
@@ -59,7 +61,7 @@ const LANES: Lane[] = [
       },
       {
         name: "Create Labels",
-        description: "Generate a shipping label for each allocated order",
+        description: "Shipping labels or our own / private-label product labels",
         to: "/labels",
       },
     ],
@@ -101,11 +103,17 @@ const LANES: Lane[] = [
 ];
 
 export default function Dashboard() {
+  const { account } = useAuth();
   const orders = listOrders();
   const recent = orders.slice(0, 5);
   const customerCount = listCustomers().length;
   const itemCount = listItems().length;
   const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
+  const role = account!.role;
+  const visibleLanes = LANES.map((lane) => ({
+    ...lane,
+    modules: lane.modules.filter((m) => !m.to || getAccessLevel(m.to, role) !== "none"),
+  })).filter((lane) => lane.modules.length > 0);
 
   function handleLeadTimeChange(value: number) {
     if (!Number.isFinite(value) || value < 0) return;
@@ -175,7 +183,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {LANES.map((lane) => (
+      {visibleLanes.map((lane) => (
         <section key={lane.lane} className="lane-section">
           <h2 className="lane-title" style={{ borderColor: lane.color }}>
             {lane.lane}

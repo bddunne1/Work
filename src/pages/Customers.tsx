@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useCanEdit } from "../lib/authContext";
 import { deleteCustomer, listCustomers } from "../lib/customerStore";
 import type { Customer } from "../types";
 
 export default function Customers() {
+  const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [customers, setCustomers] = useState<Customer[]>(() => listCustomers());
 
@@ -35,9 +37,11 @@ export default function Customers() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <Link to="/customers/new" className="primary-btn">
-          + New Customer
-        </Link>
+        {canEdit && (
+          <Link to="/customers/new" className="primary-btn">
+            + New Customer
+          </Link>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -52,7 +56,7 @@ export default function Customers() {
               <th>Ship Via</th>
               <th>City / State</th>
               <th>Locations</th>
-              <th></th>
+              {canEdit && <th></th>}
             </tr>
           </thead>
           <tbody>
@@ -68,12 +72,14 @@ export default function Customers() {
                   {c.billTo.state}
                 </td>
                 <td>{c.shipToLocations.length}</td>
-                <td className="row-actions">
-                  <Link to={`/customers/${c.id}/edit`}>Edit</Link>
-                  <button type="button" className="link-btn danger-link" onClick={() => handleDelete(c.id)}>
-                    Delete
-                  </button>
-                </td>
+                {canEdit && (
+                  <td className="row-actions">
+                    <Link to={`/customers/${c.id}/edit`}>Edit</Link>
+                    <button type="button" className="link-btn danger-link" onClick={() => handleDelete(c.id)}>
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

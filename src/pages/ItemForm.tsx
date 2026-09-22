@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { getItem, saveItem, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
@@ -71,29 +71,41 @@ function ItemFormInner() {
           </label>
         </div>
 
-        <div className="form-row">
+        {isEditing ? (
+          <>
+            <table className="meta-table order-details-table">
+              <thead>
+                <tr>
+                  <th>On Hand</th>
+                  <th>On Sales Order</th>
+                  <th>On Purchase Order</th>
+                  <th>Available</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{item.qtyOnHand}</td>
+                  <td>{onSalesOrder}</td>
+                  <td>{item.qtyOnPurchaseOrder}</td>
+                  <td>{availableQty(item, onSalesOrder)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="muted">
+              To change on hand, use <Link to="/inventory/adjust">Adjust Inventory</Link>. On purchase
+              order will auto-populate once outbound POs are tracked.
+            </p>
+          </>
+        ) : (
           <label className="form-field">
-            Qty On Hand
+            Initial Qty On Hand
             <input
               type="number"
+              min={0}
               value={item.qtyOnHand}
               onChange={(e) => set("qtyOnHand", Number(e.target.value))}
             />
           </label>
-          <label className="form-field">
-            Qty On Purchase Order
-            <input
-              type="number"
-              value={item.qtyOnPurchaseOrder}
-              onChange={(e) => set("qtyOnPurchaseOrder", Number(e.target.value))}
-            />
-          </label>
-        </div>
-
-        {isEditing && (
-          <p className="muted">
-            {onSalesOrder} on open sales orders · {availableQty(item, onSalesOrder)} available to promise.
-          </p>
         )}
 
         <div className="button-row">

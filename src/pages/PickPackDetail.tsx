@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getOrder, updateOrder } from "../lib/orderStore";
+import type { ReviewQueueState } from "../lib/reviewQueue";
+import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { LineItem } from "../types";
 import { allocatedQtyFor, remainingToShip } from "../types";
 
@@ -15,6 +17,8 @@ export default function PickPackDetail() {
 function PickPackDetailInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queueState = location.state as ReviewQueueState | undefined;
   const order = soNumber ? getOrder(soNumber) : undefined;
 
   const pickableLines: LineItem[] = (order?.lineItems ?? []).filter(
@@ -94,18 +98,24 @@ function PickPackDetailInner() {
         ? { ...order.allocation, lines: newAllocationLines }
         : order.allocation,
     });
-    navigate("/pick-pack");
+    const next = nextQueueSoNumber(queueState);
+    if (next) {
+      navigate(`/pick-pack/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+    } else {
+      navigate("/pick-pack");
+    }
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <Link to="/pick-pack" className="link-btn">
-          &larr; Back to Pick &amp; Pack
+          &larr; {queueState ? "Exit Queue" : "Back to Pick & Pack"}
         </Link>
         <h1>Pick &amp; Pack S.O. #{order.soNumber}</h1>
         <p className="muted">
           P.O. #{order.poNumber || "—"} · {order.billTo.name}
+          {queueState && <> · {queueProgressLabel(queueState)}</>}
         </p>
       </div>
 

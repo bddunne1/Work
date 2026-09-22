@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useCanEdit } from "../lib/authContext";
 import { deleteItem, listItems } from "../lib/itemStore";
 import type { Item } from "../types";
 
 export default function Items() {
+  const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Item[]>(() => listItems());
 
@@ -35,14 +37,16 @@ export default function Items() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <div className="inline-actions">
-          <Link to="/inventory" className="secondary-btn">
-            Manage Inventory
-          </Link>
-          <Link to="/items/new" className="primary-btn">
-            + New Item
-          </Link>
-        </div>
+        {canEdit && (
+          <div className="inline-actions">
+            <Link to="/inventory" className="secondary-btn">
+              Manage Inventory
+            </Link>
+            <Link to="/items/new" className="primary-btn">
+              + New Item
+            </Link>
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -55,7 +59,7 @@ export default function Items() {
               <th>Description</th>
               <th>U/M</th>
               <th>Rate</th>
-              <th></th>
+              {canEdit && <th></th>}
             </tr>
           </thead>
           <tbody>
@@ -65,12 +69,14 @@ export default function Items() {
                 <td>{i.description}</td>
                 <td>{i.um}</td>
                 <td>${i.rate.toFixed(2)}</td>
-                <td className="row-actions">
-                  <Link to={`/items/${i.id}/edit`}>Edit</Link>
-                  <button type="button" className="link-btn danger-link" onClick={() => handleDelete(i.id)}>
-                    Delete
-                  </button>
-                </td>
+                {canEdit && (
+                  <td className="row-actions">
+                    <Link to={`/items/${i.id}/edit`}>Edit</Link>
+                    <button type="button" className="link-btn danger-link" onClick={() => handleDelete(i.id)}>
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

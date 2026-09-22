@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
 import { listOrders, updateOrder } from "../lib/orderStore";
@@ -20,8 +20,15 @@ function printQueue(): PurchaseOrder[] {
 }
 
 export default function PickPack() {
+  const navigate = useNavigate();
   const pickable = readyToPick();
   const [queue, setQueue] = useState<PurchaseOrder[]>(() => printQueue());
+
+  function startReviewQueue() {
+    if (pickable.length === 0) return;
+    const reviewQueue = pickable.map((o) => o.soNumber);
+    navigate(`/pick-pack/${reviewQueue[0]}`, { state: { queue: reviewQueue, pos: 0 } });
+  }
   const [selected, setSelected] = useState<Record<string, boolean>>(() => {
     const s: Record<string, boolean> = {};
     for (const o of queue) s[o.soNumber] = true;
@@ -92,6 +99,14 @@ export default function PickPack() {
       <div className="no-print">
         <div className="ship-locations-header">
           <h3>Ready to Pick</h3>
+          <button
+            type="button"
+            className="primary-btn"
+            disabled={pickable.length === 0}
+            onClick={startReviewQueue}
+          >
+            Review Queue
+          </button>
         </div>
         {pickable.length === 0 ? (
           <p className="muted">Nothing ready to pick right now.</p>

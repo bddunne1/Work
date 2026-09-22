@@ -1,9 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
 import { orderTotal } from "../types";
 
 export default function Allocation() {
+  const navigate = useNavigate();
   const pending = listOrders().filter((o) => o.status === "Checked");
+
+  function startQueue() {
+    if (pending.length === 0) return;
+    const queue = pending.map((o) => o.soNumber);
+    navigate(`/allocation/${queue[0]}`, { state: { queue, pos: 0 } });
+  }
 
   return (
     <div className="page">
@@ -19,9 +26,14 @@ export default function Allocation() {
         <p className="muted">
           {pending.length} order{pending.length === 1 ? "" : "s"} awaiting allocation.
         </p>
-        <Link to="/back-orders" className="secondary-btn">
-          Back Order Queue
-        </Link>
+        <div className="inline-actions">
+          <button type="button" className="primary-btn" disabled={pending.length === 0} onClick={startQueue}>
+            Review Queue
+          </button>
+          <Link to="/back-orders" className="secondary-btn">
+            Back Order Queue
+          </Link>
+        </div>
       </div>
 
       {pending.length === 0 ? (

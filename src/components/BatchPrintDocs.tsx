@@ -38,6 +38,11 @@ function PickListDoc({ order, pageClass }: { order: PurchaseOrder; pageClass: st
           </table>
         </div>
       </div>
+      {order.notes && (
+        <div className="label-notes pick-list-notes">
+          <span className="muted">Notes</span> {order.notes}
+        </div>
+      )}
       <table className="data-table line-item-table">
         <thead>
           <tr>

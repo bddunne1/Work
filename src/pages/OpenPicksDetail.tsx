@@ -54,7 +54,17 @@ function OpenPicksDetailInner() {
   }
 
   function reprint() {
-    if (!includePick && !includeSlip) return;
+    if (!order || (!includePick && !includeSlip)) return;
+    // Carry any corrected "Actual Shipped" quantities into the reprinted
+    // documents (and persist them) so a stock shortfall discovered here
+    // reprints a pick list the warehouse can actually fulfill.
+    const now = new Date().toISOString();
+    updateOrder({
+      ...order,
+      pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
+      pickListPrintedAt: includePick ? now : order.pickListPrintedAt,
+      packingSlipPrintedAt: includeSlip ? now : order.packingSlipPrintedAt,
+    });
     setPrinting(true);
     setTimeout(() => {
       window.print();

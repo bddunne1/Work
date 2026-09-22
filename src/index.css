@@ -171,6 +171,28 @@ a {
   color: var(--accent);
 }
 
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-username {
+  font-size: 13px;
+  color: var(--text-h);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.access-denied {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.label-choice-card {
+  min-height: 110px;
+}
+
 .content {
   flex: 1;
   padding: 28px 24px 60px;
@@ -1233,10 +1255,102 @@ a {
   padding-top: 10px;
 }
 
+.pick-list-notes {
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+  padding-top: 0;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
 .label-printed-note {
   text-align: center;
   margin-top: 12px;
   font-size: 12.5px;
+}
+
+.product-label {
+  width: 3in;
+  height: 2in;
+  max-width: 100%;
+  margin: 0 auto;
+  background: var(--panel-bg);
+  border: 2px solid var(--text-h);
+  border-radius: 6px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.product-label-brand {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.product-label-desc {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: 1.25;
+}
+
+.product-label-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.login-error {
+  color: #e03131;
+  font-size: 13px;
+  margin: 0;
+}
+
+.login-submit {
+  width: 100%;
+}
+
+.form-field-btn {
+  justify-content: flex-end;
 }
 
 @media print {
@@ -1287,6 +1401,13 @@ a {
   .shipping-label {
     box-shadow: none;
     width: 4in;
+    margin: 0;
+  }
+
+  .product-label {
+    box-shadow: none;
+    width: 3in;
+    height: 2in;
     margin: 0;
   }
 

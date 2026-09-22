@@ -1,11 +1,22 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { getOrder, updateOrder } from "../lib/orderStore";
+import type { ReviewQueueState } from "../lib/reviewQueue";
+import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import { orderTotal } from "../types";
 
 export default function ValidationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
+  // Keyed so stepping through a review queue (soNumber changes but the
+  // route pattern doesn't) remounts fresh instead of reusing state.
+  return <ValidationDecisionInner key={soNumber} />;
+}
+
+function ValidationDecisionInner() {
+  const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queueState = location.state as ReviewQueueState | undefined;
   const order = soNumber ? getOrder(soNumber) : undefined;
 
   if (!order) {
@@ -20,18 +31,24 @@ export default function ValidationDecision() {
   function markChecked() {
     if (!order) return;
     updateOrder({ ...order, status: "Checked", checkedAt: new Date().toISOString() });
-    navigate("/validation");
+    const next = nextQueueSoNumber(queueState);
+    if (next) {
+      navigate(`/validation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+    } else {
+      navigate("/validation");
+    }
   }
 
   return (
     <div className="page">
       <div className="page-header">
         <Link to="/validation" className="link-btn">
-          &larr; Back to Validation
+          &larr; {queueState ? "Exit Queue" : "Back to Validation"}
         </Link>
         <h1>Review S.O. #{order.soNumber}</h1>
         <p className="muted">
           P.O. #{order.poNumber || "—"} · {order.billTo.name} · ${orderTotal(order).toFixed(2)}
+          {queueState && <> · {queueProgressLabel(queueState)}</>}
         </p>
       </div>
 

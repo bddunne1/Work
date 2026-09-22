@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { listItems, updateItem } from "../lib/itemStore";
+import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
 import { availableQty, qtyOnOpenSalesOrders } from "../types";
 
 export default function Inventory() {
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<Item[]>(() => listItems());
+  const [items] = useState<Item[]>(() => listItems());
   const orders = useMemo(() => listOrders(), []);
 
   const filtered = useMemo(() => {
@@ -18,23 +18,15 @@ export default function Inventory() {
     );
   }, [items, query]);
 
-  function setQty(id: string, key: "qtyOnHand" | "qtyOnPurchaseOrder", value: number) {
-    if (!Number.isFinite(value) || value < 0) return;
-    const item = items.find((i) => i.id === id);
-    if (!item) return;
-    const updated = { ...item, [key]: value };
-    updateItem(updated);
-    setItems((its) => its.map((i) => (i.id === id ? updated : i)));
-  }
-
   return (
     <div className="page">
       <div className="page-header">
         <h1>Inventory</h1>
         <p className="muted">
-          Quantity on hand and on purchase order are tracked here directly - edit inline, or import a
-          spreadsheet to update many items at once. Quantity on sales order is calculated automatically
-          from open orders.
+          On hand and on purchase order are reference figures here - adjust on hand from the dedicated
+          screen, or import a spreadsheet to update many items at once. On purchase order will
+          auto-populate once outbound POs are tracked; on sales order is calculated automatically from
+          open orders.
         </p>
       </div>
 
@@ -46,6 +38,9 @@ export default function Inventory() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className="inline-actions">
+          <Link to="/inventory/adjust" className="primary-btn">
+            Adjust Inventory
+          </Link>
           <Link to="/import" className="secondary-btn">
             Import Inventory
           </Link>
@@ -79,25 +74,9 @@ export default function Inventory() {
                   <td>{i.itemNumber}</td>
                   <td>{i.description}</td>
                   <td>{i.um}</td>
-                  <td>
-                    <input
-                      type="number"
-                      min={0}
-                      className="num-input"
-                      value={i.qtyOnHand}
-                      onChange={(e) => setQty(i.id, "qtyOnHand", Number(e.target.value))}
-                    />
-                  </td>
+                  <td className="amount-cell">{i.qtyOnHand}</td>
                   <td className="amount-cell">{onSalesOrder}</td>
-                  <td>
-                    <input
-                      type="number"
-                      min={0}
-                      className="num-input"
-                      value={i.qtyOnPurchaseOrder}
-                      onChange={(e) => setQty(i.id, "qtyOnPurchaseOrder", Number(e.target.value))}
-                    />
-                  </td>
+                  <td className="amount-cell">{i.qtyOnPurchaseOrder}</td>
                   <td className={`amount-cell ${available < 0 ? "qty-negative" : ""}`}>{available}</td>
                 </tr>
               );
