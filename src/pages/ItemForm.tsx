@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getItem, saveItem, updateItem } from "../lib/itemStore";
+import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
-import { emptyItem } from "../types";
+import { availableQty, emptyItem, qtyOnOpenSalesOrders } from "../types";
 
 export default function ItemForm() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,7 @@ function ItemFormInner() {
     }
     return emptyItem();
   });
+  const onSalesOrder = isEditing ? qtyOnOpenSalesOrders(item.itemNumber, listOrders()) : 0;
 
   function set<K extends keyof Item>(key: K, value: Item[K]) {
     setItem((i) => ({ ...i, [key]: value }));
@@ -68,6 +70,31 @@ function ItemFormInner() {
             />
           </label>
         </div>
+
+        <div className="form-row">
+          <label className="form-field">
+            Qty On Hand
+            <input
+              type="number"
+              value={item.qtyOnHand}
+              onChange={(e) => set("qtyOnHand", Number(e.target.value))}
+            />
+          </label>
+          <label className="form-field">
+            Qty On Purchase Order
+            <input
+              type="number"
+              value={item.qtyOnPurchaseOrder}
+              onChange={(e) => set("qtyOnPurchaseOrder", Number(e.target.value))}
+            />
+          </label>
+        </div>
+
+        {isEditing && (
+          <p className="muted">
+            {onSalesOrder} on open sales orders · {availableQty(item, onSalesOrder)} available to promise.
+          </p>
+        )}
 
         <div className="button-row">
           <button type="submit" className="primary-btn">

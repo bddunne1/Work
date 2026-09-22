@@ -104,6 +104,11 @@ export interface Item {
   description: string;
   um: string;
   rate: number;
+  // Physical count on the shelf, and what's currently on order from a
+  // supplier to replenish it. Both are maintained directly (edited or
+  // imported) since neither can be derived from anything else in the app.
+  qtyOnHand: number;
+  qtyOnPurchaseOrder: number;
   createdAt: string;
 }
 
@@ -138,6 +143,8 @@ export function emptyItem(): Item {
     description: "",
     um: "EA",
     rate: 0,
+    qtyOnHand: 0,
+    qtyOnPurchaseOrder: 0,
     createdAt: new Date().toISOString(),
   };
 }
@@ -178,6 +185,30 @@ export function shippedQtyFor(order: Pick<PurchaseOrder, "shipmentHistory">, lin
 // staging steps toward that shipment, so they don't reduce this).
 export function remainingToShip(order: Pick<PurchaseOrder, "shipmentHistory">, li: LineItem): number {
   return Math.max(0, li.ordered - shippedQtyFor(order, li.id));
+}
+
+// Total quantity of `itemNumber` still owed across every order in
+// `orders`. A fully shipped order always contributes 0, so there's no
+// need to filter by status - closed orders drop out on their own.
+export function qtyOnOpenSalesOrders(
+  itemNumber: string,
+  orders: Pick<PurchaseOrder, "lineItems" | "shipmentHistory">[]
+): number {
+  const q = itemNumber.trim().toLowerCase();
+  return orders.reduce(
+    (sum, o) =>
+      sum +
+      o.lineItems
+        .filter((li) => li.item.trim().toLowerCase() === q)
+        .reduce((lineSum, li) => lineSum + remainingToShip(o, li), 0),
+    0
+  );
+}
+
+// What's free to promise on a new order right now: on hand, less what's
+// already committed to open sales orders.
+export function availableQty(item: Pick<Item, "qtyOnHand">, qtyOnSalesOrder: number): number {
+  return item.qtyOnHand - qtyOnSalesOrder;
 }
 
 // Confirms a shipment of `lines` (typically the order's pendingShipment) and

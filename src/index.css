@@ -822,6 +822,11 @@ a {
   font-weight: 700;
 }
 
+.qty-negative {
+  color: #e03131;
+  font-weight: 700;
+}
+
 .so-addresses {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

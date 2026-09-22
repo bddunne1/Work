@@ -64,6 +64,10 @@ export function parseItems(csv: ParsedCsv): RowResult<Item>[] {
 
     const rateStr = field(row, "Rate", "Price", "Unit Price");
     const rate = rateStr ? Number(rateStr) : 0;
+    const onHandStr = field(row, "On Hand", "Qty On Hand", "Quantity On Hand");
+    const onHand = onHandStr ? Number(onHandStr) : 0;
+    const onPoStr = field(row, "On Purchase Order", "Qty On PO", "On Order");
+    const onPo = onPoStr ? Number(onPoStr) : 0;
 
     const item: Item = {
       id: crypto.randomUUID(),
@@ -71,6 +75,8 @@ export function parseItems(csv: ParsedCsv): RowResult<Item>[] {
       description: field(row, "Description"),
       um: field(row, "U/M", "UOM", "Unit", "Unit of Measure") || "EA",
       rate: Number.isFinite(rate) ? rate : 0,
+      qtyOnHand: Number.isFinite(onHand) ? onHand : 0,
+      qtyOnPurchaseOrder: Number.isFinite(onPo) ? onPo : 0,
       createdAt: new Date().toISOString(),
     };
     return { rowNumber, errors: [], data: item };
@@ -191,4 +197,33 @@ export function parseSalesOrders(csv: ParsedCsv): RowResult<PurchaseOrder>[] {
     results.push({ rowNumber, errors: [], data: order });
   }
   return results;
+}
+
+// Updates stock levels on EXISTING catalog items (matched by Item Number);
+// it never creates new items, since inventory needs a catalog entry first.
+// A blank On Hand or On Purchase Order cell leaves that field unchanged,
+// so a feed reporting only one of the two doesn't zero out the other.
+export function parseInventory(csv: ParsedCsv): RowResult<Item>[] {
+  return csv.rows.map((row, idx) => {
+    const rowNumber = idx + 2;
+    const itemNumber = field(row, "Item Number", "Item #", "SKU", "Item");
+    if (!itemNumber) return { rowNumber, errors: ["Missing Item Number"] };
+
+    const existing = getItemByNumber(itemNumber);
+    if (!existing) {
+      return { rowNumber, errors: [`Unknown Item Number "${itemNumber}" - add it via Items first`] };
+    }
+
+    const onHandStr = field(row, "On Hand", "Qty On Hand", "Quantity On Hand", "On-Hand");
+    const onPoStr = field(row, "On Purchase Order", "Qty On PO", "On Order", "On PO", "On-Order");
+    const onHand = onHandStr ? Number(onHandStr) : existing.qtyOnHand;
+    const onPo = onPoStr ? Number(onPoStr) : existing.qtyOnPurchaseOrder;
+
+    if (onHandStr && !Number.isFinite(onHand)) return { rowNumber, errors: ["Invalid On Hand quantity"] };
+    if (onPoStr && !Number.isFinite(onPo)) {
+      return { rowNumber, errors: ["Invalid On Purchase Order quantity"] };
+    }
+
+    return { rowNumber, errors: [], data: { ...existing, qtyOnHand: onHand, qtyOnPurchaseOrder: onPo } };
+  });
 }

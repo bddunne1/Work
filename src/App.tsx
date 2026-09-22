@@ -8,6 +8,7 @@ import CustomerForm from "./pages/CustomerForm";
 import Customers from "./pages/Customers";
 import Dashboard from "./pages/Dashboard";
 import Import from "./pages/Import";
+import Inventory from "./pages/Inventory";
 import ItemForm from "./pages/ItemForm";
 import Items from "./pages/Items";
 import OpenPicks from "./pages/OpenPicks";
@@ -39,6 +40,7 @@ function App() {
           <Route path="items" element={<Items />} />
           <Route path="items/new" element={<ItemForm />} />
           <Route path="items/:id/edit" element={<ItemForm />} />
+          <Route path="inventory" element={<Inventory />} />
           <Route path="validation" element={<Validation />} />
           <Route path="validation/:soNumber" element={<ValidationDecision />} />
           <Route path="allocation" element={<Allocation />} />

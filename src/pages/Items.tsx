@@ -35,9 +35,14 @@ export default function Items() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <Link to="/items/new" className="primary-btn">
-          + New Item
-        </Link>
+        <div className="inline-actions">
+          <Link to="/inventory" className="secondary-btn">
+            Manage Inventory
+          </Link>
+          <Link to="/items/new" className="primary-btn">
+            + New Item
+          </Link>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

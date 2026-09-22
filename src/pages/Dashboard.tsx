@@ -26,8 +26,13 @@ const LANES: Lane[] = [
       { name: "Customers", description: "Manage customer billing, shipping, and terms", to: "/customers" },
       { name: "Items", description: "Manage the item catalog for order entry", to: "/items" },
       {
+        name: "Inventory",
+        description: "Track quantity on hand, on sales order, and on purchase order per item",
+        to: "/inventory",
+      },
+      {
         name: "Import Data",
-        description: "Upload a spreadsheet to bulk-load customers, items, or sales orders",
+        description: "Upload a spreadsheet to bulk-load customers, items, sales orders, or inventory",
         to: "/import",
       },
     ],

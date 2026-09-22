@@ -2,11 +2,23 @@ import type { Item } from "../types";
 
 const ITEMS_KEY = "erp_items";
 
+// Items saved before inventory tracking existed won't have these fields -
+// default them on read so the app never sees `undefined` where a number
+// is expected.
+function normalizeItem(raw: Item): Item {
+  return {
+    ...raw,
+    qtyOnHand: raw.qtyOnHand ?? 0,
+    qtyOnPurchaseOrder: raw.qtyOnPurchaseOrder ?? 0,
+  };
+}
+
 function readItems(): Item[] {
   try {
     const raw = localStorage.getItem(ITEMS_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as Item[];
+    const parsed = JSON.parse(raw) as Item[];
+    return parsed.map(normalizeItem);
   } catch {
     return [];
   }
