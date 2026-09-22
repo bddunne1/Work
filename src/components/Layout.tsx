@@ -32,33 +32,18 @@ export default function Layout() {
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             Dashboard
           </NavLink>
-          <NavLink to="/order-entry" className={({ isActive }) => (isActive ? "active" : "")}>
-            Order Entry
-          </NavLink>
-          <NavLink to="/open-orders" className={({ isActive }) => (isActive ? "active" : "")}>
-            Open Orders
-          </NavLink>
-          {account.role === "admin" && (
-            <>
-              <NavLink to="/validation" className={({ isActive }) => (isActive ? "active" : "")}>
-                Validation
-              </NavLink>
-              <NavLink to="/allocation" className={({ isActive }) => (isActive ? "active" : "")}>
-                Allocation
-              </NavLink>
-            </>
-          )}
           <NavLink to="/customers" className={({ isActive }) => (isActive ? "active" : "")}>
             Customers
           </NavLink>
-          <NavLink to="/items" className={({ isActive }) => (isActive ? "active" : "")}>
-            Items
+          <NavLink to="/inventory" className={({ isActive }) => (isActive ? "active" : "")}>
+            Inventory
           </NavLink>
-          {account.role === "admin" && (
-            <NavLink to="/accounts" className={({ isActive }) => (isActive ? "active" : "")}>
-              Accounts
-            </NavLink>
-          )}
+          <NavLink to="/items" className={({ isActive }) => (isActive ? "active" : "")}>
+            Catalog
+          </NavLink>
+          <NavLink to="/analytics" className={({ isActive }) => (isActive ? "active" : "")}>
+            Analytics
+          </NavLink>
         </nav>
         <div className="topbar-user">
           <span className="topbar-username">

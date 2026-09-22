@@ -26,7 +26,7 @@ export default function Items() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Items</h1>
+        <h1>Item Catalog</h1>
         <p className="muted">Item catalog used to auto-fill description and U/M on order entry.</p>
       </div>
 

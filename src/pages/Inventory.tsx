@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import type { Item } from "../types";
 import { availableQty, qtyOnOpenSalesOrders } from "../types";
 
 export default function Inventory() {
+  const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [items] = useState<Item[]>(() => listItems());
   const orders = useMemo(() => listOrders(), []);
@@ -38,12 +40,16 @@ export default function Inventory() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className="inline-actions">
-          <Link to="/inventory/adjust" className="primary-btn">
-            Adjust Inventory
-          </Link>
-          <Link to="/import" className="secondary-btn">
-            Import Inventory
-          </Link>
+          {canEdit && (
+            <>
+              <Link to="/inventory/adjust" className="primary-btn">
+                Adjust Inventory
+              </Link>
+              <Link to="/import" className="secondary-btn">
+                Import Inventory
+              </Link>
+            </>
+          )}
           <Link to="/items" className="secondary-btn">
             Item Catalog
           </Link>

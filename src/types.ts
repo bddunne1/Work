@@ -48,6 +48,13 @@ export interface ShipmentRecord {
   lines: ShipmentLine[];
 }
 
+export interface BolDetails {
+  weight: string;
+  dimensions: string;
+  skidCount: string;
+  generatedAt: string;
+}
+
 export interface PurchaseOrder {
   soNumber: string;
   poNumber: string;
@@ -75,6 +82,7 @@ export interface PurchaseOrder {
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";
+  bol?: BolDetails;
   createdAt: string;
 }
 

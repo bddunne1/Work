@@ -37,6 +37,11 @@ const LANES: Lane[] = [
         description: "Upload a spreadsheet to bulk-load customers, items, sales orders, or inventory",
         to: "/import",
       },
+      {
+        name: "Analytics",
+        description: "Customer, inventory, and sales insights with charts",
+        to: "/analytics",
+      },
     ],
   },
   {
@@ -80,7 +85,6 @@ const LANES: Lane[] = [
         description: "Fully printed orders, ready to confirm shipment (single or batch)",
         to: "/open-picks",
       },
-      { name: "Check Order & Wrap / Pack", description: "Final QC, wrap, and pack" },
     ],
   },
   {
@@ -89,16 +93,25 @@ const LANES: Lane[] = [
     modules: [
       {
         name: "Schedule Shipment",
-        description: "Set an estimated ship date for each order",
+        description: "Set an estimated ship date for each order, or view them on a calendar",
         to: "/schedule",
       },
-      { name: "Truck / UPS / FedEx Pickup", description: "Hand off to carrier with BOL" },
+      {
+        name: "Generate BOL",
+        description: "Create a Bill of Lading for one or more orders with weight, dimensions, and skids",
+        to: "/bol",
+      },
       {
         name: "Shipment History",
         description: "Orders that have shipped complete",
         to: "/shipment-history",
       },
     ],
+  },
+  {
+    lane: "Administration",
+    color: "#495057",
+    modules: [{ name: "Accounts", description: "Manage user accounts and roles", to: "/accounts" }],
   },
 ];
 
@@ -124,7 +137,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Dashboard</h1>
+        <h1>Hello {account!.username},</h1>
         <p className="muted">Pick a stage of the order workflow to get started.</p>
       </div>
 

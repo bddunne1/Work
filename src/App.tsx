@@ -4,10 +4,12 @@ import { AuthProvider } from "./lib/authContext";
 import Accounts from "./pages/Accounts";
 import Allocation from "./pages/Allocation";
 import AllocationDecision from "./pages/AllocationDecision";
+import Analytics from "./pages/Analytics";
 import BackOrderQueue from "./pages/BackOrderQueue";
 import CustomerForm from "./pages/CustomerForm";
 import Customers from "./pages/Customers";
 import Dashboard from "./pages/Dashboard";
+import GenerateBOL from "./pages/GenerateBOL";
 import Import from "./pages/Import";
 import Inventory from "./pages/Inventory";
 import InventoryAdjust from "./pages/InventoryAdjust";
@@ -65,6 +67,8 @@ function App() {
             <Route path="shipment-history" element={<ShipmentHistory />} />
             <Route path="import" element={<Import />} />
             <Route path="accounts" element={<Accounts />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="bol" element={<GenerateBOL />} />
           </Route>
         </Routes>
       </HashRouter>

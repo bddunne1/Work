@@ -14,10 +14,14 @@ const ORDER_ENTRY_RULES: { prefix: string; access: AccessLevel }[] = [
   { prefix: "/items/new", access: "none" },
   { prefix: "/items/", access: "none" }, // .../:id/edit
   { prefix: "/items", access: "view" },
+  { prefix: "/inventory/adjust", access: "none" },
+  { prefix: "/inventory", access: "view" },
   { prefix: "/schedule", access: "view" },
   { prefix: "/storage", access: "view" },
   { prefix: "/open-orders", access: "view" },
   { prefix: "/closed-orders", access: "view" },
+  { prefix: "/bol", access: "edit" },
+  { prefix: "/analytics", access: "view" },
 ];
 
 export function getAccessLevel(pathname: string, role: Role): AccessLevel {
