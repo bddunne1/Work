@@ -149,7 +149,12 @@ function OpenPicksDetailInner() {
           </tbody>
         </table>
 
-        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly />
+        <LineItemsTable
+          items={order.lineItems}
+          onChange={() => {}}
+          readOnly
+          shipmentHistory={order.shipmentHistory}
+        />
 
         <div className="so-footer">
           <div className="so-notes">

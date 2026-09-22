@@ -4,9 +4,13 @@ import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
 import { orderTotal } from "../types";
 
-export default function Storage() {
+interface Props {
+  closed: boolean;
+}
+
+export default function OrdersList({ closed }: Props) {
   const [query, setQuery] = useState("");
-  const orders = listOrders();
+  const orders = listOrders().filter((o) => (o.status === "Shipped") === closed);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -22,8 +26,12 @@ export default function Storage() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Storage</h1>
-        <p className="muted">Browse purchase orders that have been entered.</p>
+        <h1>{closed ? "Closed Orders" : "Open Orders"}</h1>
+        <p className="muted">
+          {closed
+            ? "Orders that have shipped complete."
+            : "Orders still moving through validation, allocation, and fulfillment."}
+        </p>
       </div>
 
       <div className="toolbar">
@@ -33,9 +41,14 @@ export default function Storage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <Link to="/order-entry" className="primary-btn">
-          + New Order
-        </Link>
+        <div className="inline-actions">
+          <Link to={closed ? "/open-orders" : "/closed-orders"} className="secondary-btn">
+            {closed ? "View Open Orders" : "View Closed Orders"}
+          </Link>
+          <Link to="/order-entry" className="primary-btn">
+            + New Order
+          </Link>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

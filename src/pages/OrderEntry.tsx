@@ -120,8 +120,8 @@ export default function OrderEntry() {
             <button className="secondary-btn" onClick={() => navigate(`/storage/${order.soNumber}`)}>
               View Order
             </button>
-            <button className="secondary-btn" onClick={() => navigate("/storage")}>
-              Go to Storage
+            <button className="secondary-btn" onClick={() => navigate("/open-orders")}>
+              Go to Open Orders
             </button>
           </div>
         </div>

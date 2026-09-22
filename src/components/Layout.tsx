@@ -18,8 +18,8 @@ export default function Layout() {
           <NavLink to="/order-entry" className={({ isActive }) => (isActive ? "active" : "")}>
             Order Entry
           </NavLink>
-          <NavLink to="/storage" className={({ isActive }) => (isActive ? "active" : "")}>
-            Storage
+          <NavLink to="/open-orders" className={({ isActive }) => (isActive ? "active" : "")}>
+            Open Orders
           </NavLink>
           <NavLink to="/validation" className={({ isActive }) => (isActive ? "active" : "")}>
             Validation

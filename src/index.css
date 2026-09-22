@@ -235,6 +235,45 @@ a {
   color: var(--text);
 }
 
+.import-type-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.import-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.import-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.import-panel-header h3 {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.import-panel-header .secondary-btn {
+  flex-shrink: 0;
+}
+
+.import-columns {
+  font-size: 12.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-h);
+  margin-top: 8px;
+}
+
 .stat-row {
   display: flex;
   gap: 16px;
@@ -620,6 +659,10 @@ a {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.print-queue-header {
+  margin-top: 28px;
 }
 
 .ship-locations-header h3 {

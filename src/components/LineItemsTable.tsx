@@ -1,18 +1,23 @@
 import { useState } from "react";
 import { listItems } from "../lib/itemStore";
-import type { LineItem } from "../types";
-import { lineAmount, emptyLineItem } from "../types";
+import type { LineItem, ShipmentRecord } from "../types";
+import { lineAmount, emptyLineItem, shippedQtyFor } from "../types";
 
 interface Props {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
   readOnly?: boolean;
+  // When set (and non-empty), adds read-only Shipped/Open columns so a
+  // partially-shipped or backordered order shows what's left to fulfill
+  // per line, not just what was originally ordered.
+  shipmentHistory?: ShipmentRecord[];
 }
 
 const ITEM_DATALIST_ID = "item-catalog-options";
 
-export default function LineItemsTable({ items, onChange, readOnly }: Props) {
+export default function LineItemsTable({ items, onChange, readOnly, shipmentHistory }: Props) {
   const [catalog] = useState(() => listItems());
+  const showShipped = Boolean(shipmentHistory && shipmentHistory.length > 0);
 
   function update(id: string, patch: Partial<LineItem>) {
     onChange(items.map((li) => (li.id === id ? { ...li, ...patch } : li)));
@@ -51,6 +56,8 @@ export default function LineItemsTable({ items, onChange, readOnly }: Props) {
             <th className="col-desc">Description</th>
             <th className="col-um">U/M</th>
             <th className="col-qty">Ordered</th>
+            {showShipped && <th className="col-qty">Shipped</th>}
+            {showShipped && <th className="col-qty">Open</th>}
             <th className="col-rate">Rate</th>
             <th className="col-amount">Amount</th>
             {!readOnly && <th className="col-remove" />}
@@ -92,6 +99,16 @@ export default function LineItemsTable({ items, onChange, readOnly }: Props) {
                   onChange={(e) => update(li.id, { ordered: Number(e.target.value) })}
                 />
               </td>
+              {showShipped &&
+                (() => {
+                  const shipped = shippedQtyFor({ shipmentHistory }, li.id);
+                  return (
+                    <>
+                      <td className="amount-cell">{shipped}</td>
+                      <td className="amount-cell">{Math.max(0, li.ordered - shipped)}</td>
+                    </>
+                  );
+                })()}
               <td>
                 <input
                   type="number"

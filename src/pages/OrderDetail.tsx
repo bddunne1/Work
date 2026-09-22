@@ -13,7 +13,7 @@ export default function OrderDetail() {
     return (
       <div className="page">
         <p>Order not found.</p>
-        <Link to="/storage">&larr; Back to Storage</Link>
+        <Link to="/open-orders">&larr; Back to Open Orders</Link>
       </div>
     );
   }
@@ -21,8 +21,8 @@ export default function OrderDetail() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <button className="link-btn" onClick={() => navigate("/storage")}>
-          &larr; Back to Storage
+        <button className="link-btn" onClick={() => navigate(-1)}>
+          &larr; Back
         </button>
         <button className="secondary-btn print-btn" onClick={() => window.print()}>
           Print / Preview
@@ -110,7 +110,12 @@ export default function OrderDetail() {
           </tbody>
         </table>
 
-        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly />
+        <LineItemsTable
+          items={order.lineItems}
+          onChange={() => {}}
+          readOnly
+          shipmentHistory={order.shipmentHistory}
+        />
 
         {order.shipmentHistory && order.shipmentHistory.length > 0 && (
           <div className="shipment-history">

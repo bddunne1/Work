@@ -7,19 +7,19 @@ import CreateLabels from "./pages/CreateLabels";
 import CustomerForm from "./pages/CustomerForm";
 import Customers from "./pages/Customers";
 import Dashboard from "./pages/Dashboard";
+import Import from "./pages/Import";
 import ItemForm from "./pages/ItemForm";
 import Items from "./pages/Items";
 import OpenPicks from "./pages/OpenPicks";
 import OpenPicksDetail from "./pages/OpenPicksDetail";
 import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
+import OrdersList from "./pages/OrdersList";
 import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
-import PrintBatch from "./pages/PrintBatch";
 import ScheduleShipments from "./pages/ScheduleShipments";
 import ShipmentHistory from "./pages/ShipmentHistory";
 import ShippingLabel from "./pages/ShippingLabel";
-import Storage from "./pages/Storage";
 import Validation from "./pages/Validation";
 import ValidationDecision from "./pages/ValidationDecision";
 
@@ -30,7 +30,8 @@ function App() {
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="order-entry" element={<OrderEntry />} />
-          <Route path="storage" element={<Storage />} />
+          <Route path="open-orders" element={<OrdersList closed={false} />} />
+          <Route path="closed-orders" element={<OrdersList closed={true} />} />
           <Route path="storage/:soNumber" element={<OrderDetail />} />
           <Route path="customers" element={<Customers />} />
           <Route path="customers/new" element={<CustomerForm />} />
@@ -47,11 +48,11 @@ function App() {
           <Route path="labels/:soNumber" element={<ShippingLabel />} />
           <Route path="pick-pack" element={<PickPack />} />
           <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
-          <Route path="print-batch" element={<PrintBatch />} />
           <Route path="open-picks" element={<OpenPicks />} />
           <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
           <Route path="schedule" element={<ScheduleShipments />} />
           <Route path="shipment-history" element={<ShipmentHistory />} />
+          <Route path="import" element={<Import />} />
         </Route>
       </Routes>
     </HashRouter>

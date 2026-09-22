@@ -25,6 +25,11 @@ const LANES: Lane[] = [
     modules: [
       { name: "Customers", description: "Manage customer billing, shipping, and terms", to: "/customers" },
       { name: "Items", description: "Manage the item catalog for order entry", to: "/items" },
+      {
+        name: "Import Data",
+        description: "Upload a spreadsheet to bulk-load customers, items, or sales orders",
+        to: "/import",
+      },
     ],
   },
   {
@@ -60,13 +65,8 @@ const LANES: Lane[] = [
     modules: [
       {
         name: "Pick & Pack",
-        description: "Select lines and quantities from allocated orders, then queue for print",
+        description: "Pick allocated orders, then print pick lists and packing slips for the queue",
         to: "/pick-pack",
-      },
-      {
-        name: "Print Batch",
-        description: "Print pick lists and/or packing slips for the queue in one run",
-        to: "/print-batch",
       },
       {
         name: "Open Picks",
@@ -137,8 +137,8 @@ export default function Dashboard() {
 
       <div className="stat-row">
         <div className="stat-card">
-          <div className="stat-value">{orders.length}</div>
-          <div className="stat-label">Orders in Storage</div>
+          <div className="stat-value">{orders.filter((o) => o.status !== "Shipped").length}</div>
+          <div className="stat-label">Open Orders</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{orders.filter((o) => o.status === "Entered").length}</div>
@@ -229,7 +229,7 @@ export default function Dashboard() {
           </table>
         )}
         <p>
-          <Link to="/storage">Browse all orders &rarr;</Link>
+          <Link to="/open-orders">Browse open orders &rarr;</Link>
         </p>
       </section>
     </div>
