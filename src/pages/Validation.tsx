@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -50,22 +50,20 @@ export default function Validation() {
               <th>Customer</th>
               <th>Order Date</th>
               <th>Total</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((o) => (
-              <tr key={o.soNumber}>
+              <tr
+                key={o.soNumber}
+                className="clickable-row"
+                onClick={() => navigate(`/validation/${o.soNumber}`)}
+              >
                 <td>{o.soNumber}</td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>
                 <td>${orderTotal(o).toFixed(2)}</td>
-                <td>
-                  <Link to={`/validation/${o.soNumber}`} className="link-btn">
-                    Review
-                  </Link>
-                </td>
               </tr>
             ))}
           </tbody>

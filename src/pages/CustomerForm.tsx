@@ -12,7 +12,7 @@ export default function CustomerForm() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     saveCustomer(customer);
-    navigate(`/customers/${customer.id}`);
+    navigate(`/customers/all/${customer.id}`);
   }
 
   return (
@@ -32,7 +32,7 @@ export default function CustomerForm() {
           <button type="submit" className="primary-btn">
             Save Customer
           </button>
-          <button type="button" className="secondary-btn" onClick={() => navigate("/customers")}>
+          <button type="button" className="secondary-btn" onClick={() => navigate("/customers/all")}>
             Cancel
           </button>
         </div>

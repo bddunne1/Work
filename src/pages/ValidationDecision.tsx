@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
+import { useAuth } from "../lib/authContext";
 import { getOrder, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
@@ -16,6 +17,7 @@ function ValidationDecisionInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { account } = useAuth();
   const queueState = location.state as ReviewQueueState | undefined;
   const order = soNumber ? getOrder(soNumber) : undefined;
 
@@ -30,7 +32,12 @@ function ValidationDecisionInner() {
 
   function markChecked() {
     if (!order) return;
-    updateOrder({ ...order, status: "Checked", checkedAt: new Date().toISOString() });
+    updateOrder({
+      ...order,
+      status: "Checked",
+      checkedAt: new Date().toISOString(),
+      checkedBy: account?.initials,
+    });
     const next = nextQueueSoNumber(queueState);
     if (next) {
       navigate(`/validation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });

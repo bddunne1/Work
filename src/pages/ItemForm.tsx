@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import SearchSelect from "../components/SearchSelect";
 import { getItem, saveItem, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
-import type { Item } from "../types";
+import { listVendors } from "../lib/vendorStore";
+import type { Item, ItemComponent, Vendor } from "../types";
 import { availableQty, emptyItem, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function ItemForm() {
@@ -23,12 +25,33 @@ function ItemFormInner() {
     }
     return emptyItem();
   });
+  const [vendors] = useState<Vendor[]>(() => listVendors());
+  const [vendorQuery, setVendorQuery] = useState(() => {
+    const preferred = vendors.find((v) => v.id === item.preferredVendorId);
+    return preferred?.name ?? "";
+  });
   const allOrders = isEditing ? listOrders() : [];
   const onSalesOrder = isEditing ? qtyOnOpenSalesOrders(item.itemNumber, allOrders) : 0;
   const allocated = isEditing ? qtyAllocatedOnOrders(item.itemNumber, allOrders) : 0;
 
   function set<K extends keyof Item>(key: K, value: Item[K]) {
     setItem((i) => ({ ...i, [key]: value }));
+  }
+
+  function addComponent() {
+    const component: ItemComponent = { id: crypto.randomUUID(), partNumber: "", description: "" };
+    setItem((i) => ({ ...i, components: [...(i.components ?? []), component] }));
+  }
+
+  function updateComponent(componentId: string, patch: Partial<ItemComponent>) {
+    setItem((i) => ({
+      ...i,
+      components: (i.components ?? []).map((c) => (c.id === componentId ? { ...c, ...patch } : c)),
+    }));
+  }
+
+  function removeComponent(componentId: string) {
+    setItem((i) => ({ ...i, components: (i.components ?? []).filter((c) => c.id !== componentId) }));
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -97,7 +120,8 @@ function ItemFormInner() {
             </table>
             <p className="muted">
               To change on hand, use <Link to="/inventory/adjust">Adjust Inventory</Link>. On purchase
-              order will auto-populate once outbound POs are tracked.
+              order is calculated automatically from open{" "}
+              <Link to="/purchase-orders">purchase orders</Link>.
             </p>
           </>
         ) : (
@@ -111,6 +135,89 @@ function ItemFormInner() {
             />
           </label>
         )}
+
+        <h3 className="item-profile-heading">Item Profile</h3>
+
+        <div className="customer-picker">
+          <label htmlFor="item-vendor-search">Preferred Vendor</label>
+          <SearchSelect
+            id="item-vendor-search"
+            options={vendors.map((v) => ({ id: v.id, label: v.name, sublabel: v.contactName }))}
+            value={vendorQuery}
+            onQueryChange={setVendorQuery}
+            onSelect={(vendorId) => set("preferredVendorId", vendorId)}
+            placeholder="Search vendors..."
+          />
+        </div>
+
+        <div className="form-row">
+          <label className="form-field">
+            Reorder Point
+            <input
+              type="number"
+              min={0}
+              value={item.reorderPoint ?? ""}
+              onChange={(e) => set("reorderPoint", e.target.value === "" ? undefined : Number(e.target.value))}
+            />
+          </label>
+          <label className="form-field">
+            Country of Origin
+            <input
+              value={item.countryOfOrigin ?? ""}
+              onChange={(e) => set("countryOfOrigin", e.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="ship-locations">
+          <div className="ship-locations-header">
+            <h3>Components</h3>
+            <button type="button" className="secondary-btn" onClick={addComponent}>
+              + Add Component
+            </button>
+          </div>
+          <p className="muted">Part numbers used to make this item - raw materials or sub-components.</p>
+          {(item.components ?? []).length === 0 ? (
+            <p className="muted">No components listed.</p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Part #</th>
+                  <th>Description</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(item.components ?? []).map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <input
+                        value={c.partNumber}
+                        onChange={(e) => updateComponent(c.id, { partNumber: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={c.description ?? ""}
+                        onChange={(e) => updateComponent(c.id, { description: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="link-btn danger-link"
+                        onClick={() => removeComponent(c.id)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
         <div className="button-row">
           <button type="submit" className="primary-btn">

@@ -92,14 +92,19 @@ function AllocationDecisionInner() {
   function applyDecision() {
     if (!order || !outcomeStatus) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
-    const hold = outcomeStatus === "Backordered";
+    const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
+    // Allocating zero units has nothing to pick, so it's really a hold -
+    // otherwise the order lands in Pick & Pack with no allocated lines and
+    // can never be completed there, stalling the review queue.
+    const hold = outcomeStatus === "Backordered" || totalAllocated === 0;
+    const finalStatus = hold ? "Backordered" : outcomeStatus;
     const lines = order.lineItems.map((li) => ({
       lineItemId: li.id,
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
     }));
     updateOrder({
       ...order,
-      status: outcomeStatus,
+      status: finalStatus,
       allocation: {
         lines,
         fullyAllocated,

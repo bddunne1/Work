@@ -167,7 +167,7 @@ export default function OrderEntry() {
                 </option>
               ))}
             </select>
-            <Link to={`/customers/${selectedCustomer.id}`} target="_blank" className="link-btn">
+            <Link to={`/customers/all/${selectedCustomer.id}`} target="_blank" className="link-btn">
               + Add Location
             </Link>
           </div>
@@ -274,7 +274,12 @@ export default function OrderEntry() {
           </tbody>
         </table>
 
-        <LineItemsTable items={order.lineItems} onChange={(items) => set("lineItems", items)} />
+        <LineItemsTable
+          items={order.lineItems}
+          onChange={(items) => set("lineItems", items)}
+          customerPartMap={selectedCustomer?.partNumberMap}
+          customerPriceOverrides={selectedCustomer?.priceOverrides}
+        />
 
         <div className="so-footer">
           <div className="so-notes">

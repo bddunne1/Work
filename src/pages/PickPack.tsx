@@ -5,14 +5,19 @@ import StatusPill from "../components/StatusPill";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { canUnallocate, unallocateOrder } from "../types";
+import { allocatedQtyFor, canUnallocate, unallocateOrder } from "../types";
 
 function isFullyPrinted(o: PurchaseOrder): boolean {
   return Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
 }
 
 function readyToPick(): PurchaseOrder[] {
-  return listOrders().filter((o) => o.status === "Allocated");
+  // An order allocated at zero units (see AllocationDecision's zero-qty
+  // guard) has nothing to pick and would stall here forever - exclude it
+  // as a safety net even if it somehow reached this status another way.
+  return listOrders().filter(
+    (o) => o.status === "Allocated" && o.lineItems.some((li) => allocatedQtyFor(o, li.id) > 0)
+  );
 }
 
 function printQueue(): PurchaseOrder[] {
@@ -144,12 +149,15 @@ export default function PickPack() {
                 <th>Customer</th>
                 <th>Status</th>
                 <th></th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               {pickable.map((o) => (
-                <tr key={o.soNumber}>
+                <tr
+                  key={o.soNumber}
+                  className="clickable-row"
+                  onClick={() => navigate(`/pick-pack/${o.soNumber}`)}
+                >
                   <td>{o.soNumber}</td>
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
@@ -157,16 +165,14 @@ export default function PickPack() {
                     <StatusPill order={o} />
                   </td>
                   <td>
-                    <Link to={`/pick-pack/${o.soNumber}`} className="link-btn">
-                      Pick List
-                    </Link>
-                  </td>
-                  <td>
                     {canEdit && (
                       <button
                         type="button"
                         className="link-btn danger-link"
-                        onClick={() => handleUnallocate(o)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnallocate(o);
+                        }}
                       >
                         Unallocate
                       </button>

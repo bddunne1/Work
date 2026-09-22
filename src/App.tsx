@@ -8,6 +8,8 @@ import Analytics from "./pages/Analytics";
 import BackOrderQueue from "./pages/BackOrderQueue";
 import CustomerForm from "./pages/CustomerForm";
 import Customers from "./pages/Customers";
+import CustomerPricing from "./pages/CustomerPricing";
+import CustomersHub from "./pages/CustomersHub";
 import Dashboard from "./pages/Dashboard";
 import GenerateBOL from "./pages/GenerateBOL";
 import Import from "./pages/Import";
@@ -25,11 +27,17 @@ import OrdersList from "./pages/OrdersList";
 import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
 import ProductLabels from "./pages/ProductLabels";
+import PurchaseOrderDetail from "./pages/PurchaseOrderDetail";
+import PurchaseOrderForm from "./pages/PurchaseOrderForm";
+import PurchaseOrders from "./pages/PurchaseOrders";
+import Receiving from "./pages/Receiving";
+import RoutingGuide from "./pages/RoutingGuide";
 import ScheduleShipments from "./pages/ScheduleShipments";
 import ShipmentHistory from "./pages/ShipmentHistory";
 import ShippingLabelCreate from "./pages/ShippingLabelCreate";
 import Validation from "./pages/Validation";
 import ValidationDecision from "./pages/ValidationDecision";
+import Vendors from "./pages/Vendors";
 
 function App() {
   return (
@@ -43,9 +51,12 @@ function App() {
             <Route path="open-orders" element={<OrdersList closed={false} />} />
             <Route path="closed-orders" element={<OrdersList closed={true} />} />
             <Route path="storage/:soNumber" element={<OrderDetail />} />
-            <Route path="customers" element={<Customers />} />
+            <Route path="customers" element={<CustomersHub />} />
             <Route path="customers/new" element={<CustomerForm />} />
-            <Route path="customers/:id" element={<Customers />} />
+            <Route path="customers/all" element={<Customers />} />
+            <Route path="customers/all/:id" element={<Customers />} />
+            <Route path="customers/pricing" element={<CustomerPricing />} />
+            <Route path="customers/routing-guide" element={<RoutingGuide />} />
             <Route path="items" element={<Items />} />
             <Route path="items/new" element={<ItemForm />} />
             <Route path="items/:id/edit" element={<ItemForm />} />
@@ -69,6 +80,11 @@ function App() {
             <Route path="accounts" element={<Accounts />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="bol" element={<GenerateBOL />} />
+            <Route path="vendors" element={<Vendors />} />
+            <Route path="purchase-orders" element={<PurchaseOrders />} />
+            <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
+            <Route path="purchase-orders/:poNumber" element={<PurchaseOrderDetail />} />
+            <Route path="receiving" element={<Receiving />} />
           </Route>
         </Routes>
       </HashRouter>

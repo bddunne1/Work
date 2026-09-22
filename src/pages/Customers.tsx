@@ -46,7 +46,7 @@ function CustomersInner() {
     if (!draft) return;
     if (!confirm(`Delete customer "${draft.name}"?`)) return;
     deleteCustomer(draft.id);
-    navigate("/customers");
+    navigate("/customers/all");
   }
 
   function addNote() {
@@ -74,7 +74,10 @@ function CustomersInner() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Customers</h1>
+        <Link to="/customers" className="link-btn">
+          &larr; Customers
+        </Link>
+        <h1>Customer List</h1>
         <p className="muted">Select a customer to view and edit their details.</p>
       </div>
 
@@ -100,7 +103,7 @@ function CustomersInner() {
                   <button
                     type="button"
                     className={`customers-name-item ${c.id === id ? "active" : ""}`}
-                    onClick={() => navigate(`/customers/${c.id}`)}
+                    onClick={() => navigate(`/customers/all/${c.id}`)}
                   >
                     {c.name || "Unnamed Customer"}
                   </button>

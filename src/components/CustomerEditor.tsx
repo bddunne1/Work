@@ -1,5 +1,5 @@
 import AddressFields from "./AddressFields";
-import type { Customer, ShippingLocation } from "../types";
+import type { Customer, CustomerPartMapping, ShippingLocation } from "../types";
 import { emptyShippingLocation } from "../types";
 
 interface Props {
@@ -11,6 +11,22 @@ interface Props {
 export default function CustomerEditor({ customer, onChange, readOnly }: Props) {
   function set<K extends keyof Customer>(key: K, value: Customer[K]) {
     onChange({ ...customer, [key]: value });
+  }
+
+  function addPartMapping() {
+    const mapping: CustomerPartMapping = { id: crypto.randomUUID(), itemNumber: "", customerPartNumber: "" };
+    onChange({ ...customer, partNumberMap: [...(customer.partNumberMap ?? []), mapping] });
+  }
+
+  function updatePartMapping(id: string, patch: Partial<CustomerPartMapping>) {
+    onChange({
+      ...customer,
+      partNumberMap: (customer.partNumberMap ?? []).map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    });
+  }
+
+  function removePartMapping(id: string) {
+    onChange({ ...customer, partNumberMap: (customer.partNumberMap ?? []).filter((m) => m.id !== id) });
   }
 
   function updateLocation(locId: string, patch: Partial<ShippingLocation>) {
@@ -165,6 +181,66 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
             />
           </div>
         ))}
+      </div>
+
+      <div className="ship-locations customer-catalog-section">
+        <div className="ship-locations-header">
+          <h3>Customer Catalog</h3>
+          {!readOnly && (
+            <button type="button" className="secondary-btn" onClick={addPartMapping}>
+              + Add Mapping
+            </button>
+          )}
+        </div>
+        <p className="muted">
+          Map our item numbers to this customer's own part numbers, so Order Entry can auto-fill their part
+          # once the item is selected on a line.
+        </p>
+
+        {(customer.partNumberMap ?? []).length === 0 ? (
+          <p className="muted">No part number mappings yet.</p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Our Item #</th>
+                <th>Customer Part #</th>
+                {!readOnly && <th></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {(customer.partNumberMap ?? []).map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <input
+                      value={m.itemNumber}
+                      disabled={readOnly}
+                      onChange={(e) => updatePartMapping(m.id, { itemNumber: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={m.customerPartNumber}
+                      disabled={readOnly}
+                      onChange={(e) => updatePartMapping(m.id, { customerPartNumber: e.target.value })}
+                    />
+                  </td>
+                  {!readOnly && (
+                    <td>
+                      <button
+                        type="button"
+                        className="link-btn danger-link"
+                        onClick={() => removePartMapping(m.id)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </>
   );

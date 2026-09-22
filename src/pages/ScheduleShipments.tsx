@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
@@ -36,6 +36,7 @@ interface CalendarCell {
 }
 
 export default function ScheduleShipments() {
+  const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "">("");
@@ -151,10 +152,12 @@ export default function ScheduleShipments() {
             </thead>
             <tbody>
               {filtered.map((o) => (
-                <tr key={o.soNumber}>
-                  <td>
-                    <Link to={`/storage/${o.soNumber}`}>{o.soNumber}</Link>
-                  </td>
+                <tr
+                  key={o.soNumber}
+                  className="clickable-row"
+                  onClick={() => navigate(`/storage/${o.soNumber}`)}
+                >
+                  <td>{o.soNumber}</td>
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
                   <td>{o.orderDate}</td>
@@ -162,7 +165,7 @@ export default function ScheduleShipments() {
                     <StatusPill order={o} />
                   </td>
                   <td>${orderTotal(o).toFixed(2)}</td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     {canEdit ? (
                       <input
                         type="date"

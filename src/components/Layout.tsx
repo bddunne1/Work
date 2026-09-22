@@ -11,7 +11,7 @@ export default function Layout() {
     return <Navigate to="/login" replace />;
   }
 
-  const access = getAccessLevel(location.pathname, account.role);
+  const access = getAccessLevel(location.pathname, account);
 
   function handleLogout() {
     logout();
@@ -47,7 +47,8 @@ export default function Layout() {
         </nav>
         <div className="topbar-user">
           <span className="topbar-username">
-            {account.username} <span className="muted">· {account.role}</span>
+            {account.username}{" "}
+            <span className="muted">· {account.role === "admin" ? "Admin" : account.initials}</span>
           </span>
           <button type="button" className="secondary-btn" onClick={handleLogout}>
             Log Out

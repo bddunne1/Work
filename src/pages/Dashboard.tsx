@@ -22,7 +22,7 @@ interface Lane {
 
 const LANES: Lane[] = [
   {
-    lane: "Master Data",
+    lane: "Data",
     color: "#f59f00",
     modules: [
       { name: "Customers", description: "Manage customer billing, shipping, and terms", to: "/customers" },
@@ -109,6 +109,23 @@ const LANES: Lane[] = [
     ],
   },
   {
+    lane: "Purchasing",
+    color: "#0ca678",
+    modules: [
+      {
+        name: "Purchase Orders",
+        description: "Create and track outbound orders to vendors",
+        to: "/purchase-orders",
+      },
+      {
+        name: "Receiving",
+        description: "Receive stock against an open purchase order",
+        to: "/receiving",
+      },
+      { name: "Vendors", description: "Manage supplier contacts", to: "/vendors" },
+    ],
+  },
+  {
     lane: "Administration",
     color: "#495057",
     modules: [{ name: "Accounts", description: "Manage user accounts and roles", to: "/accounts" }],
@@ -122,10 +139,9 @@ export default function Dashboard() {
   const customerCount = listCustomers().length;
   const itemCount = listItems().length;
   const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
-  const role = account!.role;
   const visibleLanes = LANES.map((lane) => ({
     ...lane,
-    modules: lane.modules.filter((m) => !m.to || getAccessLevel(m.to, role) !== "none"),
+    modules: lane.modules.filter((m) => !m.to || getAccessLevel(m.to, account!) !== "none"),
   })).filter((lane) => lane.modules.length > 0);
 
   function handleLeadTimeChange(value: number) {

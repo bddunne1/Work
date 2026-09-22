@@ -56,22 +56,20 @@ export default function Allocation() {
               <th>Customer</th>
               <th>Order Date</th>
               <th>Total</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((o) => (
-              <tr key={o.soNumber}>
+              <tr
+                key={o.soNumber}
+                className="clickable-row"
+                onClick={() => navigate(`/allocation/${o.soNumber}`)}
+              >
                 <td>{o.soNumber}</td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>
                 <td>${orderTotal(o).toFixed(2)}</td>
-                <td>
-                  <Link to={`/allocation/${o.soNumber}`} className="link-btn">
-                    Allocate
-                  </Link>
-                </td>
               </tr>
             ))}
           </tbody>

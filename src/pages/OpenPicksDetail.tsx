@@ -4,7 +4,7 @@ import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
 import { getOrder, shipOrder, updateOrder } from "../lib/orderStore";
-import { orderSubtotal, orderTax, orderTotal } from "../types";
+import { orderSubtotal, orderTax, orderTotal, remainingToShip } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -212,6 +212,10 @@ function OpenPicksDetailInner() {
                   if (!li) return null;
                   const qty = qtys[l.lineItemId] ?? 0;
                   const short = qty < l.qty;
+                  // Cap against what's still open on the order, not what was
+                  // originally packed - a reprint after finding more stock
+                  // than first packed needs to raise the quantity back up.
+                  const maxQty = remainingToShip(order, li);
                   return (
                     <tr key={l.lineItemId}>
                       <td>{li.item}</td>
@@ -223,9 +227,9 @@ function OpenPicksDetailInner() {
                           type="number"
                           className={`num-input allocate-qty-input ${short ? "short" : ""}`}
                           min={0}
-                          max={l.qty}
+                          max={maxQty}
                           value={qty}
-                          onChange={(e) => setQty(l.lineItemId, Number(e.target.value), l.qty)}
+                          onChange={(e) => setQty(l.lineItemId, Number(e.target.value), maxQty)}
                         />
                       </td>
                     </tr>

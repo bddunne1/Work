@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
 import { matchesOrderQuery, orderTotal } from "../types";
 
 export default function BackOrderQueue() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const orders = listOrders().filter((o) => o.status === "Backordered");
   const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
@@ -38,12 +39,15 @@ export default function BackOrderQueue() {
               <th>Customer</th>
               <th>Status</th>
               <th>Total</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((o) => (
-              <tr key={o.soNumber}>
+              <tr
+                key={o.soNumber}
+                className="clickable-row"
+                onClick={() => navigate(`/allocation/${o.soNumber}`)}
+              >
                 <td>{o.soNumber}</td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
@@ -51,11 +55,6 @@ export default function BackOrderQueue() {
                   <StatusPill order={o} />
                 </td>
                 <td>${orderTotal(o).toFixed(2)}</td>
-                <td>
-                  <Link to={`/allocation/${o.soNumber}`} className="link-btn">
-                    Re-check Stock
-                  </Link>
-                </td>
               </tr>
             ))}
           </tbody>

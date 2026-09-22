@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { listItems } from "../lib/itemStore";
-import type { LineItem, ShipmentRecord } from "../types";
+import type { CustomerPartMapping, CustomerPriceOverride, LineItem, ShipmentRecord } from "../types";
 import { lineAmount, emptyLineItem, shippedQtyFor } from "../types";
 
 interface Props {
@@ -11,11 +11,23 @@ interface Props {
   // partially-shipped or backordered order shows what's left to fulfill
   // per line, not just what was originally ordered.
   shipmentHistory?: ShipmentRecord[];
+  // The selected customer's part-number map and price overrides, if any -
+  // when an item is looked up, its customer part # and any override price
+  // auto-fill from these instead of leaving the operator to enter them.
+  customerPartMap?: CustomerPartMapping[];
+  customerPriceOverrides?: CustomerPriceOverride[];
 }
 
 const ITEM_DATALIST_ID = "item-catalog-options";
 
-export default function LineItemsTable({ items, onChange, readOnly, shipmentHistory }: Props) {
+export default function LineItemsTable({
+  items,
+  onChange,
+  readOnly,
+  shipmentHistory,
+  customerPartMap,
+  customerPriceOverrides,
+}: Props) {
   const [catalog] = useState(() => listItems());
   const showShipped = Boolean(shipmentHistory && shipmentHistory.length > 0);
 
@@ -32,10 +44,20 @@ export default function LineItemsTable({ items, onChange, readOnly, shipmentHist
   }
 
   function applyItemLookup(id: string, itemNumber: string) {
-    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === itemNumber.trim().toLowerCase());
-    if (match) {
-      update(id, { item: match.itemNumber, description: match.description, um: match.um });
-    }
+    const q = itemNumber.trim().toLowerCase();
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!match) return;
+    const customerPartNumber = customerPartMap?.find(
+      (m) => m.itemNumber.trim().toLowerCase() === q
+    )?.customerPartNumber;
+    const priceOverride = customerPriceOverrides?.find((p) => p.itemNumber.trim().toLowerCase() === q)?.price;
+    update(id, {
+      item: match.itemNumber,
+      description: match.description,
+      um: match.um,
+      ...(priceOverride !== undefined ? { rate: priceOverride } : {}),
+      ...(customerPartNumber ? { customerPartNumber } : {}),
+    });
   }
 
   return (
@@ -53,6 +75,7 @@ export default function LineItemsTable({ items, onChange, readOnly, shipmentHist
         <thead>
           <tr>
             <th className="col-item">Item</th>
+            <th className="col-cust-part">Customer Part #</th>
             <th className="col-desc">Description</th>
             <th className="col-um">U/M</th>
             <th className="col-qty">Ordered</th>
@@ -73,6 +96,13 @@ export default function LineItemsTable({ items, onChange, readOnly, shipmentHist
                   list={readOnly ? undefined : ITEM_DATALIST_ID}
                   onChange={(e) => update(li.id, { item: e.target.value })}
                   onBlur={(e) => applyItemLookup(li.id, e.target.value)}
+                />
+              </td>
+              <td>
+                <input
+                  value={li.customerPartNumber ?? ""}
+                  disabled={readOnly}
+                  onChange={(e) => update(li.id, { customerPartNumber: e.target.value })}
                 />
               </td>
               <td>

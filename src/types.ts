@@ -15,6 +15,10 @@ export interface LineItem {
   um: string;
   ordered: number;
   rate: number;
+  // The customer's own part number for this item, if different from ours -
+  // auto-filled from the customer's part number catalog when set (see
+  // CustomerPartMapping), but always editable per line.
+  customerPartNumber?: string;
 }
 
 export type OrderStatus =
@@ -73,6 +77,9 @@ export interface PurchaseOrder {
   lineItems: LineItem[];
   status: OrderStatus;
   checkedAt?: string;
+  // Initials of the account that marked this order Checked (see
+  // ValidationDecision) - stamped at the top of the order for accountability.
+  checkedBy?: string;
   allocation?: AllocationDecision;
   labelPrintedAt?: string;
   pickedAt?: string;
@@ -98,6 +105,34 @@ export interface CustomerNote {
   createdAt: string;
 }
 
+// Maps one of our item numbers to this customer's own part number for it,
+// so Order Entry can auto-fill the customer's part # once the item is
+// selected on a line.
+export interface CustomerPartMapping {
+  id: string;
+  itemNumber: string;
+  customerPartNumber: string;
+}
+
+// A customer-specific price override for one of our items, used to
+// auto-fill the rate on Order Entry instead of the catalog rate.
+export interface CustomerPriceOverride {
+  id: string;
+  itemNumber: string;
+  price: number;
+}
+
+// Carrier routing / compliance requirements some customers (especially
+// larger accounts) require on every shipment - kept separate from the
+// day-to-day order fields since it's reference material, not per-order data.
+export interface RoutingGuide {
+  preferredCarrier?: string;
+  routingAccountNumber?: string;
+  appointmentRequired?: boolean;
+  labelingRequirements?: string;
+  notes?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -113,7 +148,19 @@ export interface Customer {
   // name instead of ours - for customers who private-label our products.
   privateLabelName?: string;
   notes: CustomerNote[];
+  partNumberMap?: CustomerPartMapping[];
+  priceOverrides?: CustomerPriceOverride[];
+  routingGuide?: RoutingGuide;
   createdAt: string;
+}
+
+// A part number used to make/build this item - e.g. a raw material or
+// component, not a customer or vendor part number. Free-form, since this
+// app doesn't model a full bill of materials.
+export interface ItemComponent {
+  id: string;
+  partNumber: string;
+  description?: string;
 }
 
 export interface Item {
@@ -122,11 +169,16 @@ export interface Item {
   description: string;
   um: string;
   rate: number;
-  // Physical count on the shelf, and what's currently on order from a
-  // supplier to replenish it. Both are maintained directly (edited or
-  // imported) since neither can be derived from anything else in the app.
+  // Physical count on the shelf. What's currently on order from a supplier
+  // to replenish it is now derived from open vendor purchase orders (see
+  // vendorPoStore's recomputeQtyOnPurchaseOrder) rather than maintained by
+  // hand, though it's still stored here for fast display.
   qtyOnHand: number;
   qtyOnPurchaseOrder: number;
+  preferredVendorId?: string;
+  reorderPoint?: number;
+  countryOfOrigin?: string;
+  components?: ItemComponent[];
   createdAt: string;
 }
 
@@ -368,4 +420,113 @@ export function matchesOrderQuery(
     order.poNumber.toLowerCase().includes(q) ||
     order.billTo.name.toLowerCase().includes(q)
   );
+}
+
+// --- Vendors & outbound purchase orders (what we buy from suppliers - not
+// to be confused with PurchaseOrder above, which despite its name is the
+// SALES order we create from a customer's PO) ---
+
+export interface Vendor {
+  id: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: Address;
+  createdAt: string;
+}
+
+export function emptyVendor(): Vendor {
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: emptyAddress(),
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export type VendorPoStatus = "Open" | "Partially Received" | "Received" | "Closed";
+
+export interface VendorPoLine {
+  id: string;
+  itemNumber: string;
+  description: string;
+  orderedQty: number;
+  receivedQty: number;
+  cost: number;
+}
+
+export function emptyVendorPoLine(): VendorPoLine {
+  return { id: crypto.randomUUID(), itemNumber: "", description: "", orderedQty: 1, receivedQty: 0, cost: 0 };
+}
+
+export interface VendorReceivingLine {
+  lineId: string;
+  qty: number;
+}
+
+export interface VendorReceivingRecord {
+  id: string;
+  receivedAt: string;
+  lines: VendorReceivingLine[];
+}
+
+export interface VendorPurchaseOrder {
+  poNumber: string;
+  vendorId: string;
+  vendorName: string;
+  orderDate: string;
+  expectedDate?: string;
+  lines: VendorPoLine[];
+  status: VendorPoStatus;
+  notes: string;
+  receivingHistory?: VendorReceivingRecord[];
+  createdAt: string;
+}
+
+export function vendorPoLineOutstanding(line: Pick<VendorPoLine, "orderedQty" | "receivedQty">): number {
+  return Math.max(0, line.orderedQty - line.receivedQty);
+}
+
+export function vendorPoOutstandingTotal(po: Pick<VendorPurchaseOrder, "lines">): number {
+  return po.lines.reduce((sum, l) => sum + vendorPoLineOutstanding(l), 0);
+}
+
+export function vendorPoCostTotal(po: Pick<VendorPurchaseOrder, "lines">): number {
+  return po.lines.reduce((sum, l) => sum + l.orderedQty * l.cost, 0);
+}
+
+// Applies a receipt of `lines` (lineId -> qty received this session) to a
+// vendor PO: bumps each line's receivedQty and rolls the PO status up to
+// Received once every line is fully received, Partially Received if some
+// but not all progress was made, or leaves it Open/unchanged otherwise.
+export function receiveVendorPo(po: VendorPurchaseOrder, lines: VendorReceivingLine[]): VendorPurchaseOrder {
+  const receivedLines = lines.filter((l) => l.qty > 0);
+  if (receivedLines.length === 0) return po;
+  const updatedLines = po.lines.map((line) => {
+    const receipt = receivedLines.find((l) => l.lineId === line.id);
+    return receipt ? { ...line, receivedQty: line.receivedQty + receipt.qty } : line;
+  });
+  const fullyReceived = updatedLines.every((l) => l.receivedQty >= l.orderedQty);
+  const anyReceived = updatedLines.some((l) => l.receivedQty > 0);
+  const receivingHistory: VendorReceivingRecord[] = [
+    ...(po.receivingHistory ?? []),
+    { id: crypto.randomUUID(), receivedAt: new Date().toISOString(), lines: receivedLines },
+  ];
+  return {
+    ...po,
+    lines: updatedLines,
+    status: fullyReceived ? "Received" : anyReceived ? "Partially Received" : po.status,
+    receivingHistory,
+  };
+}
+
+// Shared search-box matcher for vendor POs: PO #, vendor name.
+export function matchesVendorPoQuery(po: Pick<VendorPurchaseOrder, "poNumber" | "vendorName">, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return po.poNumber.toLowerCase().includes(q) || po.vendorName.toLowerCase().includes(q);
 }

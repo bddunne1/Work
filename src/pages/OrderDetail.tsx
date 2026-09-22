@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
 import { useAuth, useCanEdit } from "../lib/authContext";
-import { getOrder, undoShipment } from "../lib/orderStore";
+import { getOrder, undoShipment, updateOrder } from "../lib/orderStore";
 import { canView } from "../lib/permissions";
 import type { PurchaseOrder } from "../types";
 import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
@@ -45,6 +46,8 @@ function OrderDetailInner() {
   const [order, setOrder] = useState<PurchaseOrder | undefined>(() =>
     soNumber ? getOrder(soNumber) : undefined
   );
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<PurchaseOrder | undefined>(undefined);
 
   if (!order) {
     return (
@@ -56,8 +59,31 @@ function OrderDetailInner() {
   }
 
   const nextStage = nextStageFor(order);
-  const showStageButton = nextStage && account && canView(nextStage.to, account.role);
+  const showStageButton = nextStage && account && canView(nextStage.to, account);
   const canUndoShipment = canEdit && (order.shipmentHistory?.length ?? 0) > 0;
+  const view = editing && draft ? draft : order;
+
+  function startEdit() {
+    setDraft(order);
+    setEditing(true);
+  }
+
+  function cancelEdit() {
+    setDraft(undefined);
+    setEditing(false);
+  }
+
+  function setField<K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) {
+    setDraft((d) => (d ? { ...d, [key]: value } : d));
+  }
+
+  function saveEdit() {
+    if (!draft) return;
+    updateOrder(draft);
+    setOrder(draft);
+    setDraft(undefined);
+    setEditing(false);
+  }
 
   function handleUndoShipment() {
     if (!order) return;
@@ -80,9 +106,28 @@ function OrderDetailInner() {
         <button className="link-btn" onClick={() => navigate(-1)}>
           &larr; Back
         </button>
-        <button className="secondary-btn print-btn" onClick={() => window.print()}>
-          Print / Preview
-        </button>
+        <div className="inline-actions">
+          {canEdit && !editing && (
+            <button type="button" className="secondary-btn" onClick={startEdit}>
+              Edit Order
+            </button>
+          )}
+          {editing && (
+            <>
+              <button type="button" className="primary-btn" onClick={saveEdit}>
+                Save Changes
+              </button>
+              <button type="button" className="secondary-btn" onClick={cancelEdit}>
+                Cancel
+              </button>
+            </>
+          )}
+          {!editing && (
+            <button className="secondary-btn print-btn" onClick={() => window.print()}>
+              Print / Preview
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="sales-order">
@@ -105,41 +150,90 @@ function OrderDetailInner() {
               </thead>
               <tbody>
                 <tr>
-                  <td>{order.orderDate}</td>
-                  <td>{order.dueDate}</td>
-                  <td>{order.estimatedShipDate || "—"}</td>
-                  <td className="so-number-view">{order.soNumber}</td>
+                  <td>
+                    {editing ? (
+                      <input
+                        type="date"
+                        value={view.orderDate}
+                        onChange={(e) => setField("orderDate", e.target.value)}
+                      />
+                    ) : (
+                      view.orderDate
+                    )}
+                  </td>
+                  <td>
+                    {editing ? (
+                      <input
+                        type="date"
+                        value={view.dueDate}
+                        onChange={(e) => setField("dueDate", e.target.value)}
+                      />
+                    ) : (
+                      view.dueDate
+                    )}
+                  </td>
+                  <td>
+                    {editing ? (
+                      <input
+                        type="date"
+                        value={view.estimatedShipDate ?? ""}
+                        onChange={(e) => setField("estimatedShipDate", e.target.value || undefined)}
+                      />
+                    ) : (
+                      view.estimatedShipDate || "—"
+                    )}
+                  </td>
+                  <td className="so-number-view">{view.soNumber}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="so-addresses">
-          <fieldset className="address-box">
-            <legend>Bill To</legend>
-            <div>{order.billTo.name}</div>
-            <div>{order.billTo.addressLine1}</div>
-            {order.billTo.addressLine2 && <div>{order.billTo.addressLine2}</div>}
-            <div>
-              {order.billTo.city}, {order.billTo.state} {order.billTo.zip}
-            </div>
-          </fieldset>
-          <fieldset className="address-box">
-            <legend>Ship To</legend>
-            <div>{order.shipTo.name}</div>
-            <div>{order.shipTo.addressLine1}</div>
-            {order.shipTo.addressLine2 && <div>{order.shipTo.addressLine2}</div>}
-            <div>
-              {order.shipTo.city}, {order.shipTo.state} {order.shipTo.zip}
-            </div>
-            {order.shipTo.notes && (
-              <div className="address-notes-view">
-                <span className="muted">Shipping notes:</span> {order.shipTo.notes}
+        {view.checkedBy && (
+          <div className="checked-stamp">
+            Checked by <strong>{view.checkedBy}</strong>
+            {view.checkedAt && <> on {new Date(view.checkedAt).toLocaleDateString()}</>}
+          </div>
+        )}
+
+        {editing ? (
+          <div className="so-addresses">
+            <AddressFields label="Bill To" value={view.billTo} onChange={(addr) => setField("billTo", addr)} />
+            <AddressFields
+              label="Ship To"
+              value={view.shipTo}
+              onChange={(addr) => setField("shipTo", addr)}
+              showNotes
+            />
+          </div>
+        ) : (
+          <div className="so-addresses">
+            <fieldset className="address-box">
+              <legend>Bill To</legend>
+              <div>{view.billTo.name}</div>
+              <div>{view.billTo.addressLine1}</div>
+              {view.billTo.addressLine2 && <div>{view.billTo.addressLine2}</div>}
+              <div>
+                {view.billTo.city}, {view.billTo.state} {view.billTo.zip}
               </div>
-            )}
-          </fieldset>
-        </div>
+            </fieldset>
+            <fieldset className="address-box">
+              <legend>Ship To</legend>
+              <div>{view.shipTo.name}</div>
+              <div>{view.shipTo.addressLine1}</div>
+              {view.shipTo.addressLine2 && <div>{view.shipTo.addressLine2}</div>}
+              <div>
+                {view.shipTo.city}, {view.shipTo.state} {view.shipTo.zip}
+              </div>
+              {view.shipTo.notes && (
+                <div className="address-notes-view">
+                  <span className="muted">Shipping notes:</span> {view.shipTo.notes}
+                </div>
+              )}
+            </fieldset>
+          </div>
+        )}
 
         <table className="meta-table order-details-table">
           <thead>
@@ -154,26 +248,56 @@ function OrderDetailInner() {
           </thead>
           <tbody>
             <tr>
-              <td>{order.poNumber}</td>
-              <td>{order.terms}</td>
-              <td>{order.rep}</td>
-              <td>{order.fob}</td>
-              <td>{order.shipVia}</td>
               <td>
-                <StatusPill order={order} />
+                {editing ? (
+                  <input value={view.poNumber} onChange={(e) => setField("poNumber", e.target.value)} />
+                ) : (
+                  view.poNumber
+                )}
+              </td>
+              <td>
+                {editing ? (
+                  <input value={view.terms} onChange={(e) => setField("terms", e.target.value)} />
+                ) : (
+                  view.terms
+                )}
+              </td>
+              <td>
+                {editing ? (
+                  <input value={view.rep} onChange={(e) => setField("rep", e.target.value)} />
+                ) : (
+                  view.rep
+                )}
+              </td>
+              <td>
+                {editing ? (
+                  <input value={view.fob} onChange={(e) => setField("fob", e.target.value)} />
+                ) : (
+                  view.fob
+                )}
+              </td>
+              <td>
+                {editing ? (
+                  <input value={view.shipVia} onChange={(e) => setField("shipVia", e.target.value)} />
+                ) : (
+                  view.shipVia
+                )}
+              </td>
+              <td>
+                <StatusPill order={view} />
               </td>
             </tr>
           </tbody>
         </table>
 
         <LineItemsTable
-          items={order.lineItems}
-          onChange={() => {}}
-          readOnly
-          shipmentHistory={order.shipmentHistory}
+          items={view.lineItems}
+          onChange={(items) => setField("lineItems", items)}
+          readOnly={!editing}
+          shipmentHistory={view.shipmentHistory}
         />
 
-        {order.shipmentHistory && order.shipmentHistory.length > 0 && (
+        {view.shipmentHistory && view.shipmentHistory.length > 0 && (
           <div className="shipment-history">
             <div className="so-notes-label muted">Shipment History</div>
             <table className="data-table">
@@ -184,12 +308,10 @@ function OrderDetailInner() {
                 </tr>
               </thead>
               <tbody>
-                {order.shipmentHistory.map((rec) => (
+                {view.shipmentHistory.map((rec) => (
                   <tr key={rec.id}>
                     <td>{new Date(rec.shippedAt).toLocaleString()}</td>
-                    <td>
-                      {rec.lines.map((l) => `${itemLabel(order, l.lineItemId)} × ${l.qty}`).join(", ")}
-                    </td>
+                    <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -200,28 +322,51 @@ function OrderDetailInner() {
         <div className="so-footer">
           <div className="so-notes">
             <div className="so-notes-label muted">Notes</div>
-            <div className="so-notes-text">{order.notes || "—"}</div>
+            {editing ? (
+              <textarea
+                className="so-notes-edit"
+                rows={3}
+                value={view.notes}
+                onChange={(e) => setField("notes", e.target.value)}
+              />
+            ) : (
+              <div className="so-notes-text">{view.notes || "—"}</div>
+            )}
           </div>
           <table className="totals-table">
             <tbody>
               <tr>
                 <td>Subtotal</td>
-                <td>${orderSubtotal(order).toFixed(2)}</td>
+                <td>${orderSubtotal(view).toFixed(2)}</td>
               </tr>
               <tr>
-                <td>Sales Tax ({order.taxRate}%)</td>
-                <td>${orderTax(order).toFixed(2)}</td>
+                <td>
+                  Sales Tax (
+                  {editing ? (
+                    <input
+                      type="number"
+                      step="0.1"
+                      className="tax-input"
+                      value={view.taxRate}
+                      onChange={(e) => setField("taxRate", Number(e.target.value))}
+                    />
+                  ) : (
+                    view.taxRate
+                  )}
+                  %)
+                </td>
+                <td>${orderTax(view).toFixed(2)}</td>
               </tr>
               <tr className="total-row">
                 <td>Total</td>
-                <td>${orderTotal(order).toFixed(2)}</td>
+                <td>${orderTotal(view).toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {showStageButton && nextStage && (
+      {!editing && showStageButton && nextStage && (
         <div className="button-row no-print stage-nav-row">
           <button type="button" className="primary-btn" onClick={() => navigate(nextStage.to)}>
             {nextStage.label}
@@ -229,7 +374,7 @@ function OrderDetailInner() {
         </div>
       )}
 
-      {canUndoShipment && (
+      {!editing && canUndoShipment && (
         <div className="button-row no-print stage-nav-row">
           <button type="button" className="secondary-btn danger-btn" onClick={handleUndoShipment}>
             Undo Last Shipment

@@ -46,5 +46,5 @@ export function useCanEdit(): boolean {
   const { account } = useAuth();
   const location = useLocation();
   if (!account) return false;
-  return canEdit(location.pathname, account.role);
+  return canEdit(location.pathname, account);
 }
