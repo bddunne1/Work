@@ -60,6 +60,15 @@ export default function PickPack() {
     setPrinting(true);
     setTimeout(() => {
       window.print();
+      setPrinting(false);
+      // window.print() gives no way to tell whether the user actually
+      // printed or hit Cancel, so ask directly rather than assuming success
+      // - otherwise a canceled print still knocked the order out of the
+      // queue and into Open Picks with nothing actually printed.
+      const confirmed = confirm(
+        "Did the pick list / packing slip print successfully? Choose OK to move these orders to Open Picks, or Cancel to keep them in the queue and try again."
+      );
+      if (!confirmed) return;
       const now = new Date().toISOString();
       const printedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
       for (const o of selectedOrders) {
@@ -82,7 +91,6 @@ export default function PickPack() {
           )
           .filter((o) => !isFullyPrinted(o))
       );
-      setPrinting(false);
     }, 50);
   }
 

@@ -50,6 +50,7 @@ export function parseCustomers(csv: ParsedCsv): RowResult<Customer>[] {
       fob: field(row, "FOB"),
       rep: field(row, "Rep", "Sales Rep"),
       shipCompleteOnly: truthy(field(row, "Ship Complete Only", "Ship Complete")),
+      notes: [],
       createdAt: new Date().toISOString(),
     };
     return { rowNumber, errors: [], data: customer };

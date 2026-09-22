@@ -17,6 +17,9 @@ function normalizeCustomer(raw: Customer & { shipTo?: Address }): Customer {
   if (typeof customer.shipCompleteOnly !== "boolean") {
     customer = { ...customer, shipCompleteOnly: false };
   }
+  if (!Array.isArray(customer.notes)) {
+    customer = { ...customer, notes: [] };
+  }
   return customer;
 }
 

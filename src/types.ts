@@ -84,6 +84,12 @@ export interface ShippingLocation {
   address: Address;
 }
 
+export interface CustomerNote {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -98,6 +104,7 @@ export interface Customer {
   // When set, product labels printed for this customer show this brand
   // name instead of ours - for customers who private-label our products.
   privateLabelName?: string;
+  notes: CustomerNote[];
   createdAt: string;
 }
 
@@ -135,6 +142,7 @@ export function emptyCustomer(): Customer {
     fob: "",
     rep: "",
     shipCompleteOnly: false,
+    notes: [],
     createdAt: new Date().toISOString(),
   };
 }
@@ -250,4 +258,18 @@ export function orderTax(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): n
 
 export function orderTotal(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
   return orderSubtotal(order) + orderTax(order);
+}
+
+// Shared search-box matcher: S.O. #, P.O. #, or customer name, case-insensitive.
+export function matchesOrderQuery(
+  order: Pick<PurchaseOrder, "soNumber" | "poNumber" | "billTo">,
+  query: string
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    order.soNumber.toLowerCase().includes(q) ||
+    order.poNumber.toLowerCase().includes(q) ||
+    order.billTo.name.toLowerCase().includes(q)
+  );
 }

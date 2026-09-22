@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
-import { orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal } from "../types";
 
 export default function ScheduleShipments() {
   const canEdit = useCanEdit();
+  const [query, setQuery] = useState("");
   const [orders, setOrders] = useState(() => listOrders());
+  const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 
   function setEstimatedShipDate(soNumber: string, value: string) {
     const order = orders.find((o) => o.soNumber === soNumber);
@@ -27,8 +29,17 @@ export default function ScheduleShipments() {
         </p>
       </div>
 
-      {orders.length === 0 ? (
-        <p className="muted">No orders yet.</p>
+      <div className="toolbar">
+        <input
+          className="search-input"
+          placeholder="Search by S.O. #, P.O. #, or customer..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="muted">No orders found.</p>
       ) : (
         <table className="data-table">
           <thead>
@@ -43,7 +54,7 @@ export default function ScheduleShipments() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {filtered.map((o) => (
               <tr key={o.soNumber}>
                 <td>
                   <Link to={`/storage/${o.soNumber}`}>{o.soNumber}</Link>

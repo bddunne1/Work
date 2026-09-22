@@ -10,8 +10,7 @@ const ORDER_ENTRY_RULES: { prefix: string; access: AccessLevel }[] = [
   { prefix: "/order-entry", access: "edit" },
   { prefix: "/pick-pack", access: "edit" },
   { prefix: "/customers/new", access: "none" },
-  { prefix: "/customers/", access: "none" }, // .../:id/edit
-  { prefix: "/customers", access: "view" },
+  { prefix: "/customers", access: "view" }, // list and .../:id detail+edit (CustomerEditor is read-only when !canEdit)
   { prefix: "/items/new", access: "none" },
   { prefix: "/items/", access: "none" }, // .../:id/edit
   { prefix: "/items", access: "view" },

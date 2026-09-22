@@ -1,12 +1,38 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
+import { useAuth } from "../lib/authContext";
 import { getOrder } from "../lib/orderStore";
+import { canView } from "../lib/permissions";
+import type { PurchaseOrder } from "../types";
 import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
+
+// Where "continue working this order" should go next, based on its current
+// stage - so a Sales Order view can drop you straight into whatever screen
+// is waiting on it instead of making you hunt for the right queue.
+function nextStageFor(order: PurchaseOrder): { label: string; to: string } | null {
+  switch (order.status) {
+    case "Entered":
+      return { label: "To Validation", to: `/validation/${order.soNumber}` };
+    case "Checked":
+      return { label: "To Allocation", to: `/allocation/${order.soNumber}` };
+    case "Backordered":
+      return { label: "Re-check Stock", to: `/allocation/${order.soNumber}` };
+    case "Allocated":
+      return { label: "To Pick & Pack", to: `/pick-pack/${order.soNumber}` };
+    case "Pick & Packed":
+      return order.pickListPrintedAt && order.packingSlipPrintedAt
+        ? { label: "To Open Picks", to: `/open-picks/${order.soNumber}` }
+        : { label: "To Print Queue", to: "/pick-pack" };
+    default:
+      return null;
+  }
+}
 
 export default function OrderDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
+  const { account } = useAuth();
   const order = soNumber ? getOrder(soNumber) : undefined;
 
   if (!order) {
@@ -17,6 +43,9 @@ export default function OrderDetail() {
       </div>
     );
   }
+
+  const nextStage = nextStageFor(order);
+  const showStageButton = nextStage && account && canView(nextStage.to, account.role);
 
   return (
     <div className="page">
@@ -164,6 +193,14 @@ export default function OrderDetail() {
           </table>
         </div>
       </div>
+
+      {showStageButton && nextStage && (
+        <div className="button-row no-print stage-nav-row">
+          <button type="button" className="primary-btn" onClick={() => navigate(nextStage.to)}>
+            {nextStage.label}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

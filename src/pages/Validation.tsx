@@ -1,10 +1,13 @@
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
-import { orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal } from "../types";
 
 export default function Validation() {
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
   const pending = listOrders().filter((o) => o.status === "Entered");
+  const filtered = useMemo(() => pending.filter((o) => matchesOrderQuery(o, query)), [pending, query]);
 
   function startQueue() {
     if (pending.length === 0) return;
@@ -20,15 +23,23 @@ export default function Validation() {
       </div>
 
       <div className="toolbar">
-        <p className="muted">
-          {pending.length} order{pending.length === 1 ? "" : "s"} awaiting validation.
-        </p>
-        <button type="button" className="primary-btn" disabled={pending.length === 0} onClick={startQueue}>
-          Review Queue
-        </button>
+        <input
+          className="search-input"
+          placeholder="Search by S.O. #, P.O. #, or customer..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <div className="inline-actions">
+          <p className="muted">
+            {pending.length} order{pending.length === 1 ? "" : "s"} awaiting validation.
+          </p>
+          <button type="button" className="primary-btn" disabled={pending.length === 0} onClick={startQueue}>
+            Review Queue
+          </button>
+        </div>
       </div>
 
-      {pending.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="muted">Nothing to validate right now.</p>
       ) : (
         <table className="data-table">
@@ -43,7 +54,7 @@ export default function Validation() {
             </tr>
           </thead>
           <tbody>
-            {pending.map((o) => (
+            {filtered.map((o) => (
               <tr key={o.soNumber}>
                 <td>{o.soNumber}</td>
                 <td>{o.poNumber}</td>

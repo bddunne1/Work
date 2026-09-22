@@ -1,10 +1,13 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
-import { orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal } from "../types";
 
 export default function BackOrderQueue() {
+  const [query, setQuery] = useState("");
   const orders = listOrders().filter((o) => o.status === "Backordered");
+  const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 
   return (
     <div className="page">
@@ -15,7 +18,16 @@ export default function BackOrderQueue() {
         </p>
       </div>
 
-      {orders.length === 0 ? (
+      <div className="toolbar">
+        <input
+          className="search-input"
+          placeholder="Search by S.O. #, P.O. #, or customer..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
         <p className="muted">No orders waiting on stock.</p>
       ) : (
         <table className="data-table">
@@ -30,7 +42,7 @@ export default function BackOrderQueue() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {filtered.map((o) => (
               <tr key={o.soNumber}>
                 <td>{o.soNumber}</td>
                 <td>{o.poNumber}</td>

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
-import { orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal } from "../types";
 
 interface Props {
   closed: boolean;
@@ -12,16 +12,7 @@ export default function OrdersList({ closed }: Props) {
   const [query, setQuery] = useState("");
   const orders = listOrders().filter((o) => (o.status === "Shipped") === closed);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return orders;
-    return orders.filter(
-      (o) =>
-        o.soNumber.toLowerCase().includes(q) ||
-        o.poNumber.toLowerCase().includes(q) ||
-        o.billTo.name.toLowerCase().includes(q)
-    );
-  }, [orders, query]);
+  const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 
   return (
     <div className="page">

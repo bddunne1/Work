@@ -167,7 +167,7 @@ export default function OrderEntry() {
                 </option>
               ))}
             </select>
-            <Link to={`/customers/${selectedCustomer.id}/edit`} target="_blank" className="link-btn">
+            <Link to={`/customers/${selectedCustomer.id}`} target="_blank" className="link-btn">
               + Add Location
             </Link>
           </div>

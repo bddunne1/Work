@@ -1,6 +1,7 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
-import { orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal } from "../types";
 
 function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undefined {
   return shipmentHistory.reduce<string | undefined>(
@@ -10,6 +11,7 @@ function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undef
 }
 
 export default function ShipmentHistory() {
+  const [query, setQuery] = useState("");
   const orders = listOrders()
     .filter((o) => o.status === "Shipped")
     .sort((a, b) => {
@@ -17,6 +19,7 @@ export default function ShipmentHistory() {
       const bDate = lastShippedAt(b.shipmentHistory ?? []) ?? "";
       return bDate.localeCompare(aDate);
     });
+  const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 
   return (
     <div className="page">
@@ -25,7 +28,16 @@ export default function ShipmentHistory() {
         <p className="muted">Orders that have shipped complete.</p>
       </div>
 
-      {orders.length === 0 ? (
+      <div className="toolbar">
+        <input
+          className="search-input"
+          placeholder="Search by S.O. #, P.O. #, or customer..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
         <p className="muted">No orders have shipped yet.</p>
       ) : (
         <table className="data-table">
@@ -40,7 +52,7 @@ export default function ShipmentHistory() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => {
+            {filtered.map((o) => {
               const shipped = lastShippedAt(o.shipmentHistory ?? []);
               return (
                 <tr key={o.soNumber}>

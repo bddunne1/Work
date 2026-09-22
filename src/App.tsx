@@ -43,7 +43,7 @@ function App() {
             <Route path="storage/:soNumber" element={<OrderDetail />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/new" element={<CustomerForm />} />
-            <Route path="customers/:id/edit" element={<CustomerForm />} />
+            <Route path="customers/:id" element={<Customers />} />
             <Route path="items" element={<Items />} />
             <Route path="items/new" element={<ItemForm />} />
             <Route path="items/:id/edit" element={<ItemForm />} />
