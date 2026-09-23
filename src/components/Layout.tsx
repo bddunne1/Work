@@ -1,5 +1,4 @@
-import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import AamstrandLogo from "./AamstrandLogo";
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import PorterMascot from "./PorterMascot";
 import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
@@ -58,10 +57,9 @@ export default function Layout() {
       </nav>
       <div className="app-main">
         <header className="topbar">
-          <div className="brand">
-            <AamstrandLogo className="brand-logo" />
-            <div className="brand-sub">Order &amp; Fulfillment</div>
-          </div>
+          <Link to="/" className="brand">
+            <span className="brand-mark">A</span>
+          </Link>
           <div className="topbar-user">
             <span className="topbar-username">
               {account.username}{" "}
