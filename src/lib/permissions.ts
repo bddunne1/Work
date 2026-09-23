@@ -45,6 +45,13 @@ export const PAGE_DEFS: PageDef[] = [
   { key: "closed-orders", label: "Closed Orders", group: "Orders", rules: simplePage("/closed-orders") },
   { key: "order-detail", label: "Sales Order View", group: "Orders", rules: simplePage("/storage") },
 
+  {
+    key: "returns",
+    label: "Returns",
+    group: "Orders",
+    rules: pageWithEditGatedSubpaths("/returns", ["/returns/new"]),
+  },
+
   { key: "pick-pack", label: "Pick & Pack", group: "Fulfillment", rules: simplePage("/pick-pack") },
   { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: simplePage("/open-picks") },
 

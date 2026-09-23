@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ItemAutocompleteInput from "../components/ItemAutocompleteInput";
 import SearchSelect from "../components/SearchSelect";
+import { listItems } from "../lib/itemStore";
 import { nextVendorPoNumber, saveVendorPo } from "../lib/vendorPoStore";
 import { listVendors } from "../lib/vendorStore";
-import type { Vendor, VendorPoLine, VendorPurchaseOrder } from "../types";
+import type { Item, Vendor, VendorPoLine, VendorPurchaseOrder } from "../types";
 import { emptyVendorPoLine, vendorPoCostTotal } from "../types";
 
 function today(): string {
@@ -13,6 +15,7 @@ function today(): string {
 export default function PurchaseOrderForm() {
   const navigate = useNavigate();
   const [vendors] = useState<Vendor[]>(() => listVendors());
+  const [catalog] = useState<Item[]>(() => listItems());
   const [vendorQuery, setVendorQuery] = useState("");
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [orderDate, setOrderDate] = useState(() => today());
@@ -31,6 +34,10 @@ export default function PurchaseOrderForm() {
 
   function updateLine(id: string, patch: Partial<VendorPoLine>) {
     setLines((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  }
+
+  function applyItemMatch(id: string, item: Item) {
+    updateLine(id, { itemNumber: item.itemNumber, description: item.description, cost: item.rate });
   }
 
   function addLine() {
@@ -122,7 +129,12 @@ export default function PurchaseOrderForm() {
             {lines.map((l) => (
               <tr key={l.id}>
                 <td>
-                  <input value={l.itemNumber} onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })} />
+                  <ItemAutocompleteInput
+                    value={l.itemNumber}
+                    onChange={(itemNumber) => updateLine(l.id, { itemNumber })}
+                    onMatch={(item) => applyItemMatch(l.id, item)}
+                    catalog={catalog}
+                  />
                 </td>
                 <td>
                   <input

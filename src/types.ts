@@ -76,6 +76,11 @@ export interface PurchaseOrder {
   notes: string;
   lineItems: LineItem[];
   status: OrderStatus;
+  // Initials + account id of whoever entered this order - shown as a
+  // signature at the bottom of the printed order, and lets its own author
+  // edit it later to fix a mistake even without general edit access.
+  writtenBy?: string;
+  writtenById?: string;
   checkedAt?: string;
   // Initials of the account that marked this order Checked (see
   // ValidationDecision) - stamped at the top of the order for accountability.
@@ -539,4 +544,73 @@ export function matchesVendorPoQuery(po: Pick<VendorPurchaseOrder, "poNumber" | 
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return po.poNumber.toLowerCase().includes(q) || po.vendorName.toLowerCase().includes(q);
+}
+
+// --- Returns / Return Authorization (RA) -----------------------------------
+// Foundation for the return process: a customer-facing Return Authorization
+// document, generated the same way a BOL or PO is. Kept deliberately simple
+// (a single status) - richer workflow (received/credited stages) can build
+// on this once the basics are in use.
+
+export type ReturnStatus = "Issued" | "Received" | "Closed";
+
+export interface ReturnLine {
+  id: string;
+  itemNumber: string;
+  description: string;
+  um: string;
+  qty: number;
+  rate: number;
+  reason: string;
+}
+
+export function emptyReturnLine(): ReturnLine {
+  return { id: crypto.randomUUID(), itemNumber: "", description: "", um: "EA", qty: 1, rate: 0, reason: "" };
+}
+
+export interface ReturnAuthorization {
+  raNumber: string;
+  customerId?: string;
+  // The original sales order this return relates to, if any - not required,
+  // since a customer can return goods without one on hand.
+  soNumber?: string;
+  billTo: Address;
+  requestDate: string;
+  reason: string;
+  lines: ReturnLine[];
+  status: ReturnStatus;
+  notes: string;
+  // Initials + account id of whoever wrote this RA - same signature/edit
+  // pattern as a sales order's writtenBy.
+  writtenBy?: string;
+  writtenById?: string;
+  createdAt: string;
+}
+
+export function emptyReturn(raNumber: string): ReturnAuthorization {
+  return {
+    raNumber,
+    billTo: emptyAddress(),
+    requestDate: new Date().toISOString().slice(0, 10),
+    reason: "",
+    lines: [emptyReturnLine()],
+    status: "Issued",
+    notes: "",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+export function returnTotal(ra: Pick<ReturnAuthorization, "lines">): number {
+  return ra.lines.reduce((sum, l) => sum + l.qty * l.rate, 0);
+}
+
+// Shared search-box matcher for returns: RA #, original S.O. #, customer name.
+export function matchesReturnQuery(ra: Pick<ReturnAuthorization, "raNumber" | "soNumber" | "billTo">, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    ra.raNumber.toLowerCase().includes(q) ||
+    (ra.soNumber ?? "").toLowerCase().includes(q) ||
+    ra.billTo.name.toLowerCase().includes(q)
+  );
 }

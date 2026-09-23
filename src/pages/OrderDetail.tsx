@@ -61,6 +61,10 @@ function OrderDetailInner() {
   const nextStage = nextStageFor(order);
   const showStageButton = nextStage && account && canView(nextStage.to, account);
   const canUndoShipment = canEdit && (order.shipmentHistory?.length ?? 0) > 0;
+  // The order's own writer can fix a mistake later even without general
+  // edit access to Sales Order View - a narrower carve-out than full canEdit.
+  const isWriter = Boolean(account && order.writtenById && order.writtenById === account.id);
+  const canEditOrder = canEdit || isWriter;
   const view = editing && draft ? draft : order;
 
   function startEdit() {
@@ -107,7 +111,7 @@ function OrderDetailInner() {
           &larr; Back
         </button>
         <div className="inline-actions">
-          {canEdit && !editing && (
+          {canEditOrder && !editing && (
             <button type="button" className="secondary-btn" onClick={startEdit}>
               Edit Order
             </button>
@@ -364,6 +368,13 @@ function OrderDetailInner() {
             </tbody>
           </table>
         </div>
+
+        {view.writtenBy && (
+          <div className="so-signature">
+            <span className="so-signature-initials">{view.writtenBy}</span>
+            <span className="so-signature-label muted">Entered by</span>
+          </div>
+        )}
       </div>
 
       {!editing && showStageButton && nextStage && (

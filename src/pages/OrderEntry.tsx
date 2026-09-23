@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import SearchSelect from "../components/SearchSelect";
+import { useAuth } from "../lib/authContext";
 import { listCustomers } from "../lib/customerStore";
 import { addBusinessDays } from "../lib/dateUtils";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
 import { getLeadTimeDays } from "../lib/settingsStore";
+import type { Account } from "../lib/authStore";
 import type { Customer, PurchaseOrder } from "../types";
 import { emptyAddress, emptyLineItem, orderSubtotal, orderTax, orderTotal } from "../types";
 
@@ -14,7 +16,7 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function blankOrder(soNumber: string): PurchaseOrder {
+function blankOrder(soNumber: string, account: Account | null): PurchaseOrder {
   return {
     soNumber,
     poNumber: "",
@@ -30,13 +32,16 @@ function blankOrder(soNumber: string): PurchaseOrder {
     notes: "Thank you for your order!",
     lineItems: [emptyLineItem()],
     status: "Entered",
+    writtenBy: account?.initials,
+    writtenById: account?.id,
     createdAt: new Date().toISOString(),
   };
 }
 
 export default function OrderEntry() {
   const navigate = useNavigate();
-  const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder(nextSalesOrderNumber()));
+  const { account } = useAuth();
+  const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder(nextSalesOrderNumber(), account));
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -104,7 +109,7 @@ export default function OrderEntry() {
   }
 
   async function startNewOrder() {
-    setOrder(blankOrder(nextSalesOrderNumber()));
+    setOrder(blankOrder(nextSalesOrderNumber(), account));
     setSameAsBillTo(false);
     setSaved(false);
     setCustomerQuery("");

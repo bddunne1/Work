@@ -32,6 +32,9 @@ import PurchaseOrderDetail from "./pages/PurchaseOrderDetail";
 import PurchaseOrderForm from "./pages/PurchaseOrderForm";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import Receiving from "./pages/Receiving";
+import ReturnDetail from "./pages/ReturnDetail";
+import ReturnForm from "./pages/ReturnForm";
+import Returns from "./pages/Returns";
 import RoutingGuide from "./pages/RoutingGuide";
 import ScheduleShipments from "./pages/ScheduleShipments";
 import ShipmentHistory from "./pages/ShipmentHistory";
@@ -86,6 +89,9 @@ function App() {
             <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
             <Route path="purchase-orders/:poNumber" element={<PurchaseOrderDetail />} />
             <Route path="receiving" element={<Receiving />} />
+            <Route path="returns" element={<Returns />} />
+            <Route path="returns/new" element={<ReturnForm />} />
+            <Route path="returns/:raNumber" element={<ReturnDetail />} />
           </Route>
         </Routes>
       </HashRouter>

@@ -69,6 +69,11 @@ const LANES: Lane[] = [
         description: "Shipping labels or our own / private-label product labels",
         to: "/labels",
       },
+      {
+        name: "Returns",
+        description: "Record a customer return and generate a Return Authorization form",
+        to: "/returns",
+      },
     ],
   },
   {
