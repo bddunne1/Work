@@ -27,11 +27,22 @@ function ReturnDetailInner() {
   useEffect(() => {
     listItems().then(setCatalog);
   }, []);
-  const [ra, setRa] = useState<ReturnAuthorization | undefined>(() =>
-    raNumber ? getReturn(raNumber) : undefined
-  );
+  const [ra, setRa] = useState<ReturnAuthorization | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ReturnAuthorization | undefined>(undefined);
+
+  useEffect(() => {
+    if (!raNumber) return;
+    getReturn(raNumber).then((r) => {
+      setRa(r);
+      setLoading(false);
+    });
+  }, [raNumber]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!ra) {
     return (
@@ -72,9 +83,9 @@ function ReturnDetailInner() {
     updateLine(id, { itemNumber: match.itemNumber, description: match.description, um: match.um, rate: match.rate });
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     if (!draft) return;
-    updateReturn(draft);
+    await updateReturn(draft);
     setRa(draft);
     setDraft(undefined);
     setEditing(false);

@@ -14,7 +14,7 @@ const ITEM_DATALIST_ID = "return-item-catalog-options";
 export default function ReturnForm() {
   const navigate = useNavigate();
   const { account } = useAuth();
-  const [ra, setRa] = useState<ReturnAuthorization>(() => emptyReturn(nextReturnNumber()));
+  const [ra, setRa] = useState<ReturnAuthorization>(() => emptyReturn(""));
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [catalog, setCatalog] = useState<Item[]>([]);
@@ -23,6 +23,7 @@ export default function ReturnForm() {
   useEffect(() => {
     listCustomers().then(setCustomers);
     listItems().then(setCatalog);
+    nextReturnNumber().then((n) => setRa((r) => (r.raNumber ? r : { ...r, raNumber: n })));
   }, []);
 
   const selectedCustomer = customers.find((c) => c.id === ra.customerId);
@@ -60,25 +61,27 @@ export default function ReturnForm() {
   const validLines = ra.lines.filter((l) => l.itemNumber.trim() && l.qty > 0);
   const canSave = Boolean(selectedCustomer) && validLines.length > 0;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSave) return;
-    const finalRa: ReturnAuthorization = {
-      ...ra,
+    const { raNumber: _raNumber, ...rest } = ra;
+    const draft = {
+      ...rest,
       lines: validLines,
       writtenBy: account?.initials,
       writtenById: account?.id,
       writtenByColor: account?.color,
     };
-    saveReturn(finalRa);
+    const finalRa = await saveReturn(draft);
     setRa(finalRa);
     setSaved(true);
   }
 
   function startNew() {
-    setRa(emptyReturn(nextReturnNumber()));
+    setRa(emptyReturn(""));
     setCustomerQuery("");
     setSaved(false);
+    nextReturnNumber().then((n) => setRa((r) => ({ ...r, raNumber: n })));
   }
 
   if (saved) {

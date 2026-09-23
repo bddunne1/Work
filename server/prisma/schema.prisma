@@ -51,6 +51,12 @@ enum VendorPoStatus {
   CLOSED
 }
 
+enum ReturnStatus {
+  ISSUED
+  RECEIVED
+  CLOSED
+}
+
 model Account {
   id           String   @id @default(uuid())
   username     String   @unique
@@ -113,6 +119,7 @@ model Customer {
   partNumberMap   CustomerPartMapping[]
   priceOverrides  CustomerPriceOverride[]
   salesOrders     SalesOrder[]
+  returns         ReturnAuthorization[]
 
   @@index([name])
 }
@@ -325,6 +332,46 @@ model VendorReceivingRecord {
   lines      Json
 
   @@index([poNumber])
+}
+
+model ReturnAuthorization {
+  // App-generated, formatted "RA-3001" etc, same pattern as VendorPurchaseOrder.
+  raNumber       String       @id
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  // Free-text reference to the original sales order, not a real FK - a
+  // customer can return goods without one on hand, and sales orders don't
+  // live in Postgres yet (see SalesOrder's own migration note).
+  soNumber       String?
+  billTo         Json
+  requestDate    DateTime     @db.Date
+  reason         String       @default("")
+  status         ReturnStatus @default(ISSUED)
+  notes          String       @default("")
+  writtenBy      String?
+  writtenById    String?
+  writtenByColor String?
+  createdAt      DateTime     @default(now())
+
+  lines ReturnLine[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model ReturnLine {
+  id          String              @id @default(uuid())
+  raNumber    String
+  returnAuth  ReturnAuthorization @relation(fields: [raNumber], references: [raNumber], onDelete: Cascade)
+  itemNumber  String
+  description String
+  um          String              @default("EA")
+  qty         Int
+  rate        Decimal             @db.Decimal(12, 4)
+  reason      String              @default("")
+
+  @@index([raNumber])
+  @@index([itemNumber])
 }
 
 // Small key/value bag for app-wide settings (company profile, default lead

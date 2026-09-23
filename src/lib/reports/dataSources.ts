@@ -347,7 +347,7 @@ const returns: ReportDataSource = {
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
   ],
   async buildRows(filters) {
-    const rs = listReturns();
+    const rs = await listReturns();
     return rs
       .filter((r) => withinDateRange(r.requestDate, filters.requestDateFrom ?? "", filters.requestDateTo ?? ""))
       .filter((r) => !filters.status || r.status === filters.status)

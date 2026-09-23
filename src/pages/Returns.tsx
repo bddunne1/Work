@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listReturns } from "../lib/returnStore";
@@ -9,7 +9,12 @@ export default function Returns() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [returns] = useState<ReturnAuthorization[]>(() => listReturns());
+  const [returns, setReturns] = useState<ReturnAuthorization[]>([]);
+
+  useEffect(() => {
+    listReturns().then(setReturns);
+  }, []);
+
   const filtered = useMemo(() => returns.filter((r) => matchesReturnQuery(r, query)), [returns, query]);
 
   return (
