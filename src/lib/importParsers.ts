@@ -69,6 +69,8 @@ export function parseItems(csv: ParsedCsv): RowResult<Item>[] {
     const onHand = onHandStr ? Number(onHandStr) : 0;
     const onPoStr = field(row, "On Purchase Order", "Qty On PO", "On Order");
     const onPo = onPoStr ? Number(onPoStr) : 0;
+    const weightStr = field(row, "Weight", "Weight (lbs)", "Unit Weight");
+    const weight = weightStr ? Number(weightStr) : undefined;
 
     const item: Item = {
       id: crypto.randomUUID(),
@@ -78,6 +80,7 @@ export function parseItems(csv: ParsedCsv): RowResult<Item>[] {
       rate: Number.isFinite(rate) ? rate : 0,
       qtyOnHand: Number.isFinite(onHand) ? onHand : 0,
       qtyOnPurchaseOrder: Number.isFinite(onPo) ? onPo : 0,
+      weight: weight !== undefined && Number.isFinite(weight) ? weight : undefined,
       createdAt: new Date().toISOString(),
     };
     return { rowNumber, errors: [], data: item };

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { listItems } from "../lib/itemStore";
 import { listOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
+import { pendingShipmentWeight, weightIndex } from "../types";
 
 function openPickOrders(): PurchaseOrder[] {
   return listOrders().filter(
@@ -13,10 +15,15 @@ function openPickOrders(): PurchaseOrder[] {
   );
 }
 
+function daysInWarehouse(pickedAt: string): number {
+  return (Date.now() - new Date(pickedAt).getTime()) / 86_400_000;
+}
+
 export default function OpenPicks() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<PurchaseOrder[]>(() => openPickOrders());
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [weights] = useState(() => weightIndex(listItems()));
 
   const selectedOrders = orders.filter((o) => selected[o.soNumber]);
 
@@ -80,6 +87,8 @@ export default function OpenPicks() {
                 <th>P.O. #</th>
                 <th>Customer</th>
                 <th>Packed</th>
+                <th>Days in Warehouse</th>
+                <th>Weight</th>
                 <th>Pick &amp; Pack</th>
               </tr>
             </thead>
@@ -102,6 +111,8 @@ export default function OpenPicks() {
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
                   <td>{o.pickedAt ? new Date(o.pickedAt).toLocaleString() : "—"}</td>
+                  <td>{o.pickedAt ? `${daysInWarehouse(o.pickedAt).toFixed(1)} d` : "—"}</td>
+                  <td className="amount-cell">{pendingShipmentWeight(o, weights).toFixed(0)} lbs</td>
                   <td>
                     {o.pickPackStatus && (
                       <span className={`pickpack-flag pickpack-flag-${o.pickPackStatus.toLowerCase()}`}>

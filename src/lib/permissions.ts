@@ -54,6 +54,12 @@ export const PAGE_DEFS: PageDef[] = [
 
   { key: "pick-pack", label: "Pick & Pack", group: "Fulfillment", rules: simplePage("/pick-pack") },
   { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: simplePage("/open-picks") },
+  {
+    key: "warehouse-capacity",
+    label: "Warehouse Capacity",
+    group: "Fulfillment",
+    rules: simplePage("/warehouse-capacity"),
+  },
 
   { key: "schedule", label: "Schedule Shipments", group: "Logistics", rules: simplePage("/schedule") },
   { key: "bol", label: "Generate BOL", group: "Logistics", rules: simplePage("/bol") },
@@ -167,6 +173,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
     permissions: {
       "pick-pack": "edit",
       "open-picks": "edit",
+      "warehouse-capacity": "view",
       schedule: "edit",
       bol: "edit",
       labels: "edit",

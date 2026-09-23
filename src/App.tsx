@@ -46,6 +46,7 @@ import ShippingLabelCreate from "./pages/ShippingLabelCreate";
 import Validation from "./pages/Validation";
 import ValidationDecision from "./pages/ValidationDecision";
 import Vendors from "./pages/Vendors";
+import WarehouseCapacity from "./pages/WarehouseCapacity";
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
             <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
             <Route path="open-picks" element={<OpenPicks />} />
             <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
+            <Route path="warehouse-capacity" element={<WarehouseCapacity />} />
             <Route path="schedule" element={<ScheduleShipments />} />
             <Route path="shipment-history" element={<ShipmentHistory />} />
             <Route path="import" element={<Import />} />

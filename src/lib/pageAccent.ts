@@ -29,6 +29,7 @@ const RULES: AccentRule[] = [
   // Fulfillment
   { prefix: "/pick-pack", color: "#7c6ff2" },
   { prefix: "/open-picks", color: "#7c6ff2" },
+  { prefix: "/warehouse-capacity", color: "#7c6ff2" },
   // Logistics
   { prefix: "/schedule", color: "#f06595" },
   { prefix: "/bol", color: "#f06595" },

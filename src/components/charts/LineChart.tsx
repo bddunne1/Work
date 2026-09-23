@@ -34,6 +34,11 @@ export default function LineChart({ points, color, valueFormatter, height = 200 
     .join(" ");
   const stroke = color ?? "var(--chart-seq-1)";
   const showAllLabels = points.length <= 8;
+  // With many points, an axis label per point overlaps into unreadable
+  // mush - thin them out to roughly 8 evenly-spaced labels instead, always
+  // keeping the first and last.
+  const axisLabelStep = showAllLabels ? 1 : Math.ceil(points.length / 8);
+  const showAxisLabel = (i: number) => showAllLabels || i === 0 || i === points.length - 1 || i % axisLabelStep === 0;
 
   return (
     <div className="line-chart-wrap">
@@ -69,17 +74,20 @@ export default function LineChart({ points, color, valueFormatter, height = 200 
             )}
           </g>
         ))}
-        {points.map((p, i) => (
-          <text
-            key={`label-${p.label}-${i}`}
-            x={xFor(i)}
-            y={height - 8}
-            textAnchor="middle"
-            className="line-chart-axis-label"
-          >
-            {p.label}
-          </text>
-        ))}
+        {points.map(
+          (p, i) =>
+            showAxisLabel(i) && (
+              <text
+                key={`label-${p.label}-${i}`}
+                x={xFor(i)}
+                y={height - 8}
+                textAnchor="middle"
+                className="line-chart-axis-label"
+              >
+                {p.label}
+              </text>
+            )
+        )}
       </svg>
       <details className="chart-table-toggle">
         <summary>View as table</summary>

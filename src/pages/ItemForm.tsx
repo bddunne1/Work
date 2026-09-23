@@ -54,15 +54,28 @@ export default function ItemForm() {
           </label>
         </div>
 
-        <label className="form-field">
-          Initial Qty On Hand
-          <input
-            type="number"
-            min={0}
-            value={item.qtyOnHand}
-            onChange={(e) => set("qtyOnHand", Number(e.target.value))}
-          />
-        </label>
+        <div className="form-row">
+          <label className="form-field">
+            Initial Qty On Hand
+            <input
+              type="number"
+              min={0}
+              value={item.qtyOnHand}
+              onChange={(e) => set("qtyOnHand", Number(e.target.value))}
+            />
+          </label>
+          <label className="form-field">
+            Weight (lbs)
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={item.weight ?? ""}
+              placeholder="For warehouse capacity tracking"
+              onChange={(e) => set("weight", e.target.value === "" ? undefined : Number(e.target.value))}
+            />
+          </label>
+        </div>
 
         <h3 className="item-profile-heading">Item Profile</h3>
 

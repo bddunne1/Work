@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
+import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -128,6 +129,8 @@ export default function PickPack() {
       </div>
 
       <div className="no-print">
+        <WarehouseCapacityBanner />
+
         <div className="ship-locations-header">
           <h3>Review</h3>
           <button

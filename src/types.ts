@@ -195,6 +195,10 @@ export interface Item {
   preferredVendorId?: string;
   reorderPoint?: number;
   countryOfOrigin?: string;
+  // Weight per unit (lbs) - drives order/shipment weight for warehouse
+  // capacity tracking (see warehouseCapacity.ts). Optional since not every
+  // item needs it tracked.
+  weight?: number;
   components?: ItemComponent[];
   // Reference links shown on the item profile - spec sheets, SDS, vendor
   // product pages, etc.
@@ -415,6 +419,49 @@ export function unallocateOrder(order: PurchaseOrder): PurchaseOrder {
     pickListPrintedAt: undefined,
     packingSlipPrintedAt: undefined,
   };
+}
+
+// Per-unit weight lookup by item # (case/whitespace-insensitive), built once
+// from the catalog and passed into the weight helpers below instead of an
+// items array, so they don't do an O(n) find per line.
+export function weightIndex(items: Pick<Item, "itemNumber" | "weight">[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const i of items) map.set(i.itemNumber.trim().toLowerCase(), i.weight ?? 0);
+  return map;
+}
+
+function weightFor(itemNumber: string, weights: Map<string, number>): number {
+  return weights.get(itemNumber.trim().toLowerCase()) ?? 0;
+}
+
+// Total weight of everything ordered on this order (every line's full
+// ordered qty), regardless of shipping progress.
+export function orderWeight(order: Pick<PurchaseOrder, "lineItems">, weights: Map<string, number>): number {
+  return order.lineItems.reduce((sum, li) => sum + li.ordered * weightFor(li.item, weights), 0);
+}
+
+// Weight of whatever's currently staged in pendingShipment - i.e. physically
+// picked/packed and sitting in the warehouse waiting to ship.
+export function pendingShipmentWeight(
+  order: Pick<PurchaseOrder, "lineItems" | "pendingShipment">,
+  weights: Map<string, number>
+): number {
+  return (order.pendingShipment ?? []).reduce((sum, l) => {
+    const li = order.lineItems.find((x) => x.id === l.lineItemId);
+    return sum + (li ? l.qty * weightFor(li.item, weights) : 0);
+  }, 0);
+}
+
+// Weight actually shipped in one shipment record.
+export function shipmentRecordWeight(
+  order: Pick<PurchaseOrder, "lineItems">,
+  record: Pick<ShipmentRecord, "lines">,
+  weights: Map<string, number>
+): number {
+  return record.lines.reduce((sum, l) => {
+    const li = order.lineItems.find((x) => x.id === l.lineItemId);
+    return sum + (li ? l.qty * weightFor(li.item, weights) : 0);
+  }, 0);
 }
 
 export function orderSubtotal(order: Pick<PurchaseOrder, "lineItems">): number {

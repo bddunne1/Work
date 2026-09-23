@@ -46,8 +46,8 @@ const TEMPLATES: Record<ImportType, { headers: string[]; sample: string[] }> = {
     ],
   },
   items: {
-    headers: ["Item Number", "Description", "U/M", "Rate", "On Hand", "On Purchase Order"],
-    sample: ["RP-100", "1/2in Twisted Rope, 600ft coil", "EA", "42.50", "120", "0"],
+    headers: ["Item Number", "Description", "U/M", "Rate", "On Hand", "On Purchase Order", "Weight"],
+    sample: ["RP-100", "1/2in Twisted Rope, 600ft coil", "EA", "42.50", "120", "0", "24.5"],
   },
   inventory: {
     headers: ["Item Number", "On Hand", "On Purchase Order"],

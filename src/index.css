@@ -1109,6 +1109,110 @@ a.brand:hover .brand-name {
   border-color: rgba(240, 101, 149, 0.4);
 }
 
+.capacity-recommendation {
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.capacity-recommendation-headline {
+  font-weight: 700;
+  color: var(--text-h);
+  margin-bottom: 4px;
+}
+
+.capacity-recommendation-detail {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.capacity-recommendation-low,
+.capacity-recommendation-healthy {
+  background: rgba(18, 184, 134, 0.1);
+  border-color: rgba(18, 184, 134, 0.4);
+}
+
+.capacity-recommendation-near {
+  background: rgba(245, 159, 0, 0.1);
+  border-color: rgba(245, 159, 0, 0.4);
+}
+
+.capacity-recommendation-over {
+  background: rgba(240, 101, 149, 0.1);
+  border-color: rgba(240, 101, 149, 0.4);
+}
+
+.capacity-recommendation-unknown {
+  background: var(--panel-bg);
+}
+
+.capacity-banner {
+  display: block;
+  border-radius: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  text-decoration: none;
+  transition: filter 0.1s ease;
+}
+
+.capacity-banner:hover {
+  filter: brightness(0.97);
+}
+
+.capacity-banner-headline {
+  font-weight: 700;
+  color: var(--text-h);
+  font-size: 13.5px;
+}
+
+.capacity-banner-detail {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.capacity-banner-low,
+.capacity-banner-healthy {
+  background: rgba(18, 184, 134, 0.1);
+  border-color: rgba(18, 184, 134, 0.4);
+}
+
+.capacity-banner-near {
+  background: rgba(245, 159, 0, 0.1);
+  border-color: rgba(245, 159, 0, 0.4);
+}
+
+.capacity-banner-over {
+  background: rgba(240, 101, 149, 0.1);
+  border-color: rgba(240, 101, 149, 0.4);
+}
+
+.capacity-banner-unknown {
+  background: var(--panel-bg);
+}
+
+.capacity-lookback-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.capacity-aging-over {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.capacity-weight-warning {
+  background: rgba(245, 159, 0, 0.1);
+  border: 1px solid rgba(245, 159, 0, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
 .inline-actions {
   display: flex;
   align-items: center;

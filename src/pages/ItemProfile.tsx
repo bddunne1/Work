@@ -256,6 +256,21 @@ function ItemProfileInner() {
               <p>{view.countryOfOrigin ?? "—"}</p>
             )}
           </label>
+          <label className="form-field">
+            Weight (lbs)
+            {editing ? (
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={view.weight ?? ""}
+                placeholder="For warehouse capacity tracking"
+                onChange={(e) => set("weight", e.target.value === "" ? undefined : Number(e.target.value))}
+              />
+            ) : (
+              <p>{view.weight !== undefined ? `${view.weight} lbs` : "—"}</p>
+            )}
+          </label>
         </div>
 
         <div className="ship-locations">

@@ -95,6 +95,11 @@ const LANES: Lane[] = [
         description: "Fully printed orders, ready to confirm shipment (single or batch)",
         to: "/open-picks",
       },
+      {
+        name: "Warehouse Capacity",
+        description: "How much weight is on the floor, how long it dwells, and when it's safe to release more",
+        to: "/warehouse-capacity",
+      },
     ],
   },
   {
