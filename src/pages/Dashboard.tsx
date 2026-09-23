@@ -42,6 +42,11 @@ const LANES: Lane[] = [
         description: "Customer, inventory, and sales insights with charts",
         to: "/analytics",
       },
+      {
+        name: "Reports",
+        description: "Build a custom report, or run a built-in one, on any part of the database",
+        to: "/reports",
+      },
     ],
   },
   {

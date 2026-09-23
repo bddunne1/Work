@@ -17,6 +17,7 @@ import Inventory from "./pages/Inventory";
 import InventoryAdjust from "./pages/InventoryAdjust";
 import ItemForm from "./pages/ItemForm";
 import ItemProfile from "./pages/ItemProfile";
+import ItemQuickReport from "./pages/ItemQuickReport";
 import Items from "./pages/Items";
 import LabelsHome from "./pages/LabelsHome";
 import Login from "./pages/Login";
@@ -32,6 +33,8 @@ import PurchaseOrderDetail from "./pages/PurchaseOrderDetail";
 import PurchaseOrderForm from "./pages/PurchaseOrderForm";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import Receiving from "./pages/Receiving";
+import ReportRunner from "./pages/ReportRunner";
+import Reports from "./pages/Reports";
 import ReturnDetail from "./pages/ReturnDetail";
 import ReturnForm from "./pages/ReturnForm";
 import Returns from "./pages/Returns";
@@ -66,6 +69,7 @@ function App() {
             <Route path="items" element={<Items />} />
             <Route path="items/new" element={<ItemForm />} />
             <Route path="items/:id" element={<ItemProfile />} />
+            <Route path="items/:id/quick-report" element={<ItemQuickReport />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="inventory/adjust" element={<InventoryAdjust />} />
             <Route path="validation" element={<Validation />} />
@@ -94,6 +98,10 @@ function App() {
             <Route path="returns" element={<Returns />} />
             <Route path="returns/new" element={<ReturnForm />} />
             <Route path="returns/:raNumber" element={<ReturnDetail />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="reports/new" element={<ReportRunner />} />
+            <Route path="reports/preset/:presetKey" element={<ReportRunner />} />
+            <Route path="reports/saved/:savedId" element={<ReportRunner />} />
           </Route>
         </Routes>
       </HashRouter>

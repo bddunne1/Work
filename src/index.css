@@ -1520,6 +1520,48 @@ a.brand:hover .brand-name {
   gap: 12px;
 }
 
+.report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.report-filters .form-field {
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.report-filter-date-range .form-row {
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.report-column-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0;
+  padding: 10px 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.report-column-toggle {
+  margin-top: 0;
+}
+
+.report-save-name {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  background: var(--bg);
+  color: var(--text);
+}
+
 .confirm-box {
   background: var(--panel-bg);
   border: 1px solid var(--border);

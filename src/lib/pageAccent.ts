@@ -14,6 +14,7 @@ const RULES: AccentRule[] = [
   { prefix: "/inventory", color: "#f59f00" },
   { prefix: "/import", color: "#f59f00" },
   { prefix: "/analytics", color: "#f59f00" },
+  { prefix: "/reports", color: "#f59f00" },
   // Order Prep
   { prefix: "/order-entry", color: "#12b886" },
   { prefix: "/validation", color: "#12b886" },

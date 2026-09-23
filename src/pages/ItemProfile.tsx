@@ -111,6 +111,11 @@ function ItemProfileInner() {
           &larr; Back to Item Catalog
         </Link>
         <div className="inline-actions">
+          {!editing && (
+            <Link to={`/items/${item.id}/quick-report`} className="secondary-btn">
+              Quick Report
+            </Link>
+          )}
           {canEdit && !editing && (
             <>
               <button type="button" className="secondary-btn" onClick={startEdit}>

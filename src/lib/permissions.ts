@@ -86,6 +86,7 @@ export const PAGE_DEFS: PageDef[] = [
   },
   { key: "import", label: "Import Data", group: "Data", rules: simplePage("/import") },
   { key: "analytics", label: "Analytics", group: "Data", rules: simplePage("/analytics") },
+  { key: "reports", label: "Reports", group: "Data", rules: simplePage("/reports") },
 
   {
     key: "purchase-orders",
