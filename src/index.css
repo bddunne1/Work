@@ -137,10 +137,11 @@ a {
   overflow-y: auto;
 }
 
-.sidebar-mascot {
-  width: 48px;
-  height: auto;
+.sidebar-brand-mark {
+  width: 46px;
+  height: 46px;
   flex: none;
+  filter: drop-shadow(0 2px 4px rgba(27, 63, 156, 0.35));
 }
 
 .sidebar-links {
@@ -205,8 +206,8 @@ a {
   gap: 10px;
 }
 
-a.brand:hover .brand-mark {
-  opacity: 0.85;
+a.brand:hover .brand-name {
+  color: var(--accent);
 }
 
 .brand-mark {

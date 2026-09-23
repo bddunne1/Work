@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import PorterMascot from "./PorterMascot";
+import BrandMark from "./BrandMark";
 import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
 import { getPageAccent } from "../lib/pageAccent";
@@ -33,7 +33,7 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <nav className="sidebar-nav no-print">
-        <PorterMascot className="sidebar-mascot" />
+        <BrandMark className="sidebar-brand-mark" />
         <div className="sidebar-links">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             <DashboardIcon />
@@ -60,8 +60,7 @@ export default function Layout() {
       <div className="app-main">
         <header className="topbar">
           <Link to="/" className="brand">
-            <span className="brand-mark">A</span>
-            <span className="brand-name">Aamstrand ERP</span>
+            <span className="brand-name">AAmstrand Ropes &amp; Twines</span>
           </Link>
           <div className="topbar-user">
             <span className="topbar-username">
