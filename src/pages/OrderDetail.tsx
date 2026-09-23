@@ -21,11 +21,11 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
     case "Backordered":
       return { label: "Re-check Stock", to: `/allocation/${order.soNumber}` };
     case "Allocated":
-      return { label: "To Pick & Pack", to: `/pick-pack/${order.soNumber}` };
+      return { label: "To Review", to: `/pick-pack/${order.soNumber}` };
     case "Pick & Packed":
       return order.pickListPrintedAt && order.packingSlipPrintedAt
         ? { label: "To Open Picks", to: `/open-picks/${order.soNumber}` }
-        : { label: "To Print Queue", to: "/pick-pack" };
+        : { label: "To Released Picks", to: "/pick-pack" };
     default:
       return null;
   }
@@ -141,6 +141,14 @@ function OrderDetailInner() {
             <div className="muted">711 N Grove St, Manteno, IL 60950</div>
             <div className="muted">800-338-0557</div>
           </div>
+          {view.checkedBy && (
+            <div className="checked-stamp">
+              <span className="checked-stamp-initials">{view.checkedBy}</span>
+              {view.checkedAt && (
+                <span className="checked-stamp-date">{new Date(view.checkedAt).toLocaleDateString()}</span>
+              )}
+            </div>
+          )}
           <div className="so-meta">
             <h2>Sales Order</h2>
             <table className="meta-table">
@@ -193,13 +201,6 @@ function OrderDetailInner() {
             </table>
           </div>
         </div>
-
-        {view.checkedBy && (
-          <div className="checked-stamp">
-            Checked by <strong>{view.checkedBy}</strong>
-            {view.checkedAt && <> on {new Date(view.checkedAt).toLocaleDateString()}</>}
-          </div>
-        )}
 
         {editing ? (
           <div className="so-addresses">

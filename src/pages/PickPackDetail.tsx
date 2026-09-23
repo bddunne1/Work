@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { getOrder, updateOrder } from "../lib/orderStore";
+import { getItemByNumber } from "../lib/itemStore";
+import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
-import type { LineItem } from "../types";
-import { allocatedQtyFor, remainingToShip } from "../types";
+import type { PurchaseOrder } from "../types";
+import { allocatedQtyFor, availableQty, canUnallocate, qtyAllocatedOnOrders, remainingToShip, unallocateOrder } from "../types";
 
 export default function PickPackDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -19,22 +20,17 @@ function PickPackDetailInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
-  const order = soNumber ? getOrder(soNumber) : undefined;
-
-  const pickableLines: LineItem[] = (order?.lineItems ?? []).filter(
-    (li) => allocatedQtyFor(order!, li.id) > 0
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(() =>
+    soNumber ? getOrder(soNumber) : undefined
   );
+  const allOrders = listOrders();
 
-  const [selected, setSelected] = useState<Record<string, boolean>>(() => {
-    const s: Record<string, boolean> = {};
-    for (const li of pickableLines) s[li.id] = true;
-    return s;
-  });
-  const [packQty, setPackQty] = useState<Record<string, number>>(() => {
+  const [qtys, setQtys] = useState<Record<string, number>>(() => {
     const q: Record<string, number> = {};
-    for (const li of pickableLines) q[li.id] = allocatedQtyFor(order!, li.id);
+    for (const li of order?.lineItems ?? []) q[li.id] = allocatedQtyFor(order!, li.id);
     return q;
   });
+  const [saved, setSaved] = useState(false);
 
   if (!order) {
     return (
@@ -45,44 +41,59 @@ function PickPackDetailInner() {
     );
   }
 
-  const selectedLines = pickableLines.filter((li) => selected[li.id] && (packQty[li.id] ?? 0) > 0);
-  const readyToComplete = selectedLines.length > 0;
-
-  function toggleSelected(lineItemId: string) {
-    setSelected((s) => ({ ...s, [lineItemId]: !s[lineItemId] }));
-  }
-
-  function selectAll() {
-    const s: Record<string, boolean> = {};
-    for (const li of pickableLines) s[li.id] = true;
-    setSelected(s);
-  }
-
-  function selectNone() {
-    setSelected({});
-  }
-
   function setQty(lineItemId: string, value: number, max: number) {
-    const clamped = Math.max(0, Math.min(value, max));
-    setPackQty((q) => ({ ...q, [lineItemId]: clamped }));
+    setQtys((q) => ({ ...q, [lineItemId]: Math.max(0, Math.min(value, max)) }));
+    setSaved(false);
   }
 
-  function completePickPack() {
-    if (!order || !readyToComplete) return;
+  function goNext() {
+    const next = nextQueueSoNumber(queueState);
+    if (next) {
+      navigate(`/pick-pack/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+    } else {
+      navigate("/pick-pack");
+    }
+  }
 
-    const pendingShipment = selectedLines.map((li) => ({ lineItemId: li.id, qty: packQty[li.id] ?? 0 }));
+  function reviseAllocation() {
+    if (!order) return;
+    const anyAllocated = order.lineItems.some((li) => (qtys[li.id] ?? 0) > 0);
+    if (!anyAllocated) {
+      alert("At least one line needs an allocated quantity - use Unallocate instead to send this order back to Checked.");
+      return;
+    }
+    const lines = order.lineItems.map((li) => ({
+      lineItemId: li.id,
+      allocatedQty: qtys[li.id] ?? allocatedQtyFor(order, li.id),
+    }));
+    const fullyAllocated = order.lineItems.every((li) => (qtys[li.id] ?? 0) >= remainingToShip(order, li));
+    const updated: PurchaseOrder = {
+      ...order,
+      allocation: {
+        lines,
+        fullyAllocated,
+        shipCompleteOnly: order.allocation?.shipCompleteOnly,
+        decidedAt: new Date().toISOString(),
+      },
+    };
+    updateOrder(updated);
+    setOrder(updated);
+    setSaved(true);
+  }
 
+  function releasePick() {
+    if (!order) return;
+    const releasedLines = order.lineItems.filter((li) => (qtys[li.id] ?? 0) > 0);
+    if (releasedLines.length === 0) return;
+
+    const pendingShipment = releasedLines.map((li) => ({ lineItemId: li.id, qty: qtys[li.id] ?? 0 }));
     const newAllocationLines = order.lineItems.map((li) => ({
       lineItemId: li.id,
-      allocatedQty: selected[li.id] ? 0 : allocatedQtyFor(order, li.id),
+      allocatedQty: (qtys[li.id] ?? 0) > 0 ? 0 : allocatedQtyFor(order, li.id),
     }));
-
-    // Complete only once nothing remains owed on any line after this round's
-    // pack quantities ship; otherwise this pack still leaves the order short.
-    const pickPackStatus: "Partial" | "Complete" = order.lineItems.every((li) => {
-      const packedThisRound = selected[li.id] ? (packQty[li.id] ?? 0) : 0;
-      return remainingToShip(order, li) - packedThisRound <= 0;
-    })
+    const pickPackStatus: "Partial" | "Complete" = order.lineItems.every(
+      (li) => remainingToShip(order, li) - (qtys[li.id] ?? 0) <= 0
+    )
       ? "Complete"
       : "Partial";
 
@@ -94,17 +105,25 @@ function PickPackDetailInner() {
       pendingShipment,
       pickListPrintedAt: undefined,
       packingSlipPrintedAt: undefined,
-      allocation: order.allocation
-        ? { ...order.allocation, lines: newAllocationLines }
-        : order.allocation,
+      allocation: order.allocation ? { ...order.allocation, lines: newAllocationLines } : order.allocation,
     });
-    const next = nextQueueSoNumber(queueState);
-    if (next) {
-      navigate(`/pick-pack/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
-    } else {
-      navigate("/pick-pack");
-    }
+    goNext();
   }
+
+  function handleUnallocate() {
+    if (!order || !canUnallocate(order)) return;
+    if (
+      !confirm(
+        `Unallocate S.O. #${order.soNumber}? This releases its reserved stock and sends it back to Checked for a fresh allocation decision.`
+      )
+    ) {
+      return;
+    }
+    updateOrder(unallocateOrder(order));
+    goNext();
+  }
+
+  const readyToRelease = order.lineItems.some((li) => (qtys[li.id] ?? 0) > 0);
 
   return (
     <div className="page">
@@ -112,7 +131,7 @@ function PickPackDetailInner() {
         <Link to="/pick-pack" className="link-btn">
           &larr; {queueState ? "Exit Queue" : "Back to Pick & Pack"}
         </Link>
-        <h1>Pick &amp; Pack S.O. #{order.soNumber}</h1>
+        <h1>Review S.O. #{order.soNumber}</h1>
         <p className="muted">
           P.O. #{order.poNumber || "—"} · {order.billTo.name}
           {queueState && <> · {queueProgressLabel(queueState)}</>}
@@ -122,58 +141,49 @@ function PickPackDetailInner() {
       <div className="sales-order">
         <div className="line-items">
           <div className="ship-locations-header">
-            <h3>Select and adjust lines to pack</h3>
-            <div className="inline-actions">
-              <button type="button" className="secondary-btn" onClick={selectAll}>
-                Select All
-              </button>
-              <button type="button" className="secondary-btn" onClick={selectNone}>
-                Select None
-              </button>
-            </div>
+            <h3>Allocated Lines</h3>
           </div>
           <table className="data-table line-item-table">
             <thead>
               <tr>
-                <th>Select</th>
                 <th className="col-item">Item</th>
                 <th className="col-desc">Description</th>
                 <th className="col-um">U/M</th>
                 <th className="col-qty">Ordered</th>
+                <th className="col-qty">Remaining</th>
+                <th className="col-qty">Available</th>
                 <th className="col-qty">Allocated</th>
-                <th className="col-qty">Pack Qty</th>
               </tr>
             </thead>
             <tbody>
-              {pickableLines.map((li) => {
-                const allocated = allocatedQtyFor(order, li.id);
-                const isSelected = Boolean(selected[li.id]);
-                const qty = packQty[li.id] ?? 0;
-                const short = qty < allocated;
+              {order.lineItems.map((li) => {
+                const remaining = remainingToShip(order, li);
+                const catalogItem = getItemByNumber(li.item);
+                const reservedElsewhere = qtyAllocatedOnOrders(
+                  li.item,
+                  allOrders.filter((o) => o.soNumber !== order.soNumber)
+                );
+                const trueAvailable = catalogItem ? availableQty(catalogItem, reservedElsewhere) : null;
+                const maxQty = trueAvailable !== null ? Math.max(0, Math.min(remaining, trueAvailable)) : remaining;
+                const qty = qtys[li.id] ?? 0;
                 return (
                   <tr key={li.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelected(li.id)}
-                        aria-label={`Select ${li.item}`}
-                      />
-                    </td>
                     <td>{li.item}</td>
                     <td>{li.description}</td>
                     <td>{li.um}</td>
                     <td className="amount-cell">{li.ordered}</td>
-                    <td className="amount-cell">{allocated}</td>
+                    <td className="amount-cell">{remaining}</td>
+                    <td className={`amount-cell ${trueAvailable !== null && trueAvailable < 0 ? "qty-negative" : ""}`}>
+                      {trueAvailable !== null ? trueAvailable : "—"}
+                    </td>
                     <td>
                       <input
                         type="number"
-                        className={`num-input allocate-qty-input ${short ? "short" : ""}`}
+                        className="num-input allocate-qty-input"
                         min={0}
-                        max={allocated}
+                        max={maxQty}
                         value={qty}
-                        disabled={!isSelected}
-                        onChange={(e) => setQty(li.id, Number(e.target.value), allocated)}
+                        onChange={(e) => setQty(li.id, Number(e.target.value), maxQty)}
                       />
                     </td>
                   </tr>
@@ -184,10 +194,16 @@ function PickPackDetailInner() {
         </div>
 
         <div className="button-row">
-          <button type="button" className="primary-btn" disabled={!readyToComplete} onClick={completePickPack}>
-            Complete Pick &amp; Pack
+          <button type="button" className="secondary-btn" onClick={reviseAllocation}>
+            Revise Allocation
           </button>
-          <span className="muted">Adds this order to the print batch queue.</span>
+          <button type="button" className="primary-btn" disabled={!readyToRelease} onClick={releasePick}>
+            Release Pick
+          </button>
+          <button type="button" className="secondary-btn danger-btn" onClick={handleUnallocate}>
+            Unallocate
+          </button>
+          {saved && <span className="muted">Allocation saved.</span>}
         </div>
       </div>
     </div>

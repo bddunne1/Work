@@ -193,7 +193,7 @@ export default function Dashboard() {
             label: "Open Orders",
             value: orders.filter((o) => o.status !== "Shipped").length,
             to: "/open-orders",
-            color: "#4c6ef5",
+            color: "#2f9e44",
           },
           {
             label: "Awaiting Validation",
@@ -225,7 +225,22 @@ export default function Dashboard() {
             to: "/open-picks",
             color: "#5f3dc4",
           },
-          { label: "Customers", value: customerCount, to: "/customers/all", color: "#4338ca" },
+        ].map((s) => (
+          <Link
+            key={s.label}
+            to={s.to}
+            className="stat-card"
+            style={{ "--stat-color": s.color } as React.CSSProperties}
+          >
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="stat-row stat-row-secondary">
+        {[
+          { label: "Customers", value: customerCount, to: "/customers/all", color: "#f2b705" },
           { label: "Items", value: itemCount, to: "/items", color: "#b45309" },
         ].map((s) => (
           <Link
@@ -241,10 +256,13 @@ export default function Dashboard() {
       </div>
 
       {visibleLanes.map((lane) => (
-        <section key={lane.lane} className="lane-section">
-          <h2 className="lane-title" style={{ borderColor: lane.color }}>
-            {lane.lane}
-          </h2>
+        <section
+          key={lane.lane}
+          className="lane-section"
+          style={{ "--lane-color": lane.color } as React.CSSProperties}
+        >
+          <div className="lane-band" />
+          <h2 className="lane-title">{lane.lane}</h2>
           <div className="module-grid">
             {lane.modules.map((m) =>
               m.to ? (
@@ -264,9 +282,9 @@ export default function Dashboard() {
         </section>
       ))}
 
-      <section className="lane-section">
-        <h2 className="lane-title" style={{ borderColor: "#4c6ef5" }}>
-          Recent Orders
+      <section className="lane-section" style={{ "--lane-color": "#4c6ef5" } as React.CSSProperties}>
+        <div className="lane-band" />
+        <h2 className="lane-title">Recent Orders
         </h2>
         {recent.length === 0 ? (
           <p className="muted">No orders entered yet. Start with Order Entry above.</p>

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
-import ItemAutocompleteInput from "../components/ItemAutocompleteInput";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { getReturn, updateReturn } from "../lib/returnStore";
@@ -9,6 +8,7 @@ import type { Item, ReturnAuthorization, ReturnLine, ReturnStatus } from "../typ
 import { returnTotal } from "../types";
 
 const STATUSES: ReturnStatus[] = ["Issued", "Received", "Closed"];
+const ITEM_DATALIST_ID = "return-detail-item-catalog-options";
 
 export default function ReturnDetail() {
   const { raNumber } = useParams<{ raNumber: string }>();
@@ -59,8 +59,11 @@ function ReturnDetailInner() {
     setDraft((d) => (d ? { ...d, lines: d.lines.map((l) => (l.id === id ? { ...l, ...patch } : l)) } : d));
   }
 
-  function applyItemMatch(id: string, item: Item) {
-    updateLine(id, { itemNumber: item.itemNumber, description: item.description, um: item.um, rate: item.rate });
+  function applyItemLookup(id: string, itemNumber: string) {
+    const q = itemNumber.trim().toLowerCase();
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!match) return;
+    updateLine(id, { itemNumber: match.itemNumber, description: match.description, um: match.um, rate: match.rate });
   }
 
   function saveEdit() {
@@ -200,6 +203,15 @@ function ReturnDetailInner() {
         </table>
 
         <div className="line-items">
+          {editing && (
+            <datalist id={ITEM_DATALIST_ID}>
+              {catalog.map((c) => (
+                <option key={c.id} value={c.itemNumber}>
+                  {c.description}
+                </option>
+              ))}
+            </datalist>
+          )}
           <table className="data-table line-item-table">
             <thead>
               <tr>
@@ -217,11 +229,11 @@ function ReturnDetailInner() {
                 <tr key={l.id}>
                   <td>
                     {editing ? (
-                      <ItemAutocompleteInput
+                      <input
                         value={l.itemNumber}
-                        onChange={(itemNumber) => updateLine(l.id, { itemNumber })}
-                        onMatch={(item) => applyItemMatch(l.id, item)}
-                        catalog={catalog}
+                        list={ITEM_DATALIST_ID}
+                        onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
+                        onBlur={(e) => applyItemLookup(l.id, e.target.value)}
                       />
                     ) : (
                       l.itemNumber

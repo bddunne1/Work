@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import ItemAutocompleteInput from "../components/ItemAutocompleteInput";
 import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
 import { nextVendorPoNumber, saveVendorPo } from "../lib/vendorPoStore";
 import { listVendors } from "../lib/vendorStore";
 import type { Item, Vendor, VendorPoLine, VendorPurchaseOrder } from "../types";
 import { emptyVendorPoLine, vendorPoCostTotal } from "../types";
+
+const ITEM_DATALIST_ID = "po-item-catalog-options";
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -36,8 +37,11 @@ export default function PurchaseOrderForm() {
     setLines((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
   }
 
-  function applyItemMatch(id: string, item: Item) {
-    updateLine(id, { itemNumber: item.itemNumber, description: item.description, cost: item.rate });
+  function applyItemLookup(id: string, itemNumber: string) {
+    const q = itemNumber.trim().toLowerCase();
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!match) return;
+    updateLine(id, { itemNumber: match.itemNumber, description: match.description, cost: match.rate });
   }
 
   function addLine() {
@@ -114,6 +118,13 @@ export default function PurchaseOrderForm() {
           </tbody>
         </table>
 
+        <datalist id={ITEM_DATALIST_ID}>
+          {catalog.map((c) => (
+            <option key={c.id} value={c.itemNumber}>
+              {c.description}
+            </option>
+          ))}
+        </datalist>
         <table className="data-table line-item-table">
           <thead>
             <tr>
@@ -129,11 +140,11 @@ export default function PurchaseOrderForm() {
             {lines.map((l) => (
               <tr key={l.id}>
                 <td>
-                  <ItemAutocompleteInput
+                  <input
                     value={l.itemNumber}
-                    onChange={(itemNumber) => updateLine(l.id, { itemNumber })}
-                    onMatch={(item) => applyItemMatch(l.id, item)}
-                    catalog={catalog}
+                    list={ITEM_DATALIST_ID}
+                    onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
+                    onBlur={(e) => applyItemLookup(l.id, e.target.value)}
                   />
                 </td>
                 <td>

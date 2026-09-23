@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
-import ItemAutocompleteInput from "../components/ItemAutocompleteInput";
 import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
 import { listCustomers } from "../lib/customerStore";
@@ -9,6 +8,8 @@ import { listItems } from "../lib/itemStore";
 import { nextReturnNumber, saveReturn } from "../lib/returnStore";
 import type { Customer, Item, ReturnAuthorization, ReturnLine } from "../types";
 import { emptyReturn, emptyReturnLine, returnTotal } from "../types";
+
+const ITEM_DATALIST_ID = "return-item-catalog-options";
 
 export default function ReturnForm() {
   const navigate = useNavigate();
@@ -40,8 +41,11 @@ export default function ReturnForm() {
     setRa((r) => ({ ...r, lines: r.lines.map((l) => (l.id === id ? { ...l, ...patch } : l)) }));
   }
 
-  function applyItemMatch(id: string, item: Item) {
-    updateLine(id, { itemNumber: item.itemNumber, description: item.description, um: item.um, rate: item.rate });
+  function applyItemLookup(id: string, itemNumber: string) {
+    const q = itemNumber.trim().toLowerCase();
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!match) return;
+    updateLine(id, { itemNumber: match.itemNumber, description: match.description, um: match.um, rate: match.rate });
   }
 
   function addLine() {
@@ -174,6 +178,13 @@ export default function ReturnForm() {
               + Add Line Item
             </button>
           </div>
+          <datalist id={ITEM_DATALIST_ID}>
+            {catalog.map((c) => (
+              <option key={c.id} value={c.itemNumber}>
+                {c.description}
+              </option>
+            ))}
+          </datalist>
           <table className="data-table line-item-table">
             <thead>
               <tr>
@@ -191,11 +202,11 @@ export default function ReturnForm() {
               {ra.lines.map((l) => (
                 <tr key={l.id}>
                   <td>
-                    <ItemAutocompleteInput
+                    <input
                       value={l.itemNumber}
-                      onChange={(itemNumber) => updateLine(l.id, { itemNumber })}
-                      onMatch={(item) => applyItemMatch(l.id, item)}
-                      catalog={catalog}
+                      list={ITEM_DATALIST_ID}
+                      onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
+                      onBlur={(e) => applyItemLookup(l.id, e.target.value)}
                     />
                   </td>
                   <td>
