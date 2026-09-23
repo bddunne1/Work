@@ -36,6 +36,7 @@ import ReturnDetail from "./pages/ReturnDetail";
 import ReturnForm from "./pages/ReturnForm";
 import Returns from "./pages/Returns";
 import RoutingGuide from "./pages/RoutingGuide";
+import RoutingGuideDetail from "./pages/RoutingGuideDetail";
 import ScheduleShipments from "./pages/ScheduleShipments";
 import ShipmentHistory from "./pages/ShipmentHistory";
 import ShippingLabelCreate from "./pages/ShippingLabelCreate";
@@ -61,6 +62,7 @@ function App() {
             <Route path="customers/all/:id" element={<Customers />} />
             <Route path="customers/pricing" element={<CustomerPricing />} />
             <Route path="customers/routing-guide" element={<RoutingGuide />} />
+            <Route path="customers/routing-guide/:id" element={<RoutingGuideDetail />} />
             <Route path="items" element={<Items />} />
             <Route path="items/new" element={<ItemForm />} />
             <Route path="items/:id" element={<ItemProfile />} />

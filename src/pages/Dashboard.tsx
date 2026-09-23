@@ -188,38 +188,56 @@ export default function Dashboard() {
       </div>
 
       <div className="stat-row">
-        <div className="stat-card">
-          <div className="stat-value">{orders.filter((o) => o.status !== "Shipped").length}</div>
-          <div className="stat-label">Open Orders</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{orders.filter((o) => o.status === "Entered").length}</div>
-          <div className="stat-label">Awaiting Validation</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{orders.filter((o) => o.status === "Checked").length}</div>
-          <div className="stat-label">Awaiting Allocation</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{orders.filter((o) => o.status === "Backordered").length}</div>
-          <div className="stat-label">Back Order Queue</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{orders.filter((o) => o.status === "Allocated").length}</div>
-          <div className="stat-label">Ready to Pick</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{orders.filter((o) => o.status === "Pick & Packed").length}</div>
-          <div className="stat-label">Open Picks</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{customerCount}</div>
-          <div className="stat-label">Customers</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{itemCount}</div>
-          <div className="stat-label">Items</div>
-        </div>
+        {[
+          {
+            label: "Open Orders",
+            value: orders.filter((o) => o.status !== "Shipped").length,
+            to: "/open-orders",
+            color: "#4c6ef5",
+          },
+          {
+            label: "Awaiting Validation",
+            value: orders.filter((o) => o.status === "Entered").length,
+            to: "/validation",
+            color: "#64748b",
+          },
+          {
+            label: "Awaiting Allocation",
+            value: orders.filter((o) => o.status === "Checked").length,
+            to: "/allocation",
+            color: "#4c6ef5",
+          },
+          {
+            label: "Back Order Queue",
+            value: orders.filter((o) => o.status === "Backordered").length,
+            to: "/back-orders",
+            color: "#e8590c",
+          },
+          {
+            label: "Ready to Pick",
+            value: orders.filter((o) => o.status === "Allocated").length,
+            to: "/pick-pack",
+            color: "#e03131",
+          },
+          {
+            label: "Open Picks",
+            value: orders.filter((o) => o.status === "Pick & Packed").length,
+            to: "/open-picks",
+            color: "#5f3dc4",
+          },
+          { label: "Customers", value: customerCount, to: "/customers/all", color: "#4338ca" },
+          { label: "Items", value: itemCount, to: "/items", color: "#b45309" },
+        ].map((s) => (
+          <Link
+            key={s.label}
+            to={s.to}
+            className="stat-card"
+            style={{ "--stat-color": s.color } as React.CSSProperties}
+          >
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+          </Link>
+        ))}
       </div>
 
       {visibleLanes.map((lane) => (

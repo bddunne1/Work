@@ -272,6 +272,8 @@ a.brand:hover .brand-mark {
 .page-header h1 {
   font-size: 24px;
   margin-bottom: 4px;
+  padding-left: 12px;
+  border-left: 4px solid var(--page-accent, var(--accent));
 }
 
 /* Dashboard */
@@ -368,16 +370,25 @@ a.brand:hover .brand-mark {
 .stat-card {
   background: var(--panel-bg);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--stat-color, var(--accent));
   border-radius: 10px;
   padding: 14px 16px;
   min-width: 0;
   box-shadow: var(--shadow);
+  display: block;
+  text-decoration: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--text-h);
+  color: var(--stat-color, var(--text-h));
 }
 
 .stat-label {
@@ -470,7 +481,7 @@ a.brand:hover .brand-mark {
 }
 
 .data-table th {
-  background: var(--accent-bg);
+  background: color-mix(in srgb, var(--page-accent, var(--accent)) 12%, var(--panel-bg));
   color: var(--text-h);
   font-weight: 600;
   font-size: 12px;
@@ -487,7 +498,7 @@ a.brand:hover .brand-mark {
 }
 
 .clickable-row:hover td {
-  background: var(--accent-bg);
+  background: color-mix(in srgb, var(--page-accent, var(--accent)) 8%, var(--panel-bg));
 }
 
 .status-pill {
@@ -619,7 +630,7 @@ a.brand:hover .brand-mark {
 }
 
 .meta-table th {
-  background: var(--accent-bg);
+  background: color-mix(in srgb, var(--page-accent, var(--accent)) 12%, var(--panel-bg));
   color: var(--text-h);
   text-transform: uppercase;
   letter-spacing: 0.03em;
