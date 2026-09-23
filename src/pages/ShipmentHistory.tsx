@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, undoShipment } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -23,6 +23,7 @@ function shippedOrders(): PurchaseOrder[] {
 }
 
 export default function ShipmentHistory() {
+  const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [orders, setOrders] = useState<PurchaseOrder[]>(() => shippedOrders());
@@ -78,10 +79,12 @@ export default function ShipmentHistory() {
             {filtered.map((o) => {
               const shipped = lastShippedAt(o.shipmentHistory ?? []);
               return (
-                <tr key={o.soNumber}>
-                  <td>
-                    <Link to={`/storage/${o.soNumber}`}>{o.soNumber}</Link>
-                  </td>
+                <tr
+                  key={o.soNumber}
+                  className="clickable-row"
+                  onClick={() => navigate(`/storage/${o.soNumber}`)}
+                >
+                  <td>{o.soNumber}</td>
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
                   <td>
@@ -89,11 +92,11 @@ export default function ShipmentHistory() {
                   </td>
                   <td>{shipped ? new Date(shipped).toLocaleString() : "—"}</td>
                   <td>${orderTotal(o).toFixed(2)}</td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     {canEdit && (
                       <button
                         type="button"
-                        className="link-btn danger-link"
+                        className="row-action-outline danger-link"
                         onClick={() => handleUndo(o)}
                       >
                         Undo Shipment

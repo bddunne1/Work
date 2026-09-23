@@ -157,13 +157,13 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
               />
               {!readOnly && (
                 <div className="ship-location-actions">
-                  <button type="button" className="link-btn" onClick={() => copyBillToAddress(loc.id)}>
+                  <button type="button" className="row-action-outline" onClick={() => copyBillToAddress(loc.id)}>
                     Copy from Bill To
                   </button>
                   {customer.shipToLocations.length > 1 && (
                     <button
                       type="button"
-                      className="link-btn danger-link"
+                      className="row-action-outline danger-link"
                       onClick={() => removeLocation(loc.id)}
                     >
                       Remove
@@ -229,7 +229,7 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
                     <td>
                       <button
                         type="button"
-                        className="link-btn danger-link"
+                        className="row-action-outline danger-link"
                         onClick={() => removePartMapping(m.id)}
                       >
                         Remove

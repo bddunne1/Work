@@ -121,7 +121,7 @@ export default function CustomerPricing() {
                       <td>
                         <button
                           type="button"
-                          className="link-btn danger-link"
+                          className="row-action-outline danger-link"
                           onClick={() => removeOverride(o.id)}
                         >
                           Remove

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
 import { useCanEdit } from "../lib/authContext";
@@ -168,7 +168,7 @@ export default function PickPack() {
                     {canEdit && (
                       <button
                         type="button"
-                        className="link-btn danger-link"
+                        className="row-action-outline danger-link"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleUnallocate(o);
@@ -218,8 +218,12 @@ export default function PickPack() {
               </thead>
               <tbody>
                 {queue.map((o) => (
-                  <tr key={o.soNumber}>
-                    <td>
+                  <tr
+                    key={o.soNumber}
+                    className="clickable-row"
+                    onClick={() => navigate(`/storage/${o.soNumber}`)}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={Boolean(selected[o.soNumber])}
@@ -227,9 +231,7 @@ export default function PickPack() {
                         aria-label={`Select S.O. ${o.soNumber}`}
                       />
                     </td>
-                    <td>
-                      <Link to={`/storage/${o.soNumber}`}>{o.soNumber}</Link>
-                    </td>
+                    <td>{o.soNumber}</td>
                     <td>{o.poNumber}</td>
                     <td>{o.billTo.name}</td>
                     <td>
@@ -246,11 +248,11 @@ export default function PickPack() {
                         <span className="muted">Not printed</span>
                       )}
                     </td>
-                    <td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       {canEdit && canUnallocate(o) && (
                         <button
                           type="button"
-                          className="link-btn danger-link"
+                          className="row-action-outline danger-link"
                           onClick={() => handleUnallocate(o)}
                         >
                           Unallocate

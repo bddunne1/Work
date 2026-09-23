@@ -125,7 +125,11 @@ export default function Vendors() {
                 </td>
                 {canEdit && (
                   <td>
-                    <button type="button" className="link-btn danger-link" onClick={() => handleDelete(v)}>
+                    <button
+                      type="button"
+                      className="row-action-outline danger-link"
+                      onClick={() => handleDelete(v)}
+                    >
                       Delete
                     </button>
                   </td>

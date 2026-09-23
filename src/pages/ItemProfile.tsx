@@ -293,7 +293,7 @@ function ItemProfileInner() {
                       <td>
                         <button
                           type="button"
-                          className="link-btn danger-link"
+                          className="row-action-outline danger-link"
                           onClick={() => removeComponent(c.id)}
                         >
                           Remove
@@ -351,7 +351,11 @@ function ItemProfileInner() {
                       />
                     </td>
                     <td>
-                      <button type="button" className="link-btn danger-link" onClick={() => removeLink(l.id)}>
+                      <button
+                        type="button"
+                        className="row-action-outline danger-link"
+                        onClick={() => removeLink(l.id)}
+                      >
                         Remove
                       </button>
                     </td>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
@@ -7,6 +7,7 @@ import type { Item } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function Inventory() {
+  const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [items] = useState<Item[]>(() => listItems());
@@ -79,7 +80,7 @@ export default function Inventory() {
               const allocated = qtyAllocatedOnOrders(i.itemNumber, orders);
               const available = availableQty(i, allocated);
               return (
-                <tr key={i.id}>
+                <tr key={i.id} className="clickable-row" onClick={() => navigate(`/items/${i.id}`)}>
                   <td>{i.itemNumber}</td>
                   <td>{i.description}</td>
                   <td>{i.um}</td>

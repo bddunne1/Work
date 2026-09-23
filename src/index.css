@@ -512,8 +512,8 @@ a {
 }
 
 .status-pill-allocated {
-  background: rgba(12, 166, 120, 0.15);
-  color: #0ca678;
+  background: rgba(224, 49, 49, 0.15);
+  color: #e03131;
 }
 
 .status-pill-backordered {
@@ -522,8 +522,8 @@ a {
 }
 
 .status-pill-pick-packed {
-  background: rgba(124, 111, 242, 0.15);
-  color: #7c6ff2;
+  background: rgba(95, 61, 196, 0.15);
+  color: #5f3dc4;
 }
 
 .status-pill-shipped {
@@ -1425,6 +1425,38 @@ a {
 
 .danger-link {
   color: var(--danger);
+}
+
+/* Action buttons that sit inside a clickable-row: keep their own text and
+   function (stopPropagation so the row click doesn't also fire), but read
+   as a distinct control via an outline that highlights on hover/focus. */
+.row-action-outline {
+  background: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.4;
+}
+
+.row-action-outline:hover,
+.row-action-outline:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.row-action-outline.danger-link:hover,
+.row-action-outline.danger-link:focus-visible {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(214, 51, 108, 0.08);
 }
 
 .narrow-form {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { useAuth } from "../lib/authContext";
 import { listCustomers } from "../lib/customerStore";
@@ -133,6 +133,7 @@ const LANES: Lane[] = [
 ];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { account } = useAuth();
   const orders = listOrders();
   const recent = orders.slice(0, 5);
@@ -259,10 +260,12 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {recent.map((o) => (
-                <tr key={o.soNumber}>
-                  <td>
-                    <Link to={`/storage/${o.soNumber}`}>{o.soNumber}</Link>
-                  </td>
+                <tr
+                  key={o.soNumber}
+                  className="clickable-row"
+                  onClick={() => navigate(`/storage/${o.soNumber}`)}
+                >
+                  <td>{o.soNumber}</td>
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
                   <td>{o.orderDate}</td>

@@ -281,7 +281,10 @@ export default function Accounts() {
             const presetLabel = a.role === "custom" ? presetLabelFor(a.permissions) : null;
             return (
               <Fragment key={a.id}>
-                <tr>
+                <tr
+                  className="clickable-row"
+                  onClick={() => (editingId === a.id ? cancelEdit() : startEdit(a))}
+                >
                   <td>
                     {a.username} {a.id === currentAccount?.id && <span className="muted">(you)</span>}
                   </td>
@@ -290,15 +293,19 @@ export default function Accounts() {
                     {a.role === "admin" ? "Admin" : presetLabel ? `Custom · ${presetLabel}` : "Custom"}
                   </td>
                   <td>{a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"}</td>
-                  <td className="row-actions">
+                  <td className="row-actions" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      className="link-btn"
+                      className="row-action-outline"
                       onClick={() => (editingId === a.id ? cancelEdit() : startEdit(a))}
                     >
                       {editingId === a.id ? "Cancel" : "Edit"}
                     </button>
-                    <button type="button" className="link-btn danger-link" onClick={() => handleDelete(a)}>
+                    <button
+                      type="button"
+                      className="row-action-outline danger-link"
+                      onClick={() => handleDelete(a)}
+                    >
                       Delete
                     </button>
                   </td>

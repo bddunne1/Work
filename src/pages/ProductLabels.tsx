@@ -184,8 +184,8 @@ export default function ProductLabels() {
               </thead>
               <tbody>
                 {filtered.map((i) => (
-                  <tr key={i.itemNumber}>
-                    <td>
+                  <tr key={i.itemNumber} className="clickable-row" onClick={() => toggle(i.itemNumber)}>
+                    <td onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={Boolean(selected[i.itemNumber])}

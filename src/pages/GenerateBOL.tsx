@@ -117,8 +117,12 @@ export default function GenerateBOL() {
             </thead>
             <tbody>
               {filtered.map((o) => (
-                <tr key={o.soNumber}>
-                  <td>
+                <tr
+                  key={o.soNumber}
+                  className="clickable-row"
+                  onClick={() => canEdit && toggleSelect(o.soNumber)}
+                >
+                  <td onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selected.has(o.soNumber)}
@@ -126,8 +130,8 @@ export default function GenerateBOL() {
                       disabled={!canEdit}
                     />
                   </td>
-                  <td>
-                    <Link to={`/storage/${o.soNumber}`} target="_blank">
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/storage/${o.soNumber}`} target="_blank" className="row-action-outline">
                       {o.soNumber}
                     </Link>
                   </td>
