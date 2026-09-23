@@ -460,6 +460,36 @@ a {
   font-weight: 600;
 }
 
+.status-pill-entered {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+}
+
+.status-pill-checked {
+  background: rgba(76, 110, 245, 0.15);
+  color: #4c6ef5;
+}
+
+.status-pill-allocated {
+  background: rgba(12, 166, 120, 0.15);
+  color: #0ca678;
+}
+
+.status-pill-backordered {
+  background: rgba(232, 89, 12, 0.15);
+  color: #e8590c;
+}
+
+.status-pill-pick-packed {
+  background: rgba(124, 111, 242, 0.15);
+  color: #7c6ff2;
+}
+
+.status-pill-shipped {
+  background: rgba(47, 158, 68, 0.15);
+  color: #2f9e44;
+}
+
 .status-pill-group {
   display: inline-flex;
   align-items: center;
@@ -1029,6 +1059,13 @@ a {
 .allocate-qty-input.short {
   border-color: #f59f00;
   color: #f59f00;
+  font-weight: 700;
+}
+
+.allocate-qty-input.over-available {
+  border-color: #e03131;
+  color: #e03131;
+  background: rgba(224, 49, 49, 0.1);
   font-weight: 700;
 }
 
@@ -1627,6 +1664,64 @@ a {
 .item-profile-heading {
   margin: 8px 0 4px;
   font-size: 15px;
+}
+
+.page-header h1 input {
+  font-size: 24px;
+  font-weight: 700;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  width: 100%;
+  max-width: 320px;
+}
+
+.item-profile-description-input {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  width: 100%;
+  max-width: 520px;
+}
+
+.item-profile-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.item-profile-links a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.item-profile-links a:hover {
+  text-decoration: underline;
+}
+
+.form-field p {
+  margin: 0;
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.form-field textarea {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13.5px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
 }
 
 .checked-stamp {

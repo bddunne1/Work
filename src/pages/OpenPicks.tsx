@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { listOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 
@@ -14,6 +14,7 @@ function openPickOrders(): PurchaseOrder[] {
 }
 
 export default function OpenPicks() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<PurchaseOrder[]>(() => openPickOrders());
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
@@ -80,13 +81,16 @@ export default function OpenPicks() {
                 <th>Customer</th>
                 <th>Packed</th>
                 <th>Pick &amp; Pack</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               {orders.map((o) => (
-                <tr key={o.soNumber}>
-                  <td>
+                <tr
+                  key={o.soNumber}
+                  className="clickable-row"
+                  onClick={() => navigate(`/open-picks/${o.soNumber}`)}
+                >
+                  <td onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={Boolean(selected[o.soNumber])}
@@ -104,11 +108,6 @@ export default function OpenPicks() {
                         {o.pickPackStatus}
                       </span>
                     )}
-                  </td>
-                  <td>
-                    <Link to={`/open-picks/${o.soNumber}`} className="link-btn">
-                      View
-                    </Link>
                   </td>
                 </tr>
               ))}

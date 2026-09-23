@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
-import { deleteItem, listItems } from "../lib/itemStore";
+import { listItems } from "../lib/itemStore";
 import type { Item } from "../types";
 
 export default function Items() {
+  const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<Item[]>(() => listItems());
+  const [items] = useState<Item[]>(() => listItems());
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -16,12 +17,6 @@ export default function Items() {
       (i) => i.itemNumber.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)
     );
   }, [items, query]);
-
-  function handleDelete(id: string) {
-    if (!confirm("Delete this item?")) return;
-    deleteItem(id);
-    setItems(listItems());
-  }
 
   return (
     <div className="page">
@@ -59,24 +54,15 @@ export default function Items() {
               <th>Description</th>
               <th>U/M</th>
               <th>Rate</th>
-              {canEdit && <th></th>}
             </tr>
           </thead>
           <tbody>
             {filtered.map((i) => (
-              <tr key={i.id}>
+              <tr key={i.id} className="clickable-row" onClick={() => navigate(`/items/${i.id}`)}>
                 <td>{i.itemNumber}</td>
                 <td>{i.description}</td>
                 <td>{i.um}</td>
                 <td>${i.rate.toFixed(2)}</td>
-                {canEdit && (
-                  <td className="row-actions">
-                    <Link to={`/items/${i.id}/edit`}>Edit</Link>
-                    <button type="button" className="link-btn danger-link" onClick={() => handleDelete(i.id)}>
-                      Delete
-                    </button>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>

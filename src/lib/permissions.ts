@@ -69,7 +69,7 @@ export const PAGE_DEFS: PageDef[] = [
     key: "catalog",
     label: "Item Catalog",
     group: "Data",
-    rules: pageWithEditGatedSubpaths("/items", ["/items/new", "/items/"]),
+    rules: pageWithEditGatedSubpaths("/items", ["/items/new"]),
   },
   {
     key: "inventory",

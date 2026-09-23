@@ -16,6 +16,7 @@ import Import from "./pages/Import";
 import Inventory from "./pages/Inventory";
 import InventoryAdjust from "./pages/InventoryAdjust";
 import ItemForm from "./pages/ItemForm";
+import ItemProfile from "./pages/ItemProfile";
 import Items from "./pages/Items";
 import LabelsHome from "./pages/LabelsHome";
 import Login from "./pages/Login";
@@ -59,7 +60,7 @@ function App() {
             <Route path="customers/routing-guide" element={<RoutingGuide />} />
             <Route path="items" element={<Items />} />
             <Route path="items/new" element={<ItemForm />} />
-            <Route path="items/:id/edit" element={<ItemForm />} />
+            <Route path="items/:id" element={<ItemProfile />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="inventory/adjust" element={<InventoryAdjust />} />
             <Route path="validation" element={<Validation />} />

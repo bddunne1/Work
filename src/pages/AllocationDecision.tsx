@@ -188,6 +188,7 @@ function AllocationDecisionInner() {
                 const catalogItem = getItemByNumber(li.item);
                 const allocatedElsewhere = qtyAllocatedOnOrders(li.item, allOrders);
                 const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
+                const overAvailable = available !== null && qty > available;
                 return (
                   <tr key={li.id}>
                     <td>{li.item}</td>
@@ -203,7 +204,7 @@ function AllocationDecisionInner() {
                     <td>
                       <input
                         type="number"
-                        className={`num-input allocate-qty-input ${short ? "short" : ""}`}
+                        className={`num-input allocate-qty-input ${short ? "short" : ""} ${overAvailable ? "over-available" : ""}`}
                         min={0}
                         max={remaining}
                         value={qty}

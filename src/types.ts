@@ -163,6 +163,12 @@ export interface ItemComponent {
   description?: string;
 }
 
+export interface ItemLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface Item {
   id: string;
   itemNumber: string;
@@ -179,6 +185,10 @@ export interface Item {
   reorderPoint?: number;
   countryOfOrigin?: string;
   components?: ItemComponent[];
+  // Reference links shown on the item profile - spec sheets, SDS, vendor
+  // product pages, etc.
+  links?: ItemLink[];
+  notes?: string;
   createdAt: string;
 }
 
