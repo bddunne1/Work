@@ -161,7 +161,7 @@ const purchaseOrders: ReportDataSource = {
     { key: "vendor", label: "Vendor", type: "text", placeholder: "Search vendor name..." },
   ],
   async buildRows(filters) {
-    const pos = listVendorPos();
+    const pos = await listVendorPos();
     return pos
       .filter((p) => withinDateRange(p.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? ""))
       .filter((p) => !filters.status || p.status === filters.status)
@@ -207,7 +207,7 @@ const purchaseOrderLines: ReportDataSource = {
     { key: "item", label: "Item #", type: "text", placeholder: "Search item #..." },
   ],
   async buildRows(filters) {
-    const pos = listVendorPos();
+    const pos = await listVendorPos();
     const rows: ReportRow[] = [];
     for (const p of pos) {
       if (!withinDateRange(p.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? "")) continue;
@@ -383,7 +383,7 @@ export function getDataSource(key: string): ReportDataSource | undefined {
 // rather than going through the generic filter UI.
 export async function itemQuickReportData(itemNumber: string) {
   const orders = listOrders();
-  const pos = listVendorPos();
+  const pos = await listVendorPos();
   const catalogItem = await getItemByNumber(itemNumber);
   const allocated = qtyAllocatedOnOrders(itemNumber, orders);
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { getVendorPo, receivePo } from "../lib/vendorPoStore";
@@ -15,10 +15,21 @@ export default function PurchaseOrderDetail() {
 function PurchaseOrderDetailInner() {
   const { poNumber } = useParams<{ poNumber: string }>();
   const canEdit = useCanEdit();
-  const [po, setPo] = useState<VendorPurchaseOrder | undefined>(() =>
-    poNumber ? getVendorPo(poNumber) : undefined
-  );
+  const [po, setPo] = useState<VendorPurchaseOrder | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
   const [qtys, setQtys] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!poNumber) return;
+    getVendorPo(poNumber).then((p) => {
+      setPo(p);
+      setLoading(false);
+    });
+  }, [poNumber]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!po) {
     return (

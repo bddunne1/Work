@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CompanyInfo } from "../lib/companyStore";
 import { getCompanyInfo, setCompanyInfo } from "../lib/companyStore";
 import { maxExistingSalesOrderNumber, nextSalesOrderNumber, setNextSalesOrderNumber } from "../lib/orderStore";
@@ -19,8 +19,12 @@ export default function Settings() {
 
   const [nextSo, setNextSo] = useState(() => nextSalesOrderNumber());
   const [soError, setSoError] = useState("");
-  const [nextPo, setNextPo] = useState(() => nextVendorPoNumber().replace(/^PO-/, ""));
+  const [nextPo, setNextPo] = useState("");
   const [poError, setPoError] = useState("");
+
+  useEffect(() => {
+    nextVendorPoNumber().then((n) => setNextPo(n.replace(/^PO-/, "")));
+  }, []);
 
   function setCompanyField<K extends keyof CompanyInfo>(key: K, value: CompanyInfo[K]) {
     setCompany((c) => ({ ...c, [key]: value }));
@@ -62,11 +66,11 @@ export default function Settings() {
     setNextSalesOrderNumber(n);
   }
 
-  function savePoNumber(e: React.FormEvent) {
+  async function savePoNumber(e: React.FormEvent) {
     e.preventDefault();
     setPoError("");
     const n = Number(nextPo);
-    const maxExisting = maxExistingVendorPoNumber();
+    const maxExisting = await maxExistingVendorPoNumber();
     if (!Number.isFinite(n) || n <= 0) {
       setPoError("Enter a valid number.");
       return;
@@ -75,7 +79,7 @@ export default function Settings() {
       setPoError(`Must be greater than the highest existing PO # (PO-${maxExisting}).`);
       return;
     }
-    setNextVendorPoNumber(n);
+    await setNextVendorPoNumber(n);
   }
 
   return (

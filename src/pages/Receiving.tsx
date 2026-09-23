@@ -1,12 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listVendorPos } from "../lib/vendorPoStore";
+import type { VendorPurchaseOrder } from "../types";
 import { matchesVendorPoQuery, vendorPoOutstandingTotal } from "../types";
 
 export default function Receiving() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const openPos = listVendorPos().filter((p) => p.status === "Open" || p.status === "Partially Received");
+  const [pos, setPos] = useState<VendorPurchaseOrder[]>([]);
+
+  useEffect(() => {
+    listVendorPos().then(setPos);
+  }, []);
+
+  const openPos = useMemo(
+    () => pos.filter((p) => p.status === "Open" || p.status === "Partially Received"),
+    [pos]
+  );
   const filtered = useMemo(() => openPos.filter((p) => matchesVendorPoQuery(p, query)), [openPos, query]);
 
   return (

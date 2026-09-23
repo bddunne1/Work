@@ -335,6 +335,15 @@ model Setting {
   value String
 }
 
+// Human-facing document numbers (vendor PO "PO-5001", eventually S.O. #,
+// return RA #) that used to be a per-browser localStorage counter - now a
+// real row every browser reads/increments atomically, so two people
+// creating a document at the same moment can't land on the same number.
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}
+
 // A "memorized" report (QuickBooks' term): the report's configuration only
 // (data source + filters + columns), never its result rows, so re-opening
 // it always re-runs live against current data.

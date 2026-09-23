@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listVendorPos } from "../lib/vendorPoStore";
@@ -9,7 +9,12 @@ export default function PurchaseOrders() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [pos] = useState<VendorPurchaseOrder[]>(() => listVendorPos());
+  const [pos, setPos] = useState<VendorPurchaseOrder[]>([]);
+
+  useEffect(() => {
+    listVendorPos().then(setPos);
+  }, []);
+
   const filtered = useMemo(() => pos.filter((p) => matchesVendorPoQuery(p, query)), [pos, query]);
 
   return (

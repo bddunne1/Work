@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
-import { nextVendorPoNumber, saveVendorPo } from "../lib/vendorPoStore";
+import { saveVendorPo } from "../lib/vendorPoStore";
 import { listVendors } from "../lib/vendorStore";
 import type { Item, Vendor, VendorPoLine, VendorPurchaseOrder } from "../types";
 import { emptyVendorPoLine, vendorPoCostTotal } from "../types";
@@ -63,8 +63,7 @@ export default function PurchaseOrderForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSave || !selectedVendor) return;
-    const po: VendorPurchaseOrder = {
-      poNumber: nextVendorPoNumber(),
+    const po: Omit<VendorPurchaseOrder, "poNumber"> = {
       vendorId: selectedVendor.id,
       vendorName: selectedVendor.name,
       orderDate,
@@ -74,8 +73,8 @@ export default function PurchaseOrderForm() {
       notes,
       createdAt: new Date().toISOString(),
     };
-    await saveVendorPo(po);
-    navigate(`/purchase-orders/${po.poNumber}`);
+    const saved = await saveVendorPo(po);
+    navigate(`/purchase-orders/${saved.poNumber}`);
   }
 
   return (

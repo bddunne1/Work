@@ -1,69 +1,55 @@
+import { api } from "./apiClient";
+import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
 import type { VendorPurchaseOrder, VendorReceivingLine } from "../types";
 import { receiveVendorPo, vendorPoLineOutstanding } from "../types";
 import { adjustQtyOnHand, getItemByNumber, setQtyOnPurchaseOrder } from "./itemStore";
 
-const VENDOR_POS_KEY = "erp_vendor_pos";
-const VENDOR_PO_COUNTER_KEY = "erp_vendor_po_counter";
+const VENDOR_PO_COUNTER_KEY = "vendorPo";
 const VENDOR_PO_START = 5001;
 
-function readVendorPos(): VendorPurchaseOrder[] {
-  try {
-    const raw = localStorage.getItem(VENDOR_POS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as VendorPurchaseOrder[];
-  } catch {
-    return [];
-  }
+// The server's decimal/date fields serialize over JSON as strings even
+// though the frontend type treats them as number/plain-date - convert back
+// here so every consumer keeps working with the shapes it always has.
+function mapPo(po: VendorPurchaseOrder): VendorPurchaseOrder {
+  return {
+    ...po,
+    orderDate: po.orderDate.slice(0, 10),
+    expectedDate: po.expectedDate ? po.expectedDate.slice(0, 10) : undefined,
+    lines: po.lines.map((l) => ({ ...l, cost: Number(l.cost) })),
+  };
 }
 
-function writeVendorPos(pos: VendorPurchaseOrder[]): void {
-  try {
-    localStorage.setItem(VENDOR_POS_KEY, JSON.stringify(pos));
-  } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
-  }
-}
-
-export function nextVendorPoNumber(): string {
-  try {
-    const raw = localStorage.getItem(VENDOR_PO_COUNTER_KEY);
-    const current = raw ? parseInt(raw, 10) : VENDOR_PO_START;
-    return `PO-${current}`;
-  } catch {
-    return `PO-${VENDOR_PO_START}`;
-  }
+// Next vendor PO # that will be assigned, for display only (e.g. Settings'
+// "next PO #" field) - doesn't reserve anything. Formatted like the actual
+// PO numbers ("PO-5001").
+export async function nextVendorPoNumber(): Promise<string> {
+  const next = await peekNextCounterValue(VENDOR_PO_COUNTER_KEY, VENDOR_PO_START);
+  return `PO-${next}`;
 }
 
 // Highest vendor PO # already in use, so an admin overriding the next
 // number (see Settings) can be warned before creating a collision.
-export function maxExistingVendorPoNumber(): number {
-  return readVendorPos().reduce((max, p) => Math.max(max, parseInt(p.poNumber.replace(/^PO-/, ""), 10) || 0), 0);
+export async function maxExistingVendorPoNumber(): Promise<number> {
+  const pos = await listVendorPos();
+  return pos.reduce((max, p) => Math.max(max, parseInt(p.poNumber.replace(/^PO-/, ""), 10) || 0), 0);
 }
 
-export function setNextVendorPoNumber(next: number): void {
+export async function setNextVendorPoNumber(next: number): Promise<void> {
+  await setNextCounterValue(VENDOR_PO_COUNTER_KEY, Math.max(VENDOR_PO_START, Math.floor(next)));
+}
+
+export async function listVendorPos(): Promise<VendorPurchaseOrder[]> {
+  const pos = await api.get<VendorPurchaseOrder[]>("/api/vendor-purchase-orders");
+  return pos.map(mapPo);
+}
+
+export async function getVendorPo(poNumber: string): Promise<VendorPurchaseOrder | undefined> {
   try {
-    localStorage.setItem(VENDOR_PO_COUNTER_KEY, String(Math.max(VENDOR_PO_START, Math.floor(next))));
+    const po = await api.get<VendorPurchaseOrder>(`/api/vendor-purchase-orders/${encodeURIComponent(poNumber)}`);
+    return mapPo(po);
   } catch {
-    // storage unavailable - no-op
+    return undefined;
   }
-}
-
-function commitVendorPoNumber(): void {
-  try {
-    const raw = localStorage.getItem(VENDOR_PO_COUNTER_KEY);
-    const current = raw ? parseInt(raw, 10) : VENDOR_PO_START;
-    localStorage.setItem(VENDOR_PO_COUNTER_KEY, String(current + 1));
-  } catch {
-    // storage unavailable - no-op
-  }
-}
-
-export function listVendorPos(): VendorPurchaseOrder[] {
-  return readVendorPos().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function getVendorPo(poNumber: string): VendorPurchaseOrder | undefined {
-  return readVendorPos().find((p) => p.poNumber === poNumber);
 }
 
 // Recomputes qtyOnPurchaseOrder for `itemNumber` as the sum of outstanding
@@ -74,7 +60,8 @@ export async function recomputeQtyOnPurchaseOrder(itemNumber: string): Promise<v
   const item = await getItemByNumber(itemNumber);
   if (!item) return;
   const q = itemNumber.trim().toLowerCase();
-  const outstanding = readVendorPos()
+  const pos = await listVendorPos();
+  const outstanding = pos
     .filter((po) => po.status !== "Closed")
     .reduce(
       (sum, po) =>
@@ -93,17 +80,17 @@ function affectedItemNumbers(po: VendorPurchaseOrder): string[] {
   return Array.from(new Set(po.lines.map((l) => l.itemNumber).filter(Boolean)));
 }
 
-export async function saveVendorPo(po: VendorPurchaseOrder): Promise<void> {
-  const pos = readVendorPos();
-  pos.push(po);
-  writeVendorPos(pos);
-  commitVendorPoNumber();
-  await Promise.all(affectedItemNumbers(po).map(recomputeQtyOnPurchaseOrder));
+// Creates a new vendor PO - the server assigns the real PO # atomically, so
+// this takes everything except that field and returns the saved record
+// (with its real poNumber) to the caller.
+export async function saveVendorPo(po: Omit<VendorPurchaseOrder, "poNumber">): Promise<VendorPurchaseOrder> {
+  const saved = mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po));
+  await Promise.all(affectedItemNumbers(saved).map(recomputeQtyOnPurchaseOrder));
+  return saved;
 }
 
 export async function updateVendorPo(po: VendorPurchaseOrder): Promise<void> {
-  const pos = readVendorPos().map((p) => (p.poNumber === po.poNumber ? po : p));
-  writeVendorPos(pos);
+  await api.put(`/api/vendor-purchase-orders/${encodeURIComponent(po.poNumber)}`, po);
   await Promise.all(affectedItemNumbers(po).map(recomputeQtyOnPurchaseOrder));
 }
 
