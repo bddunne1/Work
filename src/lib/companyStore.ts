@@ -1,3 +1,5 @@
+import { getSetting, setSetting } from "./settingsCache";
+
 export interface CompanyInfo {
   name: string;
   street: string;
@@ -7,7 +9,7 @@ export interface CompanyInfo {
   phone: string;
 }
 
-const COMPANY_KEY = "erp_company_info";
+const COMPANY_SETTING_KEY = "company_info";
 
 // Matches what was hardcoded across every printed document before this
 // became an editable setting - see Settings.tsx.
@@ -21,21 +23,11 @@ const DEFAULT_COMPANY_INFO: CompanyInfo = {
 };
 
 export function getCompanyInfo(): CompanyInfo {
-  try {
-    const raw = localStorage.getItem(COMPANY_KEY);
-    if (!raw) return DEFAULT_COMPANY_INFO;
-    return { ...DEFAULT_COMPANY_INFO, ...(JSON.parse(raw) as Partial<CompanyInfo>) };
-  } catch {
-    return DEFAULT_COMPANY_INFO;
-  }
+  return { ...DEFAULT_COMPANY_INFO, ...getSetting(COMPANY_SETTING_KEY, {}) };
 }
 
-export function setCompanyInfo(info: CompanyInfo): void {
-  try {
-    localStorage.setItem(COMPANY_KEY, JSON.stringify(info));
-  } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
-  }
+export async function setCompanyInfo(info: CompanyInfo): Promise<void> {
+  await setSetting(COMPANY_SETTING_KEY, info);
 }
 
 // The one-line "street, city, state zip" format used under the company

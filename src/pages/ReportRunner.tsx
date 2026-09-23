@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DATA_SOURCES, getDataSource } from "../lib/reports/dataSources";
 import { getPreset } from "../lib/reports/presets";
-import type { ReportDataSource, ReportFilterValues, ReportRow } from "../lib/reports/types";
+import type { ReportDataSource, ReportFilterValues, ReportRow, SavedReport } from "../lib/reports/types";
 import { getSavedReport, memorizeReport } from "../lib/reportStore";
 
 function rowsToCsv(dataSource: ReportDataSource, visibleColumns: string[], rows: ReportRow[]): string {
@@ -19,20 +19,34 @@ export default function ReportRunner() {
   const { presetKey, savedId } = useParams<{ presetKey?: string; savedId?: string }>();
 
   const preset = presetKey ? getPreset(presetKey) : undefined;
-  const saved = savedId ? getSavedReport(savedId) : undefined;
-  const initialDataSourceKey = preset?.dataSourceKey ?? saved?.dataSourceKey ?? "";
+  const [savedReport, setSavedReport] = useState<SavedReport | undefined>(undefined);
 
-  const [dataSourceKey, setDataSourceKey] = useState(initialDataSourceKey);
+  useEffect(() => {
+    if (!savedId) return;
+    getSavedReport(savedId).then(setSavedReport);
+  }, [savedId]);
+
+  const [dataSourceKey, setDataSourceKey] = useState(preset?.dataSourceKey ?? "");
   const dataSource = getDataSource(dataSourceKey);
 
-  const [filters, setFilters] = useState<ReportFilterValues>(() => saved?.filters ?? preset?.defaultFilters ?? {});
+  const [filters, setFilters] = useState<ReportFilterValues>(() => preset?.defaultFilters ?? {});
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    () => saved?.columns ?? preset?.defaultColumns ?? dataSource?.defaultColumns ?? []
+    () => preset?.defaultColumns ?? dataSource?.defaultColumns ?? []
   );
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saveName, setSaveName] = useState(saved?.name ?? preset?.label ?? "");
+  const [saveName, setSaveName] = useState(preset?.label ?? "");
   const [savedMessage, setSavedMessage] = useState(false);
+
+  // Once a memorized report loads, adopt its saved configuration - this
+  // also fires the [dataSourceKey] effect below, which runs the report.
+  useEffect(() => {
+    if (!savedReport) return;
+    setDataSourceKey(savedReport.dataSourceKey);
+    setFilters(savedReport.filters);
+    setVisibleColumns(savedReport.columns);
+    setSaveName(savedReport.name);
+  }, [savedReport]);
 
   function selectDataSource(key: string) {
     setDataSourceKey(key);
@@ -64,9 +78,9 @@ export default function ReportRunner() {
     setVisibleColumns((cols) => (cols.includes(key) ? cols.filter((c) => c !== key) : [...cols, key]));
   }
 
-  function handleMemorize() {
+  async function handleMemorize() {
     if (!dataSource || !saveName.trim()) return;
-    memorizeReport(saveName.trim(), dataSource.key, filters, visibleColumns);
+    await memorizeReport(saveName.trim(), dataSource.key, filters, visibleColumns);
     setSavedMessage(true);
     setTimeout(() => setSavedMessage(false), 2000);
   }
@@ -91,7 +105,7 @@ export default function ReportRunner() {
         <Link to="/reports" className="link-btn">
           &larr; Reports
         </Link>
-        <h1>{preset?.label ?? saved?.name ?? "Custom Report"}</h1>
+        <h1>{preset?.label ?? savedReport?.name ?? "Custom Report"}</h1>
         <p className="muted">{preset?.description ?? dataSource?.description ?? "Pick a data source to begin."}</p>
       </div>
 

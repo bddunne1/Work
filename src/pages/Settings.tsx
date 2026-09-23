@@ -27,9 +27,9 @@ export default function Settings() {
     setCompanySaved(false);
   }
 
-  function saveCompany(e: React.FormEvent) {
+  async function saveCompany(e: React.FormEvent) {
     e.preventDefault();
-    setCompanyInfo(company);
+    await setCompanyInfo(company);
     setCompanySaved(true);
     setTimeout(() => setCompanySaved(false), 2000);
   }

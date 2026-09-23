@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { REPORT_PRESETS } from "../lib/reports/presets";
 import { deleteSavedReport, listSavedReports } from "../lib/reportStore";
@@ -6,12 +6,16 @@ import type { SavedReport } from "../lib/reports/types";
 
 export default function Reports() {
   const navigate = useNavigate();
-  const [saved, setSaved] = useState<SavedReport[]>(() => listSavedReports());
+  const [saved, setSaved] = useState<SavedReport[]>([]);
 
-  function handleDelete(r: SavedReport) {
+  useEffect(() => {
+    listSavedReports().then(setSaved);
+  }, []);
+
+  async function handleDelete(r: SavedReport) {
     if (!confirm(`Delete the memorized report "${r.name}"?`)) return;
-    deleteSavedReport(r.id);
-    setSaved(listSavedReports());
+    await deleteSavedReport(r.id);
+    setSaved(await listSavedReports());
   }
 
   return (

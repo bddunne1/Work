@@ -327,9 +327,22 @@ model VendorReceivingRecord {
   @@index([poNumber])
 }
 
-// Small key/value bag for app-wide settings (e.g. default lead time days) -
-// mirrors the old erp_lead_time_days localStorage entry.
+// Small key/value bag for app-wide settings (company profile, default lead
+// time, warehouse capacity lookback) - value is always a JSON-encoded
+// string, decoded/encoded at the API boundary so this table stays generic.
 model Setting {
   key   String @id
   value String
+}
+
+// A "memorized" report (QuickBooks' term): the report's configuration only
+// (data source + filters + columns), never its result rows, so re-opening
+// it always re-runs live against current data.
+model SavedReport {
+  id            String   @id @default(uuid())
+  name          String
+  dataSourceKey String
+  filters       Json
+  columns       Json
+  createdAt     DateTime @default(now())
 }

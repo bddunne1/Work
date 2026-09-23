@@ -4,6 +4,7 @@ import { getToken } from "./apiClient";
 import type { Account } from "./authStore";
 import { getCurrentAccount, login as loginStore, logout as logoutStore } from "./authStore";
 import { canEdit } from "./permissions";
+import { preloadSettings } from "./settingsCache";
 
 interface AuthContextValue {
   account: Account | null;
@@ -24,7 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!getToken()) return;
     let cancelled = false;
-    getCurrentAccount().then((result) => {
+    // Settings are read synchronously all over the app (page header on
+    // every navigation, order entry, printed documents...), so the cache
+    // needs to be warm before anything renders - awaiting it alongside the
+    // account check, both gated behind the same `loading` flag, guarantees
+    // that.
+    Promise.all([getCurrentAccount(), preloadSettings()]).then(([result]) => {
       if (cancelled) return;
       setAccount(result);
       setLoading(false);
@@ -40,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       login: async (username: string, password: string) => {
         const { account: result, error } = await loginStore(username, password);
+        if (result) await preloadSettings();
         setAccount(result);
         return result !== null ? null : (error ?? "Incorrect username or password.");
       },
