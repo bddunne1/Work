@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import LineChart from "../components/charts/LineChart";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { getCapacityLookbackDays } from "../lib/settingsStore";
+import type { Item } from "../types";
 import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
 const LOOKBACK_OPTIONS = [14, 30, 60, 90];
@@ -24,7 +25,11 @@ function monthDay(iso: string): string {
 export default function WarehouseCapacity() {
   const [lookbackDays, setLookbackDays] = useState(() => getCapacityLookbackDays());
   const [orders] = useState(() => listOrders());
-  const [items] = useState(() => listItems());
+  const [items, setItems] = useState<Item[]>([]);
+
+  useEffect(() => {
+    listItems().then(setItems);
+  }, []);
 
   const metrics = useMemo(
     () => computeCapacityMetrics(orders, items, lookbackDays),

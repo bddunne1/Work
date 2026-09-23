@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { useCanEdit } from "../lib/authContext";
@@ -19,11 +19,32 @@ function ItemProfileInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const canEdit = useCanEdit();
-  const [item, setItem] = useState<Item | undefined>(() => (id ? getItem(id) : undefined));
-  const [vendors] = useState<Vendor[]>(() => listVendors());
+  const [item, setItem] = useState<Item | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Item | undefined>(undefined);
   const [vendorQuery, setVendorQuery] = useState("");
+
+  useEffect(() => {
+    if (!id) return;
+    getItem(id).then((i) => {
+      setItem(i);
+      setLoading(false);
+    });
+  }, [id]);
+
+  useEffect(() => {
+    listVendors().then(setVendors);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="page">
+        <p className="muted">Loading...</p>
+      </div>
+    );
+  }
 
   if (!item) {
     return (
@@ -55,17 +76,17 @@ function ItemProfileInner() {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     if (!draft) return;
-    updateItem(draft);
-    setItem(draft);
+    const saved = await updateItem(draft);
+    setItem(saved);
     setDraft(undefined);
     setEditing(false);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!confirm(`Delete item "${item!.itemNumber}"? This can't be undone.`)) return;
-    deleteItem(item!.id);
+    await deleteItem(item!.id);
     navigate("/items");
   }
 

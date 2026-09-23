@@ -29,7 +29,7 @@ export default function ShipmentHistory() {
   const [orders, setOrders] = useState<PurchaseOrder[]>(() => shippedOrders());
   const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 
-  function handleUndo(order: PurchaseOrder) {
+  async function handleUndo(order: PurchaseOrder) {
     const last = (order.shipmentHistory ?? []).at(-1);
     if (!last) return;
     const summary = last.lines.map((l) => `${itemLabel(order, l.lineItemId)} × ${l.qty}`).join(", ");
@@ -40,7 +40,7 @@ export default function ShipmentHistory() {
     ) {
       return;
     }
-    undoShipment(order);
+    await undoShipment(order);
     setOrders((os) => os.filter((o) => o.soNumber !== order.soNumber));
   }
 

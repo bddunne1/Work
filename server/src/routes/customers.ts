@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
@@ -59,7 +60,10 @@ const customerSchema = z.object({
   fob: z.string().default(""),
   rep: z.string().default(""),
   shipCompleteOnly: z.boolean().default(false),
-  privateLabelName: z.string().optional(),
+  // .nullish() not .optional(): Prisma hands back `null` for an unset
+  // nullable column, and this same object round-trips through PUT on every
+  // save - .optional() alone rejects that `null` with a 400.
+  privateLabelName: z.string().nullish(),
   routingGuide: routingGuideSchema,
   shipToLocations: z.array(shipToLocationSchema).default([]),
   notes: z.array(noteSchema).default([]),
@@ -120,7 +124,7 @@ router.post("/", requirePermission("customers", "edit"), async (req, res) => {
       rep: data.rep,
       shipCompleteOnly: data.shipCompleteOnly,
       privateLabelName: data.privateLabelName,
-      routingGuide: data.routingGuide ?? undefined,
+      routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
       shipToLocations: { create: data.shipToLocations.map((l) => ({ label: l.label, address: l.address })) },
       notes: { create: data.notes.map((n) => ({ text: n.text })) },
       partNumberMap: {
@@ -166,7 +170,7 @@ router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
         rep: data.rep,
         shipCompleteOnly: data.shipCompleteOnly,
         privateLabelName: data.privateLabelName,
-        routingGuide: data.routingGuide ?? undefined,
+        routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
       },
     });
 

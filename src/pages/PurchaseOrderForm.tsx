@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
@@ -15,8 +15,13 @@ function today(): string {
 
 export default function PurchaseOrderForm() {
   const navigate = useNavigate();
-  const [vendors] = useState<Vendor[]>(() => listVendors());
-  const [catalog] = useState<Item[]>(() => listItems());
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [catalog, setCatalog] = useState<Item[]>([]);
+
+  useEffect(() => {
+    listVendors().then(setVendors);
+    listItems().then(setCatalog);
+  }, []);
   const [vendorQuery, setVendorQuery] = useState("");
   const [vendorId, setVendorId] = useState<string | undefined>();
   const [orderDate, setOrderDate] = useState(() => today());
@@ -55,7 +60,7 @@ export default function PurchaseOrderForm() {
   const validLines = lines.filter((l) => l.itemNumber.trim() && l.orderedQty > 0);
   const canSave = Boolean(selectedVendor) && validLines.length > 0;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSave || !selectedVendor) return;
     const po: VendorPurchaseOrder = {
@@ -69,7 +74,7 @@ export default function PurchaseOrderForm() {
       notes,
       createdAt: new Date().toISOString(),
     };
-    saveVendorPo(po);
+    await saveVendorPo(po);
     navigate(`/purchase-orders/${po.poNumber}`);
   }
 

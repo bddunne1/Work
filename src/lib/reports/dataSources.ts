@@ -251,7 +251,7 @@ const inventory: ReportDataSource = {
   defaultColumns: ["item", "description", "onHand", "onSalesOrder", "allocated", "onPurchaseOrder", "available"],
   filterFields: [{ key: "item", label: "Item #", type: "text", placeholder: "Search item # or description..." }],
   async buildRows(filters) {
-    const items = listItems();
+    const items = await listItems();
     const orders = listOrders();
     return items
       .filter((i) => includesText(`${i.itemNumber} ${i.description}`, filters.item ?? ""))
@@ -316,7 +316,7 @@ const vendors: ReportDataSource = {
   defaultColumns: ["name", "contactName", "phone", "email"],
   filterFields: [{ key: "name", label: "Name", type: "text", placeholder: "Search vendor name..." }],
   async buildRows(filters) {
-    const vs = listVendors();
+    const vs = await listVendors();
     return vs
       .filter((v) => includesText(v.name, filters.name ?? ""))
       .map((v) => ({
@@ -384,7 +384,7 @@ export function getDataSource(key: string): ReportDataSource | undefined {
 export async function itemQuickReportData(itemNumber: string) {
   const orders = listOrders();
   const pos = listVendorPos();
-  const catalogItem = getItemByNumber(itemNumber);
+  const catalogItem = await getItemByNumber(itemNumber);
   const allocated = qtyAllocatedOnOrders(itemNumber, orders);
 
   const soLines = salesOrderLineRows(orders, { item: itemNumber });

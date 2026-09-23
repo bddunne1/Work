@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCanEdit } from "../lib/authContext";
 import { deleteVendor, listVendors, saveVendor, updateVendor } from "../lib/vendorStore";
 import type { Vendor } from "../types";
@@ -6,21 +6,25 @@ import { emptyVendor } from "../types";
 
 export default function Vendors() {
   const canEdit = useCanEdit();
-  const [vendors, setVendors] = useState<Vendor[]>(() => listVendors());
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [name, setName] = useState("");
   const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
+  useEffect(() => {
+    refresh();
+  }, []);
+
   function refresh() {
-    setVendors(listVendors());
+    listVendors().then(setVendors);
   }
 
-  function handleAdd(e: React.FormEvent) {
+  async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     const vendor: Vendor = { ...emptyVendor(), name: name.trim(), contactName, phone, email };
-    saveVendor(vendor);
+    await saveVendor(vendor);
     refresh();
     setName("");
     setContactName("");
@@ -28,15 +32,15 @@ export default function Vendors() {
     setEmail("");
   }
 
-  function updateField(v: Vendor, patch: Partial<Vendor>) {
+  async function updateField(v: Vendor, patch: Partial<Vendor>) {
     const updated = { ...v, ...patch };
-    updateVendor(updated);
     setVendors((vs) => vs.map((x) => (x.id === v.id ? updated : x)));
+    await updateVendor(updated);
   }
 
-  function handleDelete(v: Vendor) {
+  async function handleDelete(v: Vendor) {
     if (!confirm(`Delete vendor "${v.name}"?`)) return;
-    deleteVendor(v.id);
+    await deleteVendor(v.id);
     refresh();
   }
 

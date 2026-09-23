@@ -123,12 +123,12 @@ export function updateOrder(order: PurchaseOrder): void {
 // Confirms a shipment and, unlike calling confirmShipment directly, also
 // subtracts what actually shipped from each item's qtyOnHand - physical
 // stock only really leaves the building once a shipment is confirmed.
-export function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): PurchaseOrder {
+export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Promise<PurchaseOrder> {
   const updated = confirmShipment(order, lines);
   for (const l of lines) {
     if (l.qty <= 0) continue;
     const li = order.lineItems.find((x) => x.id === l.lineItemId);
-    if (li) adjustQtyOnHand(li.item, -l.qty);
+    if (li) await adjustQtyOnHand(li.item, -l.qty);
   }
   updateOrder(updated);
   return updated;
@@ -136,7 +136,7 @@ export function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Purchase
 
 // Undoes the most recent shipment on `order` (see undoLastShipment) and adds
 // those quantities back to qtyOnHand, reversing what shipOrder subtracted.
-export function undoShipment(order: PurchaseOrder): PurchaseOrder {
+export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder> {
   const history = order.shipmentHistory ?? [];
   if (history.length === 0) return order;
   const last = history[history.length - 1];
@@ -144,7 +144,7 @@ export function undoShipment(order: PurchaseOrder): PurchaseOrder {
   for (const l of last.lines) {
     if (l.qty <= 0) continue;
     const li = order.lineItems.find((x) => x.id === l.lineItemId);
-    if (li) adjustQtyOnHand(li.item, l.qty);
+    if (li) await adjustQtyOnHand(li.item, l.qty);
   }
   updateOrder(updated);
   return updated;

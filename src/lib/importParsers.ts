@@ -3,7 +3,7 @@ import { emptyAddress, emptyShippingLocation } from "../types";
 import { field, type ParsedCsv } from "./csv";
 import { listCustomers } from "./customerStore";
 import { addBusinessDays } from "./dateUtils";
-import { getItemByNumber } from "./itemStore";
+import { itemsIndex, listItems } from "./itemStore";
 import { getLeadTimeDays } from "./settingsStore";
 
 export interface RowResult<T> {
@@ -93,6 +93,7 @@ export function parseItems(csv: ParsedCsv): RowResult<Item>[] {
 // Order Entry works.
 export async function parseSalesOrders(csv: ParsedCsv): Promise<RowResult<PurchaseOrder>[]> {
   const customers = await listCustomers();
+  const itemsByNumber = itemsIndex(await listItems());
   const leadTime = getLeadTimeDays();
 
   const groups = new Map<string, { rowNumbers: number[]; rows: Record<string, string>[] }>();
@@ -135,7 +136,7 @@ export async function parseSalesOrders(csv: ParsedCsv): Promise<RowResult<Purcha
         errors.push(`Row ${group.rowNumbers[i]}: missing or invalid Ordered Qty`);
         return;
       }
-      const catalogItem = getItemByNumber(itemNumber);
+      const catalogItem = itemsByNumber.get(itemNumber.trim().toLowerCase());
       const rateStr = field(row, "Rate", "Price", "Unit Price");
       const rate = rateStr ? Number(rateStr) : (catalogItem?.rate ?? 0);
       lineItems.push({
@@ -207,13 +208,14 @@ export async function parseSalesOrders(csv: ParsedCsv): Promise<RowResult<Purcha
 // it never creates new items, since inventory needs a catalog entry first.
 // A blank On Hand or On Purchase Order cell leaves that field unchanged,
 // so a feed reporting only one of the two doesn't zero out the other.
-export function parseInventory(csv: ParsedCsv): RowResult<Item>[] {
+export async function parseInventory(csv: ParsedCsv): Promise<RowResult<Item>[]> {
+  const itemsByNumber = itemsIndex(await listItems());
   return csv.rows.map((row, idx) => {
     const rowNumber = idx + 2;
     const itemNumber = field(row, "Item Number", "Item #", "SKU", "Item");
     if (!itemNumber) return { rowNumber, errors: ["Missing Item Number"] };
 
-    const existing = getItemByNumber(itemNumber);
+    const existing = itemsByNumber.get(itemNumber.trim().toLowerCase());
     if (!existing) {
       return { rowNumber, errors: [`Unknown Item Number "${itemNumber}" - add it via Items first`] };
     }

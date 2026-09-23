@@ -122,7 +122,7 @@ export default function Import() {
       const parsed = parseCsvWithHeaders(String(reader.result ?? ""));
       if (type === "customers") setCustomerRows(parseCustomers(parsed));
       else if (type === "items") setItemRows(parseItems(parsed));
-      else if (type === "inventory") setInventoryRows(parseInventory(parsed));
+      else if (type === "inventory") setInventoryRows(await parseInventory(parsed));
       else {
         setOrderRows(await parseSalesOrders(parsed));
         setOrderSourceRowCount(parsed.rows.length);
@@ -149,7 +149,7 @@ export default function Import() {
       setImported(valid.length);
     } else if (type === "items" && itemRows) {
       const valid = itemRows.filter((r) => r.data).map((r) => r.data!);
-      for (const it of valid) saveItem(it);
+      for (const it of valid) await saveItem(it);
       setImported(valid.length);
     } else if (type === "orders" && orderRows) {
       const valid = orderRows.filter((r) => r.data).map((r) => r.data!);
@@ -157,7 +157,7 @@ export default function Import() {
       setImported(valid.length);
     } else if (type === "inventory" && inventoryRows) {
       const valid = inventoryRows.filter((r) => r.data).map((r) => r.data!);
-      for (const it of valid) updateItem(it);
+      for (const it of valid) await updateItem(it);
       setImported(valid.length);
     }
   }

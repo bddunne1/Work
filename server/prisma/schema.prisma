@@ -184,11 +184,16 @@ model Item {
   qtyOnPurchaseOrder Int      @default(0)
   reorderPoint       Int?
   countryOfOrigin    String?
+  // Weight per unit (lbs) - drives order/shipment weight for warehouse
+  // capacity tracking.
+  weight             Decimal? @db.Decimal(12, 4)
+  notes              String?
   preferredVendorId  String?
   preferredVendor    Vendor?  @relation(fields: [preferredVendorId], references: [id])
   createdAt          DateTime @default(now())
 
   components ItemComponent[]
+  links      ItemLink[]
 
   @@index([itemNumber])
   @@index([preferredVendorId])
@@ -200,6 +205,16 @@ model ItemComponent {
   item        Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
   partNumber  String
   description String?
+
+  @@index([itemId])
+}
+
+model ItemLink {
+  id     String @id @default(uuid())
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  label  String
+  url    String
 
   @@index([itemId])
 }

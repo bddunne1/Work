@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { getItemByNumber } from "../lib/itemStore";
+import { itemsIndex, listItems } from "../lib/itemStore";
 import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
-import type { PurchaseOrder } from "../types";
+import type { Item, PurchaseOrder } from "../types";
 import { allocatedQtyFor, availableQty, canUnallocate, qtyAllocatedOnOrders, remainingToShip, unallocateOrder } from "../types";
 
 export default function PickPackDetail() {
@@ -31,6 +31,12 @@ function PickPackDetailInner() {
     return q;
   });
   const [saved, setSaved] = useState(false);
+  const [items, setItems] = useState<Item[]>([]);
+  const itemsByNumber = itemsIndex(items);
+
+  useEffect(() => {
+    listItems().then(setItems);
+  }, []);
 
   if (!order) {
     return (
@@ -158,7 +164,7 @@ function PickPackDetailInner() {
             <tbody>
               {order.lineItems.map((li) => {
                 const remaining = remainingToShip(order, li);
-                const catalogItem = getItemByNumber(li.item);
+                const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
                 const reservedElsewhere = qtyAllocatedOnOrders(
                   li.item,
                   allOrders.filter((o) => o.soNumber !== order.soNumber)

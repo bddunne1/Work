@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import { useAuth, useCanEdit } from "../lib/authContext";
@@ -22,7 +22,11 @@ function ReturnDetailInner() {
   const { raNumber } = useParams<{ raNumber: string }>();
   const { account } = useAuth();
   const canEdit = useCanEdit();
-  const [catalog] = useState<Item[]>(() => listItems());
+  const [catalog, setCatalog] = useState<Item[]>([]);
+
+  useEffect(() => {
+    listItems().then(setCatalog);
+  }, []);
   const [ra, setRa] = useState<ReturnAuthorization | undefined>(() =>
     raNumber ? getReturn(raNumber) : undefined
   );

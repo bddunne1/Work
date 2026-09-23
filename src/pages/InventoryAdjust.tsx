@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems, updateItem } from "../lib/itemStore";
@@ -7,11 +7,15 @@ import type { Item } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function InventoryAdjust() {
-  const [items, setItems] = useState<Item[]>(() => listItems());
+  const [items, setItems] = useState<Item[]>([]);
   const [query, setQuery] = useState("");
   const [itemId, setItemId] = useState<string | undefined>();
   const [newQty, setNewQty] = useState(0);
   const [saved, setSaved] = useState<{ itemNumber: string; from: number; to: number } | null>(null);
+
+  useEffect(() => {
+    listItems().then(setItems);
+  }, []);
 
   const selectedItem = items.find((i) => i.id === itemId);
   const allOrders = listOrders();
@@ -27,10 +31,10 @@ export default function InventoryAdjust() {
     setSaved(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!selectedItem || !Number.isFinite(newQty) || newQty < 0) return;
     const updated = { ...selectedItem, qtyOnHand: newQty };
-    updateItem(updated);
+    await updateItem(updated);
     setItems((its) => its.map((i) => (i.id === updated.id ? updated : i)));
     setSaved({ itemNumber: selectedItem.itemNumber, from: selectedItem.qtyOnHand, to: newQty });
   }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listItems } from "../lib/itemStore";
 import { listOrders, shipOrder } from "../lib/orderStore";
@@ -23,7 +23,11 @@ export default function OpenPicks() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<PurchaseOrder[]>(() => openPickOrders());
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [weights] = useState(() => weightIndex(listItems()));
+  const [weights, setWeights] = useState<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    listItems().then((items) => setWeights(weightIndex(items)));
+  }, []);
 
   const selectedOrders = orders.filter((o) => selected[o.soNumber]);
 
@@ -41,11 +45,11 @@ export default function OpenPicks() {
     setSelected({});
   }
 
-  function confirmSelected() {
+  async function confirmSelected() {
     if (selectedOrders.length === 0) return;
     const confirmedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
     for (const o of selectedOrders) {
-      shipOrder(o, o.pendingShipment ?? []);
+      await shipOrder(o, o.pendingShipment ?? []);
     }
     setOrders((os) => os.filter((o) => !confirmedSoNumbers.has(o.soNumber)));
     setSelected({});

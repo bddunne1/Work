@@ -91,7 +91,7 @@ function OrderDetailInner() {
     setEditing(false);
   }
 
-  function handleUndoShipment() {
+  async function handleUndoShipment() {
     if (!order) return;
     const last = (order.shipmentHistory ?? []).at(-1);
     if (!last) return;
@@ -103,7 +103,7 @@ function OrderDetailInner() {
     ) {
       return;
     }
-    setOrder(undoShipment(order));
+    setOrder(await undoShipment(order));
   }
 
   return (

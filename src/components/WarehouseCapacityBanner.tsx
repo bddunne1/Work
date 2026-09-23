@@ -1,11 +1,21 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { getCapacityLookbackDays } from "../lib/settingsStore";
+import type { CapacityMetrics } from "../lib/warehouseCapacity";
 import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
 export default function WarehouseCapacityBanner() {
-  const metrics = computeCapacityMetrics(listOrders(), listItems(), getCapacityLookbackDays());
+  const [metrics, setMetrics] = useState<CapacityMetrics | null>(null);
+
+  useEffect(() => {
+    listItems().then((items) => {
+      setMetrics(computeCapacityMetrics(listOrders(), items, getCapacityLookbackDays()));
+    });
+  }, []);
+
+  if (!metrics) return null;
   const level = utilizationLevel(metrics.utilizationPct);
 
   return (

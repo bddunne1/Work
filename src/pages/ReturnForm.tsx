@@ -17,11 +17,12 @@ export default function ReturnForm() {
   const [ra, setRa] = useState<ReturnAuthorization>(() => emptyReturn(nextReturnNumber()));
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
-  const [catalog] = useState<Item[]>(() => listItems());
+  const [catalog, setCatalog] = useState<Item[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     listCustomers().then(setCustomers);
+    listItems().then(setCatalog);
   }, []);
 
   const selectedCustomer = customers.find((c) => c.id === ra.customerId);

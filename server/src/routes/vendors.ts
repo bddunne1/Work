@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
@@ -5,11 +6,17 @@ import { prisma } from "../prisma.js";
 
 const router = Router();
 
+// .nullish() not .optional() on the top-level fields: Prisma hands back
+// `null` for an unset nullable column, and this same object round-trips
+// through PUT on every save - .optional() alone rejects that `null` with a
+// 400. (addressLine2/notes inside address stay .optional() since address
+// itself is one JSON blob the app always writes with those keys present,
+// never a column Prisma can hand back null for individually.)
 const vendorSchema = z.object({
   name: z.string().min(1),
-  contactName: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  contactName: z.string().nullish(),
+  phone: z.string().nullish(),
+  email: z.string().nullish(),
   address: z
     .object({
       name: z.string(),
@@ -20,7 +27,7 @@ const vendorSchema = z.object({
       zip: z.string(),
       notes: z.string().optional(),
     })
-    .optional(),
+    .nullish(),
 });
 
 router.use(requireAuth);
@@ -36,7 +43,8 @@ router.post("/", requirePermission("vendors", "edit"), async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const vendor = await prisma.vendor.create({ data: parsed.data });
+  const { address, ...rest } = parsed.data;
+  const vendor = await prisma.vendor.create({ data: { ...rest, address: address ?? Prisma.JsonNull } });
   res.status(201).json(vendor);
 });
 
@@ -46,7 +54,10 @@ router.put("/:id", requirePermission("vendors", "edit"), async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const vendor = await prisma.vendor.update({ where: { id: req.params.id }, data: parsed.data }).catch(() => null);
+  const { address, ...rest } = parsed.data;
+  const vendor = await prisma.vendor
+    .update({ where: { id: req.params.id }, data: { ...rest, address: address === undefined ? undefined : (address ?? Prisma.JsonNull) } })
+    .catch(() => null);
   if (!vendor) {
     res.status(404).json({ error: "Vendor not found" });
     return;

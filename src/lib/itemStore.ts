@@ -1,72 +1,73 @@
+import { api } from "./apiClient";
 import type { Item } from "../types";
 
-const ITEMS_KEY = "erp_items";
-
-// Items saved before inventory tracking existed won't have these fields -
-// default them on read so the app never sees `undefined` where a number
-// is expected.
-function normalizeItem(raw: Item): Item {
+// Prisma serializes Decimal fields as strings over JSON - convert rate and
+// weight back to numbers so the rest of the app keeps treating them as
+// numbers, same as it did when everything lived in localStorage.
+function mapItem(i: Item): Item {
   return {
-    ...raw,
-    qtyOnHand: raw.qtyOnHand ?? 0,
-    qtyOnPurchaseOrder: raw.qtyOnPurchaseOrder ?? 0,
+    ...i,
+    rate: Number(i.rate),
+    weight: i.weight !== undefined && i.weight !== null ? Number(i.weight) : undefined,
   };
 }
 
-function readItems(): Item[] {
+export async function listItems(q?: string): Promise<Item[]> {
+  const query = q ? `?q=${encodeURIComponent(q)}` : "";
+  const items = await api.get<Item[]>(`/api/items${query}`);
+  return items.map(mapItem);
+}
+
+// A one-time lookup by item # (case/whitespace-insensitive) for callers
+// that need to look up several items in a loop - fetch listItems() once,
+// build this, then look up synchronously instead of awaiting per line.
+export function itemsIndex(items: Item[]): Map<string, Item> {
+  const map = new Map<string, Item>();
+  for (const i of items) map.set(i.itemNumber.trim().toLowerCase(), i);
+  return map;
+}
+
+export async function getItem(id: string): Promise<Item | undefined> {
   try {
-    const raw = localStorage.getItem(ITEMS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Item[];
-    return parsed.map(normalizeItem);
+    return mapItem(await api.get<Item>(`/api/items/${id}`));
   } catch {
-    return [];
+    return undefined;
   }
 }
 
-function writeItems(items: Item[]): void {
-  try {
-    localStorage.setItem(ITEMS_KEY, JSON.stringify(items));
-  } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
-  }
-}
-
-export function listItems(): Item[] {
-  return readItems().sort((a, b) => a.itemNumber.localeCompare(b.itemNumber));
-}
-
-export function getItem(id: string): Item | undefined {
-  return readItems().find((i) => i.id === id);
-}
-
-export function getItemByNumber(itemNumber: string): Item | undefined {
+// No dedicated lookup endpoint - the catalog is small enough that fetching
+// the full list and finding by number client-side is simpler than adding
+// one, and callers that need this in a loop should fetch listItems() once
+// and build their own Map instead of calling this repeatedly.
+export async function getItemByNumber(itemNumber: string): Promise<Item | undefined> {
   const q = itemNumber.trim().toLowerCase();
   if (!q) return undefined;
-  return readItems().find((i) => i.itemNumber.trim().toLowerCase() === q);
+  const items = await listItems();
+  return items.find((i) => i.itemNumber.trim().toLowerCase() === q);
 }
 
-export function saveItem(item: Item): void {
-  const items = readItems();
-  items.push(item);
-  writeItems(items);
+export async function saveItem(item: Item): Promise<Item> {
+  return mapItem(await api.post<Item>("/api/items", item));
 }
 
-export function updateItem(item: Item): void {
-  const items = readItems().map((i) => (i.id === item.id ? item : i));
-  writeItems(items);
+export async function updateItem(item: Item): Promise<Item> {
+  return mapItem(await api.put<Item>(`/api/items/${item.id}`, item));
 }
 
-export function deleteItem(id: string): void {
-  writeItems(readItems().filter((i) => i.id !== id));
+export async function deleteItem(id: string): Promise<void> {
+  await api.del(`/api/items/${id}`);
 }
 
 // Adjusts qtyOnHand by a signed delta (negative to ship out, positive to
-// undo a shipment or receive stock back in). A no-op if the item number
-// no longer exists in the catalog or the delta is zero.
-export function adjustQtyOnHand(itemNumber: string, delta: number): void {
+// undo a shipment or receive stock back in), atomically on the server so
+// concurrent shipments/receipts against the same item can't race each other.
+export async function adjustQtyOnHand(itemNumber: string, delta: number): Promise<void> {
   if (delta === 0) return;
-  const item = getItemByNumber(itemNumber);
-  if (!item) return;
-  updateItem({ ...item, qtyOnHand: item.qtyOnHand + delta });
+  await api.patch(`/api/items/by-number/${encodeURIComponent(itemNumber)}/qty`, { qtyOnHandDelta: delta });
+}
+
+// Sets qtyOnPurchaseOrder outright - it's a recomputed total (see
+// vendorPoStore's recomputeQtyOnPurchaseOrder), not something incremented.
+export async function setQtyOnPurchaseOrder(itemNumber: string, qty: number): Promise<void> {
+  await api.patch(`/api/items/by-number/${encodeURIComponent(itemNumber)}/qty`, { qtyOnPurchaseOrder: qty });
 }

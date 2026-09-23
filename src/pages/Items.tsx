@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
@@ -8,7 +8,11 @@ export default function Items() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [items] = useState<Item[]>(() => listItems());
+  const [items, setItems] = useState<Item[]>([]);
+
+  useEffect(() => {
+    listItems().then(setItems);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

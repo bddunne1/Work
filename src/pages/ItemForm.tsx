@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { saveItem } from "../lib/itemStore";
@@ -9,17 +9,21 @@ import { emptyItem } from "../types";
 export default function ItemForm() {
   const navigate = useNavigate();
   const [item, setItem] = useState<Item>(() => emptyItem());
-  const [vendors] = useState<Vendor[]>(() => listVendors());
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorQuery, setVendorQuery] = useState("");
+
+  useEffect(() => {
+    listVendors().then(setVendors);
+  }, []);
 
   function set<K extends keyof Item>(key: K, value: Item[K]) {
     setItem((i) => ({ ...i, [key]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    saveItem(item);
-    navigate(`/items/${item.id}`);
+    const saved = await saveItem(item);
+    navigate(`/items/${saved.id}`);
   }
 
   return (

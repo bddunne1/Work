@@ -1,44 +1,25 @@
+import { api } from "./apiClient";
 import type { Vendor } from "../types";
 
-const VENDORS_KEY = "erp_vendors";
-
-function readVendors(): Vendor[] {
-  try {
-    const raw = localStorage.getItem(VENDORS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Vendor[];
-  } catch {
-    return [];
-  }
+export async function listVendors(): Promise<Vendor[]> {
+  return api.get<Vendor[]>("/api/vendors");
 }
 
-function writeVendors(vendors: Vendor[]): void {
-  try {
-    localStorage.setItem(VENDORS_KEY, JSON.stringify(vendors));
-  } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
-  }
+// No dedicated lookup endpoint - the vendor list is small enough that
+// fetching it and finding by id client-side is simpler than adding one.
+export async function getVendor(id: string): Promise<Vendor | undefined> {
+  const vendors = await listVendors();
+  return vendors.find((v) => v.id === id);
 }
 
-export function listVendors(): Vendor[] {
-  return readVendors().sort((a, b) => a.name.localeCompare(b.name));
+export async function saveVendor(vendor: Vendor): Promise<Vendor> {
+  return api.post<Vendor>("/api/vendors", vendor);
 }
 
-export function getVendor(id: string): Vendor | undefined {
-  return readVendors().find((v) => v.id === id);
+export async function updateVendor(vendor: Vendor): Promise<Vendor> {
+  return api.put<Vendor>(`/api/vendors/${vendor.id}`, vendor);
 }
 
-export function saveVendor(vendor: Vendor): void {
-  const vendors = readVendors();
-  vendors.push(vendor);
-  writeVendors(vendors);
-}
-
-export function updateVendor(vendor: Vendor): void {
-  const vendors = readVendors().map((v) => (v.id === vendor.id ? vendor : v));
-  writeVendors(vendors);
-}
-
-export function deleteVendor(id: string): void {
-  writeVendors(readVendors().filter((v) => v.id !== id));
+export async function deleteVendor(id: string): Promise<void> {
+  await api.del(`/api/vendors/${id}`);
 }

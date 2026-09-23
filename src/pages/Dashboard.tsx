@@ -165,12 +165,13 @@ export default function Dashboard() {
   const orders = listOrders();
   const recent = orders.slice(0, 5);
   const [customerCount, setCustomerCount] = useState(0);
-  const itemCount = listItems().length;
+  const [itemCount, setItemCount] = useState(0);
   const leadTime = getLeadTimeDays();
   const canEditSettings = getAccessLevel("/settings", account!) === "edit";
 
   useEffect(() => {
     listCustomers().then((cs) => setCustomerCount(cs.length));
+    listItems().then((items) => setItemCount(items.length));
   }, []);
   const visibleLanes = LANES.map((lane) => ({
     ...lane,

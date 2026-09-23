@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { listItems } from "../lib/itemStore";
-import type { CustomerPartMapping, CustomerPriceOverride, LineItem, ShipmentRecord } from "../types";
+import type { CustomerPartMapping, CustomerPriceOverride, Item, LineItem, ShipmentRecord } from "../types";
 import { lineAmount, emptyLineItem, shippedQtyFor } from "../types";
 
 interface Props {
@@ -28,8 +28,12 @@ export default function LineItemsTable({
   customerPartMap,
   customerPriceOverrides,
 }: Props) {
-  const [catalog] = useState(() => listItems());
+  const [catalog, setCatalog] = useState<Item[]>([]);
   const showShipped = Boolean(shipmentHistory && shipmentHistory.length > 0);
+
+  useEffect(() => {
+    listItems().then(setCatalog);
+  }, []);
 
   function update(id: string, patch: Partial<LineItem>) {
     onChange(items.map((li) => (li.id === id ? { ...li, ...patch } : li)));

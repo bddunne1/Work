@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
-import { getItemByNumber, listItems } from "../lib/itemStore";
+import { itemsIndex, listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
-import type { Customer } from "../types";
+import type { Customer, Item } from "../types";
 
 type Mode = "customer" | "all";
 
@@ -15,14 +15,14 @@ interface LabelItem {
   um: string;
 }
 
-function purchasedItemsFor(customerId: string): LabelItem[] {
+function purchasedItemsFor(customerId: string, itemsByNumber: Map<string, Item>): LabelItem[] {
   const orders = listOrders().filter((o) => o.customerId === customerId);
   const byNumber = new Map<string, LabelItem>();
   for (const o of orders) {
     for (const li of o.lineItems) {
       const key = li.item.trim().toLowerCase();
       if (!key || byNumber.has(key)) continue;
-      const catalogItem = getItemByNumber(li.item);
+      const catalogItem = itemsByNumber.get(key);
       byNumber.set(key, {
         itemNumber: li.item,
         description: catalogItem?.description || li.description,
@@ -37,22 +37,25 @@ export default function ProductLabels() {
   const [mode, setMode] = useState<Mode>("customer");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
+  const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
     listCustomers().then(setCustomers);
+    listItems().then(setItems);
   }, []);
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
+  const itemsByNumber = useMemo(() => itemsIndex(items), [items]);
 
   const candidates: LabelItem[] = useMemo(() => {
     if (mode === "customer") {
-      return customerId ? purchasedItemsFor(customerId) : [];
+      return customerId ? purchasedItemsFor(customerId, itemsByNumber) : [];
     }
-    return listItems().map((i) => ({ itemNumber: i.itemNumber, description: i.description, um: i.um }));
-  }, [mode, customerId]);
+    return items.map((i) => ({ itemNumber: i.itemNumber, description: i.description, um: i.um }));
+  }, [mode, customerId, items, itemsByNumber]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

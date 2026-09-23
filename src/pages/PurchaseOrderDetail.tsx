@@ -33,13 +33,13 @@ function PurchaseOrderDetailInner() {
     setQtys((q) => ({ ...q, [lineId]: Math.max(0, Math.min(value, max)) }));
   }
 
-  function handleReceive() {
+  async function handleReceive() {
     if (!po) return;
     const lines: VendorReceivingLine[] = po.lines
       .map((l) => ({ lineId: l.id, qty: qtys[l.id] ?? 0 }))
       .filter((l) => l.qty > 0);
     if (lines.length === 0) return;
-    setPo(receivePo(po, lines));
+    setPo(await receivePo(po, lines));
     setQtys({});
   }
 

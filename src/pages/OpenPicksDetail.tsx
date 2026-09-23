@@ -49,10 +49,10 @@ function OpenPicksDetailInner() {
     setQtys((q) => ({ ...q, [lineItemId]: clamped }));
   }
 
-  function markShipped() {
+  async function markShipped() {
     if (!order) return;
     const lines = pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 }));
-    shipOrder(order, lines);
+    await shipOrder(order, lines);
     navigate(`/storage/${order.soNumber}`);
   }
 

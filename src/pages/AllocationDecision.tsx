@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getCustomer } from "../lib/customerStore";
-import { getItemByNumber } from "../lib/itemStore";
+import { itemsIndex, listItems } from "../lib/itemStore";
 import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
-import type { Customer, OrderStatus } from "../types";
+import type { Customer, Item, OrderStatus } from "../types";
 import { availableQty, orderTotal, qtyAllocatedOnOrders, remainingToShip, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
@@ -37,6 +37,12 @@ function AllocationDecisionInner() {
   const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(
     order?.allocation?.shipCompleteOnly ?? null
   );
+  const [items, setItems] = useState<Item[]>([]);
+  const itemsByNumber = itemsIndex(items);
+
+  useEffect(() => {
+    listItems().then(setItems);
+  }, []);
 
   useEffect(() => {
     if (!order?.customerId) return;
@@ -185,7 +191,7 @@ function AllocationDecisionInner() {
                 const remaining = remainingToShip(order, li);
                 const qty = qtys[li.id] ?? 0;
                 const short = qty < remaining;
-                const catalogItem = getItemByNumber(li.item);
+                const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
                 const allocatedElsewhere = qtyAllocatedOnOrders(li.item, allOrders);
                 const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
                 const overAvailable = available !== null && qty > available;

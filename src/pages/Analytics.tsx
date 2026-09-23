@@ -5,7 +5,7 @@ import SearchSelect from "../components/SearchSelect";
 import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
-import type { Customer, OrderStatus, PurchaseOrder } from "../types";
+import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
 import { orderTotal } from "../types";
 
 type Tab = "customer" | "inventory" | "sales";
@@ -70,13 +70,14 @@ export default function Analytics() {
   const [tab, setTab] = useState<Tab>("customer");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders] = useState<PurchaseOrder[]>(() => listOrders());
-  const [items] = useState(() => listItems());
+  const [items, setItems] = useState<Item[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | undefined>();
   const months12 = useMemo(() => lastNMonths(12), []);
 
   useEffect(() => {
     listCustomers().then(setCustomers);
+    listItems().then(setItems);
   }, []);
 
   const revenueByCustomer = useMemo(() => {

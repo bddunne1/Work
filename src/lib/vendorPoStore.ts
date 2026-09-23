@@ -1,6 +1,6 @@
 import type { VendorPurchaseOrder, VendorReceivingLine } from "../types";
 import { receiveVendorPo, vendorPoLineOutstanding } from "../types";
-import { adjustQtyOnHand, getItemByNumber, updateItem } from "./itemStore";
+import { adjustQtyOnHand, getItemByNumber, setQtyOnPurchaseOrder } from "./itemStore";
 
 const VENDOR_POS_KEY = "erp_vendor_pos";
 const VENDOR_PO_COUNTER_KEY = "erp_vendor_po_counter";
@@ -70,8 +70,8 @@ export function getVendorPo(poNumber: string): VendorPurchaseOrder | undefined {
 // (ordered - received) quantity across every non-closed vendor PO line for
 // it - this is now the source of truth instead of a manually maintained
 // field, driven by whatever outbound POs actually exist.
-export function recomputeQtyOnPurchaseOrder(itemNumber: string): void {
-  const item = getItemByNumber(itemNumber);
+export async function recomputeQtyOnPurchaseOrder(itemNumber: string): Promise<void> {
+  const item = await getItemByNumber(itemNumber);
   if (!item) return;
   const q = itemNumber.trim().toLowerCase();
   const outstanding = readVendorPos()
@@ -85,7 +85,7 @@ export function recomputeQtyOnPurchaseOrder(itemNumber: string): void {
       0
     );
   if (item.qtyOnPurchaseOrder !== outstanding) {
-    updateItem({ ...item, qtyOnPurchaseOrder: outstanding });
+    await setQtyOnPurchaseOrder(itemNumber, outstanding);
   }
 }
 
@@ -93,30 +93,30 @@ function affectedItemNumbers(po: VendorPurchaseOrder): string[] {
   return Array.from(new Set(po.lines.map((l) => l.itemNumber).filter(Boolean)));
 }
 
-export function saveVendorPo(po: VendorPurchaseOrder): void {
+export async function saveVendorPo(po: VendorPurchaseOrder): Promise<void> {
   const pos = readVendorPos();
   pos.push(po);
   writeVendorPos(pos);
   commitVendorPoNumber();
-  affectedItemNumbers(po).forEach(recomputeQtyOnPurchaseOrder);
+  await Promise.all(affectedItemNumbers(po).map(recomputeQtyOnPurchaseOrder));
 }
 
-export function updateVendorPo(po: VendorPurchaseOrder): void {
+export async function updateVendorPo(po: VendorPurchaseOrder): Promise<void> {
   const pos = readVendorPos().map((p) => (p.poNumber === po.poNumber ? po : p));
   writeVendorPos(pos);
-  affectedItemNumbers(po).forEach(recomputeQtyOnPurchaseOrder);
+  await Promise.all(affectedItemNumbers(po).map(recomputeQtyOnPurchaseOrder));
 }
 
 // Receives `lines` against `po`: rolls up received quantities/status (see
 // receiveVendorPo) and, for each unit actually received, adds it straight
 // to qtyOnHand and recomputes qtyOnPurchaseOrder for the affected items.
-export function receivePo(po: VendorPurchaseOrder, lines: VendorReceivingLine[]): VendorPurchaseOrder {
+export async function receivePo(po: VendorPurchaseOrder, lines: VendorReceivingLine[]): Promise<VendorPurchaseOrder> {
   const updated = receiveVendorPo(po, lines);
   for (const l of lines) {
     if (l.qty <= 0) continue;
     const line = po.lines.find((x) => x.id === l.lineId);
-    if (line) adjustQtyOnHand(line.itemNumber, l.qty);
+    if (line) await adjustQtyOnHand(line.itemNumber, l.qty);
   }
-  updateVendorPo(updated);
+  await updateVendorPo(updated);
   return updated;
 }

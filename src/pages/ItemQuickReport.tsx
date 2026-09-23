@@ -66,14 +66,34 @@ function ReportTable({ columns, rows, emptyText }: { columns: typeof SO_COLUMNS;
 
 export default function ItemQuickReport() {
   const { id } = useParams<{ id: string }>();
-  const item: Item | undefined = id ? getItem(id) : undefined;
+  const [item, setItem] = useState<Item | undefined>(undefined);
+  const [loadingItem, setLoadingItem] = useState(true);
   const [data, setData] = useState<QuickReportData | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setLoadingItem(false);
+      return;
+    }
+    getItem(id).then((i) => {
+      setItem(i);
+      setLoadingItem(false);
+    });
+  }, [id]);
 
   useEffect(() => {
     if (!item) return;
     itemQuickReportData(item.itemNumber).then(setData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.itemNumber]);
+
+  if (loadingItem) {
+    return (
+      <div className="page">
+        <p className="muted">Loading...</p>
+      </div>
+    );
+  }
 
   if (!item) {
     return (
