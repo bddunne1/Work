@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
@@ -39,8 +39,12 @@ export default function OrderEntry() {
   const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder(nextSalesOrderNumber()));
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>(() => listCustomers());
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
+
+  useEffect(() => {
+    listCustomers().then(setCustomers);
+  }, []);
 
   function set<K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) {
     setOrder((o) => ({ ...o, [key]: value }));
@@ -99,12 +103,12 @@ export default function OrderEntry() {
     setSaved(true);
   }
 
-  function startNewOrder() {
+  async function startNewOrder() {
     setOrder(blankOrder(nextSalesOrderNumber()));
     setSameAsBillTo(false);
     setSaved(false);
     setCustomerQuery("");
-    setCustomers(listCustomers());
+    setCustomers(await listCustomers());
   }
 
   if (saved) {

@@ -88,8 +88,8 @@ export function parseItems(csv: ParsedCsv): RowResult<Item>[] {
 // combined into a single multi-line sales order. SO numbers are always
 // system-assigned at save time (never taken from the file), matching how
 // Order Entry works.
-export function parseSalesOrders(csv: ParsedCsv): RowResult<PurchaseOrder>[] {
-  const customers = listCustomers();
+export async function parseSalesOrders(csv: ParsedCsv): Promise<RowResult<PurchaseOrder>[]> {
+  const customers = await listCustomers();
   const leadTime = getLeadTimeDays();
 
   const groups = new Map<string, { rowNumbers: number[]; rows: Record<string, string>[] }>();

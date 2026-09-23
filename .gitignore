@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Backend
+server/.env
+server/dist
+server/node_modules
+server/*.tsbuildinfo
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

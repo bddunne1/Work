@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { getCustomer } from "../lib/customerStore";
 import { getItemByNumber } from "../lib/itemStore";
 import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
-import type { OrderStatus } from "../types";
+import type { Customer, OrderStatus } from "../types";
 import { availableQty, orderTotal, qtyAllocatedOnOrders, remainingToShip, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
@@ -21,9 +21,9 @@ function AllocationDecisionInner() {
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
   const order = soNumber ? getOrder(soNumber) : undefined;
-  const customer = order?.customerId ? getCustomer(order.customerId) : undefined;
   const allOrders = listOrders();
 
+  const [customer, setCustomer] = useState<Customer | undefined>();
   const [qtys, setQtys] = useState<Record<string, number>>(() => {
     if (!order) return {};
     const saved = new Map(order.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
@@ -35,8 +35,25 @@ function AllocationDecisionInner() {
     return initial;
   });
   const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(
-    order?.allocation?.shipCompleteOnly ?? customer?.shipCompleteOnly ?? null
+    order?.allocation?.shipCompleteOnly ?? null
   );
+
+  useEffect(() => {
+    if (!order?.customerId) return;
+    let cancelled = false;
+    getCustomer(order.customerId).then((c) => {
+      if (cancelled) return;
+      setCustomer(c);
+      // Only seed the default from the customer record if this order hasn't
+      // already recorded its own allocation decision on this.
+      if (order.allocation?.shipCompleteOnly === undefined && c) {
+        setShipCompleteOnly((prev) => (prev === null ? c.shipCompleteOnly : prev));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [order, order?.customerId]);
 
   if (!order) {
     return (

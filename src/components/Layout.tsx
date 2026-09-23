@@ -3,9 +3,17 @@ import { useAuth } from "../lib/authContext";
 import { getAccessLevel } from "../lib/permissions";
 
 export default function Layout() {
-  const { account, logout } = useAuth();
+  const { account, loading, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="page">
+        <p className="muted">Loading…</p>
+      </div>
+    );
+  }
 
   if (!account) {
     return <Navigate to="/login" replace />;

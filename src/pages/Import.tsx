@@ -118,13 +118,13 @@ export default function Import() {
     setImported(null);
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const parsed = parseCsvWithHeaders(String(reader.result ?? ""));
       if (type === "customers") setCustomerRows(parseCustomers(parsed));
       else if (type === "items") setItemRows(parseItems(parsed));
       else if (type === "inventory") setInventoryRows(parseInventory(parsed));
       else {
-        setOrderRows(parseSalesOrders(parsed));
+        setOrderRows(await parseSalesOrders(parsed));
         setOrderSourceRowCount(parsed.rows.length);
       }
     };
@@ -142,10 +142,10 @@ export default function Import() {
     URL.revokeObjectURL(url);
   }
 
-  function commitImport() {
+  async function commitImport() {
     if (type === "customers" && customerRows) {
       const valid = customerRows.filter((r) => r.data).map((r) => r.data!);
-      for (const c of valid) saveCustomer(c);
+      for (const c of valid) await saveCustomer(c);
       setImported(valid.length);
     } else if (type === "items" && itemRows) {
       const valid = itemRows.filter((r) => r.data).map((r) => r.data!);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
@@ -7,8 +7,12 @@ import type { Address, Customer } from "../types";
 import { emptyAddress } from "../types";
 
 export default function ShippingLabelCreate() {
-  const [customers] = useState<Customer[]>(() => listCustomers());
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [manual, setManual] = useState(false);
+
+  useEffect(() => {
+    listCustomers().then(setCustomers);
+  }, []);
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [locationId, setLocationId] = useState<string | undefined>();

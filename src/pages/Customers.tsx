@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CustomerEditor from "../components/CustomerEditor";
 import { useCanEdit } from "../lib/authContext";
@@ -17,10 +17,24 @@ function CustomersInner() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [customers, setCustomers] = useState<Customer[]>(() => listCustomers());
-  const [draft, setDraft] = useState<Customer | undefined>(() => customers.find((c) => c.id === id));
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [draft, setDraft] = useState<Customer | undefined>();
   const [noteText, setNoteText] = useState("");
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    listCustomers().then((cs) => {
+      if (cancelled) return;
+      setCustomers(cs);
+      setDraft(cs.find((c) => c.id === id));
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -30,26 +44,26 @@ function CustomersInner() {
     );
   }, [customers, query]);
 
-  function refresh() {
-    setCustomers(listCustomers());
+  async function refresh() {
+    setCustomers(await listCustomers());
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!draft) return;
-    updateCustomer(draft);
-    refresh();
+    setDraft(await updateCustomer(draft));
+    await refresh();
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!draft) return;
     if (!confirm(`Delete customer "${draft.name}"?`)) return;
-    deleteCustomer(draft.id);
+    await deleteCustomer(draft.id);
     navigate("/customers/all");
   }
 
-  function addNote() {
+  async function addNote() {
     if (!draft || !noteText.trim()) return;
     const note: CustomerNote = {
       id: crypto.randomUUID(),
@@ -57,18 +71,24 @@ function CustomersInner() {
       createdAt: new Date().toISOString(),
     };
     const updated = { ...draft, notes: [note, ...draft.notes] };
-    updateCustomer(updated);
-    setDraft(updated);
-    refresh();
+    setDraft(await updateCustomer(updated));
+    await refresh();
     setNoteText("");
   }
 
-  function deleteNote(noteId: string) {
+  async function deleteNote(noteId: string) {
     if (!draft) return;
     const updated = { ...draft, notes: draft.notes.filter((n) => n.id !== noteId) };
-    updateCustomer(updated);
-    setDraft(updated);
-    refresh();
+    setDraft(await updateCustomer(updated));
+    await refresh();
+  }
+
+  if (loading) {
+    return (
+      <div className="page">
+        <p className="muted">Loading…</p>
+      </div>
+    );
   }
 
   return (

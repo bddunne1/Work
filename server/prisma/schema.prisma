@@ -1,0 +1,289 @@
+// Aamstrand ERP database schema.
+//
+// Design notes for the migration off localStorage:
+// - Money fields use Decimal, not float, to avoid rounding drift.
+// - Addresses (Customer.billTo, ShippingLocation.address, SalesOrder.billTo/
+//   shipTo, Vendor.address) are stored as JSON rather than normalized into
+//   their own table. They're always read/written as a whole object and
+//   never queried by sub-field (no "customers in state=IL" today), so JSONB
+//   is the pragmatic choice; revisit if that changes.
+// - SalesOrder is what the frontend's TypeScript still (confusingly) calls
+//   `PurchaseOrder` - it's the order we create FROM a customer's PO, not an
+//   outbound purchase order. Renamed at the DB/API boundary since this is a
+//   natural point to fix that; VendorPurchaseOrder is the real outbound PO.
+// - A few semi-structured, order-workflow-internal fields stay JSON
+//   (allocation, pendingShipment, bol, Account.permissions) rather than
+//   being fully normalized in this first pass - they're read/written as a
+//   unit by business logic, not queried piecemeal.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CUSTOM
+}
+
+enum OrderStatus {
+  ENTERED
+  CHECKED
+  ALLOCATED
+  BACKORDERED
+  PICK_PACKED
+  SHIPPED
+}
+
+enum PickPackStatus {
+  PARTIAL
+  COMPLETE
+}
+
+enum VendorPoStatus {
+  OPEN
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CLOSED
+}
+
+model Account {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  role         Role
+  // Record<pageKey, "view" | "edit"> - only meaningful when role = CUSTOM.
+  // Admin bypasses this entirely and always has full access.
+  permissions  Json?
+  initials     String
+  createdAt    DateTime @default(now())
+}
+
+model Customer {
+  id               String   @id @default(uuid())
+  name             String
+  accountNumber    String   @default("")
+  billTo           Json
+  terms            String   @default("")
+  shipVia          String   @default("")
+  fob              String   @default("")
+  rep              String   @default("")
+  shipCompleteOnly Boolean  @default(false)
+  privateLabelName String?
+  routingGuide     Json?
+  createdAt        DateTime @default(now())
+
+  shipToLocations ShippingLocation[]
+  notes           CustomerNote[]
+  partNumberMap   CustomerPartMapping[]
+  priceOverrides  CustomerPriceOverride[]
+  salesOrders     SalesOrder[]
+
+  @@index([name])
+}
+
+model ShippingLocation {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String   @default("")
+  address    Json
+
+  @@index([customerId])
+}
+
+model CustomerNote {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  text       String
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+}
+
+model CustomerPartMapping {
+  id                 String   @id @default(uuid())
+  customerId         String
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  itemNumber         String
+  customerPartNumber String
+
+  @@index([customerId])
+  @@index([itemNumber])
+}
+
+model CustomerPriceOverride {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  itemNumber String
+  price      Decimal  @db.Decimal(12, 4)
+
+  @@index([customerId])
+  @@index([itemNumber])
+}
+
+model Vendor {
+  id          String   @id @default(uuid())
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     Json?
+  createdAt   DateTime @default(now())
+
+  itemsPreferring      Item[]
+  vendorPurchaseOrders VendorPurchaseOrder[]
+
+  @@index([name])
+}
+
+model Item {
+  id                 String   @id @default(uuid())
+  itemNumber         String   @unique
+  description        String
+  um                 String   @default("EA")
+  rate               Decimal  @db.Decimal(12, 4) @default(0)
+  qtyOnHand          Int      @default(0)
+  qtyOnPurchaseOrder Int      @default(0)
+  reorderPoint       Int?
+  countryOfOrigin    String?
+  preferredVendorId  String?
+  preferredVendor    Vendor?  @relation(fields: [preferredVendorId], references: [id])
+  createdAt          DateTime @default(now())
+
+  components ItemComponent[]
+
+  @@index([itemNumber])
+  @@index([preferredVendorId])
+}
+
+model ItemComponent {
+  id          String  @id @default(uuid())
+  itemId      String
+  item        Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  partNumber  String
+  description String?
+
+  @@index([itemId])
+}
+
+model SalesOrder {
+  // Matches the existing app's human-facing S.O. numbers (10001, 10002, ...).
+  soNumber             Int             @id @default(autoincrement())
+  poNumber             String          @default("")
+  orderDate            DateTime        @db.Date
+  dueDate              DateTime        @db.Date
+  customerId           String?
+  customer             Customer?       @relation(fields: [customerId], references: [id])
+  shipToLocationId     String?
+  billTo               Json
+  shipTo               Json
+  fob                  String          @default("")
+  shipVia              String          @default("")
+  terms                String          @default("")
+  rep                  String          @default("")
+  taxRate              Decimal         @db.Decimal(6, 3) @default(0)
+  notes                String          @default("")
+  status               OrderStatus     @default(ENTERED)
+  checkedAt            DateTime?
+  checkedBy            String?
+  allocation           Json?
+  labelPrintedAt       DateTime?
+  pickedAt             DateTime?
+  pendingShipment      Json?
+  pickListPrintedAt    DateTime?
+  packingSlipPrintedAt DateTime?
+  estimatedShipDate    DateTime?       @db.Date
+  pickPackStatus       PickPackStatus?
+  bol                  Json?
+  createdAt            DateTime        @default(now())
+
+  lineItems       SalesOrderLine[]
+  shipmentHistory ShipmentRecord[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model SalesOrderLine {
+  id                 String     @id @default(uuid())
+  soNumber            Int
+  salesOrder          SalesOrder @relation(fields: [soNumber], references: [soNumber], onDelete: Cascade)
+  item                String
+  description         String
+  um                  String     @default("EA")
+  ordered             Int
+  rate                Decimal    @db.Decimal(12, 4)
+  customerPartNumber  String?
+
+  @@index([soNumber])
+  @@index([item])
+}
+
+model ShipmentRecord {
+  id         String     @id @default(uuid())
+  soNumber   Int
+  salesOrder SalesOrder @relation(fields: [soNumber], references: [soNumber], onDelete: Cascade)
+  shippedAt  DateTime   @default(now())
+  // [{ lineItemId, qty }]
+  lines      Json
+
+  @@index([soNumber])
+}
+
+model VendorPurchaseOrder {
+  // App-generated, formatted "PO-5001" etc. - see the po_number_seq sequence.
+  poNumber     String         @id
+  vendorId     String
+  vendor       Vendor         @relation(fields: [vendorId], references: [id])
+  vendorName   String
+  orderDate    DateTime       @db.Date
+  expectedDate DateTime?      @db.Date
+  status       VendorPoStatus @default(OPEN)
+  notes        String         @default("")
+  createdAt    DateTime       @default(now())
+
+  lines            VendorPoLine[]
+  receivingHistory VendorReceivingRecord[]
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+model VendorPoLine {
+  id          String              @id @default(uuid())
+  poNumber    String
+  vendorPo    VendorPurchaseOrder @relation(fields: [poNumber], references: [poNumber], onDelete: Cascade)
+  itemNumber  String
+  description String
+  orderedQty  Int
+  receivedQty Int                 @default(0)
+  cost        Decimal             @db.Decimal(12, 4)
+
+  @@index([poNumber])
+  @@index([itemNumber])
+}
+
+model VendorReceivingRecord {
+  id         String              @id @default(uuid())
+  poNumber   String
+  vendorPo   VendorPurchaseOrder @relation(fields: [poNumber], references: [poNumber], onDelete: Cascade)
+  receivedAt DateTime            @default(now())
+  // [{ lineId, qty }]
+  lines      Json
+
+  @@index([poNumber])
+}
+
+// Small key/value bag for app-wide settings (e.g. default lead time days) -
+// mirrors the old erp_lead_time_days localStorage entry.
+model Setting {
+  key   String @id
+  value String
+}

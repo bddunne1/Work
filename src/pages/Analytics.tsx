@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BarList from "../components/charts/BarList";
 import LineChart from "../components/charts/LineChart";
 import SearchSelect from "../components/SearchSelect";
@@ -68,12 +68,16 @@ function currency(v: number): string {
 
 export default function Analytics() {
   const [tab, setTab] = useState<Tab>("customer");
-  const [customers] = useState<Customer[]>(() => listCustomers());
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [orders] = useState<PurchaseOrder[]>(() => listOrders());
   const [items] = useState(() => listItems());
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | undefined>();
   const months12 = useMemo(() => lastNMonths(12), []);
+
+  useEffect(() => {
+    listCustomers().then(setCustomers);
+  }, []);
 
   const revenueByCustomer = useMemo(() => {
     const map = new Map<string, number>();

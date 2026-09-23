@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { useCanEdit } from "../lib/authContext";
@@ -17,10 +17,14 @@ function emptyRoutingGuide(): RoutingGuideData {
 
 export default function RoutingGuide() {
   const canEdit = useCanEdit();
-  const [customers] = useState<Customer[]>(() => listCustomers());
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Customer | undefined>();
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    listCustomers().then(setCustomers);
+  }, []);
 
   function handleSelect(id: string) {
     const c = customers.find((x) => x.id === id);
@@ -35,9 +39,9 @@ export default function RoutingGuide() {
     setDraft({ ...draft, routingGuide: { ...(draft.routingGuide ?? emptyRoutingGuide()), [key]: value } });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!draft) return;
-    updateCustomer(draft);
+    setDraft(await updateCustomer(draft));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }

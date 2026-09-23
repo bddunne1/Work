@@ -1,25 +1,45 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { getToken } from "./apiClient";
 import type { Account } from "./authStore";
 import { getCurrentAccount, login as loginStore, logout as logoutStore } from "./authStore";
 import { canEdit } from "./permissions";
 
 interface AuthContextValue {
   account: Account | null;
-  login: (username: string, password: string) => boolean;
+  // True while checking a stored token against the API on first load - the
+  // router shouldn't redirect to /login until this settles, or a valid
+  // session gets bounced during the async check.
+  loading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [account, setAccount] = useState<Account | null>(() => getCurrentAccount());
+  const [account, setAccount] = useState<Account | null>(null);
+  const [loading, setLoading] = useState(() => Boolean(getToken()));
+
+  useEffect(() => {
+    if (!getToken()) return;
+    let cancelled = false;
+    getCurrentAccount().then((result) => {
+      if (cancelled) return;
+      setAccount(result);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       account,
-      login: (username: string, password: string) => {
-        const result = loginStore(username, password);
+      loading,
+      login: async (username: string, password: string) => {
+        const result = await loginStore(username, password);
         setAccount(result);
         return result !== null;
       },
@@ -28,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccount(null);
       },
     }),
-    [account]
+    [account, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,154 +1,101 @@
+import { api, setToken } from "./apiClient";
 import type { AccessLevel } from "./permissions";
-import { PERMISSION_PRESETS } from "./permissions";
 
 export type Role = "admin" | "custom";
 
 export interface Account {
   id: string;
   username: string;
-  // Plaintext, on purpose: this whole app is client-side localStorage with
-  // no server, so hashing here would only look secure without being secure
-  // (the "secret" ships in the same bundle as the code that checks it).
-  // This login gate is a UI convenience for separating roles, not a real
-  // security boundary - anyone with devtools access to this browser can
-  // already read or change any data in the app regardless of login state.
-  password: string;
   role: Role;
   // Only meaningful when role === "custom" - per-page access level, keyed
-  // by PageDef.key (see permissions.ts). A missing key defaults to "none".
-  // Admin ignores this entirely and always gets "edit" everywhere.
+  // by PageDef.key (see permissions.ts). Missing keys default to "none".
   permissions?: Record<string, AccessLevel>;
-  // Short initials stamped on things this account does (e.g. validating an
-  // order) - defaults to derived from the username if not set explicitly.
   initials: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
-const ACCOUNTS_KEY = "erp_accounts";
-const SESSION_KEY = "erp_session_account_id";
-
-export function deriveInitials(username: string): string {
-  const parts = username.trim().split(/[\s._-]+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return (username.trim().slice(0, 2) || "??").toUpperCase();
+interface ApiAccount {
+  id: string;
+  username: string;
+  role: "ADMIN" | "CUSTOM";
+  permissions: Record<string, AccessLevel> | null;
+  initials: string;
+  createdAt?: string;
 }
 
-function seedDefaultAdmin(accounts: Account[]): Account[] {
-  if (accounts.some((a) => a.username.toLowerCase() === "admin")) return accounts;
-  return [
-    ...accounts,
-    {
-      id: crypto.randomUUID(),
-      username: "admin",
-      password: "123",
-      role: "admin",
-      initials: "AD",
-      createdAt: new Date().toISOString(),
-    },
-  ];
+function mapAccount(a: ApiAccount): Account {
+  return {
+    id: a.id,
+    username: a.username,
+    role: a.role === "ADMIN" ? "admin" : "custom",
+    permissions: a.permissions ?? undefined,
+    initials: a.initials,
+    createdAt: a.createdAt,
+  };
 }
 
-// Earlier builds only had two hardcoded roles, "admin" and "order-entry".
-// Normalize old records to the granular-permissions shape on read: a legacy
-// "order-entry" role becomes "custom" seeded with the Order Entry preset,
-// and any account saved before initials existed gets them derived from its
-// username. Not persisted here - applied fresh on every read, same as the
-// other stores' normalize-on-read helpers.
-function normalizeAccount(raw: Account & { role: string }): Account {
-  let account = raw as Account;
-  if ((raw.role as string) === "order-entry") {
-    const preset = PERMISSION_PRESETS.find((p) => p.key === "order-entry");
-    account = { ...account, role: "custom", permissions: preset?.permissions ?? {} };
-  }
-  if (!account.initials) {
-    account = { ...account, initials: deriveInitials(account.username) };
-  }
-  return account;
-}
-
-function readAccounts(): Account[] {
-  let parsed: Account[] = [];
+export async function login(username: string, password: string): Promise<Account | null> {
   try {
-    const raw = localStorage.getItem(ACCOUNTS_KEY);
-    parsed = raw ? (JSON.parse(raw) as Account[]) : [];
+    const res = await api.post<{ token: string; account: ApiAccount }>("/api/auth/login", {
+      username,
+      password,
+    });
+    setToken(res.token);
+    return mapAccount(res.account);
   } catch {
-    parsed = [];
+    return null;
   }
-  const seeded = seedDefaultAdmin(parsed);
-  if (seeded.length !== parsed.length) writeAccounts(seeded);
-  return seeded.map(normalizeAccount);
 }
 
-function writeAccounts(accounts: Account[]): void {
+export function logout(): void {
+  setToken(null);
+}
+
+export async function getCurrentAccount(): Promise<Account | null> {
   try {
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+    const res = await api.get<{ account: ApiAccount }>("/api/auth/me");
+    return mapAccount(res.account);
   } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
+    return null;
   }
 }
 
-export function listAccounts(): Account[] {
-  return readAccounts();
+// --- Account management (admin only, enforced server-side) ---
+
+export async function listAccounts(): Promise<Account[]> {
+  const accounts = await api.get<ApiAccount[]>("/api/accounts");
+  return accounts.map(mapAccount);
 }
 
-export function createAccount(
+export async function createAccount(
   username: string,
   password: string,
   role: Role,
   permissions?: Record<string, AccessLevel>,
   initials?: string
-): Account {
-  const account: Account = {
-    id: crypto.randomUUID(),
-    username: username.trim(),
+): Promise<Account> {
+  const account = await api.post<ApiAccount>("/api/accounts", {
+    username,
     password,
-    role,
-    permissions: role === "custom" ? (permissions ?? {}) : undefined,
-    initials: (initials?.trim() || deriveInitials(username)).toUpperCase(),
-    createdAt: new Date().toISOString(),
-  };
-  writeAccounts([...readAccounts(), account]);
-  return account;
+    role: role === "admin" ? "ADMIN" : "CUSTOM",
+    permissions,
+    initials,
+  });
+  return mapAccount(account);
 }
 
-export function updateAccount(account: Account): void {
-  const accounts = readAccounts().map((a) => (a.id === account.id ? account : a));
-  writeAccounts(accounts);
+export async function updateAccount(
+  account: Pick<Account, "id" | "role" | "permissions" | "initials"> & { password?: string }
+): Promise<Account> {
+  const updated = await api.put<ApiAccount>(`/api/accounts/${account.id}`, {
+    role: account.role === "admin" ? "ADMIN" : "CUSTOM",
+    permissions: account.permissions,
+    initials: account.initials,
+    password: account.password,
+  });
+  return mapAccount(updated);
 }
 
-export function deleteAccount(id: string): void {
-  writeAccounts(readAccounts().filter((a) => a.id !== id));
-}
-
-export function login(username: string, password: string): Account | null {
-  const account = readAccounts().find(
-    (a) => a.username.toLowerCase() === username.trim().toLowerCase() && a.password === password
-  );
-  if (!account) return null;
-  try {
-    localStorage.setItem(SESSION_KEY, account.id);
-  } catch {
-    // storage unavailable - session just won't persist across reloads
-  }
-  return account;
-}
-
-export function logout(): void {
-  try {
-    localStorage.removeItem(SESSION_KEY);
-  } catch {
-    // storage unavailable - no-op
-  }
-}
-
-export function getCurrentAccount(): Account | null {
-  try {
-    const id = localStorage.getItem(SESSION_KEY);
-    if (!id) return null;
-    return readAccounts().find((a) => a.id === id) ?? null;
-  } catch {
-    return null;
-  }
+export async function deleteAccount(id: string): Promise<void> {
+  await api.del(`/api/accounts/${id}`);
 }

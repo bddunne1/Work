@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { useAuth } from "../lib/authContext";
@@ -136,9 +136,13 @@ export default function Dashboard() {
   const { account } = useAuth();
   const orders = listOrders();
   const recent = orders.slice(0, 5);
-  const customerCount = listCustomers().length;
+  const [customerCount, setCustomerCount] = useState(0);
   const itemCount = listItems().length;
   const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
+
+  useEffect(() => {
+    listCustomers().then((cs) => setCustomerCount(cs.length));
+  }, []);
   const visibleLanes = LANES.map((lane) => ({
     ...lane,
     modules: lane.modules.filter((m) => !m.to || getAccessLevel(m.to, account!) !== "none"),

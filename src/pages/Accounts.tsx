@@ -1,4 +1,5 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { ApiError } from "../lib/apiClient";
 import { useAuth } from "../lib/authContext";
 import type { Account, Role } from "../lib/authStore";
 import { createAccount, deleteAccount, listAccounts, updateAccount } from "../lib/authStore";
@@ -76,7 +77,8 @@ function PermissionGrid({
 
 export default function Accounts() {
   const { account: currentAccount } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>(() => listAccounts());
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [initials, setInitials] = useState("");
@@ -89,6 +91,17 @@ export default function Accounts() {
   const [editPermissions, setEditPermissions] = useState<Record<string, AccessLevel>>({});
 
   const admins = accounts.filter((a) => a.role === "admin");
+
+  async function refresh() {
+    setAccounts(await listAccounts());
+  }
+
+  useEffect(() => {
+    listAccounts().then((accts) => {
+      setAccounts(accts);
+      setLoading(false);
+    });
+  }, []);
 
   function applyPreset(key: string, apply: (p: Record<string, AccessLevel>) => void) {
     const preset = PERMISSION_PRESETS.find((p) => p.key === key);
@@ -103,7 +116,7 @@ export default function Accounts() {
     setPermissions({});
   }
 
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!username.trim() || !password) {
@@ -114,19 +127,23 @@ export default function Accounts() {
       setError("That username is already taken.");
       return;
     }
-    createAccount(username, password, role, role === "custom" ? permissions : undefined, initials || undefined);
-    setAccounts(listAccounts());
-    resetCreateForm();
+    try {
+      await createAccount(username, password, role, role === "custom" ? permissions : undefined, initials || undefined);
+      await refresh();
+      resetCreateForm();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to create account.");
+    }
   }
 
-  function handleDelete(a: Account) {
+  async function handleDelete(a: Account) {
     if (a.role === "admin" && admins.length <= 1) {
       alert("Can't delete the last admin account.");
       return;
     }
     if (!confirm(`Delete account "${a.username}"?`)) return;
-    deleteAccount(a.id);
-    setAccounts(listAccounts());
+    await deleteAccount(a.id);
+    await refresh();
     if (editingId === a.id) setEditingId(null);
   }
 
@@ -143,19 +160,31 @@ export default function Accounts() {
     setError("");
   }
 
-  function saveEdit(a: Account) {
+  async function saveEdit(a: Account) {
     if (a.role === "admin" && editRole === "custom" && admins.length <= 1) {
       alert("Can't demote the last admin account - create another admin first.");
       return;
     }
-    updateAccount({
-      ...a,
-      role: editRole,
-      initials: (editInitials.trim() || a.initials).toUpperCase(),
-      permissions: editRole === "custom" ? editPermissions : undefined,
-    });
-    setAccounts(listAccounts());
-    setEditingId(null);
+    try {
+      await updateAccount({
+        id: a.id,
+        role: editRole,
+        initials: (editInitials.trim() || a.initials).toUpperCase(),
+        permissions: editRole === "custom" ? editPermissions : undefined,
+      });
+      await refresh();
+      setEditingId(null);
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Failed to save account.");
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="page">
+        <p className="muted">Loading…</p>
+      </div>
+    );
   }
 
   return (
@@ -260,7 +289,7 @@ export default function Accounts() {
                   <td>
                     {a.role === "admin" ? "Admin" : presetLabel ? `Custom · ${presetLabel}` : "Custom"}
                   </td>
-                  <td>{new Date(a.createdAt).toLocaleDateString()}</td>
+                  <td>{a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"}</td>
                   <td className="row-actions">
                     <button
                       type="button"

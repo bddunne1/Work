@@ -1,66 +1,42 @@
-import type { Address, Customer } from "../types";
-import { emptyShippingLocation } from "../types";
+import { api } from "./apiClient";
+import type { Customer } from "../types";
 
-const CUSTOMERS_KEY = "erp_customers";
-
-// Older saved records may still have a single `shipTo` address instead of
-// `shipToLocations`, or lack fields added later - normalize them on read so
-// the app never sees an outdated shape.
-function normalizeCustomer(raw: Customer & { shipTo?: Address }): Customer {
-  let customer = raw;
-  if (!Array.isArray(raw.shipToLocations) || raw.shipToLocations.length === 0) {
-    const location = raw.shipTo
-      ? { id: crypto.randomUUID(), label: "Primary", address: raw.shipTo }
-      : emptyShippingLocation();
-    customer = { ...customer, shipToLocations: [location] };
-  }
-  if (typeof customer.shipCompleteOnly !== "boolean") {
-    customer = { ...customer, shipCompleteOnly: false };
-  }
-  if (!Array.isArray(customer.notes)) {
-    customer = { ...customer, notes: [] };
-  }
-  return customer;
+// Prisma serializes Decimal fields as strings over JSON (to avoid float
+// precision loss when round-tripping) - convert priceOverrides[].price back
+// to a number here so the rest of the app can keep treating it as one, same
+// as it did when everything lived in localStorage.
+function mapCustomer(c: Customer): Customer {
+  return {
+    ...c,
+    priceOverrides: c.priceOverrides?.map((p) => ({ ...p, price: Number(p.price) })),
+  };
 }
 
-function readCustomers(): Customer[] {
+export async function listCustomers(q?: string): Promise<Customer[]> {
+  const query = q ? `?q=${encodeURIComponent(q)}` : "";
+  const customers = await api.get<Customer[]>(`/api/customers${query}`);
+  return customers.map(mapCustomer);
+}
+
+export async function getCustomer(id: string): Promise<Customer | undefined> {
   try {
-    const raw = localStorage.getItem(CUSTOMERS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Customer[];
-    return parsed.map(normalizeCustomer);
+    const customer = await api.get<Customer>(`/api/customers/${id}`);
+    return mapCustomer(customer);
   } catch {
-    return [];
+    return undefined;
   }
 }
 
-function writeCustomers(customers: Customer[]): void {
-  try {
-    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-  } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
-  }
+export async function saveCustomer(customer: Customer): Promise<Customer> {
+  const saved = await api.post<Customer>("/api/customers", customer);
+  return mapCustomer(saved);
 }
 
-export function listCustomers(): Customer[] {
-  return readCustomers().sort((a, b) => a.name.localeCompare(b.name));
+export async function updateCustomer(customer: Customer): Promise<Customer> {
+  const updated = await api.put<Customer>(`/api/customers/${customer.id}`, customer);
+  return mapCustomer(updated);
 }
 
-export function getCustomer(id: string): Customer | undefined {
-  return readCustomers().find((c) => c.id === id);
-}
-
-export function saveCustomer(customer: Customer): void {
-  const customers = readCustomers();
-  customers.push(customer);
-  writeCustomers(customers);
-}
-
-export function updateCustomer(customer: Customer): void {
-  const customers = readCustomers().map((c) => (c.id === customer.id ? customer : c));
-  writeCustomers(customers);
-}
-
-export function deleteCustomer(id: string): void {
-  writeCustomers(readCustomers().filter((c) => c.id !== id));
+export async function deleteCustomer(id: string): Promise<void> {
+  await api.del(`/api/customers/${id}`);
 }

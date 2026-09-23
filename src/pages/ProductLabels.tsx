@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listCustomers } from "../lib/customerStore";
@@ -34,8 +34,12 @@ function purchasedItemsFor(customerId: string): LabelItem[] {
 
 export default function ProductLabels() {
   const [mode, setMode] = useState<Mode>("customer");
-  const [customers] = useState<Customer[]>(() => listCustomers());
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
+
+  useEffect(() => {
+    listCustomers().then(setCustomers);
+  }, []);
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});

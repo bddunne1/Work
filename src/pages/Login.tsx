@@ -9,9 +9,10 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (login(username, password)) {
+    setError("");
+    if (await login(username, password)) {
       navigate("/");
     } else {
       setError("Incorrect username or password.");

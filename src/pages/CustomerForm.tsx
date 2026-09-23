@@ -9,10 +9,10 @@ export default function CustomerForm() {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState<Customer>(() => emptyCustomer());
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    saveCustomer(customer);
-    navigate(`/customers/all/${customer.id}`);
+    const saved = await saveCustomer(customer);
+    navigate(`/customers/all/${saved.id}`);
   }
 
   return (
