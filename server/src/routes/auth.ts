@@ -31,6 +31,7 @@ router.post("/login", async (req, res) => {
       role: account.role,
       permissions: account.permissions,
       initials: account.initials,
+      color: account.color,
     },
   });
 });

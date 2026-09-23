@@ -34,6 +34,7 @@ function blankOrder(soNumber: string, account: Account | null): PurchaseOrder {
     status: "Entered",
     writtenBy: account?.initials,
     writtenById: account?.id,
+    writtenByColor: account?.color,
     createdAt: new Date().toISOString(),
   };
 }

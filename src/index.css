@@ -1800,6 +1800,24 @@ a.brand:hover .brand-name {
   padding: 16px;
 }
 
+.account-color-field input[type="color"] {
+  padding: 3px;
+  height: 36px;
+  width: 56px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.account-color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+}
+
 .preset-reference {
   margin-top: 28px;
 }
@@ -1876,13 +1894,13 @@ a.brand:hover .brand-name {
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  border: 3px solid var(--page-accent, var(--accent));
+  border: 3px solid var(--stamp-color, var(--page-accent, var(--accent)));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: var(--page-accent, var(--accent));
+  color: var(--stamp-color, var(--page-accent, var(--accent)));
   transform: rotate(-6deg);
   align-self: center;
 }
@@ -1917,7 +1935,7 @@ a.brand:hover .brand-name {
   font-style: italic;
   font-size: 22px;
   font-weight: 700;
-  color: var(--text-h);
+  color: var(--stamp-color, var(--text-h));
   border-bottom: 1px solid var(--border-strong);
   padding-bottom: 4px;
   width: 100%;

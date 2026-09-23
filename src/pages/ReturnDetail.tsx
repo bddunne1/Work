@@ -315,7 +315,12 @@ function ReturnDetailInner() {
 
         {view.writtenBy && (
           <div className="so-signature">
-            <span className="so-signature-initials">{view.writtenBy}</span>
+            <span
+              className="so-signature-initials"
+              style={view.writtenByColor ? ({ "--stamp-color": view.writtenByColor } as React.CSSProperties) : undefined}
+            >
+              {view.writtenBy}
+            </span>
             <span className="so-signature-label muted">Entered by</span>
           </div>
         )}

@@ -11,6 +11,9 @@ export interface Account {
   // by PageDef.key (see permissions.ts). Missing keys default to "none".
   permissions?: Record<string, AccessLevel>;
   initials: string;
+  // Hex color for this account's stamps/initials on orders (checked stamp,
+  // "Entered by" signature) - chosen per-account in Accounts.
+  color: string;
   createdAt?: string;
 }
 
@@ -20,6 +23,7 @@ interface ApiAccount {
   role: "ADMIN" | "CUSTOM";
   permissions: Record<string, AccessLevel> | null;
   initials: string;
+  color: string;
   createdAt?: string;
 }
 
@@ -30,6 +34,7 @@ function mapAccount(a: ApiAccount): Account {
     role: a.role === "ADMIN" ? "admin" : "custom",
     permissions: a.permissions ?? undefined,
     initials: a.initials,
+    color: a.color,
     createdAt: a.createdAt,
   };
 }
@@ -72,7 +77,8 @@ export async function createAccount(
   password: string,
   role: Role,
   permissions?: Record<string, AccessLevel>,
-  initials?: string
+  initials?: string,
+  color?: string
 ): Promise<Account> {
   const account = await api.post<ApiAccount>("/api/accounts", {
     username,
@@ -80,17 +86,19 @@ export async function createAccount(
     role: role === "admin" ? "ADMIN" : "CUSTOM",
     permissions,
     initials,
+    color,
   });
   return mapAccount(account);
 }
 
 export async function updateAccount(
-  account: Pick<Account, "id" | "role" | "permissions" | "initials"> & { password?: string }
+  account: Pick<Account, "id" | "role" | "permissions" | "initials" | "color"> & { password?: string }
 ): Promise<Account> {
   const updated = await api.put<ApiAccount>(`/api/accounts/${account.id}`, {
     role: account.role === "admin" ? "ADMIN" : "CUSTOM",
     permissions: account.permissions,
     initials: account.initials,
+    color: account.color,
     password: account.password,
   });
   return mapAccount(updated);

@@ -81,10 +81,16 @@ export interface PurchaseOrder {
   // edit it later to fix a mistake even without general edit access.
   writtenBy?: string;
   writtenById?: string;
+  // The writer's account color at the time this order was entered - colors
+  // the "Entered by" signature so each account's mark is visually distinct.
+  writtenByColor?: string;
   checkedAt?: string;
   // Initials of the account that marked this order Checked (see
   // ValidationDecision) - stamped at the top of the order for accountability.
   checkedBy?: string;
+  // The checker's account color at the time this order was checked - colors
+  // the checked stamp.
+  checkedByColor?: string;
   allocation?: AllocationDecision;
   labelPrintedAt?: string;
   pickedAt?: string;
@@ -584,6 +590,7 @@ export interface ReturnAuthorization {
   // pattern as a sales order's writtenBy.
   writtenBy?: string;
   writtenById?: string;
+  writtenByColor?: string;
   createdAt: string;
 }
 

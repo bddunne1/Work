@@ -16,6 +16,7 @@ export interface AuthedAccount {
   role: "ADMIN" | "CUSTOM";
   permissions: Record<string, AccessLevel> | null;
   initials: string;
+  color: string;
 }
 
 export interface AuthedRequest extends Request {
@@ -46,6 +47,7 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
       role: account.role,
       permissions: (account.permissions as Record<string, AccessLevel> | null) ?? null,
       initials: account.initials,
+      color: account.color,
     };
     next();
   } catch {

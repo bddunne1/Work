@@ -67,6 +67,7 @@ export default function ReturnForm() {
       lines: validLines,
       writtenBy: account?.initials,
       writtenById: account?.id,
+      writtenByColor: account?.color,
     };
     saveReturn(finalRa);
     setRa(finalRa);

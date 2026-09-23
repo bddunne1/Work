@@ -142,7 +142,10 @@ function OrderDetailInner() {
             <div className="muted">800-338-0557</div>
           </div>
           {view.checkedBy && (
-            <div className="checked-stamp">
+            <div
+              className="checked-stamp"
+              style={view.checkedByColor ? ({ "--stamp-color": view.checkedByColor } as React.CSSProperties) : undefined}
+            >
               <span className="checked-stamp-initials">{view.checkedBy}</span>
               {view.checkedAt && (
                 <span className="checked-stamp-date">{new Date(view.checkedAt).toLocaleDateString()}</span>
@@ -372,7 +375,12 @@ function OrderDetailInner() {
 
         {view.writtenBy && (
           <div className="so-signature">
-            <span className="so-signature-initials">{view.writtenBy}</span>
+            <span
+              className="so-signature-initials"
+              style={view.writtenByColor ? ({ "--stamp-color": view.writtenByColor } as React.CSSProperties) : undefined}
+            >
+              {view.writtenBy}
+            </span>
             <span className="so-signature-label muted">Entered by</span>
           </div>
         )}

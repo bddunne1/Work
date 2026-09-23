@@ -60,6 +60,10 @@ model Account {
   // Admin bypasses this entirely and always has full access.
   permissions  Json?
   initials     String
+  // Hex color for this account's stamps/initials on orders (checked stamp,
+  // "Entered by" signature) - chosen per-account so everyone's marks are
+  // visually distinct at a glance.
+  color        String   @default("#4c6ef5")
   createdAt    DateTime @default(now())
 }
 

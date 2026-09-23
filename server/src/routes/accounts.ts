@@ -13,22 +13,34 @@ function deriveInitials(username: string): string {
   return (username.trim().slice(0, 2) || "??").toUpperCase();
 }
 
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a hex color like #4c6ef5");
+
 const createSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
   role: z.enum(["ADMIN", "CUSTOM"]),
   permissions: z.record(z.enum(["view", "edit"])).optional(),
   initials: z.string().optional(),
+  color: hexColor.optional(),
 });
 
 const updateSchema = z.object({
   role: z.enum(["ADMIN", "CUSTOM"]).optional(),
   permissions: z.record(z.enum(["view", "edit"])).optional(),
   initials: z.string().optional(),
+  color: hexColor.optional(),
   password: z.string().min(1).optional(),
 });
 
-const publicFields = { id: true, username: true, role: true, permissions: true, initials: true, createdAt: true };
+const publicFields = {
+  id: true,
+  username: true,
+  role: true,
+  permissions: true,
+  initials: true,
+  color: true,
+  createdAt: true,
+};
 
 router.use(requireAuth, requireAdmin);
 
@@ -59,6 +71,7 @@ router.post("/", async (req, res) => {
       role: data.role,
       permissions: data.role === "CUSTOM" ? (data.permissions ?? {}) : undefined,
       initials: (data.initials?.trim() || deriveInitials(data.username)).toUpperCase(),
+      color: data.color,
     },
     select: publicFields,
   });
@@ -98,6 +111,7 @@ router.put("/:id", async (req, res) => {
               ? Prisma.JsonNull
               : undefined,
         initials: data.initials ? data.initials.toUpperCase() : undefined,
+        color: data.color,
         passwordHash: data.password ? await bcrypt.hash(data.password, 10) : undefined,
       },
       select: publicFields,

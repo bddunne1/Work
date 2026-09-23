@@ -82,12 +82,14 @@ export default function Accounts() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [initials, setInitials] = useState("");
+  const [color, setColor] = useState("#4c6ef5");
   const [role, setRole] = useState<Role>("custom");
   const [permissions, setPermissions] = useState<Record<string, AccessLevel>>({});
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<Role>("custom");
   const [editInitials, setEditInitials] = useState("");
+  const [editColor, setEditColor] = useState("#4c6ef5");
   const [editPermissions, setEditPermissions] = useState<Record<string, AccessLevel>>({});
 
   const admins = accounts.filter((a) => a.role === "admin");
@@ -112,6 +114,7 @@ export default function Accounts() {
     setUsername("");
     setPassword("");
     setInitials("");
+    setColor("#4c6ef5");
     setRole("custom");
     setPermissions({});
   }
@@ -128,7 +131,14 @@ export default function Accounts() {
       return;
     }
     try {
-      await createAccount(username, password, role, role === "custom" ? permissions : undefined, initials || undefined);
+      await createAccount(
+        username,
+        password,
+        role,
+        role === "custom" ? permissions : undefined,
+        initials || undefined,
+        color
+      );
       await refresh();
       resetCreateForm();
     } catch (err) {
@@ -151,6 +161,7 @@ export default function Accounts() {
     setEditingId(a.id);
     setEditRole(a.role);
     setEditInitials(a.initials);
+    setEditColor(a.color);
     setEditPermissions(a.permissions ?? {});
     setError("");
   }
@@ -170,6 +181,7 @@ export default function Accounts() {
         id: a.id,
         role: editRole,
         initials: (editInitials.trim() || a.initials).toUpperCase(),
+        color: editColor,
         permissions: editRole === "custom" ? editPermissions : undefined,
       });
       await refresh();
@@ -217,6 +229,10 @@ export default function Accounts() {
                 value={initials}
                 onChange={(e) => setInitials(e.target.value.toUpperCase())}
               />
+            </label>
+            <label className="form-field account-color-field">
+              Stamp Color
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
             </label>
             <label className="form-field">
               Role
@@ -271,6 +287,7 @@ export default function Accounts() {
           <tr>
             <th>Username</th>
             <th>Initials</th>
+            <th>Color</th>
             <th>Role</th>
             <th>Created</th>
             <th></th>
@@ -289,6 +306,9 @@ export default function Accounts() {
                     {a.username} {a.id === currentAccount?.id && <span className="muted">(you)</span>}
                   </td>
                   <td>{a.initials}</td>
+                  <td>
+                    <span className="account-color-swatch" style={{ background: a.color }} />
+                  </td>
                   <td>
                     {a.role === "admin" ? "Admin" : presetLabel ? `Custom · ${presetLabel}` : "Custom"}
                   </td>
@@ -312,7 +332,7 @@ export default function Accounts() {
                 </tr>
                 {editingId === a.id && (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={6}>
                       <div className="account-edit-panel">
                         <div className="form-row">
                           <label className="form-field">
@@ -322,6 +342,10 @@ export default function Accounts() {
                               value={editInitials}
                               onChange={(e) => setEditInitials(e.target.value.toUpperCase())}
                             />
+                          </label>
+                          <label className="form-field account-color-field">
+                            Stamp Color
+                            <input type="color" value={editColor} onChange={(e) => setEditColor(e.target.value)} />
                           </label>
                           <label className="form-field">
                             Role

@@ -37,6 +37,7 @@ function ValidationDecisionInner() {
       status: "Checked",
       checkedAt: new Date().toISOString(),
       checkedBy: account?.initials,
+      checkedByColor: account?.color,
     });
     const next = nextQueueSoNumber(queueState);
     if (next) {
