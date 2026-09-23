@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
+import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getOrder, shipOrder, updateOrder } from "../lib/orderStore";
 import { orderSubtotal, orderTax, orderTotal, remainingToShip } from "../types";
 
@@ -36,6 +37,8 @@ function OpenPicksDetailInner() {
       </div>
     );
   }
+
+  const company = getCompanyInfo();
 
   function lineFor(lineItemId: string) {
     return order!.lineItems.find((li) => li.id === lineItemId);
@@ -83,9 +86,9 @@ function OpenPicksDetailInner() {
       <div className="sales-order no-print">
         <div className="so-header">
           <div className="so-company">
-            <div className="so-company-name">Aamstrand Ropes &amp; Twines</div>
-            <div className="muted">711 N Grove St, Manteno, IL 60950</div>
-            <div className="muted">800-338-0557</div>
+            <div className="so-company-name">{company.name}</div>
+            <div className="muted">{companyAddressLine(company)}</div>
+            <div className="muted">{company.phone}</div>
           </div>
           <div className="so-meta">
             <h2>Sales Order</h2>

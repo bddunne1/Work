@@ -310,16 +310,13 @@ a.brand:hover .brand-name {
   flex-shrink: 0;
 }
 
-.lead-time-input {
-  width: 70px;
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
+.lead-time-value {
+  min-width: 70px;
   padding: 8px 10px;
   font-size: 14px;
   font-weight: 600;
   text-align: center;
-  background: var(--bg);
-  color: var(--text);
+  color: var(--text-h);
 }
 
 .import-type-tabs {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
+import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
 import type { Address, Customer } from "../types";
 import { emptyAddress } from "../types";
@@ -22,6 +23,7 @@ export default function ShippingLabelCreate() {
   const [shipVia, setShipVia] = useState("");
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
+  const company = getCompanyInfo();
 
   function handleSelectCustomer(id: string) {
     const customer = customers.find((c) => c.id === id);
@@ -134,7 +136,7 @@ export default function ShippingLabelCreate() {
       <div className="shipping-label print-only">
         <div className="label-from">
           <span className="muted">From</span>
-          Aamstrand Ropes &amp; Twines · 711 N Grove St, Manteno, IL 60950
+          {company.name} · {companyAddressLine(company)}
         </div>
 
         <div className="label-to">

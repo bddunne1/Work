@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
+import { getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
 import { getItemByNumber, listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
@@ -65,7 +66,7 @@ export default function ProductLabels() {
   const brandName =
     mode === "customer" && selectedCustomer?.privateLabelName
       ? selectedCustomer.privateLabelName
-      : "Aamstrand Ropes & Twines";
+      : getCompanyInfo().name;
 
   function switchMode(next: Mode) {
     setMode(next);

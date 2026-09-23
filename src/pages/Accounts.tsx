@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { ApiError } from "../lib/apiClient";
 import { useAuth } from "../lib/authContext";
 import type { Account, Role } from "../lib/authStore";
-import { createAccount, deleteAccount, listAccounts, updateAccount } from "../lib/authStore";
+import { createAccount, deleteAccount, forceLogoutAccount, listAccounts, updateAccount } from "../lib/authStore";
 import type { AccessLevel } from "../lib/permissions";
 import { PAGE_DEFS, PERMISSION_PRESETS } from "../lib/permissions";
 
@@ -90,9 +90,11 @@ export default function Accounts() {
   const [editRole, setEditRole] = useState<Role>("custom");
   const [editInitials, setEditInitials] = useState("");
   const [editColor, setEditColor] = useState("#4c6ef5");
+  const [editPassword, setEditPassword] = useState("");
   const [editPermissions, setEditPermissions] = useState<Record<string, AccessLevel>>({});
+  const [actionError, setActionError] = useState("");
 
-  const admins = accounts.filter((a) => a.role === "admin");
+  const activeAdmins = accounts.filter((a) => a.role === "admin" && a.active);
 
   async function refresh() {
     setAccounts(await listAccounts());
@@ -147,8 +149,8 @@ export default function Accounts() {
   }
 
   async function handleDelete(a: Account) {
-    if (a.role === "admin" && admins.length <= 1) {
-      alert("Can't delete the last admin account.");
+    if (a.role === "admin" && a.active && activeAdmins.length <= 1) {
+      alert("Can't delete the last active admin account.");
       return;
     }
     if (!confirm(`Delete account "${a.username}"?`)) return;
@@ -162,8 +164,10 @@ export default function Accounts() {
     setEditRole(a.role);
     setEditInitials(a.initials);
     setEditColor(a.color);
+    setEditPassword("");
     setEditPermissions(a.permissions ?? {});
     setError("");
+    setActionError("");
   }
 
   function cancelEdit() {
@@ -172,8 +176,8 @@ export default function Accounts() {
   }
 
   async function saveEdit(a: Account) {
-    if (a.role === "admin" && editRole === "custom" && admins.length <= 1) {
-      alert("Can't demote the last admin account - create another admin first.");
+    if (a.role === "admin" && editRole === "custom" && activeAdmins.length <= 1) {
+      alert("Can't demote the last active admin account - create another admin first.");
       return;
     }
     try {
@@ -182,12 +186,52 @@ export default function Accounts() {
         role: editRole,
         initials: (editInitials.trim() || a.initials).toUpperCase(),
         color: editColor,
+        password: editPassword.trim() || undefined,
         permissions: editRole === "custom" ? editPermissions : undefined,
       });
       await refresh();
       setEditingId(null);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Failed to save account.");
+    }
+  }
+
+  async function handleToggleActive(a: Account) {
+    setActionError("");
+    const nextActive = !a.active;
+    if (
+      !confirm(
+        nextActive
+          ? `Reactivate "${a.username}"? They'll be able to log in again immediately.`
+          : `Deactivate "${a.username}"? They won't be able to log in, and any open session will be signed out.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await updateAccount({
+        id: a.id,
+        role: a.role,
+        initials: a.initials,
+        color: a.color,
+        permissions: a.permissions,
+        active: nextActive,
+      });
+      await refresh();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Failed to update account.");
+    }
+  }
+
+  async function handleForceLogout(a: Account) {
+    setActionError("");
+    if (!confirm(`Force logout "${a.username}"? Any device currently signed in will need to log in again.`)) {
+      return;
+    }
+    try {
+      await forceLogoutAccount(a.id);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Failed to force logout.");
     }
   }
 
@@ -282,6 +326,8 @@ export default function Accounts() {
         {error && !editingId && <p className="login-error">{error}</p>}
       </div>
 
+      {actionError && <p className="login-error">{actionError}</p>}
+
       <table className="data-table">
         <thead>
           <tr>
@@ -289,6 +335,7 @@ export default function Accounts() {
             <th>Initials</th>
             <th>Color</th>
             <th>Role</th>
+            <th>Status</th>
             <th>Created</th>
             <th></th>
           </tr>
@@ -312,6 +359,13 @@ export default function Accounts() {
                   <td>
                     {a.role === "admin" ? "Admin" : presetLabel ? `Custom · ${presetLabel}` : "Custom"}
                   </td>
+                  <td>
+                    {a.active ? (
+                      "Active"
+                    ) : (
+                      <span className="danger-link">Deactivated</span>
+                    )}
+                  </td>
                   <td>{a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"}</td>
                   <td className="row-actions" onClick={(e) => e.stopPropagation()}>
                     <button
@@ -320,6 +374,12 @@ export default function Accounts() {
                       onClick={() => (editingId === a.id ? cancelEdit() : startEdit(a))}
                     >
                       {editingId === a.id ? "Cancel" : "Edit"}
+                    </button>
+                    <button type="button" className="row-action-outline" onClick={() => handleForceLogout(a)}>
+                      Force Logout
+                    </button>
+                    <button type="button" className="row-action-outline" onClick={() => handleToggleActive(a)}>
+                      {a.active ? "Deactivate" : "Reactivate"}
                     </button>
                     <button
                       type="button"
@@ -332,7 +392,7 @@ export default function Accounts() {
                 </tr>
                 {editingId === a.id && (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="account-edit-panel">
                         <div className="form-row">
                           <label className="form-field">
@@ -353,6 +413,15 @@ export default function Accounts() {
                               <option value="custom">Custom</option>
                               <option value="admin">Admin</option>
                             </select>
+                          </label>
+                          <label className="form-field">
+                            Reset Password
+                            <input
+                              type="password"
+                              placeholder="Leave blank to keep current password"
+                              value={editPassword}
+                              onChange={(e) => setEditPassword(e.target.value)}
+                            />
                           </label>
                         </div>
 

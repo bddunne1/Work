@@ -23,8 +23,8 @@ export interface AuthedRequest extends Request {
   account?: AuthedAccount;
 }
 
-export function signToken(accountId: string): string {
-  return jwt.sign({ sub: accountId }, JWT_SECRET, { expiresIn: "30d" });
+export function signToken(accountId: string, tokenVersion: number): string {
+  return jwt.sign({ sub: accountId, tv: tokenVersion }, JWT_SECRET, { expiresIn: "30d" });
 }
 
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -35,10 +35,15 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
     return;
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
+    const payload = jwt.verify(token, JWT_SECRET) as { sub: string; tv?: number };
     const account = await prisma.account.findUnique({ where: { id: payload.sub } });
-    if (!account) {
-      res.status(401).json({ error: "Not authenticated" });
+    // A token version mismatch means this token was issued before the most
+    // recent Force Logout - treat it exactly like an invalid token. Older
+    // tokens signed before this field existed carry no `tv` claim at all;
+    // those are honored once (tokenVersion starts at 0) rather than mass
+    // logging out every existing session on deploy.
+    if (!account || !account.active || (payload.tv ?? 0) !== account.tokenVersion) {
+      res.status(401).json({ error: !account?.active && account ? "This account has been deactivated." : "Not authenticated" });
       return;
     }
     req.account = {

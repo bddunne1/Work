@@ -104,6 +104,8 @@ export const PAGE_DEFS: PageDef[] = [
   { key: "vendors", label: "Vendors", group: "Purchasing", rules: simplePage("/vendors") },
 
   { key: "accounts", label: "Accounts", group: "Administration", rules: simplePage("/accounts") },
+  { key: "settings", label: "Settings", group: "Administration", rules: simplePage("/settings") },
+  { key: "audit-log", label: "Activity Log", group: "Administration", rules: simplePage("/audit-log") },
 ];
 
 // Routes always reachable once logged in, regardless of an account's

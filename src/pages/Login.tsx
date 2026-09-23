@@ -12,10 +12,11 @@ export default function Login() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (await login(username, password)) {
+    const loginError = await login(username, password);
+    if (!loginError) {
       navigate("/");
     } else {
-      setError("Incorrect username or password.");
+      setError(loginError);
     }
   }
 

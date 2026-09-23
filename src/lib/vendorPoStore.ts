@@ -34,6 +34,20 @@ export function nextVendorPoNumber(): string {
   }
 }
 
+// Highest vendor PO # already in use, so an admin overriding the next
+// number (see Settings) can be warned before creating a collision.
+export function maxExistingVendorPoNumber(): number {
+  return readVendorPos().reduce((max, p) => Math.max(max, parseInt(p.poNumber.replace(/^PO-/, ""), 10) || 0), 0);
+}
+
+export function setNextVendorPoNumber(next: number): void {
+  try {
+    localStorage.setItem(VENDOR_PO_COUNTER_KEY, String(Math.max(VENDOR_PO_START, Math.floor(next))));
+  } catch {
+    // storage unavailable - no-op
+  }
+}
+
 function commitVendorPoNumber(): void {
   try {
     const raw = localStorage.getItem(VENDOR_PO_COUNTER_KEY);

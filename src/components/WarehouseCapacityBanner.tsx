@@ -1,12 +1,11 @@
 import { Link } from "react-router-dom";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
+import { getCapacityLookbackDays } from "../lib/settingsStore";
 import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
-const LOOKBACK_DAYS = 30;
-
 export default function WarehouseCapacityBanner() {
-  const metrics = computeCapacityMetrics(listOrders(), listItems(), LOOKBACK_DAYS);
+  const metrics = computeCapacityMetrics(listOrders(), listItems(), getCapacityLookbackDays());
   const level = utilizationLevel(metrics.utilizationPct);
 
   return (

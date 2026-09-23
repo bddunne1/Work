@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import LineChart from "../components/charts/LineChart";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
+import { getCapacityLookbackDays } from "../lib/settingsStore";
 import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
 const LOOKBACK_OPTIONS = [14, 30, 60, 90];
@@ -21,7 +22,7 @@ function monthDay(iso: string): string {
 }
 
 export default function WarehouseCapacity() {
-  const [lookbackDays, setLookbackDays] = useState(30);
+  const [lookbackDays, setLookbackDays] = useState(() => getCapacityLookbackDays());
   const [orders] = useState(() => listOrders());
   const [items] = useState(() => listItems());
 

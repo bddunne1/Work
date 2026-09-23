@@ -5,6 +5,7 @@ import Accounts from "./pages/Accounts";
 import Allocation from "./pages/Allocation";
 import AllocationDecision from "./pages/AllocationDecision";
 import Analytics from "./pages/Analytics";
+import AuditLog from "./pages/AuditLog";
 import BackOrderQueue from "./pages/BackOrderQueue";
 import CustomerForm from "./pages/CustomerForm";
 import Customers from "./pages/Customers";
@@ -41,6 +42,7 @@ import Returns from "./pages/Returns";
 import RoutingGuide from "./pages/RoutingGuide";
 import RoutingGuideDetail from "./pages/RoutingGuideDetail";
 import ScheduleShipments from "./pages/ScheduleShipments";
+import Settings from "./pages/Settings";
 import ShipmentHistory from "./pages/ShipmentHistory";
 import ShippingLabelCreate from "./pages/ShippingLabelCreate";
 import Validation from "./pages/Validation";
@@ -90,6 +92,8 @@ function App() {
             <Route path="shipment-history" element={<ShipmentHistory />} />
             <Route path="import" element={<Import />} />
             <Route path="accounts" element={<Accounts />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="audit-log" element={<AuditLog />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="bol" element={<GenerateBOL />} />
             <Route path="vendors" element={<Vendors />} />

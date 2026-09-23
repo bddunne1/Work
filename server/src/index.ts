@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import accountsRouter from "./routes/accounts.js";
+import auditLogRouter from "./routes/auditLog.js";
 import authRouter from "./routes/auth.js";
 import customersRouter from "./routes/customers.js";
 import itemsRouter from "./routes/items.js";
@@ -18,6 +19,7 @@ app.use("/api/customers", customersRouter);
 app.use("/api/items", itemsRouter);
 app.use("/api/vendors", vendorsRouter);
 app.use("/api/accounts", accountsRouter);
+app.use("/api/audit-log", auditLogRouter);
 
 const port = Number(process.env.PORT) || 4000;
 app.listen(port, () => {

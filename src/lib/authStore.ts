@@ -1,4 +1,4 @@
-import { api, setToken } from "./apiClient";
+import { api, ApiError, setToken } from "./apiClient";
 import type { AccessLevel } from "./permissions";
 
 export type Role = "admin" | "custom";
@@ -14,6 +14,9 @@ export interface Account {
   // Hex color for this account's stamps/initials on orders (checked stamp,
   // "Entered by" signature) - chosen per-account in Accounts.
   color: string;
+  // A deactivated account can't log in or use an existing session -
+  // reversible, unlike deleting the account outright.
+  active: boolean;
   createdAt?: string;
 }
 
@@ -24,6 +27,7 @@ interface ApiAccount {
   permissions: Record<string, AccessLevel> | null;
   initials: string;
   color: string;
+  active: boolean;
   createdAt?: string;
 }
 
@@ -35,20 +39,24 @@ function mapAccount(a: ApiAccount): Account {
     permissions: a.permissions ?? undefined,
     initials: a.initials,
     color: a.color,
+    active: a.active,
     createdAt: a.createdAt,
   };
 }
 
-export async function login(username: string, password: string): Promise<Account | null> {
+// On failure, `error` carries the server's message (e.g. wrong credentials
+// vs. a deactivated account) so the login page can show the real reason
+// instead of a generic one.
+export async function login(username: string, password: string): Promise<{ account: Account | null; error?: string }> {
   try {
     const res = await api.post<{ token: string; account: ApiAccount }>("/api/auth/login", {
       username,
       password,
     });
     setToken(res.token);
-    return mapAccount(res.account);
-  } catch {
-    return null;
+    return { account: mapAccount(res.account) };
+  } catch (err) {
+    return { account: null, error: err instanceof ApiError ? err.message : "Incorrect username or password." };
   }
 }
 
@@ -92,7 +100,10 @@ export async function createAccount(
 }
 
 export async function updateAccount(
-  account: Pick<Account, "id" | "role" | "permissions" | "initials" | "color"> & { password?: string }
+  account: Pick<Account, "id" | "role" | "permissions" | "initials" | "color"> & {
+    password?: string;
+    active?: boolean;
+  }
 ): Promise<Account> {
   const updated = await api.put<ApiAccount>(`/api/accounts/${account.id}`, {
     role: account.role === "admin" ? "ADMIN" : "CUSTOM",
@@ -100,10 +111,19 @@ export async function updateAccount(
     initials: account.initials,
     color: account.color,
     password: account.password,
+    active: account.active,
   });
   return mapAccount(updated);
 }
 
 export async function deleteAccount(id: string): Promise<void> {
   await api.del(`/api/accounts/${id}`);
+}
+
+// Invalidates every outstanding session for this account (see
+// server's tokenVersion) - the account itself is untouched and can log in
+// again immediately with its normal credentials.
+export async function forceLogoutAccount(id: string): Promise<Account> {
+  const updated = await api.post<ApiAccount>(`/api/accounts/${id}/force-logout`);
+  return mapAccount(updated);
 }

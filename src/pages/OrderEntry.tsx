@@ -4,6 +4,7 @@ import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
+import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
 import { addBusinessDays } from "../lib/dateUtils";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
@@ -57,6 +58,7 @@ export default function OrderEntry() {
   }
 
   const selectedCustomer = customers.find((c) => c.id === order.customerId);
+  const company = getCompanyInfo();
 
   function handleSelectCustomer(id: string) {
     const customer = customers.find((c) => c.id === id);
@@ -185,9 +187,9 @@ export default function OrderEntry() {
 
         <div className="so-header">
           <div className="so-company">
-            <div className="so-company-name">Aamstrand Ropes &amp; Twines</div>
-            <div className="muted">711 N Grove St, Manteno, IL 60950</div>
-            <div className="muted">800-338-0557</div>
+            <div className="so-company-name">{company.name}</div>
+            <div className="muted">{companyAddressLine(company)}</div>
+            <div className="muted">{company.phone}</div>
           </div>
           <div className="so-meta">
             <h2>Sales Order</h2>

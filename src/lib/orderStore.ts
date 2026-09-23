@@ -76,6 +76,20 @@ export function nextSalesOrderNumber(): string {
   }
 }
 
+// Highest S.O. # already in use, so an admin overriding the next number
+// (see Settings) can be warned before creating a collision.
+export function maxExistingSalesOrderNumber(): number {
+  return readOrders().reduce((max, o) => Math.max(max, parseInt(o.soNumber, 10) || 0), 0);
+}
+
+export function setNextSalesOrderNumber(next: number): void {
+  try {
+    localStorage.setItem(SO_COUNTER_KEY, String(Math.max(SO_START, Math.floor(next))));
+  } catch {
+    // storage unavailable - no-op
+  }
+}
+
 function commitSalesOrderNumber(): void {
   try {
     const raw = localStorage.getItem(SO_COUNTER_KEY);

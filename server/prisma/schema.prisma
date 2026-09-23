@@ -64,7 +64,34 @@ model Account {
   // "Entered by" signature) - chosen per-account so everyone's marks are
   // visually distinct at a glance.
   color        String   @default("#4c6ef5")
+  // A deactivated account can no longer log in or use an existing token -
+  // an administrative suspend that's reversible, unlike deleting the row.
+  active       Boolean  @default(true)
+  // Bumped to invalidate every outstanding JWT for this account at once
+  // (see requireAuth) - the mechanism behind "Force Logout", since tokens
+  // are otherwise stateless and can't be revoked individually.
+  tokenVersion Int      @default(0)
   createdAt    DateTime @default(now())
+}
+
+// Administrative accountability trail - who did what, when. Scoped to the
+// Postgres-backed parts of the app (accounts, auth) since orders/items/etc.
+// still live in each browser's localStorage and have no server side to log
+// from; see the localStorage stores' own migration note.
+model AuditLog {
+  id             String   @id @default(uuid())
+  // Snapshotted rather than a relation, so the log still reads correctly
+  // after the actor or target account is deleted.
+  actorId        String?
+  actorUsername  String
+  action         String
+  targetType     String
+  targetId       String?
+  targetLabel    String?
+  detail         Json?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Customer {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
+import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -34,6 +35,7 @@ export default function GenerateBOL() {
   );
 
   const selectedOrders = orders.filter((o) => selected.has(o.soNumber));
+  const company = getCompanyInfo();
 
   function toggleSelect(soNumber: string) {
     setSelected((s) => {
@@ -242,8 +244,10 @@ export default function GenerateBOL() {
           <div className="so-header">
             <div className="so-company">
               <div className="so-company-name">Bill of Lading</div>
-              <div className="muted">Aamstrand Ropes &amp; Twines · 711 N Grove St, Manteno, IL 60950</div>
-              <div className="muted">800-338-0557</div>
+              <div className="muted">
+                {company.name} · {companyAddressLine(company)}
+              </div>
+              <div className="muted">{company.phone}</div>
             </div>
             <div className="so-meta">
               <table className="meta-table">

@@ -11,7 +11,7 @@ interface AuthContextValue {
   // router shouldn't redirect to /login until this settles, or a valid
   // session gets bounced during the async check.
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<string | null>;
   logout: () => void;
 }
 
@@ -39,9 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       account,
       loading,
       login: async (username: string, password: string) => {
-        const result = await loginStore(username, password);
+        const { account: result, error } = await loginStore(username, password);
         setAccount(result);
-        return result !== null;
+        return result !== null ? null : (error ?? "Incorrect username or password.");
       },
       logout: () => {
         logoutStore();

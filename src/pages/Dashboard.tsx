@@ -6,7 +6,7 @@ import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { getAccessLevel } from "../lib/permissions";
-import { getLeadTimeDays, setLeadTimeDays } from "../lib/settingsStore";
+import { getLeadTimeDays } from "../lib/settingsStore";
 
 interface Module {
   name: string;
@@ -143,7 +143,19 @@ const LANES: Lane[] = [
   {
     lane: "Administration",
     color: "#495057",
-    modules: [{ name: "Accounts", description: "Manage user accounts and roles", to: "/accounts" }],
+    modules: [
+      { name: "Accounts", description: "Manage user accounts and roles", to: "/accounts" },
+      {
+        name: "Settings",
+        description: "Company profile, order defaults, and document numbering",
+        to: "/settings",
+      },
+      {
+        name: "Activity Log",
+        description: "Who logged in, and every account created, changed, or removed",
+        to: "/audit-log",
+      },
+    ],
   },
 ];
 
@@ -154,7 +166,8 @@ export default function Dashboard() {
   const recent = orders.slice(0, 5);
   const [customerCount, setCustomerCount] = useState(0);
   const itemCount = listItems().length;
-  const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
+  const leadTime = getLeadTimeDays();
+  const canEditSettings = getAccessLevel("/settings", account!) === "edit";
 
   useEffect(() => {
     listCustomers().then((cs) => setCustomerCount(cs.length));
@@ -163,12 +176,6 @@ export default function Dashboard() {
     ...lane,
     modules: lane.modules.filter((m) => !m.to || getAccessLevel(m.to, account!) !== "none"),
   })).filter((lane) => lane.modules.length > 0);
-
-  function handleLeadTimeChange(value: number) {
-    if (!Number.isFinite(value) || value < 0) return;
-    setLeadTime(value);
-    setLeadTimeDays(value);
-  }
 
   return (
     <div className="page">
@@ -183,16 +190,16 @@ export default function Dashboard() {
           <p className="muted lead-time-hint">
             Business days (weekends excluded) from order date to estimated ship date, applied to every
             new order at entry. Changing this does not affect orders already entered.
+            {canEditSettings && (
+              <>
+                {" "}
+                <Link to="/settings">Change it in Settings.</Link>
+              </>
+            )}
           </p>
         </div>
         <div className="lead-time-input-row">
-          <input
-            type="number"
-            min={0}
-            className="lead-time-input"
-            value={leadTime}
-            onChange={(e) => handleLeadTimeChange(Number(e.target.value))}
-          />
+          <span className="lead-time-value">{leadTime}</span>
           <span className="muted">business days</span>
         </div>
       </div>

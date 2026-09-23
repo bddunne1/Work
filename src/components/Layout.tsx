@@ -2,6 +2,7 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react
 import BrandMark from "./BrandMark";
 import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
+import { getCompanyInfo } from "../lib/companyStore";
 import { getPageAccent } from "../lib/pageAccent";
 import { getAccessLevel } from "../lib/permissions";
 
@@ -60,7 +61,7 @@ export default function Layout() {
       <div className="app-main">
         <header className="topbar">
           <Link to="/" className="brand">
-            <span className="brand-name">AAmstrand Ropes &amp; Twines</span>
+            <span className="brand-name">{getCompanyInfo().name}</span>
           </Link>
           <div className="topbar-user">
             <span className="topbar-username">

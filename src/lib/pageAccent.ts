@@ -40,6 +40,8 @@ const RULES: AccentRule[] = [
   { prefix: "/vendors", color: "#0ca678" },
   // Administration
   { prefix: "/accounts", color: "#495057" },
+  { prefix: "/settings", color: "#495057" },
+  { prefix: "/audit-log", color: "#495057" },
 ];
 
 const SORTED = [...RULES].sort((a, b) => b.prefix.length - a.prefix.length);

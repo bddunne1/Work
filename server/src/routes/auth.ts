@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { z } from "zod";
+import { logAudit } from "../lib/audit.js";
 import { requireAuth, signToken, type AuthedRequest } from "../middleware/auth.js";
 import { prisma } from "../prisma.js";
 
@@ -22,7 +23,12 @@ router.post("/login", async (req, res) => {
     res.status(401).json({ error: "Invalid username or password" });
     return;
   }
-  const token = signToken(account.id);
+  if (!account.active) {
+    res.status(401).json({ error: "This account has been deactivated." });
+    return;
+  }
+  const token = signToken(account.id, account.tokenVersion);
+  logAudit({ id: account.id, username: account.username }, "LOGIN", "account", account.id, account.username);
   res.json({
     token,
     account: {
