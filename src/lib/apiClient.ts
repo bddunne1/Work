@@ -1,7 +1,6 @@
-// Thin fetch wrapper for the Postgres-backed API (see /server). This is the
-// beginning of the migration off localStorage - only the customer/item/
-// vendor/account stores talk to it so far; everything else in lib/*Store.ts
-// still reads and writes localStorage directly until it's ported too.
+// Thin fetch wrapper for the Postgres-backed API (see /server). Every
+// lib/*Store.ts module talks to it now - localStorage is only used below,
+// for the JWT itself (legitimate per-browser session state, not app data).
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 const TOKEN_KEY = "erp_api_token";
 
