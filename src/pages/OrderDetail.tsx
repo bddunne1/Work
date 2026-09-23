@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
@@ -44,11 +44,22 @@ function OrderDetailInner() {
   const navigate = useNavigate();
   const { account } = useAuth();
   const canEdit = useCanEdit();
-  const [order, setOrder] = useState<PurchaseOrder | undefined>(() =>
-    soNumber ? getOrder(soNumber) : undefined
-  );
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PurchaseOrder | undefined>(undefined);
+
+  useEffect(() => {
+    if (!soNumber) return;
+    getOrder(soNumber).then((o) => {
+      setOrder(o);
+      setLoading(false);
+    });
+  }, [soNumber]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!order) {
     return (
@@ -83,9 +94,9 @@ function OrderDetailInner() {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     if (!draft) return;
-    updateOrder(draft);
+    await updateOrder(draft);
     setOrder(draft);
     setDraft(undefined);
     setEditing(false);

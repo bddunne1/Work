@@ -7,6 +7,7 @@ import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { getAccessLevel } from "../lib/permissions";
 import { getLeadTimeDays } from "../lib/settingsStore";
+import type { PurchaseOrder } from "../types";
 
 interface Module {
   name: string;
@@ -162,7 +163,7 @@ const LANES: Lane[] = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const { account } = useAuth();
-  const orders = listOrders();
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const recent = orders.slice(0, 5);
   const [customerCount, setCustomerCount] = useState(0);
   const [itemCount, setItemCount] = useState(0);
@@ -172,6 +173,7 @@ export default function Dashboard() {
   useEffect(() => {
     listCustomers().then((cs) => setCustomerCount(cs.length));
     listItems().then((items) => setItemCount(items.length));
+    listOrders().then(setOrders);
   }, []);
   const visibleLanes = LANES.map((lane) => ({
     ...lane,

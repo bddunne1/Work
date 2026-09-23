@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
+import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
 interface Props {
@@ -11,7 +12,13 @@ interface Props {
 export default function OrdersList({ closed }: Props) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const orders = listOrders().filter((o) => (o.status === "Shipped") === closed);
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
+
+  useEffect(() => {
+    listOrders().then(setAllOrders);
+  }, []);
+
+  const orders = useMemo(() => allOrders.filter((o) => (o.status === "Shipped") === closed), [allOrders, closed]);
 
   const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 

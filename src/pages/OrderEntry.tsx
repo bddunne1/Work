@@ -43,7 +43,7 @@ function blankOrder(soNumber: string, account: Account | null): PurchaseOrder {
 export default function OrderEntry() {
   const navigate = useNavigate();
   const { account } = useAuth();
-  const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder(nextSalesOrderNumber(), account));
+  const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder("", account));
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -51,6 +51,7 @@ export default function OrderEntry() {
 
   useEffect(() => {
     listCustomers().then(setCustomers);
+    nextSalesOrderNumber().then((n) => setOrder((o) => (o.soNumber ? o : { ...o, soNumber: n })));
   }, []);
 
   function set<K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) {
@@ -102,21 +103,22 @@ export default function OrderEntry() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const estimatedShipDate = addBusinessDays(order.orderDate, getLeadTimeDays());
-    const finalOrder = { ...order, estimatedShipDate };
-    saveOrder(finalOrder);
-    setOrder(finalOrder);
+    const { soNumber: _soNumber, ...rest } = order;
+    const saved = await saveOrder({ ...rest, estimatedShipDate });
+    setOrder(saved);
     setSaved(true);
   }
 
   async function startNewOrder() {
-    setOrder(blankOrder(nextSalesOrderNumber(), account));
+    setOrder(blankOrder("", account));
     setSameAsBillTo(false);
     setSaved(false);
     setCustomerQuery("");
     setCustomers(await listCustomers());
+    nextSalesOrderNumber().then((n) => setOrder((o) => ({ ...o, soNumber: n })));
   }
 
   if (saved) {

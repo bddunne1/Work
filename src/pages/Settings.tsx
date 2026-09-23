@@ -17,12 +17,13 @@ export default function Settings() {
   const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
   const [lookback, setLookback] = useState(() => getCapacityLookbackDays());
 
-  const [nextSo, setNextSo] = useState(() => nextSalesOrderNumber());
+  const [nextSo, setNextSo] = useState("");
   const [soError, setSoError] = useState("");
   const [nextPo, setNextPo] = useState("");
   const [poError, setPoError] = useState("");
 
   useEffect(() => {
+    nextSalesOrderNumber().then(setNextSo);
     nextVendorPoNumber().then((n) => setNextPo(n.replace(/^PO-/, "")));
   }, []);
 
@@ -50,11 +51,11 @@ export default function Settings() {
     setCapacityLookbackDays(value);
   }
 
-  function saveSoNumber(e: React.FormEvent) {
+  async function saveSoNumber(e: React.FormEvent) {
     e.preventDefault();
     setSoError("");
     const n = Number(nextSo);
-    const maxExisting = maxExistingSalesOrderNumber();
+    const maxExisting = await maxExistingSalesOrderNumber();
     if (!Number.isFinite(n) || n <= 0) {
       setSoError("Enter a valid number.");
       return;
@@ -63,7 +64,7 @@ export default function Settings() {
       setSoError(`Must be greater than the highest existing S.O. # (${maxExisting}).`);
       return;
     }
-    setNextSalesOrderNumber(n);
+    await setNextSalesOrderNumber(n);
   }
 
   async function savePoNumber(e: React.FormEvent) {

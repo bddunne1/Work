@@ -4,7 +4,7 @@ import { saveCustomer } from "../lib/customerStore";
 import type { RowResult } from "../lib/importParsers";
 import { parseCustomers, parseInventory, parseItems, parseSalesOrders } from "../lib/importParsers";
 import { saveItem, updateItem } from "../lib/itemStore";
-import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
+import { saveOrder } from "../lib/orderStore";
 import type { Customer, Item, PurchaseOrder } from "../types";
 
 type ImportType = "customers" | "items" | "orders" | "inventory";
@@ -153,7 +153,7 @@ export default function Import() {
       setImported(valid.length);
     } else if (type === "orders" && orderRows) {
       const valid = orderRows.filter((r) => r.data).map((r) => r.data!);
-      for (const o of valid) saveOrder({ ...o, soNumber: nextSalesOrderNumber() });
+      for (const o of valid) await saveOrder(o);
       setImported(valid.length);
     } else if (type === "inventory" && inventoryRows) {
       const valid = inventoryRows.filter((r) => r.data).map((r) => r.data!);

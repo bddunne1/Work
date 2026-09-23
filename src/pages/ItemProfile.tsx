@@ -5,7 +5,7 @@ import { useCanEdit } from "../lib/authContext";
 import { deleteItem, getItem, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { listVendors } from "../lib/vendorStore";
-import type { Item, ItemComponent, ItemLink, Vendor } from "../types";
+import type { Item, ItemComponent, ItemLink, PurchaseOrder, Vendor } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function ItemProfile() {
@@ -22,6 +22,7 @@ function ItemProfileInner() {
   const [item, setItem] = useState<Item | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Item | undefined>(undefined);
   const [vendorQuery, setVendorQuery] = useState("");
@@ -36,6 +37,7 @@ function ItemProfileInner() {
 
   useEffect(() => {
     listVendors().then(setVendors);
+    listOrders().then(setAllOrders);
   }, []);
 
   if (loading) {
@@ -55,7 +57,6 @@ function ItemProfileInner() {
     );
   }
 
-  const allOrders = listOrders();
   const view = editing && draft ? draft : item;
   const onSalesOrder = qtyOnOpenSalesOrders(item.itemNumber, allOrders);
   const allocated = qtyAllocatedOnOrders(item.itemNumber, allOrders);

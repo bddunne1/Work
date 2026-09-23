@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { useAuth } from "../lib/authContext";
 import { getOrder, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
+import type { PurchaseOrder } from "../types";
 import { orderTotal } from "../types";
 
 export default function ValidationDecision() {
@@ -19,7 +21,20 @@ function ValidationDecisionInner() {
   const location = useLocation();
   const { account } = useAuth();
   const queueState = location.state as ReviewQueueState | undefined;
-  const order = soNumber ? getOrder(soNumber) : undefined;
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!soNumber) return;
+    getOrder(soNumber).then((o) => {
+      setOrder(o);
+      setLoading(false);
+    });
+  }, [soNumber]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!order) {
     return (
@@ -30,9 +45,9 @@ function ValidationDecisionInner() {
     );
   }
 
-  function markChecked() {
+  async function markChecked() {
     if (!order) return;
-    updateOrder({
+    await updateOrder({
       ...order,
       status: "Checked",
       checkedAt: new Date().toISOString(),

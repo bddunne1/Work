@@ -1,12 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
+import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
 export default function Allocation() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const pending = listOrders().filter((o) => o.status === "Checked");
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
+
+  useEffect(() => {
+    listOrders().then(setAllOrders);
+  }, []);
+
+  const pending = useMemo(() => allOrders.filter((o) => o.status === "Checked"), [allOrders]);
   const filtered = useMemo(() => pending.filter((o) => matchesOrderQuery(o, query)), [pending, query]);
 
   function startQueue() {

@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listOrders, updateOrder } from "../lib/orderStore";
+import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
 interface BolInput {
@@ -21,8 +22,12 @@ function today(): string {
 
 export default function GenerateBOL() {
   const canEdit = useCanEdit();
-  const [orders, setOrders] = useState(() => listOrders());
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    listOrders().then(setOrders);
+  }, []);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [details, setDetails] = useState<Record<string, BolInput>>({});
   const [carrier, setCarrier] = useState("");
@@ -63,13 +68,13 @@ export default function GenerateBOL() {
       return d && d.weight.trim() && d.skidCount.trim();
     });
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!canGenerate) return;
     const generatedAt = new Date().toISOString();
     for (const o of selectedOrders) {
-      updateOrder({ ...o, bol: { ...details[o.soNumber], generatedAt } });
+      await updateOrder({ ...o, bol: { ...details[o.soNumber], generatedAt } });
     }
-    setOrders(listOrders());
+    setOrders(await listOrders());
     setGenerated(true);
     setTimeout(() => window.print(), 50);
   }

@@ -20,23 +20,34 @@ function PickPackDetailInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
-  const [order, setOrder] = useState<PurchaseOrder | undefined>(() =>
-    soNumber ? getOrder(soNumber) : undefined
-  );
-  const allOrders = listOrders();
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
 
-  const [qtys, setQtys] = useState<Record<string, number>>(() => {
-    const q: Record<string, number> = {};
-    for (const li of order?.lineItems ?? []) q[li.id] = allocatedQtyFor(order!, li.id);
-    return q;
-  });
+  const [qtys, setQtys] = useState<Record<string, number>>({});
   const [saved, setSaved] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const itemsByNumber = itemsIndex(items);
 
   useEffect(() => {
     listItems().then(setItems);
+    listOrders().then(setAllOrders);
   }, []);
+
+  useEffect(() => {
+    if (!soNumber) return;
+    getOrder(soNumber).then((o) => {
+      setOrder(o);
+      setLoading(false);
+      const q: Record<string, number> = {};
+      for (const li of o?.lineItems ?? []) q[li.id] = allocatedQtyFor(o!, li.id);
+      setQtys(q);
+    });
+  }, [soNumber]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!order) {
     return (
@@ -61,7 +72,7 @@ function PickPackDetailInner() {
     }
   }
 
-  function reviseAllocation() {
+  async function reviseAllocation() {
     if (!order) return;
     const anyAllocated = order.lineItems.some((li) => (qtys[li.id] ?? 0) > 0);
     if (!anyAllocated) {
@@ -82,12 +93,12 @@ function PickPackDetailInner() {
         decidedAt: new Date().toISOString(),
       },
     };
-    updateOrder(updated);
+    await updateOrder(updated);
     setOrder(updated);
     setSaved(true);
   }
 
-  function releasePick() {
+  async function releasePick() {
     if (!order) return;
     const releasedLines = order.lineItems.filter((li) => (qtys[li.id] ?? 0) > 0);
     if (releasedLines.length === 0) return;
@@ -103,7 +114,7 @@ function PickPackDetailInner() {
       ? "Complete"
       : "Partial";
 
-    updateOrder({
+    await updateOrder({
       ...order,
       status: "Pick & Packed",
       pickPackStatus,
@@ -116,7 +127,7 @@ function PickPackDetailInner() {
     goNext();
   }
 
-  function handleUnallocate() {
+  async function handleUnallocate() {
     if (!order || !canUnallocate(order)) return;
     if (
       !confirm(
@@ -125,7 +136,7 @@ function PickPackDetailInner() {
     ) {
       return;
     }
-    updateOrder(unallocateOrder(order));
+    await updateOrder(unallocateOrder(order));
     goNext();
   }
 

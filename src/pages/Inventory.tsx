@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
-import type { Item } from "../types";
+import type { Item, PurchaseOrder } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function Inventory() {
@@ -11,10 +11,11 @@ export default function Inventory() {
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const orders = useMemo(() => listOrders(), []);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
 
   useEffect(() => {
     listItems().then(setItems);
+    listOrders().then(setOrders);
   }, []);
 
   const filtered = useMemo(() => {

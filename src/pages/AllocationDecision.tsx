@@ -5,7 +5,7 @@ import { itemsIndex, listItems } from "../lib/itemStore";
 import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
-import type { Customer, Item, OrderStatus } from "../types";
+import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
 import { availableQty, orderTotal, qtyAllocatedOnOrders, remainingToShip, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
@@ -20,29 +20,37 @@ function AllocationDecisionInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
-  const order = soNumber ? getOrder(soNumber) : undefined;
-  const allOrders = listOrders();
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
 
   const [customer, setCustomer] = useState<Customer | undefined>();
-  const [qtys, setQtys] = useState<Record<string, number>>(() => {
-    if (!order) return {};
-    const saved = new Map(order.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
-    const initial: Record<string, number> = {};
-    for (const li of order.lineItems) {
-      const remaining = remainingToShip(order, li);
-      initial[li.id] = Math.min(saved.get(li.id) ?? remaining, remaining);
-    }
-    return initial;
-  });
-  const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(
-    order?.allocation?.shipCompleteOnly ?? null
-  );
+  const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const itemsByNumber = itemsIndex(items);
 
   useEffect(() => {
     listItems().then(setItems);
+    listOrders().then(setAllOrders);
   }, []);
+
+  useEffect(() => {
+    if (!soNumber) return;
+    getOrder(soNumber).then((o) => {
+      setOrder(o);
+      setLoading(false);
+      if (!o) return;
+      const saved = new Map(o.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
+      const initial: Record<string, number> = {};
+      for (const li of o.lineItems) {
+        const remaining = remainingToShip(o, li);
+        initial[li.id] = Math.min(saved.get(li.id) ?? remaining, remaining);
+      }
+      setQtys(initial);
+      setShipCompleteOnly(o.allocation?.shipCompleteOnly ?? null);
+    });
+  }, [soNumber]);
 
   useEffect(() => {
     if (!order?.customerId) return;
@@ -60,6 +68,10 @@ function AllocationDecisionInner() {
       cancelled = true;
     };
   }, [order, order?.customerId]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!order) {
     return (
@@ -112,7 +124,7 @@ function AllocationDecisionInner() {
     outcomeClass = "outcome-warning";
   }
 
-  function applyDecision() {
+  async function applyDecision() {
     if (!order || !outcomeStatus) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
     const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
@@ -125,7 +137,7 @@ function AllocationDecisionInner() {
       lineItemId: li.id,
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
     }));
-    updateOrder({
+    await updateOrder({
       ...order,
       status: finalStatus,
       allocation: {

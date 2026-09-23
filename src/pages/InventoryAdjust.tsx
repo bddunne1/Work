@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
-import type { Item } from "../types";
+import type { Item, PurchaseOrder } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
 export default function InventoryAdjust() {
   const [items, setItems] = useState<Item[]>([]);
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
   const [query, setQuery] = useState("");
   const [itemId, setItemId] = useState<string | undefined>();
   const [newQty, setNewQty] = useState(0);
@@ -15,10 +16,10 @@ export default function InventoryAdjust() {
 
   useEffect(() => {
     listItems().then(setItems);
+    listOrders().then(setAllOrders);
   }, []);
 
   const selectedItem = items.find((i) => i.id === itemId);
-  const allOrders = listOrders();
   const onSalesOrder = selectedItem ? qtyOnOpenSalesOrders(selectedItem.itemNumber, allOrders) : 0;
   const allocated = selectedItem ? qtyAllocatedOnOrders(selectedItem.itemNumber, allOrders) : 0;
 

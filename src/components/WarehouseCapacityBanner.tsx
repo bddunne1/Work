@@ -10,8 +10,8 @@ export default function WarehouseCapacityBanner() {
   const [metrics, setMetrics] = useState<CapacityMetrics | null>(null);
 
   useEffect(() => {
-    listItems().then((items) => {
-      setMetrics(computeCapacityMetrics(listOrders(), items, getCapacityLookbackDays()));
+    Promise.all([listItems(), listOrders()]).then(([items, orders]) => {
+      setMetrics(computeCapacityMetrics(orders, items, getCapacityLookbackDays()));
     });
   }, []);
 

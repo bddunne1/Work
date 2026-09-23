@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
@@ -12,17 +12,17 @@ function isFullyPrinted(o: PurchaseOrder): boolean {
   return Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
 }
 
-function readyToPick(): PurchaseOrder[] {
+function readyToPick(orders: PurchaseOrder[]): PurchaseOrder[] {
   // An order allocated at zero units (see AllocationDecision's zero-qty
   // guard) has nothing to pick and would stall here forever - exclude it
   // as a safety net even if it somehow reached this status another way.
-  return listOrders().filter(
+  return orders.filter(
     (o) => o.status === "Allocated" && o.lineItems.some((li) => allocatedQtyFor(o, li.id) > 0)
   );
 }
 
-function releasedPicks(): PurchaseOrder[] {
-  return listOrders().filter(
+function releasedPicks(orders: PurchaseOrder[]): PurchaseOrder[] {
+  return orders.filter(
     (o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0 && !isFullyPrinted(o)
   );
 }
@@ -30,10 +30,22 @@ function releasedPicks(): PurchaseOrder[] {
 export default function PickPack() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
-  const [pickable, setPickable] = useState<PurchaseOrder[]>(() => readyToPick());
-  const [queue, setQueue] = useState<PurchaseOrder[]>(() => releasedPicks());
+  const [pickable, setPickable] = useState<PurchaseOrder[]>([]);
+  const [queue, setQueue] = useState<PurchaseOrder[]>([]);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
 
-  function handleUnallocate(order: PurchaseOrder) {
+  useEffect(() => {
+    listOrders().then((orders) => {
+      setPickable(readyToPick(orders));
+      const released = releasedPicks(orders);
+      setQueue(released);
+      const s: Record<string, boolean> = {};
+      for (const o of released) s[o.soNumber] = true;
+      setSelected(s);
+    });
+  }, []);
+
+  async function handleUnallocate(order: PurchaseOrder) {
     if (!canUnallocate(order)) return;
     if (
       !confirm(
@@ -42,7 +54,7 @@ export default function PickPack() {
     ) {
       return;
     }
-    updateOrder(unallocateOrder(order));
+    await updateOrder(unallocateOrder(order));
     setPickable((os) => os.filter((o) => o.soNumber !== order.soNumber));
     setQueue((os) => os.filter((o) => o.soNumber !== order.soNumber));
   }
@@ -52,11 +64,6 @@ export default function PickPack() {
     const reviewQueue = pickable.map((o) => o.soNumber);
     navigate(`/pick-pack/${reviewQueue[0]}`, { state: { queue: reviewQueue, pos: 0 } });
   }
-  const [selected, setSelected] = useState<Record<string, boolean>>(() => {
-    const s: Record<string, boolean> = {};
-    for (const o of queue) s[o.soNumber] = true;
-    return s;
-  });
   const [includePick, setIncludePick] = useState(true);
   const [includeSlip, setIncludeSlip] = useState(true);
   const [printing, setPrinting] = useState(false);
@@ -81,7 +88,7 @@ export default function PickPack() {
   function printBatch() {
     if (!canPrint) return;
     setPrinting(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       window.print();
       setPrinting(false);
       // window.print() gives no way to tell whether the user actually
@@ -95,7 +102,7 @@ export default function PickPack() {
       const now = new Date().toISOString();
       const printedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
       for (const o of selectedOrders) {
-        updateOrder({
+        await updateOrder({
           ...o,
           pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
           packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,

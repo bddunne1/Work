@@ -20,7 +20,7 @@ interface ChildDelegate {
 
 export async function syncChildren<TItem extends { id?: string }>(
   delegate: ChildDelegate,
-  parentId: string,
+  parentId: string | number,
   parentField: string,
   items: TItem[],
   toData: (item: TItem) => Record<string, unknown>

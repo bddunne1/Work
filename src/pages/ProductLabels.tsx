@@ -5,7 +5,7 @@ import { getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
-import type { Customer, Item } from "../types";
+import type { Customer, Item, PurchaseOrder } from "../types";
 
 type Mode = "customer" | "all";
 
@@ -15,8 +15,12 @@ interface LabelItem {
   um: string;
 }
 
-function purchasedItemsFor(customerId: string, itemsByNumber: Map<string, Item>): LabelItem[] {
-  const orders = listOrders().filter((o) => o.customerId === customerId);
+function purchasedItemsFor(
+  customerId: string,
+  itemsByNumber: Map<string, Item>,
+  allOrders: PurchaseOrder[]
+): LabelItem[] {
+  const orders = allOrders.filter((o) => o.customerId === customerId);
   const byNumber = new Map<string, LabelItem>();
   for (const o of orders) {
     for (const li of o.lineItems) {
@@ -38,10 +42,12 @@ export default function ProductLabels() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [items, setItems] = useState<Item[]>([]);
+  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
 
   useEffect(() => {
     listCustomers().then(setCustomers);
     listItems().then(setItems);
+    listOrders().then(setAllOrders);
   }, []);
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [query, setQuery] = useState("");
@@ -52,10 +58,10 @@ export default function ProductLabels() {
 
   const candidates: LabelItem[] = useMemo(() => {
     if (mode === "customer") {
-      return customerId ? purchasedItemsFor(customerId, itemsByNumber) : [];
+      return customerId ? purchasedItemsFor(customerId, itemsByNumber, allOrders) : [];
     }
     return items.map((i) => ({ itemNumber: i.itemNumber, description: i.description, um: i.um }));
-  }, [mode, customerId, items, itemsByNumber]);
+  }, [mode, customerId, items, itemsByNumber, allOrders]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

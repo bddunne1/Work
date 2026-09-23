@@ -4,7 +4,7 @@ import LineChart from "../components/charts/LineChart";
 import { listItems } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
 import { getCapacityLookbackDays } from "../lib/settingsStore";
-import type { Item } from "../types";
+import type { Item, PurchaseOrder } from "../types";
 import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
 const LOOKBACK_OPTIONS = [14, 30, 60, 90];
@@ -24,11 +24,12 @@ function monthDay(iso: string): string {
 
 export default function WarehouseCapacity() {
   const [lookbackDays, setLookbackDays] = useState(() => getCapacityLookbackDays());
-  const [orders] = useState(() => listOrders());
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
     listItems().then(setItems);
+    listOrders().then(setOrders);
   }, []);
 
   const metrics = useMemo(

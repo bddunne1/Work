@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getOrder, shipOrder, updateOrder } from "../lib/orderStore";
+import type { PurchaseOrder } from "../types";
 import { orderSubtotal, orderTax, orderTotal, remainingToShip } from "../types";
 
 export default function OpenPicksDetail() {
@@ -17,17 +18,29 @@ export default function OpenPicksDetail() {
 function OpenPicksDetailInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
-  const order = soNumber ? getOrder(soNumber) : undefined;
+  const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
   const pending = order?.pendingShipment ?? [];
 
-  const [qtys, setQtys] = useState<Record<string, number>>(() => {
-    const q: Record<string, number> = {};
-    for (const l of pending) q[l.lineItemId] = l.qty;
-    return q;
-  });
+  const [qtys, setQtys] = useState<Record<string, number>>({});
   const [includePick, setIncludePick] = useState(true);
   const [includeSlip, setIncludeSlip] = useState(true);
   const [printing, setPrinting] = useState(false);
+
+  useEffect(() => {
+    if (!soNumber) return;
+    getOrder(soNumber).then((o) => {
+      setOrder(o);
+      setLoading(false);
+      const q: Record<string, number> = {};
+      for (const l of o?.pendingShipment ?? []) q[l.lineItemId] = l.qty;
+      setQtys(q);
+    });
+  }, [soNumber]);
+
+  if (loading) {
+    return <div className="page" />;
+  }
 
   if (!order) {
     return (
@@ -56,13 +69,13 @@ function OpenPicksDetailInner() {
     navigate(`/storage/${order.soNumber}`);
   }
 
-  function reprint() {
+  async function reprint() {
     if (!order || (!includePick && !includeSlip)) return;
     // Carry any corrected "Actual Shipped" quantities into the reprinted
     // documents (and persist them) so a stock shortfall discovered here
     // reprints a pick list the warehouse can actually fulfill.
     const now = new Date().toISOString();
-    updateOrder({
+    await updateOrder({
       ...order,
       pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
       pickListPrintedAt: includePick ? now : order.pickListPrintedAt,

@@ -5,8 +5,8 @@ import { listOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { pendingShipmentWeight, weightIndex } from "../types";
 
-function openPickOrders(): PurchaseOrder[] {
-  return listOrders().filter(
+function openPickOrders(orders: PurchaseOrder[]): PurchaseOrder[] {
+  return orders.filter(
     (o) =>
       o.status === "Pick & Packed" &&
       (o.pendingShipment?.length ?? 0) > 0 &&
@@ -21,12 +21,13 @@ function daysInWarehouse(pickedAt: string): number {
 
 export default function OpenPicks() {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<PurchaseOrder[]>(() => openPickOrders());
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [weights, setWeights] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     listItems().then((items) => setWeights(weightIndex(items)));
+    listOrders().then((os) => setOrders(openPickOrders(os)));
   }, []);
 
   const selectedOrders = orders.filter((o) => selected[o.soNumber]);

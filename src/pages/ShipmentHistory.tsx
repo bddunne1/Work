@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, undoShipment } from "../lib/orderStore";
@@ -12,8 +12,8 @@ function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undef
   );
 }
 
-function shippedOrders(): PurchaseOrder[] {
-  return listOrders()
+function shippedOrders(orders: PurchaseOrder[]): PurchaseOrder[] {
+  return orders
     .filter((o) => o.status === "Shipped")
     .sort((a, b) => {
       const aDate = lastShippedAt(a.shipmentHistory ?? []) ?? "";
@@ -26,7 +26,12 @@ export default function ShipmentHistory() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [orders, setOrders] = useState<PurchaseOrder[]>(() => shippedOrders());
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+
+  useEffect(() => {
+    listOrders().then((os) => setOrders(shippedOrders(os)));
+  }, []);
+
   const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
 
   async function handleUndo(order: PurchaseOrder) {

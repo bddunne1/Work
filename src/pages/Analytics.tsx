@@ -69,7 +69,7 @@ function currency(v: number): string {
 export default function Analytics() {
   const [tab, setTab] = useState<Tab>("customer");
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [orders] = useState<PurchaseOrder[]>(() => listOrders());
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | undefined>();
@@ -78,6 +78,7 @@ export default function Analytics() {
   useEffect(() => {
     listCustomers().then(setCustomers);
     listItems().then(setItems);
+    listOrders().then(setOrders);
   }, []);
 
   const revenueByCustomer = useMemo(() => {

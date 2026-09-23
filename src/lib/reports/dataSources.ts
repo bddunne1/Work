@@ -58,7 +58,7 @@ const salesOrders: ReportDataSource = {
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
   ],
   async buildRows(filters) {
-    const orders = listOrders();
+    const orders = await listOrders();
     return orders
       .filter((o) => withinDateRange(o.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? ""))
       .filter((o) => !filters.status || o.status === filters.status)
@@ -132,7 +132,7 @@ const salesOrderLines: ReportDataSource = {
     { key: "item", label: "Item #", type: "text", placeholder: "Search item #..." },
   ],
   async buildRows(filters) {
-    return salesOrderLineRows(listOrders(), filters);
+    return salesOrderLineRows(await listOrders(), filters);
   },
 };
 
@@ -252,7 +252,7 @@ const inventory: ReportDataSource = {
   filterFields: [{ key: "item", label: "Item #", type: "text", placeholder: "Search item # or description..." }],
   async buildRows(filters) {
     const items = await listItems();
-    const orders = listOrders();
+    const orders = await listOrders();
     return items
       .filter((i) => includesText(`${i.itemNumber} ${i.description}`, filters.item ?? ""))
       .map((i) => {
@@ -382,7 +382,7 @@ export function getDataSource(key: string): ReportDataSource | undefined {
 // and purchase-order-line builders directly, scoped to one item number,
 // rather than going through the generic filter UI.
 export async function itemQuickReportData(itemNumber: string) {
-  const orders = listOrders();
+  const orders = await listOrders();
   const pos = await listVendorPos();
   const catalogItem = await getItemByNumber(itemNumber);
   const allocated = qtyAllocatedOnOrders(itemNumber, orders);

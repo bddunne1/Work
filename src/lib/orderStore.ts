@@ -1,13 +1,16 @@
+import { api } from "./apiClient";
+import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
 import type { PurchaseOrder, ShipmentLine } from "../types";
 import { confirmShipment, undoLastShipment } from "../types";
 import { adjustQtyOnHand } from "./itemStore";
 
-const ORDERS_KEY = "erp_orders";
-const SO_COUNTER_KEY = "erp_so_counter";
+const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
 
 // Earlier builds used a different status vocabulary and stored the
-// allocation decision under `validation`. Normalize old records on read.
+// allocation decision under `validation`. Normalize old records on read -
+// kept from the localStorage era in case any such record still exists in
+// the database (carried over via import, etc).
 const LEGACY_STATUS_MAP: Record<string, PurchaseOrder["status"]> = {
   "Ships Complete": "Allocated",
   "Partial Ship": "Backordered",
@@ -47,77 +50,76 @@ function normalizeOrder(
   return order;
 }
 
-function readOrders(): PurchaseOrder[] {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as PurchaseOrder[];
-    return parsed.map(normalizeOrder);
-  } catch {
-    return [];
-  }
+// The server's decimal/date fields serialize over JSON as strings even
+// though the frontend type treats them as number/plain-date - convert back
+// here so every consumer keeps working with the shapes it always has.
+function mapOrder(order: PurchaseOrder): PurchaseOrder {
+  return normalizeOrder({
+    ...order,
+    orderDate: order.orderDate.slice(0, 10),
+    dueDate: order.dueDate.slice(0, 10),
+    estimatedShipDate: order.estimatedShipDate ? order.estimatedShipDate.slice(0, 10) : undefined,
+    taxRate: Number(order.taxRate),
+    lineItems: order.lineItems.map((li) => ({ ...li, rate: Number(li.rate), customerPartNumber: li.customerPartNumber ?? undefined })),
+    checkedAt: order.checkedAt ?? undefined,
+    checkedBy: order.checkedBy ?? undefined,
+    checkedByColor: order.checkedByColor ?? undefined,
+    writtenBy: order.writtenBy ?? undefined,
+    writtenById: order.writtenById ?? undefined,
+    writtenByColor: order.writtenByColor ?? undefined,
+    allocation: order.allocation ?? undefined,
+    labelPrintedAt: order.labelPrintedAt ?? undefined,
+    pickedAt: order.pickedAt ?? undefined,
+    pendingShipment: order.pendingShipment ?? undefined,
+    pickListPrintedAt: order.pickListPrintedAt ?? undefined,
+    packingSlipPrintedAt: order.packingSlipPrintedAt ?? undefined,
+    pickPackStatus: order.pickPackStatus ?? undefined,
+    bol: order.bol ?? undefined,
+    shipmentHistory: order.shipmentHistory ?? undefined,
+  });
 }
 
-function writeOrders(orders: PurchaseOrder[]): void {
-  try {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  } catch {
-    // storage unavailable (private mode, blocked site data, etc.) - no-op
-  }
-}
-
-export function nextSalesOrderNumber(): string {
-  try {
-    const raw = localStorage.getItem(SO_COUNTER_KEY);
-    const current = raw ? parseInt(raw, 10) : SO_START;
-    return String(current);
-  } catch {
-    return String(SO_START);
-  }
+// Next S.O. # that will be assigned, for display only (e.g. Settings'
+// "next S.O. #" field) - doesn't reserve anything.
+export async function nextSalesOrderNumber(): Promise<string> {
+  const next = await peekNextCounterValue(SO_COUNTER_KEY, SO_START);
+  return String(next);
 }
 
 // Highest S.O. # already in use, so an admin overriding the next number
 // (see Settings) can be warned before creating a collision.
-export function maxExistingSalesOrderNumber(): number {
-  return readOrders().reduce((max, o) => Math.max(max, parseInt(o.soNumber, 10) || 0), 0);
+export async function maxExistingSalesOrderNumber(): Promise<number> {
+  const orders = await listOrders();
+  return orders.reduce((max, o) => Math.max(max, parseInt(o.soNumber, 10) || 0), 0);
 }
 
-export function setNextSalesOrderNumber(next: number): void {
+export async function setNextSalesOrderNumber(next: number): Promise<void> {
+  await setNextCounterValue(SO_COUNTER_KEY, Math.max(SO_START, Math.floor(next)));
+}
+
+export async function listOrders(): Promise<PurchaseOrder[]> {
+  const orders = await api.get<PurchaseOrder[]>("/api/sales-orders");
+  return orders.map(mapOrder);
+}
+
+export async function getOrder(soNumber: string): Promise<PurchaseOrder | undefined> {
   try {
-    localStorage.setItem(SO_COUNTER_KEY, String(Math.max(SO_START, Math.floor(next))));
+    const order = await api.get<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(soNumber)}`);
+    return mapOrder(order);
   } catch {
-    // storage unavailable - no-op
+    return undefined;
   }
 }
 
-function commitSalesOrderNumber(): void {
-  try {
-    const raw = localStorage.getItem(SO_COUNTER_KEY);
-    const current = raw ? parseInt(raw, 10) : SO_START;
-    localStorage.setItem(SO_COUNTER_KEY, String(current + 1));
-  } catch {
-    // storage unavailable - no-op
-  }
+// Creates a new order - the server assigns the real S.O. # atomically, so
+// this takes everything except that field and returns the saved record
+// (with its real soNumber) to the caller.
+export async function saveOrder(order: Omit<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
+  return mapOrder(await api.post<PurchaseOrder>("/api/sales-orders", order));
 }
 
-export function listOrders(): PurchaseOrder[] {
-  return readOrders().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export function getOrder(soNumber: string): PurchaseOrder | undefined {
-  return readOrders().find((o) => o.soNumber === soNumber);
-}
-
-export function saveOrder(order: PurchaseOrder): void {
-  const orders = readOrders();
-  orders.push(order);
-  writeOrders(orders);
-  commitSalesOrderNumber();
-}
-
-export function updateOrder(order: PurchaseOrder): void {
-  const orders = readOrders().map((o) => (o.soNumber === order.soNumber ? order : o));
-  writeOrders(orders);
+export async function updateOrder(order: PurchaseOrder): Promise<void> {
+  await api.put(`/api/sales-orders/${encodeURIComponent(order.soNumber)}`, order);
 }
 
 // Confirms a shipment and, unlike calling confirmShipment directly, also
@@ -130,7 +132,7 @@ export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Pr
     const li = order.lineItems.find((x) => x.id === l.lineItemId);
     if (li) await adjustQtyOnHand(li.item, -l.qty);
   }
-  updateOrder(updated);
+  await updateOrder(updated);
   return updated;
 }
 
@@ -146,6 +148,6 @@ export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder>
     const li = order.lineItems.find((x) => x.id === l.lineItemId);
     if (li) await adjustQtyOnHand(li.item, l.qty);
   }
-  updateOrder(updated);
+  await updateOrder(updated);
   return updated;
 }

@@ -227,8 +227,13 @@ model ItemLink {
 }
 
 model SalesOrder {
-  // Matches the existing app's human-facing S.O. numbers (10001, 10002, ...).
-  soNumber             Int             @id @default(autoincrement())
+  // Matches the existing app's human-facing S.O. numbers (10001, 10002, ...)
+  // - assigned atomically via the shared Counter table at creation time
+  // (key "salesOrder"), same pattern as VendorPurchaseOrder's poNumber and
+  // ReturnAuthorization's raNumber, not a Postgres-native autoincrement -
+  // keeps every human-facing document number going through the one
+  // concurrency-safe mechanism.
+  soNumber             Int             @id
   poNumber             String          @default("")
   orderDate            DateTime        @db.Date
   dueDate              DateTime        @db.Date
@@ -244,8 +249,12 @@ model SalesOrder {
   taxRate              Decimal         @db.Decimal(6, 3) @default(0)
   notes                String          @default("")
   status               OrderStatus     @default(ENTERED)
+  writtenBy            String?
+  writtenById          String?
+  writtenByColor       String?
   checkedAt            DateTime?
   checkedBy            String?
+  checkedByColor       String?
   allocation           Json?
   labelPrintedAt       DateTime?
   pickedAt             DateTime?
