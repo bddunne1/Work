@@ -68,23 +68,30 @@ export function requireAdmin(req: AuthedRequest, res: Response, next: NextFuncti
   next();
 }
 
+export function hasPermission(account: AuthedAccount, pageKey: string, level: AccessLevel): boolean {
+  if (account.role === "ADMIN") return true;
+  const access = account.permissions?.[pageKey];
+  return level === "view" ? access === "view" || access === "edit" : access === "edit";
+}
+
 // Mirrors the frontend's getAccessLevel (src/lib/permissions.ts): admin
 // always passes; a custom account needs at least `level` access on the
 // given page key.
 export function requirePermission(pageKey: string, level: AccessLevel) {
+  return requireAnyPermission([pageKey], level);
+}
+
+// Passes if the account has `level` on ANY of `pageKeys` - for endpoints
+// that several pages legitimately drive (e.g. every order-workflow stage
+// saves the same sales order record).
+export function requireAnyPermission(pageKeys: string[], level: AccessLevel) {
   return (req: AuthedRequest, res: Response, next: NextFunction): void => {
     const account = req.account;
     if (!account) {
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
-    if (account.role === "ADMIN") {
-      next();
-      return;
-    }
-    const access = account.permissions?.[pageKey];
-    const ok = level === "view" ? access === "view" || access === "edit" : access === "edit";
-    if (!ok) {
+    if (!pageKeys.some((key) => hasPermission(account, key, level))) {
       res.status(403).json({ error: "Access denied" });
       return;
     }

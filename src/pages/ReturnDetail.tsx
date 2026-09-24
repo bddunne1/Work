@@ -87,8 +87,7 @@ function ReturnDetailInner() {
   async function saveEdit() {
     if (!draft) return;
     try {
-      await updateReturn(draft);
-      setRa(draft);
+      setRa(await updateReturn(draft));
       setDraft(undefined);
       setEditing(false);
     } catch (err) {

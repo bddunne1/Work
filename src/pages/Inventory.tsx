@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import { listOpenOrders } from "../lib/orderStore";
 import type { Item, PurchaseOrder } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
@@ -15,7 +15,7 @@ export default function Inventory() {
 
   useEffect(() => {
     listItems().then(setItems);
-    listOrders().then(setOrders);
+    listOpenOrders().then(setOrders);
   }, []);
 
   const filtered = useMemo(() => {

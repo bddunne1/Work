@@ -43,6 +43,7 @@ export async function saveReturn(ra: Omit<ReturnAuthorization, "raNumber">): Pro
   return mapReturn(await api.post<ReturnAuthorization>("/api/returns", ra));
 }
 
-export async function updateReturn(ra: ReturnAuthorization): Promise<void> {
-  await api.put(`/api/returns/${encodeURIComponent(ra.raNumber)}`, ra);
+// Returns the server's copy (with its new `version`) - keep that one.
+export async function updateReturn(ra: ReturnAuthorization): Promise<ReturnAuthorization> {
+  return mapReturn(await api.put<ReturnAuthorization>(`/api/returns/${encodeURIComponent(ra.raNumber)}`, ra));
 }

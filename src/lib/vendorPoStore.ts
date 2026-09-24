@@ -1,8 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
 import type { VendorPurchaseOrder, VendorReceivingLine } from "../types";
-import { receiveVendorPo, vendorPoLineOutstanding } from "../types";
-import { adjustQtyOnHand, getItemByNumber, setQtyOnPurchaseOrder } from "./itemStore";
 
 const VENDOR_PO_COUNTER_KEY = "vendorPo";
 const VENDOR_PO_START = 5001;
@@ -52,58 +50,29 @@ export async function getVendorPo(poNumber: string): Promise<VendorPurchaseOrder
   }
 }
 
-// Recomputes qtyOnPurchaseOrder for `itemNumber` as the sum of outstanding
-// (ordered - received) quantity across every non-closed vendor PO line for
-// it - this is now the source of truth instead of a manually maintained
-// field, driven by whatever outbound POs actually exist.
-export async function recomputeQtyOnPurchaseOrder(itemNumber: string): Promise<void> {
-  const item = await getItemByNumber(itemNumber);
-  if (!item) return;
-  const q = itemNumber.trim().toLowerCase();
-  const pos = await listVendorPos();
-  const outstanding = pos
-    .filter((po) => po.status !== "Closed")
-    .reduce(
-      (sum, po) =>
-        sum +
-        po.lines
-          .filter((l) => l.itemNumber.trim().toLowerCase() === q)
-          .reduce((lineSum, l) => lineSum + vendorPoLineOutstanding(l), 0),
-      0
-    );
-  if (item.qtyOnPurchaseOrder !== outstanding) {
-    await setQtyOnPurchaseOrder(itemNumber, outstanding);
-  }
-}
-
-function affectedItemNumbers(po: VendorPurchaseOrder): string[] {
-  return Array.from(new Set(po.lines.map((l) => l.itemNumber).filter(Boolean)));
-}
-
-// Creates a new vendor PO - the server assigns the real PO # atomically, so
-// this takes everything except that field and returns the saved record
-// (with its real poNumber) to the caller.
+// Creates a new vendor PO - the server assigns the real PO # atomically (and
+// recomputes each affected item's qtyOnPurchaseOrder in the same
+// transaction), so this takes everything except that field and returns the
+// saved record (with its real poNumber) to the caller.
 export async function saveVendorPo(po: Omit<VendorPurchaseOrder, "poNumber">): Promise<VendorPurchaseOrder> {
-  const saved = mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po));
-  await Promise.all(affectedItemNumbers(saved).map(recomputeQtyOnPurchaseOrder));
-  return saved;
+  return mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po));
 }
 
-export async function updateVendorPo(po: VendorPurchaseOrder): Promise<void> {
-  await api.put(`/api/vendor-purchase-orders/${encodeURIComponent(po.poNumber)}`, po);
-  await Promise.all(affectedItemNumbers(po).map(recomputeQtyOnPurchaseOrder));
+// Returns the server's copy (with its new `version`) - callers must keep
+// that one, not the object they sent, or their next save is a guaranteed 409.
+export async function updateVendorPo(po: VendorPurchaseOrder): Promise<VendorPurchaseOrder> {
+  return mapPo(await api.put<VendorPurchaseOrder>(`/api/vendor-purchase-orders/${encodeURIComponent(po.poNumber)}`, po));
 }
 
-// Receives `lines` against `po`: rolls up received quantities/status (see
-// receiveVendorPo) and, for each unit actually received, adds it straight
-// to qtyOnHand and recomputes qtyOnPurchaseOrder for the affected items.
+// Receives `lines` against `po` in one server-side transaction: rolls up
+// received quantities/status, adds the units to qtyOnHand and recomputes
+// qtyOnPurchaseOrder. A stale `po.version` fails the whole thing with a 409
+// and changes nothing, so retrying can never double-count stock.
 export async function receivePo(po: VendorPurchaseOrder, lines: VendorReceivingLine[]): Promise<VendorPurchaseOrder> {
-  const updated = receiveVendorPo(po, lines);
-  for (const l of lines) {
-    if (l.qty <= 0) continue;
-    const line = po.lines.find((x) => x.id === l.lineId);
-    if (line) await adjustQtyOnHand(line.itemNumber, l.qty);
-  }
-  await updateVendorPo(updated);
-  return updated;
+  return mapPo(
+    await api.post<VendorPurchaseOrder>(`/api/vendor-purchase-orders/${encodeURIComponent(po.poNumber)}/receive`, {
+      version: po.version,
+      lines: lines.filter((l) => l.qty > 0),
+    })
+  );
 }

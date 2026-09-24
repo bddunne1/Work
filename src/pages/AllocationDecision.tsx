@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
+import { getOrder, listOpenOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
@@ -32,21 +32,31 @@ function AllocationDecisionInner() {
   const itemsByNumber = itemsIndex(items);
 
   useEffect(() => {
-    listItems().then(setItems);
-    listOrders().then(setAllOrders);
-  }, []);
-
-  useEffect(() => {
     if (!soNumber) return;
-    getOrder(soNumber).then((o) => {
+    // Loaded together so each line's starting quantity can be capped at what
+    // is actually free - it used to default to the full remaining quantity
+    // regardless of stock, so one click over-allocated.
+    Promise.all([getOrder(soNumber), listItems(), listOpenOrders()]).then(([o, catalog, open]) => {
+      setItems(catalog);
+      setAllOrders(open);
       setOrder(o);
       setLoading(false);
       if (!o) return;
+      const byNumber = itemsIndex(catalog);
+      const others = open.filter((x) => x.soNumber !== o.soNumber);
+      const takenHere = new Map<string, number>();
       const saved = new Map(o.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
       const initial: Record<string, number> = {};
       for (const li of o.lineItems) {
         const remaining = remainingToShip(o, li);
-        initial[li.id] = Math.min(saved.get(li.id) ?? remaining, remaining);
+        const key = li.item.trim().toLowerCase();
+        const catalogItem = byNumber.get(key);
+        const free = catalogItem
+          ? availableQty(catalogItem, qtyAllocatedOnOrders(li.item, others)) - (takenHere.get(key) ?? 0)
+          : remaining;
+        const qty = Math.max(0, Math.min(saved.get(li.id) ?? remaining, remaining, free));
+        initial[li.id] = qty;
+        takenHere.set(key, (takenHere.get(key) ?? 0) + qty);
       }
       setQtys(initial);
       setShipCompleteOnly(o.allocation?.shipCompleteOnly ?? null);
@@ -125,8 +135,13 @@ function AllocationDecisionInner() {
     outcomeClass = "outcome-warning";
   }
 
+  // Allocation only decides Checked (first pass) and Backordered (re-check
+  // stock) orders. Opened from a stale queue or link after the order was
+  // already allocated/packed/shipped, confirming would drag it backwards.
+  const staleStatus = order.status !== "Checked" && order.status !== "Backordered";
+
   async function applyDecision() {
-    if (!order || !outcomeStatus) return;
+    if (!order || !outcomeStatus || staleStatus) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
     const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
     // Allocating zero units has nothing to pick, so it's really a hold -
@@ -148,7 +163,7 @@ function AllocationDecisionInner() {
           shipCompleteOnly: fullyAllocated ? undefined : (shipCompleteOnly as boolean),
           decidedAt: new Date().toISOString(),
         },
-      });
+      }, order.status);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -186,6 +201,13 @@ function AllocationDecisionInner() {
         </div>
       </div>
 
+      {staleStatus && (
+        <p className="stale-status-notice">
+          This order is already {order.status} - someone else moved it on since this queue was loaded, so it can't be
+          re-allocated from here.
+        </p>
+      )}
+
       <div className="sales-order validation-panel">
         <div className="line-items">
           <div className="ship-locations-header">
@@ -220,7 +242,10 @@ function AllocationDecisionInner() {
                 const qty = qtys[li.id] ?? 0;
                 const short = qty < remaining;
                 const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
-                const allocatedElsewhere = qtyAllocatedOnOrders(li.item, allOrders);
+                const allocatedElsewhere = qtyAllocatedOnOrders(
+                  li.item,
+                  allOrders.filter((o) => o.soNumber !== order.soNumber)
+                );
                 const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
                 const overAvailable = available !== null && qty > available;
                 return (
@@ -286,7 +311,7 @@ function AllocationDecisionInner() {
             <div className={`decision-outcome ${outcomeClass}`}>
               <div className="decision-outcome-label">{outcomeLabel}</div>
               <div className="decision-outcome-detail">{outcomeDetail}</div>
-              <button type="button" className="primary-btn" onClick={applyDecision}>
+              <button type="button" className="primary-btn" onClick={applyDecision} disabled={staleStatus}>
                 Confirm &amp; Apply
               </button>
             </div>

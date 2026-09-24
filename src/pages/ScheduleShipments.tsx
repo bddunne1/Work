@@ -62,8 +62,8 @@ export default function ScheduleShipments() {
     if (!order) return;
     const updated = { ...order, estimatedShipDate: value || undefined };
     try {
-      await updateOrder(updated);
-      setOrders((os) => os.map((o) => (o.soNumber === soNumber ? updated : o)));
+      const saved = await updateOrder(updated);
+      setOrders((os) => os.map((o) => (o.soNumber === soNumber ? saved : o)));
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);

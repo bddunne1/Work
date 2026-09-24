@@ -2919,3 +2919,15 @@ a.brand:hover .brand-name {
     flex-basis: 110px;
   }
 }
+
+/* Shown on a workflow decision page opened for an order that someone else
+   has already moved to a different stage (stale queue / bookmark). */
+.stale-status-notice {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  font-weight: 500;
+}

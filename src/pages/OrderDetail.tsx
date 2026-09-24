@@ -98,8 +98,7 @@ function OrderDetailInner() {
   async function saveEdit() {
     if (!draft) return;
     try {
-      await updateOrder(draft);
-      setOrder(draft);
+      setOrder(await updateOrder(draft));
       setDraft(undefined);
       setEditing(false);
     } catch (err) {

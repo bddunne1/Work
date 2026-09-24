@@ -21,8 +21,12 @@ async function load(): Promise<Record<string, unknown>> {
         return s;
       })
       .catch(() => {
-        cache = {};
-        return cache;
+        // Don't cache the failure: an expired session or a brief outage on
+        // first load used to pin every setting to its fallback for the rest
+        // of the session (and the Settings page would then save those
+        // fallbacks over the real values). Next load() tries again.
+        loading = null;
+        return {} as Record<string, unknown>;
       });
   }
   return loading;
@@ -37,6 +41,13 @@ async function load(): Promise<Record<string, unknown>> {
 // cache on first read.
 export function preloadSettings(): Promise<void> {
   return load().then(() => undefined);
+}
+
+// Forget everything on sign-in/sign-out so one account's session never
+// reads settings loaded under another's.
+export function clearSettingsCache(): void {
+  cache = null;
+  loading = null;
 }
 
 export function getSetting<T>(key: string, fallback: T): T {

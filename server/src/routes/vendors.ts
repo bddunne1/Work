@@ -81,7 +81,13 @@ router.put("/:id", requirePermission("vendors", "edit"), async (req, res) => {
 });
 
 router.delete("/:id", requirePermission("vendors", "edit"), async (req, res) => {
-  await prisma.vendor.delete({ where: { id: req.params.id } }).catch(() => null);
+  // A missing row is fine (already gone); anything else - notably a
+  // foreign-key violation because orders/POs still reference it - goes to
+  // the error handler as a 409 instead of a false "deleted" 204.
+  await prisma.vendor.delete({ where: { id: req.params.id } }).catch((err) => {
+    if (err?.code === "P2025") return null;
+    throw err;
+  });
   res.status(204).end();
 });
 

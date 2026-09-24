@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { listOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, updateOrder } from "../lib/orderStore";
+import { localIsoDate } from "../lib/dateUtils";
 import type { Address, BolDetails, PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -45,7 +46,7 @@ type TrailerLoadedBy = "Shipper" | "Driver" | "";
 type FreightCountedBy = "Shipper" | "DriverPallets" | "DriverPieces" | "";
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localIsoDate();
 }
 
 function addressesMatch(a: Address, b: Address): boolean {
@@ -65,7 +66,7 @@ export default function GenerateBOL() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    listOrders().then(setOrders);
+    listOpenOrders().then(setOrders);
   }, []);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -161,12 +162,12 @@ export default function GenerateBOL() {
     } catch (err) {
       if (isConflictError(err)) {
         alert(`${err.message} No BOL was generated for the remaining selected orders - review and try again.`);
-        setOrders(await listOrders());
+        setOrders(await listOpenOrders());
         return;
       }
       throw err;
     }
-    setOrders(await listOrders());
+    setOrders(await listOpenOrders());
     setGenerated(true);
     setTimeout(() => window.print(), 50);
   }

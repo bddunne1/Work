@@ -26,9 +26,9 @@ import {
   WarehouseIcon,
 } from "../components/SidebarIcons";
 import { useAuth } from "../lib/authContext";
-import { listCustomers } from "../lib/customerStore";
+import { listCustomerSummaries } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import { listOpenOrders, listRecentOrders } from "../lib/orderStore";
 import { getAccessLevel } from "../lib/permissions";
 import { getLeadTimeDays } from "../lib/settingsStore";
 import type { PurchaseOrder } from "../types";
@@ -207,16 +207,20 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { account } = useAuth();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-  const recent = orders.slice(0, 5);
+  const [recent, setRecent] = useState<PurchaseOrder[]>([]);
   const [customerCount, setCustomerCount] = useState(0);
   const [itemCount, setItemCount] = useState(0);
   const leadTime = getLeadTimeDays();
   const canEditSettings = getAccessLevel("/settings", account!) === "edit";
 
   useEffect(() => {
-    listCustomers().then((cs) => setCustomerCount(cs.length));
+    listCustomerSummaries().then((cs) => setCustomerCount(cs.length));
     listItems().then((items) => setItemCount(items.length));
-    listOrders().then(setOrders);
+    // Every stat on this page counts open orders; only the Recent Orders list
+    // needs anything else. Fetching the full history here (the landing page
+    // for every user) grew with every order ever entered.
+    listOpenOrders().then(setOrders);
+    listRecentOrders(5).then(setRecent);
   }, []);
   const visibleLanes = LANES.map((lane) => ({
     ...lane,

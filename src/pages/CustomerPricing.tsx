@@ -84,6 +84,9 @@ export default function CustomerPricing() {
     };
     try {
       const result = await updateCustomer(payload);
+      // Refresh the picker's copy too - re-selecting this customer later
+      // otherwise starts from the pre-save version and 409s on the next save.
+      setCustomers((cs) => cs.map((c) => (c.id === result.id ? result : c)));
       setDraft({ ...result, priceOverrides: withTrailingBlank(result.priceOverrides ?? [], MIN_BLANK_ROWS) });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);

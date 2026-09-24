@@ -5,7 +5,7 @@ import StatusPill from "../components/StatusPill";
 import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { listOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { allocatedQtyFor, canUnallocate, unallocateOrder } from "../types";
 
@@ -36,7 +36,7 @@ export default function PickPack() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    listOrders().then((orders) => {
+    listOpenOrders().then((orders) => {
       setPickable(readyToPick(orders));
       const released = releasedPicks(orders);
       setQueue(released);
@@ -56,11 +56,11 @@ export default function PickPack() {
       return;
     }
     try {
-      await updateOrder(unallocateOrder(order));
+      await updateOrder(unallocateOrder(order), order.status);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
-        listOrders().then((orders) => {
+        listOpenOrders().then((orders) => {
           setPickable(readyToPick(orders));
           setQueue(releasedPicks(orders));
         });
@@ -114,18 +114,25 @@ export default function PickPack() {
       if (!confirmed) return;
       const now = new Date().toISOString();
       const printedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
+      // Server copies (with their new versions) of each order just marked
+      // printed - the queue keeps these so a second print (e.g. the packing
+      // slip after the pick list) doesn't 409 on every order.
+      const savedBySo = new Map<string, PurchaseOrder>();
       try {
         for (const o of selectedOrders) {
-          await updateOrder({
-            ...o,
-            pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
-            packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
-          });
+          savedBySo.set(
+            o.soNumber,
+            await updateOrder({
+              ...o,
+              pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
+              packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
+            })
+          );
         }
       } catch (err) {
         if (isConflictError(err)) {
           alert(`${err.message} Some orders in this batch may not have been marked printed - review and retry.`);
-          listOrders().then((orders) => {
+          listOpenOrders().then((orders) => {
             setPickable(readyToPick(orders));
             setQueue(releasedPicks(orders));
           });
@@ -137,11 +144,11 @@ export default function PickPack() {
         os
           .map((o) =>
             printedSoNumbers.has(o.soNumber)
-              ? {
+              ? (savedBySo.get(o.soNumber) ?? {
                   ...o,
                   pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
                   packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
-                }
+                })
               : o
           )
           .filter((o) => !isFullyPrinted(o))

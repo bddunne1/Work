@@ -46,8 +46,13 @@ function ValidationDecisionInner() {
     );
   }
 
+  // Opened from a queue snapshot (or a link) after the order already moved
+  // past validation - checking it again would drag it back to Checked while
+  // leaving its allocation/pick in place.
+  const staleStatus = order.status !== "Entered";
+
   async function markChecked() {
-    if (!order) return;
+    if (!order || staleStatus) return;
     try {
       await updateOrder({
         ...order,
@@ -55,7 +60,7 @@ function ValidationDecisionInner() {
         checkedAt: new Date().toISOString(),
         checkedBy: account?.initials,
         checkedByColor: account?.color,
-      });
+      }, "Entered");
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -90,6 +95,12 @@ function ValidationDecisionInner() {
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
         </div>
       </div>
+
+      {staleStatus && (
+        <p className="stale-status-notice">
+          This order is already {order.status} - it has moved past validation since this queue was loaded.
+        </p>
+      )}
 
       <div className="sales-order validation-panel">
         <div className="so-addresses">
@@ -146,7 +157,7 @@ function ValidationDecisionInner() {
           <div className="decision-outcome-detail">
             Marking this checked sends it to Allocation to confirm stock and release it for picking.
           </div>
-          <button type="button" className="primary-btn" onClick={markChecked}>
+          <button type="button" className="primary-btn" onClick={markChecked} disabled={staleStatus}>
             Mark as Checked
           </button>
         </div>

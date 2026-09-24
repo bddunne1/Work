@@ -4,7 +4,7 @@ import { getToken } from "./apiClient";
 import type { Account } from "./authStore";
 import { getCurrentAccount, login as loginStore, logout as logoutStore } from "./authStore";
 import { canEdit } from "./permissions";
-import { preloadSettings } from "./settingsCache";
+import { clearSettingsCache, preloadSettings } from "./settingsCache";
 
 interface AuthContextValue {
   account: Account | null;
@@ -46,12 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       login: async (username: string, password: string) => {
         const { account: result, error } = await loginStore(username, password);
-        if (result) await preloadSettings();
+        if (result) {
+          clearSettingsCache();
+          await preloadSettings();
+        }
         setAccount(result);
         return result !== null ? null : (error ?? "Incorrect username or password.");
       },
       logout: () => {
         logoutStore();
+        clearSettingsCache();
         setAccount(null);
       },
     }),

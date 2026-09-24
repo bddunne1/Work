@@ -135,6 +135,10 @@ router.put("/:id", async (req: AuthedRequest, res) => {
         color: data.color,
         active: data.active,
         passwordHash: data.password ? await bcrypt.hash(data.password, 10) : undefined,
+        // A password reset (or deactivation) also ends every existing
+        // session - otherwise whoever had the old password stays signed in
+        // for up to 30 days on the token they already hold.
+        tokenVersion: data.password || data.active === false ? { increment: 1 } : undefined,
       },
       select: publicFields,
     })

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -89,8 +89,24 @@ const include = {
 
 router.use(requireAuth);
 
-router.get("/", requirePermission("customers", "view"), async (req, res) => {
+// Pages that need to read customers without being "the Customers page":
+// order entry and returns pick a customer, labels print ship-to addresses,
+// pricing and routing guides are per-customer views.
+const CUSTOMER_VIEW_PAGES = ["customers", "order-entry", "returns", "labels", "customer-pricing", "routing-guide", "import"];
+
+router.get("/", async (req: AuthedRequest, res) => {
   const q = String(req.query.q ?? "").trim();
+  // `?summary=1` skips the heavy per-customer child tables (price overrides
+  // and part-number maps run to hundreds of rows on key accounts) for pages
+  // that only need names/addresses - the full list is ~2 MB at 200 customers.
+  // The summary (names, bill-to, ship-to) is readable by any signed-in
+  // account - the Dashboard counts customers for everyone, and warehouse
+  // roles need ship-to addresses - while pricing detail stays gated.
+  const summary = req.query.summary === "1" || req.query.summary === "true";
+  if (!summary && !CUSTOMER_VIEW_PAGES.some((key) => hasPermission(req.account!, key, "view"))) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
   const customers = await prisma.customer.findMany({
     where: q
       ? {
@@ -101,12 +117,12 @@ router.get("/", requirePermission("customers", "view"), async (req, res) => {
         }
       : undefined,
     orderBy: { name: "asc" },
-    include,
+    include: summary ? { shipToLocations: true } : include,
   });
   res.json(customers);
 });
 
-router.get("/:id", requirePermission("customers", "view"), async (req, res) => {
+router.get("/:id", requireAnyPermission(CUSTOMER_VIEW_PAGES, "view"), async (req, res) => {
   const customer = await prisma.customer.findUnique({ where: { id: req.params.id }, include });
   if (!customer) {
     res.status(404).json({ error: "Customer not found" });
@@ -226,7 +242,13 @@ router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
 });
 
 router.delete("/:id", requirePermission("customers", "edit"), async (req, res) => {
-  await prisma.customer.delete({ where: { id: req.params.id } }).catch(() => null);
+  // A missing row is fine (already gone); anything else - notably a
+  // foreign-key violation because orders/POs still reference it - goes to
+  // the error handler as a 409 instead of a false "deleted" 204.
+  await prisma.customer.delete({ where: { id: req.params.id } }).catch((err) => {
+    if (err?.code === "P2025") return null;
+    throw err;
+  });
   res.status(204).end();
 });
 

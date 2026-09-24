@@ -6,7 +6,7 @@ import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
-import { addBusinessDays } from "../lib/dateUtils";
+import { addBusinessDays, localIsoDate } from "../lib/dateUtils";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
 import { getLeadTimeDays } from "../lib/settingsStore";
 import type { Account } from "../lib/authStore";
@@ -14,7 +14,7 @@ import type { Customer, PurchaseOrder } from "../types";
 import { emptyAddress, emptyLineItem, orderSubtotal, orderTax, orderTotal } from "../types";
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localIsoDate();
 }
 
 function blankOrder(soNumber: string, account: Account | null): PurchaseOrder {
@@ -46,6 +46,7 @@ export default function OrderEntry() {
   const [order, setOrder] = useState<PurchaseOrder>(() => blankOrder("", account));
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
 
@@ -105,11 +106,21 @@ export default function OrderEntry() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const estimatedShipDate = addBusinessDays(order.orderDate, getLeadTimeDays());
-    const { soNumber: _soNumber, ...rest } = order;
-    const saved = await saveOrder({ ...rest, estimatedShipDate });
-    setOrder(saved);
-    setSaved(true);
+    // A double-click (or Enter pressed twice) used to POST twice and create
+    // two sales orders with two different S.O. numbers.
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const estimatedShipDate = addBusinessDays(order.orderDate, getLeadTimeDays());
+      const { soNumber: _soNumber, ...rest } = order;
+      const saved = await saveOrder({ ...rest, estimatedShipDate });
+      setOrder(saved);
+      setSaved(true);
+    } catch (err) {
+      alert(`The order was not saved: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function startNewOrder() {
@@ -331,8 +342,8 @@ export default function OrderEntry() {
         </div>
 
         <div className="button-row">
-          <button type="submit" className="primary-btn">
-            Save Order
+          <button type="submit" className="primary-btn" disabled={submitting}>
+            {submitting ? "Saving…" : "Save Order"}
           </button>
         </div>
       </form>

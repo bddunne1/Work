@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
-import { useCanEdit } from "../lib/authContext";
+import { useAuth, useCanEdit } from "../lib/authContext";
+import { canEdit as canEditPath } from "../lib/permissions";
 import { getVendorPo, receivePo } from "../lib/vendorPoStore";
 import type { VendorPurchaseOrder, VendorReceivingLine } from "../types";
 import { vendorPoCostTotal, vendorPoLineOutstanding } from "../types";
@@ -15,7 +16,11 @@ export default function PurchaseOrderDetail() {
 
 function PurchaseOrderDetailInner() {
   const { poNumber } = useParams<{ poNumber: string }>();
-  const canEdit = useCanEdit();
+  const { account } = useAuth();
+  // Receiving happens here too: the Receiving page links each PO to this
+  // view, so dock staff with Receiving edit access (but no Purchase Orders
+  // edit access) must be able to receive - the server allows the same.
+  const canEdit = useCanEdit() || (account ? canEditPath("/receiving", account) : false);
   const [po, setPo] = useState<VendorPurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [qtys, setQtys] = useState<Record<string, number>>({});

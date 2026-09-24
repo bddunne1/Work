@@ -58,16 +58,15 @@ export async function deleteItem(id: string): Promise<void> {
   await api.del(`/api/items/${id}`);
 }
 
-// Adjusts qtyOnHand by a signed delta (negative to ship out, positive to
-// undo a shipment or receive stock back in), atomically on the server so
-// concurrent shipments/receipts against the same item can't race each other.
-export async function adjustQtyOnHand(itemNumber: string, delta: number): Promise<void> {
-  if (delta === 0) return;
-  await api.patch(`/api/items/by-number/${encodeURIComponent(itemNumber)}/qty`, { qtyOnHandDelta: delta });
-}
-
-// Sets qtyOnPurchaseOrder outright - it's a recomputed total (see
-// vendorPoStore's recomputeQtyOnPurchaseOrder), not something incremented.
-export async function setQtyOnPurchaseOrder(itemNumber: string, qty: number): Promise<void> {
-  await api.patch(`/api/items/by-number/${encodeURIComponent(itemNumber)}/qty`, { qtyOnPurchaseOrder: qty });
+// Sets qtyOnHand to `newQty` (a cycle-count correction) only if it is still
+// `expectedQty` - what the person was looking at when they counted. If a
+// shipment or receipt posted in between, the server answers 409 with the
+// current figure instead of the correction silently undoing that movement.
+export async function setQtyOnHandIfUnchanged(itemNumber: string, expectedQty: number, newQty: number): Promise<Item> {
+  return mapItem(
+    await api.patch<Item>(`/api/items/by-number/${encodeURIComponent(itemNumber)}/qty`, {
+      setQtyOnHand: newQty,
+      expectedQtyOnHand: expectedQty,
+    })
+  );
 }

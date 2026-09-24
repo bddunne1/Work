@@ -2,7 +2,7 @@ import type { Customer, Item, LineItem, PurchaseOrder } from "../types";
 import { emptyAddress, emptyShippingLocation } from "../types";
 import { field, type ParsedCsv } from "./csv";
 import { listCustomers } from "./customerStore";
-import { addBusinessDays } from "./dateUtils";
+import { addBusinessDays, localIsoDate, normalizeDateInput } from "./dateUtils";
 import { itemsIndex, listItems } from "./itemStore";
 import { getLeadTimeDays } from "./settingsStore";
 
@@ -14,10 +14,6 @@ export interface RowResult<T> {
 
 function truthy(v: string): boolean {
   return ["yes", "y", "true", "1"].includes(v.trim().toLowerCase());
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function parseCustomers(csv: ParsedCsv): RowResult<Customer>[] {
@@ -132,8 +128,8 @@ export async function parseSalesOrders(csv: ParsedCsv): Promise<RowResult<Purcha
         errors.push(`Row ${group.rowNumbers[i]}: missing Item Number`);
         return;
       }
-      if (!qtyStr || !Number.isFinite(qty) || qty <= 0) {
-        errors.push(`Row ${group.rowNumbers[i]}: missing or invalid Ordered Qty`);
+      if (!qtyStr || !Number.isInteger(qty) || qty <= 0) {
+        errors.push(`Row ${group.rowNumbers[i]}: missing or invalid Ordered Qty (must be a whole number)`);
         return;
       }
       const catalogItem = itemsByNumber.get(itemNumber.trim().toLowerCase());
@@ -150,13 +146,17 @@ export async function parseSalesOrders(csv: ParsedCsv): Promise<RowResult<Purcha
     });
     if (lineItems.length === 0) errors.push("No valid line items");
 
-    if (errors.length > 0) {
+    const orderDateRaw = field(first, "Order Date");
+    const dueDateRaw = field(first, "Due Date");
+    const orderDate = orderDateRaw ? normalizeDateInput(orderDateRaw) : localIsoDate();
+    const dueDate = dueDateRaw ? normalizeDateInput(dueDateRaw) : orderDate;
+    if (!orderDate) errors.push(`Invalid Order Date "${orderDateRaw}" - use YYYY-MM-DD or M/D/YYYY`);
+    if (!dueDate && dueDateRaw) errors.push(`Invalid Due Date "${dueDateRaw}" - use YYYY-MM-DD or M/D/YYYY`);
+
+    if (errors.length > 0 || !orderDate || !dueDate) {
       results.push({ rowNumber, errors });
       continue;
     }
-
-    const orderDate = field(first, "Order Date") || todayIso();
-    const dueDate = field(first, "Due Date") || orderDate;
     const defaultShipTo = matchedCustomer?.shipToLocations[0]?.address;
 
     const billTo = matchedCustomer

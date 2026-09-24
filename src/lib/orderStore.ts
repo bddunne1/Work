@@ -1,8 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
-import type { PurchaseOrder, ShipmentLine } from "../types";
-import { confirmShipment, undoLastShipment } from "../types";
-import { adjustQtyOnHand } from "./itemStore";
+import type { OrderStatus, PurchaseOrder, ShipmentLine } from "../types";
 
 const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
@@ -97,8 +95,26 @@ export async function setNextSalesOrderNumber(next: number): Promise<void> {
   await setNextCounterValue(SO_COUNTER_KEY, Math.max(SO_START, Math.floor(next)));
 }
 
+// Every order ever entered, shipped ones included - for history, reports
+// and analytics. Workflow pages should use listOpenOrders instead.
 export async function listOrders(): Promise<PurchaseOrder[]> {
   const orders = await api.get<PurchaseOrder[]>("/api/sales-orders");
+  return orders.map(mapOrder);
+}
+
+// Only orders that haven't fully shipped: everything the workflow queues
+// (validation, allocation, pick/pack, open picks, back orders, scheduling)
+// and stock-availability math need. A fully shipped order holds no
+// reservation and owes nothing, so leaving it out changes no totals - it
+// just keeps these pages from downloading the entire order history.
+export async function listOpenOrders(): Promise<PurchaseOrder[]> {
+  const orders = await api.get<PurchaseOrder[]>("/api/sales-orders?open=1");
+  return orders.map(mapOrder);
+}
+
+// The `limit` most recently entered orders, any status.
+export async function listRecentOrders(limit: number): Promise<PurchaseOrder[]> {
+  const orders = await api.get<PurchaseOrder[]>(`/api/sales-orders?limit=${limit}`);
   return orders.map(mapOrder);
 }
 
@@ -118,36 +134,40 @@ export async function saveOrder(order: Omit<PurchaseOrder, "soNumber">): Promise
   return mapOrder(await api.post<PurchaseOrder>("/api/sales-orders", order));
 }
 
-export async function updateOrder(order: PurchaseOrder): Promise<void> {
-  await api.put(`/api/sales-orders/${encodeURIComponent(order.soNumber)}`, order);
+// Saves the whole order and returns the server's copy, including its new
+// `version` - callers that keep working with the order afterwards must use
+// the returned value, or their next save is a guaranteed 409.
+//
+// `expectedStatus` is the status the calling page is acting on (e.g.
+// Validation only ever checks an "Entered" order). If the order has moved
+// on since the page loaded it, the server refuses with a 409 instead of
+// dragging it backwards through the workflow.
+export async function updateOrder(order: PurchaseOrder, expectedStatus?: OrderStatus): Promise<PurchaseOrder> {
+  return mapOrder(
+    await api.put<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}`, { ...order, expectedStatus })
+  );
 }
 
-// Confirms a shipment and, unlike calling confirmShipment directly, also
-// subtracts what actually shipped from each item's qtyOnHand - physical
-// stock only really leaves the building once a shipment is confirmed.
+// Confirms a shipment of `lines`: the server records it, rolls the order to
+// Shipped/Backordered and takes the units out of qtyOnHand in a single
+// transaction. A stale `order.version` (someone else touched the order)
+// fails with a 409 and changes nothing - so a retry can't double-ship stock.
 export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Promise<PurchaseOrder> {
-  const updated = confirmShipment(order, lines);
-  for (const l of lines) {
-    if (l.qty <= 0) continue;
-    const li = order.lineItems.find((x) => x.id === l.lineItemId);
-    if (li) await adjustQtyOnHand(li.item, -l.qty);
-  }
-  await updateOrder(updated);
-  return updated;
+  return mapOrder(
+    await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/ship`, {
+      version: order.version,
+      lines: lines.filter((l) => l.qty > 0),
+    })
+  );
 }
 
-// Undoes the most recent shipment on `order` (see undoLastShipment) and adds
-// those quantities back to qtyOnHand, reversing what shipOrder subtracted.
+// Undoes the most recent shipment on `order` - the server puts those units
+// back into qtyOnHand and re-stages them for Open Picks atomically.
 export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder> {
-  const history = order.shipmentHistory ?? [];
-  if (history.length === 0) return order;
-  const last = history[history.length - 1];
-  const updated = undoLastShipment(order);
-  for (const l of last.lines) {
-    if (l.qty <= 0) continue;
-    const li = order.lineItems.find((x) => x.id === l.lineItemId);
-    if (li) await adjustQtyOnHand(li.item, l.qty);
-  }
-  await updateOrder(updated);
-  return updated;
+  if ((order.shipmentHistory ?? []).length === 0) return order;
+  return mapOrder(
+    await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/undo-shipment`, {
+      version: order.version,
+    })
+  );
 }

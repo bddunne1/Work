@@ -24,6 +24,13 @@ export async function listCustomers(q?: string): Promise<Customer[]> {
   return customers.map(mapCustomer);
 }
 
+// Names/addresses/ship-to locations only - no price overrides, part maps or
+// notes. For pages that just list or count customers; the full list with
+// key accounts' price sheets is megabytes.
+export async function listCustomerSummaries(): Promise<Customer[]> {
+  return api.get<Customer[]>("/api/customers?summary=1");
+}
+
 export async function getCustomer(id: string): Promise<Customer | undefined> {
   try {
     const customer = await api.get<Customer>(`/api/customers/${id}`);
