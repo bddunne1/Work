@@ -37,12 +37,12 @@ export default function CustomersHub() {
       <div className="hub-card-grid">
         {visible.map((c) => (
           <Link key={c.name} to={c.to} className="hub-card">
-            <div className="hub-card-icon">
-              <c.icon />
-            </div>
             <div className="hub-card-body">
               <div className="hub-card-name">{c.name}</div>
               <div className="hub-card-desc">{c.description}</div>
+            </div>
+            <div className="hub-card-icon">
+              <c.icon />
             </div>
           </Link>
         ))}

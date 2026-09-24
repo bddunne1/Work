@@ -41,7 +41,7 @@ const salesOrders: ReportDataSource = {
   label: "Sales Orders",
   description: "One row per sales order.",
   columns: [
-    { key: "soNumber", label: "S.O. #" },
+    { key: "soNumber", label: "S.O. #", linkTo: (row) => `/storage/${row.soNumber}` },
     { key: "poNumber", label: "P.O. #" },
     { key: "customer", label: "Customer" },
     { key: "orderDate", label: "Order Date" },
@@ -110,7 +110,7 @@ const salesOrderLines: ReportDataSource = {
   label: "Sales Order Lines",
   description: "One row per item line across every sales order - which orders an item is on, and how much of it.",
   columns: [
-    { key: "soNumber", label: "S.O. #" },
+    { key: "soNumber", label: "S.O. #", linkTo: (row) => `/storage/${row.soNumber}` },
     { key: "customer", label: "Customer" },
     { key: "orderDate", label: "Order Date" },
     { key: "status", label: "Status" },
@@ -141,7 +141,7 @@ const purchaseOrders: ReportDataSource = {
   label: "Purchase Orders",
   description: "One row per outbound purchase order to a vendor.",
   columns: [
-    { key: "poNumber", label: "PO #" },
+    { key: "poNumber", label: "PO #", linkTo: (row) => `/purchase-orders/${row.poNumber}` },
     { key: "vendor", label: "Vendor" },
     { key: "orderDate", label: "Order Date" },
     { key: "expectedDate", label: "Expected Date" },
@@ -183,7 +183,7 @@ const purchaseOrderLines: ReportDataSource = {
   label: "Purchase Order Lines",
   description: "One row per item line across every purchase order - which POs an item is on, and how much is outstanding.",
   columns: [
-    { key: "poNumber", label: "PO #" },
+    { key: "poNumber", label: "PO #", linkTo: (row) => `/purchase-orders/${row.poNumber}` },
     { key: "vendor", label: "Vendor" },
     { key: "orderDate", label: "Order Date" },
     { key: "status", label: "Status" },
@@ -333,11 +333,11 @@ const returns: ReportDataSource = {
   label: "Returns",
   description: "One row per Return Authorization.",
   columns: [
-    { key: "raNumber", label: "RA #" },
+    { key: "raNumber", label: "RA #", linkTo: (row) => `/returns/${row.raNumber}` },
     { key: "customer", label: "Customer" },
     { key: "requestDate", label: "Request Date" },
     { key: "status", label: "Status" },
-    { key: "soNumber", label: "Original S.O. #" },
+    { key: "soNumber", label: "Original S.O. #", linkTo: (row) => `/storage/${row.soNumber}` },
     { key: "totalCredit", label: "Total Credit", align: "right" },
   ],
   defaultColumns: ["raNumber", "customer", "requestDate", "status", "totalCredit"],

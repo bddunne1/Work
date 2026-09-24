@@ -177,10 +177,14 @@ function PickPackDetailInner() {
           &larr; {queueState ? "Exit Queue" : "Back to Pick & Pack"}
         </Link>
         <h1>Review S.O. #{order.soNumber}</h1>
-        <p className="muted">
-          P.O. #{order.poNumber || "—"} · {order.billTo.name}
-          {queueState && <> · {queueProgressLabel(queueState)}</>}
-        </p>
+        <div className="review-meta">
+          <span>
+            P.O. #<strong>{order.poNumber || "—"}</strong>
+          </span>
+          <span className="review-meta-sep">·</span>
+          <strong>{order.billTo.name}</strong>
+          {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
+        </div>
       </div>
 
       <div className="sales-order">

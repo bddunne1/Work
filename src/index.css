@@ -277,6 +277,44 @@ a.brand:hover .brand-name {
   border-left: 4px solid var(--page-accent, var(--accent));
 }
 
+/* Prominent P.O. #/customer/total summary under an order review heading
+   (Validation, Allocation, Pick & Pack review) - was plain muted text,
+   easy to miss when it's the whole reason you're on the page. */
+.review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--page-accent, var(--accent)) 10%, var(--panel-bg));
+  border: 1px solid color-mix(in srgb, var(--page-accent, var(--accent)) 22%, var(--border));
+  font-size: 15px;
+  color: var(--text);
+}
+
+.review-meta strong {
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.review-meta-total {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--page-accent, var(--accent));
+}
+
+.review-meta-sep {
+  color: var(--muted);
+}
+
+.review-meta-queue {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
 /* Dashboard */
 .lead-time-panel {
   display: flex;
@@ -440,13 +478,14 @@ a.brand:hover .brand-name {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 22px 20px 20px;
+  padding: 20px 20px 20px;
+  min-height: 230px;
   border-radius: 14px;
   text-decoration: none;
   color: var(--text);
   border: 1px solid color-mix(in srgb, var(--page-accent, var(--accent)) 28%, var(--border));
   background: linear-gradient(
-    180deg,
+    to top,
     color-mix(in srgb, var(--page-accent, var(--accent)) 16%, var(--panel-bg)) 0%,
     var(--panel-bg) 70%
   );
@@ -501,9 +540,9 @@ a.brand:hover .brand-name {
 .hub-card-icon {
   position: relative;
   z-index: 1;
-  width: 46px;
-  height: 46px;
-  flex: none;
+  flex: 1;
+  min-height: 110px;
+  width: 100%;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -521,8 +560,8 @@ a.brand:hover .brand-name {
 }
 
 .hub-card-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 42px;
+  height: 42px;
 }
 
 .hub-card-body {
@@ -1348,6 +1387,23 @@ a.brand:hover .brand-name {
   font-size: 13px;
   background: var(--panel-bg);
   color: var(--text);
+}
+
+.schedule-date-input.has-date {
+  border-color: #1971c2;
+  background: color-mix(in srgb, #1971c2 10%, var(--panel-bg));
+  color: #1971c2;
+  font-weight: 600;
+}
+
+.schedule-ship-date {
+  color: #1971c2;
+  font-weight: 700;
+}
+
+.ship-calendar-cell.has-orders .ship-calendar-day {
+  color: #1971c2;
+  font-weight: 700;
 }
 
 .allocate-qty-input.short {

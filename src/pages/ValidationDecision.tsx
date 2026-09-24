@@ -79,10 +79,16 @@ function ValidationDecisionInner() {
           &larr; {queueState ? "Exit Queue" : "Back to Validation"}
         </Link>
         <h1>Review S.O. #{order.soNumber}</h1>
-        <p className="muted">
-          P.O. #{order.poNumber || "—"} · {order.billTo.name} · ${orderTotal(order).toFixed(2)}
-          {queueState && <> · {queueProgressLabel(queueState)}</>}
-        </p>
+        <div className="review-meta">
+          <span>
+            P.O. #<strong>{order.poNumber || "—"}</strong>
+          </span>
+          <span className="review-meta-sep">·</span>
+          <strong>{order.billTo.name}</strong>
+          <span className="review-meta-sep">·</span>
+          <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
+          {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
+        </div>
       </div>
 
       <div className="sales-order validation-panel">

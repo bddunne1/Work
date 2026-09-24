@@ -12,6 +12,9 @@ export interface ReportColumn {
   key: string;
   label: string;
   align?: "left" | "right";
+  // When set, this column's cells link to their source record (e.g. an S.O.
+  // # links back to that sales order) instead of rendering as plain text.
+  linkTo?: (row: ReportRow) => string;
 }
 
 export interface FilterOption {

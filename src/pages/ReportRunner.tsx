@@ -229,11 +229,21 @@ export default function ReportRunner() {
               <tbody>
                 {rows.map((row, i) => (
                   <tr key={i}>
-                    {orderedColumns.map((c) => (
-                      <td key={c.key} className={c.align === "right" ? "amount-cell" : undefined}>
-                        {typeof row[c.key] === "number" ? (row[c.key] as number).toFixed(2) : row[c.key]}
-                      </td>
-                    ))}
+                    {orderedColumns.map((c) => {
+                      const value =
+                        typeof row[c.key] === "number" ? (row[c.key] as number).toFixed(2) : row[c.key];
+                      return (
+                        <td key={c.key} className={c.align === "right" ? "amount-cell" : undefined}>
+                          {c.linkTo && row[c.key] ? (
+                            <Link to={c.linkTo(row)} className="row-action-outline">
+                              {value}
+                            </Link>
+                          ) : (
+                            value
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

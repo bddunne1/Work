@@ -4,15 +4,20 @@ import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { getCustomer, listCustomers, updateCustomer } from "../lib/customerStore";
-import type { Customer, CustomerPriceOverride } from "../types";
+import { listItems } from "../lib/itemStore";
+import type { Customer, CustomerPriceOverride, Item } from "../types";
+
+const ITEM_DATALIST_ID = "customer-pricing-item-options";
 
 export default function CustomerPricing() {
   const canEdit = useCanEdit();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [catalog, setCatalog] = useState<Item[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     listCustomers().then(setCustomers);
+    listItems().then(setCatalog);
   }, []);
   const [draft, setDraft] = useState<Customer | undefined>();
   const [saved, setSaved] = useState(false);
@@ -42,6 +47,13 @@ export default function CustomerPricing() {
   function removeOverride(id: string) {
     if (!draft) return;
     setDraft({ ...draft, priceOverrides: (draft.priceOverrides ?? []).filter((o) => o.id !== id) });
+  }
+
+  function applyItemLookup(id: string, itemNumber: string) {
+    const q = itemNumber.trim().toLowerCase();
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!match) return;
+    updateOverride(id, { itemNumber: match.itemNumber });
   }
 
   async function handleSave() {
@@ -100,6 +112,14 @@ export default function CustomerPricing() {
           {(draft.priceOverrides ?? []).length === 0 ? (
             <p className="muted">No price overrides yet - this customer pays catalog rate on everything.</p>
           ) : (
+            <>
+            <datalist id={ITEM_DATALIST_ID}>
+              {catalog.map((c) => (
+                <option key={c.id} value={c.itemNumber}>
+                  {c.description}
+                </option>
+              ))}
+            </datalist>
             <table className="data-table">
               <thead>
                 <tr>
@@ -115,7 +135,9 @@ export default function CustomerPricing() {
                       <input
                         value={o.itemNumber}
                         disabled={!canEdit}
+                        list={canEdit ? ITEM_DATALIST_ID : undefined}
                         onChange={(e) => updateOverride(o.id, { itemNumber: e.target.value })}
+                        onBlur={(e) => applyItemLookup(o.id, e.target.value)}
                       />
                     </td>
                     <td>
@@ -142,6 +164,7 @@ export default function CustomerPricing() {
                 ))}
               </tbody>
             </table>
+            </>
           )}
 
           {canEdit && (

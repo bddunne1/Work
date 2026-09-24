@@ -1,6 +1,10 @@
+import { useEffect, useState } from "react";
 import AddressFields from "./AddressFields";
-import type { Customer, CustomerPartMapping, ShippingLocation } from "../types";
+import { listItems } from "../lib/itemStore";
+import type { Customer, CustomerPartMapping, Item, ShippingLocation } from "../types";
 import { emptyShippingLocation } from "../types";
+
+const ITEM_DATALIST_ID = "customer-editor-item-options";
 
 interface Props {
   customer: Customer;
@@ -9,6 +13,12 @@ interface Props {
 }
 
 export default function CustomerEditor({ customer, onChange, readOnly }: Props) {
+  const [catalog, setCatalog] = useState<Item[]>([]);
+
+  useEffect(() => {
+    listItems().then(setCatalog);
+  }, []);
+
   function set<K extends keyof Customer>(key: K, value: Customer[K]) {
     onChange({ ...customer, [key]: value });
   }
@@ -23,6 +33,13 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
       ...customer,
       partNumberMap: (customer.partNumberMap ?? []).map((m) => (m.id === id ? { ...m, ...patch } : m)),
     });
+  }
+
+  function applyPartMappingItemLookup(id: string, itemNumber: string) {
+    const q = itemNumber.trim().toLowerCase();
+    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!match) return;
+    updatePartMapping(id, { itemNumber: match.itemNumber });
   }
 
   function removePartMapping(id: string) {
@@ -200,6 +217,14 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
         {(customer.partNumberMap ?? []).length === 0 ? (
           <p className="muted">No part number mappings yet.</p>
         ) : (
+          <>
+          <datalist id={ITEM_DATALIST_ID}>
+            {catalog.map((c) => (
+              <option key={c.id} value={c.itemNumber}>
+                {c.description}
+              </option>
+            ))}
+          </datalist>
           <table className="data-table">
             <thead>
               <tr>
@@ -215,7 +240,9 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
                     <input
                       value={m.itemNumber}
                       disabled={readOnly}
+                      list={readOnly ? undefined : ITEM_DATALIST_ID}
                       onChange={(e) => updatePartMapping(m.id, { itemNumber: e.target.value })}
+                      onBlur={(e) => applyPartMappingItemLookup(m.id, e.target.value)}
                     />
                   </td>
                   <td>
@@ -240,6 +267,7 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </>

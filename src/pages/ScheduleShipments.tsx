@@ -187,12 +187,14 @@ export default function ScheduleShipments() {
                     {canEdit ? (
                       <input
                         type="date"
-                        className="schedule-date-input"
+                        className={`schedule-date-input ${o.estimatedShipDate ? "has-date" : ""}`}
                         value={o.estimatedShipDate ?? ""}
                         onChange={(e) => setEstimatedShipDate(o.soNumber, e.target.value)}
                       />
+                    ) : o.estimatedShipDate ? (
+                      <span className="schedule-ship-date">{o.estimatedShipDate}</span>
                     ) : (
-                      o.estimatedShipDate || "—"
+                      "—"
                     )}
                   </td>
                 </tr>
@@ -230,7 +232,7 @@ export default function ScheduleShipments() {
             {calendarCells.map((cell, idx) => (
               <div
                 key={cell.iso ?? `blank-${idx}`}
-                className={`ship-calendar-cell ${cell.iso === todayIso ? "today" : ""} ${!cell.date ? "empty" : ""}`}
+                className={`ship-calendar-cell ${cell.iso === todayIso ? "today" : ""} ${!cell.date ? "empty" : ""} ${cell.orders.length > 0 ? "has-orders" : ""}`}
               >
                 {cell.date && (
                   <>
