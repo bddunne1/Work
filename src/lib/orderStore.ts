@@ -112,6 +112,14 @@ export async function listOpenOrders(): Promise<PurchaseOrder[]> {
   return orders.map(mapOrder);
 }
 
+// Open orders plus any order with a shipment in the last `days` days -
+// everything warehouse capacity (current load + throughput window) reads.
+export async function listCapacityOrders(days: number): Promise<PurchaseOrder[]> {
+  const since = new Date(Date.now() - Math.max(1, days) * 86_400_000).toISOString();
+  const orders = await api.get<PurchaseOrder[]>(`/api/sales-orders?open=1&shippedSince=${encodeURIComponent(since)}`);
+  return orders.map(mapOrder);
+}
+
 // The `limit` most recently entered orders, any status.
 export async function listRecentOrders(limit: number): Promise<PurchaseOrder[]> {
   const orders = await api.get<PurchaseOrder[]>(`/api/sales-orders?limit=${limit}`);

@@ -41,8 +41,8 @@ export default function AuditLog() {
         <h1>Activity Log</h1>
         <p className="muted">
           Administrative accountability trail - account logins, and every account created, changed,
-          deactivated, or deleted. Scoped to accounts today; the order/customer/item workflows still
-          live in each browser and aren't logged here yet.
+          deactivated, or deleted. Scoped to accounts today; order, customer and inventory changes
+          aren't logged here yet.
         </p>
       </div>
 

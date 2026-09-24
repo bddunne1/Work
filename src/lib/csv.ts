@@ -95,7 +95,16 @@ export function field(row: Record<string, string>, ...aliases: string[]): string
   return "";
 }
 
+// One CSV cell, safe to open in Excel: quoted when it contains a comma,
+// quote or line break, and prefixed with ' when it would otherwise be run as
+// a formula (a customer named "=HYPERLINK(...)" or "@SUM(...)"). Plain
+// negative numbers are left alone so they stay numeric.
+export function csvCell(value: string): string {
+  let v = value;
+  if (/^[=+@\t\r]/.test(v) || (/^-/.test(v) && !/^-\d+(\.\d+)?$/.test(v))) v = `'${v}`;
+  return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
 export function toCsv(headers: string[], sampleRow: string[]): string {
-  const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  return [headers.map(escape).join(","), sampleRow.map(escape).join(",")].join("\n");
+  return [headers.map(csvCell).join(","), sampleRow.map(csvCell).join(",")].join("\n");
 }

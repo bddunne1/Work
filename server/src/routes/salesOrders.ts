@@ -176,11 +176,19 @@ router.use(requireAuth);
 // workflow queues and stock-availability math need - instead of every order
 // ever entered (which grows by ~150/day and was fetched by ~20 pages).
 // `?limit=N` returns just the N most recent (e.g. the Dashboard's list).
+// `?open=1&shippedSince=<ISO date>` adds orders with a shipment on or after
+// that date - what warehouse capacity needs for its throughput window.
 router.get("/", async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
   const limit = Number(req.query.limit);
+  const since = typeof req.query.shippedSince === "string" ? new Date(req.query.shippedSince) : null;
+  const shippedSince = since && !Number.isNaN(since.getTime()) ? since : null;
   const orders = await prisma.salesOrder.findMany({
-    where: openOnly ? { status: { not: "SHIPPED" } } : undefined,
+    where: openOnly
+      ? shippedSince
+        ? { OR: [{ status: { not: "SHIPPED" } }, { shipmentHistory: { some: { shippedAt: { gte: shippedSince } } } }] }
+        : { status: { not: "SHIPPED" } }
+      : undefined,
     orderBy: { createdAt: "desc" },
     take: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : undefined,
     include,

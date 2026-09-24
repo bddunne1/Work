@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { csvCell } from "../lib/csv";
 import { DATA_SOURCES, getDataSource } from "../lib/reports/dataSources";
 import { getPreset } from "../lib/reports/presets";
 import type { ReportDataSource, ReportFilterValues, ReportRow, SavedReport } from "../lib/reports/types";
@@ -7,10 +8,9 @@ import { getSavedReport, memorizeReport } from "../lib/reportStore";
 
 function rowsToCsv(dataSource: ReportDataSource, visibleColumns: string[], rows: ReportRow[]): string {
   const cols = dataSource.columns.filter((c) => visibleColumns.includes(c.key));
-  const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  const lines = [cols.map((c) => escape(c.label)).join(",")];
+  const lines = [cols.map((c) => csvCell(c.label)).join(",")];
   for (const row of rows) {
-    lines.push(cols.map((c) => escape(String(row[c.key] ?? ""))).join(","));
+    lines.push(cols.map((c) => csvCell(String(row[c.key] ?? ""))).join(","));
   }
   return lines.join("\n");
 }
@@ -88,7 +88,8 @@ export default function ReportRunner() {
   function handleExportCsv() {
     if (!dataSource) return;
     const csv = rowsToCsv(dataSource, visibleColumns, rows);
-    const blob = new Blob([csv], { type: "text/csv" });
+    // BOM so Excel reads accented names as UTF-8 instead of garbling them.
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
