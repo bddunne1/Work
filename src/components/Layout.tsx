@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "./BrandMark";
+import MoreMenu from "./MoreMenu";
 import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
 import { getCompanyInfo } from "../lib/companyStore";
@@ -10,6 +12,13 @@ export default function Layout() {
   const { account, loading, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // React Router doesn't reset scroll on navigation the way a full page
+  // load does - without this, a list page can open still scrolled to
+  // wherever the previous page left off instead of at the top.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   if (loading) {
     return (
@@ -68,6 +77,7 @@ export default function Layout() {
               {account.username}{" "}
               <span className="muted">· {account.role === "admin" ? "Admin" : account.initials}</span>
             </span>
+            <MoreMenu account={account} />
             <button type="button" className="secondary-btn" onClick={handleLogout}>
               Log Out
             </button>

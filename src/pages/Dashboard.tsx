@@ -1,6 +1,30 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
+import {
+  AccountsIcon,
+  ActivityLogIcon,
+  AllocationIcon,
+  AnalyticsIcon,
+  BackOrderIcon,
+  BolIcon,
+  CatalogIcon,
+  CustomersIcon,
+  InventoryIcon,
+  LabelsIcon,
+  OpenPicksIcon,
+  OrderEntryIcon,
+  PickPackIcon,
+  PurchaseOrdersIcon,
+  ReceivingIcon,
+  ReturnsIcon,
+  ScheduleIcon,
+  SettingsIcon,
+  ShipmentHistoryIcon,
+  ValidationIcon,
+  VendorsIcon,
+  WarehouseIcon,
+} from "../components/SidebarIcons";
 import { useAuth } from "../lib/authContext";
 import { listCustomers } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
@@ -8,11 +32,13 @@ import { listOrders } from "../lib/orderStore";
 import { getAccessLevel } from "../lib/permissions";
 import { getLeadTimeDays } from "../lib/settingsStore";
 import type { PurchaseOrder } from "../types";
+import type { ComponentType, SVGProps } from "react";
 
 interface Module {
   name: string;
   description: string;
-  to?: string;
+  to: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 interface Lane {
@@ -26,27 +52,24 @@ const LANES: Lane[] = [
     lane: "Data",
     color: "#f59f00",
     modules: [
-      { name: "Customers", description: "Manage customer billing, shipping, and terms", to: "/customers" },
-      { name: "Items", description: "Manage the item catalog for order entry", to: "/items" },
+      {
+        name: "Customers",
+        description: "Manage customer billing, shipping, and terms",
+        to: "/customers",
+        icon: CustomersIcon,
+      },
+      { name: "Items", description: "Manage the item catalog for order entry", to: "/items", icon: CatalogIcon },
       {
         name: "Inventory",
         description: "Track quantity on hand, on sales order, and on purchase order per item",
         to: "/inventory",
-      },
-      {
-        name: "Import Data",
-        description: "Upload a spreadsheet to bulk-load customers, items, sales orders, or inventory",
-        to: "/import",
+        icon: InventoryIcon,
       },
       {
         name: "Analytics",
         description: "Customer, inventory, and sales insights with charts",
         to: "/analytics",
-      },
-      {
-        name: "Reports",
-        description: "Build a custom report, or run a built-in one, on any part of the database",
-        to: "/reports",
+        icon: AnalyticsIcon,
       },
     ],
   },
@@ -54,31 +77,41 @@ const LANES: Lane[] = [
     lane: "Order Prep",
     color: "#12b886",
     modules: [
-      { name: "Order Entry", description: "Enter a new sales order from a customer PO", to: "/order-entry" },
+      {
+        name: "Order Entry",
+        description: "Enter a new sales order from a customer PO",
+        to: "/order-entry",
+        icon: OrderEntryIcon,
+      },
       {
         name: "Validation",
         description: "Review each order for accuracy, then mark it checked",
         to: "/validation",
+        icon: ValidationIcon,
       },
       {
         name: "Allocation",
         description: "Check stock and allocate full, partial, or hold each checked order",
         to: "/allocation",
+        icon: AllocationIcon,
       },
       {
         name: "Back Order Queue",
         description: "Backordered orders waiting on stock",
         to: "/back-orders",
+        icon: BackOrderIcon,
       },
       {
         name: "Create Labels",
         description: "Shipping labels or our own / private-label product labels",
         to: "/labels",
+        icon: LabelsIcon,
       },
       {
         name: "Returns",
         description: "Record a customer return and generate a Return Authorization form",
         to: "/returns",
+        icon: ReturnsIcon,
       },
     ],
   },
@@ -90,16 +123,19 @@ const LANES: Lane[] = [
         name: "Pick & Pack",
         description: "Pick allocated orders, then print pick lists and packing slips for the queue",
         to: "/pick-pack",
+        icon: PickPackIcon,
       },
       {
         name: "Open Picks",
         description: "Fully printed orders, ready to confirm shipment (single or batch)",
         to: "/open-picks",
+        icon: OpenPicksIcon,
       },
       {
         name: "Warehouse Capacity",
         description: "How much weight is on the floor, how long it dwells, and when it's safe to release more",
         to: "/warehouse-capacity",
+        icon: WarehouseIcon,
       },
     ],
   },
@@ -111,16 +147,19 @@ const LANES: Lane[] = [
         name: "Schedule Shipment",
         description: "Set an estimated ship date for each order, or view them on a calendar",
         to: "/schedule",
+        icon: ScheduleIcon,
       },
       {
         name: "Generate BOL",
         description: "Generate a standard Bill of Lading for one or more orders - carrier, freight terms, and commodity details",
         to: "/bol",
+        icon: BolIcon,
       },
       {
         name: "Shipment History",
         description: "Orders that have shipped complete",
         to: "/shipment-history",
+        icon: ShipmentHistoryIcon,
       },
     ],
   },
@@ -132,29 +171,33 @@ const LANES: Lane[] = [
         name: "Purchase Orders",
         description: "Create and track outbound orders to vendors",
         to: "/purchase-orders",
+        icon: PurchaseOrdersIcon,
       },
       {
         name: "Receiving",
         description: "Receive stock against an open purchase order",
         to: "/receiving",
+        icon: ReceivingIcon,
       },
-      { name: "Vendors", description: "Manage supplier contacts", to: "/vendors" },
+      { name: "Vendors", description: "Manage supplier contacts", to: "/vendors", icon: VendorsIcon },
     ],
   },
   {
     lane: "Administration",
     color: "#495057",
     modules: [
-      { name: "Accounts", description: "Manage user accounts and roles", to: "/accounts" },
+      { name: "Accounts", description: "Manage user accounts and roles", to: "/accounts", icon: AccountsIcon },
       {
         name: "Settings",
         description: "Company profile, order defaults, and document numbering",
         to: "/settings",
+        icon: SettingsIcon,
       },
       {
         name: "Activity Log",
         description: "Who logged in, and every account created, changed, or removed",
         to: "/audit-log",
+        icon: ActivityLogIcon,
       },
     ],
   },
@@ -177,7 +220,7 @@ export default function Dashboard() {
   }, []);
   const visibleLanes = LANES.map((lane) => ({
     ...lane,
-    modules: lane.modules.filter((m) => !m.to || getAccessLevel(m.to, account!) !== "none"),
+    modules: lane.modules.filter((m) => getAccessLevel(m.to, account!) !== "none"),
   })).filter((lane) => lane.modules.length > 0);
 
   return (
@@ -283,21 +326,23 @@ export default function Dashboard() {
         >
           <div className="lane-band" />
           <h2 className="lane-title">{lane.lane}</h2>
-          <div className="module-grid">
-            {lane.modules.map((m) =>
-              m.to ? (
-                <Link key={m.name} to={m.to} className="module-card active">
-                  <div className="module-name">{m.name}</div>
-                  <div className="module-desc">{m.description}</div>
-                </Link>
-              ) : (
-                <div key={m.name} className="module-card disabled">
-                  <div className="module-name">{m.name}</div>
-                  <div className="module-desc">{m.description}</div>
-                  <div className="module-badge">Coming soon</div>
+          <div className="hub-card-grid">
+            {lane.modules.map((m) => (
+              <Link
+                key={m.name}
+                to={m.to}
+                className="hub-card"
+                style={{ "--page-accent": lane.color } as React.CSSProperties}
+              >
+                <div className="hub-card-body">
+                  <div className="hub-card-name">{m.name}</div>
+                  <div className="hub-card-desc">{m.description}</div>
                 </div>
-              )
-            )}
+                <div className="hub-card-icon">
+                  <m.icon />
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
       ))}
