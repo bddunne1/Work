@@ -166,6 +166,8 @@ async function buildOrder(user) {
 }
 
 let ordersRemaining = ORDERS_TODAY;
+// Daily caps for the rarer customer-service events.
+const caps = { returns: 8, cancels: 3 };
 const entryShare = { "order-entry": 0.55, "customer-service": 0.45 }; // physical POs vs phone orders
 const entered = { "order-entry": 0, "customer-service": 0 };
 function claimOrder(preset) {
@@ -249,7 +251,8 @@ async function customerService(user) {
         await work(user, 2 + asked.length * 0.5);
         event(user, "quote", { items: asked.length });
       }, { retry: false });
-    } else if (r < 0.96) {
+    } else if (r < 0.96 && caps.returns > 0) {
+      caps.returns--;
       // Return: find a shipped order for the customer and issue an RA.
       await attempt(user, "issue-return", async () => {
         const res = await search(user, { status: "Shipped", pageSize: 20, sort: "shippedAt", dir: "desc" });
@@ -266,7 +269,8 @@ async function customerService(user) {
         });
         event(user, "return-issued", { ra: ra.raNumber, so: o.soNumber });
       }, { retry: false });
-    } else {
+    } else if (r >= 0.96 && caps.cancels > 0 && rng.chance(0.3)) {
+      caps.cancels--;
       // Cancellation request on an order that hasn't shipped.
       await attempt(user, "cancel-order", async (again) => {
         const open = await listOpen(user);
@@ -279,6 +283,7 @@ async function customerService(user) {
       });
     }
     await work(user, 1);
+    await idle(user, rng.int(2, 8)); // waiting for the next call / email
   }
 }
 
@@ -543,7 +548,7 @@ async function salesManager(user, index) {
   const myAccounts = seed.customers.filter((_, i) => i % 3 === index);
   while (!dayOver()) {
     const r = rng.next();
-    if (r < 0.15) {
+    if (r < 0.05) {
       // A lead converts: set up the new customer.
       await attempt(user, "new-customer", async () => {
         await work(user, 12);
