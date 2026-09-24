@@ -25,6 +25,8 @@ Severity is rated for an internal network with about 15 users.
 | N-01 | Low | Import | The inventory import's "On Purchase Order" column does nothing (on-PO is now computed from open POs). | `importParsers.ts`, Import templates | Drop the column from the template, or warn when it's filled. |
 | N-02 | Low | Errors | Server validation errors (400) show as a generic "rejected as invalid" because the zod details aren't passed through. | `src/lib/apiClient.ts` | Turn `error.fieldErrors` into a readable message. |
 | N-03 | Low | Permissions | Order and RA detail pages let the person who entered a record edit it, but the server requires page edit access, so the save is refused. | `OrderDetail.tsx`, `ReturnDetail.tsx` | Either allow the writer on the server or remove the carve-out in the UI. |
+| N-05 | Medium | Performance | The warehouse capacity banner on Pick & Pack downloads every order shipped in the last 30 days (about 13 MB per person at 150 orders/day). With 15 people opening Pick & Pack together, it takes 6.4 s. | `WarehouseCapacityBanner.tsx`, `warehouseCapacity.ts` | Compute throughput and dwell on the server and return the few numbers the banner shows. |
+| N-06 | Low | Customers | The Customers, Routing Guide and Shipping Labels pages and the customers report still load every customer with full price sheets (about 2.3 MB). That's fine at 200 customers but grows with pricing. | `Customers.tsx`, `RoutingGuide*.tsx`, `ShippingLabelCreate.tsx` | Use the summary list and load one customer on selection. |
 | N-04 | Low | Errors | Some permission messages name internal page keys ("needs edit access to validation") instead of page names. | `server/src/routes/salesOrders.ts` | Map keys to the labels in `PAGE_DEFS`. |
 
 ## Recently closed
@@ -32,6 +34,7 @@ Severity is rated for an internal network with about 15 users.
 | ID | Closed by | Notes |
 |---|---|---|
 | C-01, C-02, C-03, H-01, H-02, H-04, H-05, H-06, H-08, M-01 … M-09, L-01 | first review round (`b5a9c4e`, `cbab33d`) | See `erp-review.html`. |
+| H-03 | paging merge (`bd6caa5`) + analytics cache | Order history pages are paged; analytics is computed on the server and shared for 60 s. See N-05 and N-06 for the pieces still left. |
 | H-09 | import merge (`7dd143c`) | Row-by-row save with results, duplicate detection, server-rule validation, button locked while saving. |
 | M-12 | `6ba6f5f` | Returns restock on receipt, and orders can be cancelled (M-12b above is the remaining piece). |
 | M-14 | `6ba6f5f` | Lines carry `itemId`; renames follow history; unknown items are rejected on save. |

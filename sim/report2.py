@@ -151,17 +151,23 @@ util_html = bar_rows(util_metrics, util_names, util_colors)
 scale_rows = ""
 scale_html = ""
 if sc_base and sc_fixed:
-    pages = [p for p in sc_fixed["pages"] if p in sc_base["pages"]]
     ms = []
-    for p in pages:
-        b, f = sc_base["pages"][p], sc_fixed["pages"][p]
-        ms.append({"name": p, "note": "15 people open it at once", "v": [round(b["wallMs"] / 1000, 2), round(f["wallMs"] / 1000, 2)], "fmt": " s"})
-        scale_rows += (
-            f"<tr><td>{esc(p)}</td><td class='num bad'>{b['wallMs']/1000:.1f} s</td><td class='num good'>{f['wallMs']/1000:.2f} s</td>"
-            f"<td class='num'>{nf(round(b['mbTransferred']))} MB</td><td class='num'>{f['mbTransferred']} MB</td>"
-            f"<td class='num'>{b['healthMaxMs']/1000:.1f} s</td><td class='num'>{f['healthMaxMs']/1000:.2f} s</td>"
-            f"<td class='num{' bad' if b['failedCalls'] else ''}'>{b['failedCalls']}</td><td class='num'>{f['failedCalls']}</td></tr>"
-        )
+    for p, f in sc_fixed["pages"].items():
+        b = sc_base["pages"].get(p)
+        ms.append({"name": p, "note": "15 people open it at once", "v": [round(b["wallMs"] / 1000, 2) if b else None, round(f["wallMs"] / 1000, 2)], "fmt": " s"})
+        if b:
+            scale_rows += (
+                f"<tr><td>{esc(p)}</td><td class='num bad'>{b['wallMs']/1000:.1f} s</td><td class='num good'>{f['wallMs']/1000:.2f} s</td>"
+                f"<td class='num'>{nf(round(b['mbTransferred']))} MB</td><td class='num'>{f['mbTransferred']} MB</td>"
+                f"<td class='num'>{b['healthMaxMs']/1000:.1f} s</td><td class='num'>{f['healthMaxMs']/1000:.2f} s</td>"
+                f"<td class='num{' bad' if b['failedCalls'] else ''}'>{b['failedCalls']}</td><td class='num'>{f['failedCalls']}</td></tr>"
+            )
+        else:
+            scale_rows += (
+                f"<tr><td>{esc(p)}</td><td class='num bad' colspan='1'>crashed*</td><td class='num good'>{f['wallMs']/1000:.2f} s</td>"
+                f"<td class='num'>—</td><td class='num'>{f['mbTransferred']} MB</td><td class='num'>—</td><td class='num'>{f['healthMaxMs']/1000:.2f} s</td>"
+                f"<td class='num'>—</td><td class='num'>{f['failedCalls']}</td></tr>"
+            )
     scale_html = bar_rows(ms, ["Original", "Round 2"], ["var(--s1)", "var(--s3)"])
 
 def row(label, key, fmt=nf, bad_if=None):
@@ -184,11 +190,12 @@ W_head = "<th class='num'>What-if: 3 analysts, 3 CS</th>" if W else ""
 whatif_text = ""
 if W:
     whatif_text = (
-        f"<p>Moving one customer service rep to Analyst (3 CS, 3 analysts) cut the orders still waiting for validation at close from "
-        f"<strong>{B['waiting_validation']}</strong> to <strong>{W['waiting_validation']}</strong>, and took fully shipped orders from "
-        f"{B['shipped_orders']} to {W['shipped_orders']} ({nf(B['units_shipped'])} to {nf(W['units_shipped'])} units). Analysts went from "
-        f"{RB.get('Analyst')}% to {RW.get('Analyst')}% busy, and the three remaining customer service reps from {RB.get('Customer Service')}% to "
-        f"{RW.get('Customer Service')}%.</p>"
+        f"<p><strong>What-if, one customer service rep moved to Analyst (3 CS, 3 analysts):</strong> the orders that arrived before 3 pm and were still "
+        f"waiting for validation fell from <strong>{B['waiting_late']}</strong> to <strong>{W['waiting_late']}</strong>. Units shipped rose "
+        f"from {nf(B['units_shipped'])} to {nf(W['units_shipped'])} (+{round((W['units_shipped'] / B['units_shipped'] - 1) * 100)}%). The three analysts were "
+        f"still {RW.get('Analyst')}% busy, so three is better but not enough at these time assumptions. Customer service still kept up with every phone "
+        f"order at {RW.get('Customer Service')}% busy. Collisions at the top of the shared queue rose from {B['conflicts']} to {W['conflicts']} "
+        f"refusals; splitting the queues (one person validates, the others allocate and release) would avoid most of them.</p>"
     )
 
 page = f"""<title>Aamstrand ERP Round 2</title>
@@ -211,7 +218,7 @@ page = f"""<title>Aamstrand ERP Round 2</title>
     <dl class="doc-meta">
       <dt>Prepared</dt><dd>24 Sep 2026</dd>
       <dt>Branch</dt><dd>claude/practical-volta-02z5tg</dd>
-      <dt>Round 1</dt><dd>erp-review.html</dd>
+      <dt>Round 1</dt><dd><a href="https://claude.ai/artifact/GVRBZGQBNYjDKn3Bi4oug7">erp-review.html</a></dd>
       <dt>Migration</dt><dd>1 (additive)</dd>
     </dl>
   </header>
@@ -221,8 +228,8 @@ page = f"""<title>Aamstrand ERP Round 2</title>
     <div class="verdict">
       <div><span class="eyebrow">Stock and order integrity</span><span class="big good">0 errors</span>
         <p>after a full day: on-hand matches the stock ledger and the documents for all 500 SKUs, nothing went negative, no units were promised twice, and cancelled orders released everything they held. {B['movements']} stock movements were recorded, each with who and why.</p></div>
-      <div><span class="eyebrow">Bottleneck</span><span class="big bad">{B['waiting_validation']} orders</span>
-        <p>of 210 were still waiting for validation at close. The two analysts were {RB.get('Analyst')}% busy: they validate, allocate and release every pick. Customer service averaged {RB.get('Customer Service')}% and sales managers {RB.get('Sales Manager')}%.</p></div>
+      <div><span class="eyebrow">Bottleneck</span><span class="big bad">{B['waiting_late']} orders</span>
+        <p>that arrived before 3 pm were still waiting for validation at close. The two analysts were {RB.get('Analyst')}% busy all day: they validate, allocate and release every pick. Customer service averaged {RB.get('Customer Service')}% and sales managers {RB.get('Sales Manager')}%.</p></div>
       <div><span class="eyebrow">Checks</span><span class="big good">73 / 73</span>
         <p>browser checks passed for every role's pages and key actions. There were 16 of 16 server behavior checks, 0 permission refusals and 0 server errors in the simulated day, and the typecheck and lint are clean.</p></div>
     </div>
@@ -284,7 +291,7 @@ page = f"""<title>Aamstrand ERP Round 2</title>
     <div class="table-wrap"><table>
       <thead><tr><th>End of day</th><th class='num'>As staffed</th>{W_head}</tr></thead>
       <tbody>
-        {row("Orders entered (order entry / customer service)", "entered")}
+        {row("Orders entered today", "entered")}
         {row("Orders validated", "checked")}
         {row("Allocation decisions", "allocated")}
         {row("Picks released to the floor", "released")}
@@ -295,7 +302,8 @@ page = f"""<title>Aamstrand ERP Round 2</title>
         {row("Waiting for validation at close: arrived after 3 pm", "waiting_after3")}
         {row("Backordered (waiting on stock)", "backordered")}
         {row("Orders cancelled by customer service", "cancelled")}
-        {row("Vendor PO receipts / returns received", "po_received", fmt=lambda v: nf(v))}
+        {row("Vendor PO receipts posted", "po_received")}
+        {row("Customer returns received back into stock", "returns_received")}
         {row("Order-status calls answered", "status_calls")}
         {row("Price & availability quotes", "quotes")}
         {row("New customers set up", "new_customers")}
@@ -304,7 +312,8 @@ page = f"""<title>Aamstrand ERP Round 2</title>
         {row("SKUs with negative stock", "negative", bad_if=lambda v: v > 0)}
         {row("Units promised twice", "over", bad_if=lambda v: v > 0)}
         {row("Cancelled orders still holding stock", "cancel_hold", bad_if=lambda v: v > 0)}
-        {row("Permission refusals / server errors", "s403", fmt=lambda v: nf(v))}
+        {row("Permission refusals", "s403", bad_if=lambda v: v > 0)}
+        {row("Server errors", "s500", bad_if=lambda v: v > 0)}
         {row("Collisions refused with a message (409)", "conflicts")}
         {row("Slowest request of the day", "max", fmt=lambda v: f"{v} ms")}
       </tbody></table></div>
@@ -327,7 +336,13 @@ page = f"""<title>Aamstrand ERP Round 2</title>
     </div>
 
     <div class="callout">
-      <p><strong>Staffing:</strong> at about 8 minutes of analyst time per order (validation, allocation and release, from the assumptions below), 150 orders a day needs about 2.5 analysts. Clearing a 60-order backlog on top of that needs 3.5. Customer service and sales management have the most slack.</p>
+      <p><strong>Staffing:</strong> each order takes an analyst about 8 minutes across validation, allocation and pick release, plus page loads, re-checking back orders and collisions. At 150 orders a day that's more than two people can do; three nearly keep up at steady state, but not with yesterday's backlog on top. The options, cheapest first:</p>
+      <ul>
+        <li><strong>Let customer service validate the phone orders they take.</strong> That's a one-line change to their preset, and they run at about 55% busy.</li>
+        <li>Skip separate validation for small repeat orders from key accounts.</li>
+        <li>Add a third analyst (a fourth to clear backlogs).</li>
+        <li>Time real reviews first: if your analysts are faster than my assumptions, the gap shrinks.</li>
+      </ul>
     </div>
     {whatif_text}
     <p class="muted" style="font-size:0.9rem">These conclusions depend on my time assumptions for each task. Validating takes 1 minute plus 9 seconds per line, allocating 1 minute plus 15 seconds per line, and releasing 1 minute plus 6 seconds per line. Time a few real orders; if your analysts are faster, the gap shrinks. Other options besides hiring: let customer service validate the phone orders they took (a one-line preset change), or skip separate validation for small repeat orders from key accounts.</p>
@@ -338,6 +353,7 @@ page = f"""<title>Aamstrand ERP Round 2</title>
     <div class="prose"><p>This is the same test as round 1: 37,800 shipped orders in the database, with 15 people opening a page at the same moment. The middle of three runs is shown. This round adds the pages that were still downloading the entire history.</p></div>
     <figure class="chart" style="margin:0" aria-label="Scale test"><div class="legend" aria-hidden="true"><span><span class="key" style="background:var(--s1)"></span>Original</span><span><span class="key" style="background:var(--s3)"></span>Round 2</span></div>{scale_html}</figure>
     <div class="table-wrap"><table><thead><tr><th>15 people open…</th><th class="num">Original: wait</th><th class="num">Round 2: wait</th><th class="num">Original: downloaded</th><th class="num">Round 2: downloaded</th><th class="num">Original: server frozen</th><th class="num">Round 2: server frozen</th><th class="num">Original: failed</th><th class="num">Round 2: failed</th></tr></thead><tbody>{scale_rows}</tbody></table></div>
+    <div class="callout"><p><strong>* The original build crashed.</strong> On the third round of 15 people opening Closed Orders, the original API grew to about 10 GB of memory and the operating system killed it, which disconnects everyone. Shipment History and Analytics make the same full-history request, so they weren't re-run against it. With round 2, every page opens with no failures. Pick &amp; Pack is still the slowest at 6.4 s, because its capacity banner loads 30 days of shipments (logged as N-05). Analytics shares one computation for 60 seconds, so a burst of openings runs the heavy query once.</p></div>
   </section>
 
   <section aria-labelledby="built">
@@ -409,7 +425,7 @@ page = f"""<title>Aamstrand ERP Round 2</title>
 
   <section aria-labelledby="open">
     <div class="section-head"><span class="eyebrow">08 · Still open</span><h2 id="open">What's left</h2></div>
-    <div class="prose"><p>The shared to-do list tracks the remaining next steps (admin password and policy, HTTPS on one address, and running the simulation regularly), the open bugs and the role gaps; status and notes can be updated right on the page. The same bugs are logged in the repo at <code>docs/review/open-bugs.md</code>.</p></div>
+    <div class="prose"><p>The <a href="https://claude.ai/artifact/XSgiB7gPhEWoufPbgTP1rZ">shared to-do list</a> tracks the remaining next steps (admin password and policy, HTTPS on one address, and running the simulation regularly), the open bugs and the role gaps; status and notes can be updated right on the page. The same bugs are logged in the repo at <code>docs/review/open-bugs.md</code>.</p></div>
   </section>
 
   <footer>Raw results: <code>docs/review/data/round2/</code>. The simulation scripts are in <code>sim/</code>. To re-run: restore the seeded snapshot, restart the API, then run <code>SIM_MINUTES=12 node sim/day.mjs</code>; add <code>SIM_SWAP="cs.priya:analyst"</code> for the what-if.</footer>

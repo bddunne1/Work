@@ -1,0 +1,98 @@
+{
+ "mode": "fixed",
+ "api": "http://localhost:4003",
+ "single": {
+  "allOrders": {
+   "ms": 14076,
+   "mb": 163.2,
+   "count": 37800
+  }
+ },
+ "pages": {
+  "Dashboard": {
+   "wallMs": 453,
+   "healthMaxMs": 228,
+   "mbTransferred": 5.8,
+   "slowestCallMs": 424,
+   "failedCalls": 0,
+   "rounds": [
+    398,
+    453,
+    463
+   ]
+  },
+  "Allocation decision": {
+   "wallMs": 204,
+   "healthMaxMs": 86,
+   "mbTransferred": 2.7,
+   "slowestCallMs": 177,
+   "failedCalls": 0,
+   "rounds": [
+    178,
+    204,
+    214
+   ]
+  },
+  "Pick & Pack list": {
+   "wallMs": 6447,
+   "healthMaxMs": 3679,
+   "mbTransferred": 196.3,
+   "slowestCallMs": 6401,
+   "failedCalls": 0,
+   "rounds": [
+    6042,
+    6447,
+    6529
+   ]
+  },
+  "Order Entry": {
+   "wallMs": 219,
+   "healthMaxMs": 111,
+   "mbTransferred": 5.6,
+   "slowestCallMs": 206,
+   "failedCalls": 0,
+   "rounds": [
+    196,
+    219,
+    234
+   ]
+  },
+  "Closed Orders": {
+   "wallMs": 132,
+   "healthMaxMs": 46,
+   "mbTransferred": 3.1,
+   "slowestCallMs": 115,
+   "failedCalls": 0,
+   "rounds": [
+    130,
+    132,
+    391
+   ]
+  },
+  "Shipment History": {
+   "wallMs": 414,
+   "healthMaxMs": 61,
+   "mbTransferred": 3.1,
+   "slowestCallMs": 395,
+   "failedCalls": 0,
+   "rounds": [
+    407,
+    414,
+    449
+   ]
+  },
+  "Analytics": {
+   "wallMs": 137,
+   "healthMaxMs": 28,
+   "mbTransferred": 3,
+   "slowestCallMs": 109,
+   "failedCalls": 0,
+   "rounds": [
+    111,
+    137,
+    686
+   ]
+  }
+ },
+ "note": "Analytics re-measured after adding the 60 s shared summary cache (the first round in each run computes; the rest share it)."
+}

@@ -1,12 +1,24 @@
-# ERP review — 24 Sep 2026
+# ERP review
 
-- `erp-review.html` — the full report (code review findings, 15-user workday
-  simulation, one-year scale test, what was changed). Open it in a browser.
-  Published copy: https://claude.ai/artifact/GVRBZGQBNYjDKn3Bi4oug7
-- `data/` — raw simulation output:
-  - `results-presets-baseline.json` — run A: original code, app's permission presets
-  - `results-workaround-baseline.json` — run B: original code + extra permissions needed to ship/receive
-  - `results-presets-fixed.json` — run C: fixed code, same presets
-  - `scale-baseline.json` / `scale-fixed.json` — 15 concurrent page loads with 12 months of history
+## Round 2 — 24 Sep 2026
+- `erp-review-2.html`: roles redesign, steps 2/4/5/6/7, the new 15-person workday
+  simulation with a staffing what-if, the one-year scale test, and the checklist
+  for merging to main. Published copy: https://claude.ai/artifact/X4Aqvsy1wczeiSwfhHiBtx
+- `open-bugs.md`: running log of known open defects.
+- `todo.html`: the shared to-do list page (live copy with editable status:
+  https://claude.ai/artifact/XSgiB7gPhEWoufPbgTP1rZ).
+- `data/round2/`: raw results (two staffing scenarios, scale test).
 
-Re-run with the scripts in `sim/` (see the report's "Running it yourself" section).
+## Round 1 — 24 Sep 2026
+- `erp-review.html`: code review findings, the original 15-user simulation and
+  the scale test. Published copy: https://claude.ai/artifact/GVRBZGQBNYjDKn3Bi4oug7
+- `data/`: round-1 raw results.
+
+## Re-running the simulation
+1. Fresh database: `cd server && npx prisma migrate deploy && npm run seed`, start the API.
+2. `node sim/seed.mjs` (15 staff with the app's role presets, 500 SKUs,
+   200 customers, vendors, open POs), then snapshot with `pg_dump -Fc`.
+3. For each run: restore the snapshot, **restart the API** (a restore under a
+   running API leaves it with stale type ids), then `SIM_MINUTES=12 node sim/day.mjs`.
+   Add `SIM_SWAP="cs.priya:analyst"` to try a different staffing mix.
+4. `python3 sim/report2.py` rebuilds the round-2 report from the result files.

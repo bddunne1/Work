@@ -184,14 +184,12 @@ const ARRIVAL_WINDOW = 510;
 const channelTotal = { "order-entry": Math.round(ORDERS_TODAY * 0.55), "customer-service": ORDERS_TODAY - Math.round(ORDERS_TODAY * 0.55) };
 const channelTaken = { "order-entry": 0, "customer-service": 0 };
 const arrived = (preset) => Math.min(channelTotal[preset], Math.floor(channelTotal[preset] * Math.min(1, (simNow() + 15) / ARRIVAL_WINDOW)));
-let ordersRemaining = ORDERS_TODAY;
 // Daily caps for the rarer customer-service events.
 const caps = { returns: 8, cancels: 3 };
 const entered = { "order-entry": 0, "customer-service": 0 };
 function claimOrder(preset) {
   if (channelTaken[preset] >= arrived(preset)) return false;
   channelTaken[preset]++;
-  ordersRemaining--;
   entered[preset]++;
   return true;
 }
