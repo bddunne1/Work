@@ -9,12 +9,14 @@ import express from "express";
 import { Prisma } from "@prisma/client";
 import { HttpError } from "./lib/conflictError.js";
 import accountsRouter from "./routes/accounts.js";
+import analyticsRouter from "./routes/analytics.js";
 import auditLogRouter from "./routes/auditLog.js";
 import authRouter from "./routes/auth.js";
 import countersRouter from "./routes/counters.js";
 import customersRouter from "./routes/customers.js";
 import itemsRouter from "./routes/items.js";
 import returnsRouter from "./routes/returns.js";
+import salesOrderSearchRouter from "./routes/salesOrderSearch.js";
 import salesOrdersRouter from "./routes/salesOrders.js";
 import savedReportsRouter from "./routes/savedReports.js";
 import settingsRouter from "./routes/settings.js";
@@ -41,7 +43,11 @@ app.use("/api/saved-reports", savedReportsRouter);
 app.use("/api/counters", countersRouter);
 app.use("/api/vendor-purchase-orders", vendorPurchaseOrdersRouter);
 app.use("/api/returns", returnsRouter);
+// Must come before the sales-orders router, whose "/:soNumber" would
+// otherwise claim "/search".
+app.use("/api/sales-orders/search", salesOrderSearchRouter);
 app.use("/api/sales-orders", salesOrdersRouter);
+app.use("/api/analytics", analyticsRouter);
 
 // Catches anything a route didn't handle itself (including an async
 // handler's rejected promise, via express-async-errors above) - the whole
