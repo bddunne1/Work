@@ -114,7 +114,7 @@ const LANES: Lane[] = [
       },
       {
         name: "Generate BOL",
-        description: "Create a Bill of Lading for one or more orders with weight, dimensions, and skids",
+        description: "Generate a standard Bill of Lading for one or more orders - carrier, freight terms, and commodity details",
         to: "/bol",
       },
       {

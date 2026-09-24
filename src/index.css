@@ -2517,9 +2517,13 @@ a.brand:hover .brand-name {
   text-decoration: underline;
 }
 
-/* Generate BOL */
+/* Generate BOL - build form */
 .bol-details-section {
   margin-top: 24px;
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 .bol-input {
@@ -2533,14 +2537,22 @@ a.brand:hover .brand-name {
 }
 
 .bol-input-narrow {
-  max-width: 100px;
+  max-width: 90px;
+}
+
+.bol-input-medium {
+  max-width: 140px;
 }
 
 .bol-meta-inputs {
-  display: flex;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px 20px;
   margin: 16px 0;
-  flex-wrap: wrap;
+}
+
+.bol-meta-inputs.bol-meta-wide {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
 .bol-meta-inputs label {
@@ -2550,11 +2562,10 @@ a.brand:hover .brand-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-h);
-  flex: 1;
-  min-width: 220px;
 }
 
 .bol-meta-inputs input,
+.bol-meta-inputs select,
 .bol-meta-inputs textarea {
   font: inherit;
   font-weight: 400;
@@ -2565,33 +2576,222 @@ a.brand:hover .brand-name {
   color: var(--text);
 }
 
+.bol-meta-inputs .checkbox-line {
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.bol-subhead {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 18px 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .bol-hint {
   margin-top: 8px;
   font-size: 13px;
 }
 
-.bol-order-block {
-  margin-bottom: 16px;
+/* Generate BOL - printed document, laid out to mirror a standard
+   straight/master Bill of Lading form (Ship From/Ship To, carrier info,
+   customer order info, carrier commodity info, COD, signatures). */
+.bol-doc {
+  font-size: 11.5px;
+  color: #000;
 }
 
-.bol-totals {
-  margin-top: 16px;
-}
-
-.bol-signatures {
+.bol-page-head {
   display: flex;
-  gap: 40px;
-  margin-top: 40px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
 }
 
-.bol-signature-line {
+.bol-page-title {
   flex: 1;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.bol-grid-2col {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  border: 1px solid #000;
+  border-bottom: none;
+}
+
+.bol-grid-2col > div {
+  border-right: 1px solid #000;
+}
+
+.bol-grid-2col > div:last-child {
+  border-right: none;
+}
+
+.bol-box {
+  border-bottom: 1px solid #000;
+  padding: 6px 10px 8px;
+}
+
+.bol-box-bar {
+  background: #000;
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding: 2px 10px;
+  margin: -6px -10px 6px;
+}
+
+.bol-barcode-space {
+  text-align: center;
+  color: #999;
+  letter-spacing: 0.3em;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 14px 0;
+}
+
+.bol-field-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 3px;
+  align-items: baseline;
+}
+
+.bol-field-label {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bol-field-value {
+  flex: 1;
+  border-bottom: 1px solid #000;
+  min-height: 13px;
+  word-break: break-word;
+}
+
+.bol-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.bol-checkbox-box {
+  width: 11px;
+  height: 11px;
+  border: 1.4px solid #000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  flex: none;
+}
+
+.bol-freight-terms-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 4px;
+}
+
+.bol-doc table.data-table {
+  border: 1px solid #000;
+  border-radius: 0;
+  font-size: 11px;
+}
+
+.bol-doc table.data-table th,
+.bol-doc table.data-table td {
+  border: 1px solid #000;
+  padding: 4px 7px;
+}
+
+.bol-doc table.data-table th {
+  background: #eee;
+  color: #000;
+}
+
+.bol-doc .amount-cell {
+  text-align: right;
+}
+
+.bol-grand-total-row td {
+  font-weight: 700;
+  background: #f2f2f2;
+}
+
+.bol-section-title {
+  background: #000;
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  margin: 14px 0 0;
+}
+
+.bol-footer-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  border: 1px solid #000;
+  border-top: none;
+  margin-bottom: 0;
+}
+
+.bol-footer-grid > div {
+  border-right: 1px solid #000;
+  padding: 6px 10px;
+}
+
+.bol-footer-grid > div:last-child {
+  border-right: none;
+}
+
+.bol-liability-note {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 6px 10px;
+  font-size: 10.5px;
+}
+
+.bol-signature-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.5fr 0.5fr 1.1fr;
+  border: 1px solid #000;
+  border-top: none;
+}
+
+.bol-signature-grid > div {
+  border-right: 1px solid #000;
+  padding: 6px 10px;
+}
+
+.bol-signature-grid > div:last-child {
+  border-right: none;
 }
 
 .bol-signature-blank {
-  border-bottom: 1px solid var(--text);
-  height: 40px;
-  margin-top: 8px;
+  border-bottom: 1px solid #000;
+  height: 26px;
+  margin-top: 10px;
+}
+
+.bol-signature-caption {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #333;
 }
 
 @media (max-width: 720px) {

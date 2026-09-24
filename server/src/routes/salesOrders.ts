@@ -72,8 +72,17 @@ const shipmentRecordSchema = z.object({
 const bolSchema = z
   .object({
     weight: z.string(),
-    dimensions: z.string(),
-    skidCount: z.string(),
+    packageCount: z.string(),
+    palletSlip: z.enum(["Y", "N"]),
+    handlingUnitQty: z.string(),
+    handlingUnitType: z.string(),
+    packageQty: z.string(),
+    packageType: z.string(),
+    hazmat: z.boolean(),
+    commodityDescription: z.string(),
+    nmfcNumber: z.string(),
+    freightClass: z.string(),
+    additionalInfo: z.string(),
     generatedAt: z.string(),
   })
   .nullish();

@@ -54,8 +54,17 @@ export interface ShipmentRecord {
 
 export interface BolDetails {
   weight: string;
-  dimensions: string;
-  skidCount: string;
+  packageCount: string;
+  palletSlip: "Y" | "N";
+  handlingUnitQty: string;
+  handlingUnitType: string;
+  packageQty: string;
+  packageType: string;
+  hazmat: boolean;
+  commodityDescription: string;
+  nmfcNumber: string;
+  freightClass: string;
+  additionalInfo: string;
   generatedAt: string;
 }
 
