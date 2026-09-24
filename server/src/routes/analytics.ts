@@ -86,11 +86,28 @@ async function monthlySeries(window: string[], customerId?: string) {
 router.use(requireAuth);
 router.use(requireAnyPermission(["analytics", "reports"], "view"));
 
+// The summary aggregates every order line ever entered, so 15 people opening
+// Analytics at once used to run it 15 times in parallel (~6 s each at a year
+// of data). Identical requests within 60 s share one computation - the
+// figures are for trend-watching, not to-the-second counts.
+const SUMMARY_TTL_MS = 60_000;
+const summaryCache = new Map<string, { at: number; value: Promise<unknown> }>();
+
 router.get("/summary", async (req, res) => {
   const endMonth = monthParam(req.query.endMonth);
   const thisMonth = monthParam(req.query.thisMonth);
-  const window = monthWindow(endMonth, monthsParam(req.query.months));
+  const months = monthsParam(req.query.months);
+  const key = `${endMonth}|${thisMonth}|${months}`;
+  const hit = summaryCache.get(key);
+  if (!hit || Date.now() - hit.at > SUMMARY_TTL_MS) {
+    const value = computeSummary(thisMonth, monthWindow(endMonth, months));
+    summaryCache.set(key, { at: Date.now(), value });
+    value.catch(() => summaryCache.delete(key));
+  }
+  res.json(await summaryCache.get(key)!.value);
+});
 
+async function computeSummary(thisMonth: string, window: string[]) {
   const [salesRows, statusRows, topCustomers, monthlyRevenue, inventoryRows, topInventoryValue, outOfStockItems] =
     await Promise.all([
       prisma.$queryRaw<{ totalOrders: number; totalRevenue: number; openOrders: number; ordersThisMonth: number }[]>`
@@ -139,7 +156,7 @@ router.get("/summary", async (req, res) => {
   const ordersByStatus: Record<string, number> = {};
   for (const r of statusRows) ordersByStatus[STATUS_OUT[r.status] ?? r.status] = r.count;
 
-  res.json({
+  return {
     sales: salesRows[0],
     ordersByStatus,
     monthlyRevenue,
@@ -147,8 +164,9 @@ router.get("/summary", async (req, res) => {
     inventory: inventoryRows[0],
     topInventoryValue,
     outOfStockItems,
-  });
-});
+  };
+}
+
 
 router.get("/customer/:customerId", async (req, res) => {
   const customerId = req.params.customerId;

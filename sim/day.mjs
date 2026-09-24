@@ -44,6 +44,17 @@ const ORDERS_TODAY = Number(process.env.SIM_ORDERS ?? 150);
 const BACKLOG = Number(process.env.SIM_BACKLOG ?? 60);
 const rng = makeRng(Number(process.env.SIM_SEED ?? 7));
 const seed = JSON.parse(readFileSync(new URL("./seed-state.json", import.meta.url), "utf8"));
+// What-if staffing: SIM_SWAP="cs.priya:analyst" moves people to another role
+// for this run (their account gets that role's preset).
+const ROLE_LABEL = { purchasing: "Purchasing", "customer-service": "Customer Service", "order-entry": "Order Entry", analyst: "Analyst", logistics: "Logistics", "sales-manager": "Sales Manager", ADMIN: "Director" };
+for (const pair of (process.env.SIM_SWAP ?? "").split(",").filter(Boolean)) {
+  const [name, preset] = pair.split(":");
+  const row = seed.staff.find((r) => r[0] === name);
+  if (row && ROLE_LABEL[preset]) {
+    row[1] = preset;
+    row[2] = ROLE_LABEL[preset];
+  }
+}
 const OUT = process.env.SIM_OUT ?? new URL("./results-roles.json", import.meta.url).pathname;
 
 const dayOver = () => Date.now() >= metrics.startedAt + DAY_MS;
@@ -165,16 +176,21 @@ async function buildOrder(user) {
   };
 }
 
+// Orders arrive on their own schedule through the day - customer POs by
+// email (55%, order entry) and phone orders (45%, customer service) - evenly
+// between 8:00 and 16:30. Staff take whatever has arrived; nobody can key an
+// order before it arrives, and an order nobody gets to just waits.
+const ARRIVAL_WINDOW = 510;
+const channelTotal = { "order-entry": Math.round(ORDERS_TODAY * 0.55), "customer-service": ORDERS_TODAY - Math.round(ORDERS_TODAY * 0.55) };
+const channelTaken = { "order-entry": 0, "customer-service": 0 };
+const arrived = (preset) => Math.min(channelTotal[preset], Math.floor(channelTotal[preset] * Math.min(1, (simNow() + 15) / ARRIVAL_WINDOW)));
 let ordersRemaining = ORDERS_TODAY;
 // Daily caps for the rarer customer-service events.
 const caps = { returns: 8, cancels: 3 };
-const entryShare = { "order-entry": 0.55, "customer-service": 0.45 }; // physical POs vs phone orders
 const entered = { "order-entry": 0, "customer-service": 0 };
 function claimOrder(preset) {
-  if (ordersRemaining <= 0) return false;
-  // Keep each group near its share of the day's orders.
-  const done = ORDERS_TODAY - ordersRemaining;
-  if (done > 10 && entered[preset] / done > entryShare[preset] + 0.08) return false;
+  if (channelTaken[preset] >= arrived(preset)) return false;
+  channelTaken[preset]++;
   ordersRemaining--;
   entered[preset]++;
   return true;
@@ -222,9 +238,9 @@ async function orderEntry(user) {
 async function customerService(user) {
   while (!dayOver()) {
     const r = rng.next();
-    if (r < 0.4 && claimOrder("customer-service")) {
-      await enterOrder(user); // phone order
-    } else if (r < 0.72) {
+    if (claimOrder("customer-service")) {
+      await enterOrder(user); // a phone order is waiting - take it first
+    } else if (r < 0.55) {
       // "Where's my order?" - find the customer's orders, open one, check
       // its schedule / shipments.
       await attempt(user, "order-status-call", async () => {
@@ -236,7 +252,7 @@ async function customerService(user) {
         await work(user, 2);
         event(user, "status-call", {});
       }, { retry: false });
-    } else if (r < 0.9) {
+    } else if (r < 0.85) {
       // Price & availability quote: customer's prices + stock less what's
       // already promised to open orders.
       await attempt(user, "price-availability", async () => {
@@ -651,6 +667,16 @@ async function audit(adminUser) {
     const outstanding = pos.filter((p) => p.status !== "Closed").reduce((s, p) => s + p.lines.filter((l) => l.itemNumber === it.itemNumber).reduce((a, l) => a + Math.max(0, l.orderedQty - l.receivedQty), 0), 0);
     if (outstanding !== it.qtyOnPurchaseOrder) onPoMismatch++;
   }
+  // Orders still waiting for validation at close, by when they came in:
+  // yesterday's backlog, before 15:00 (should have been done), or late
+  // afternoon (reasonably tomorrow's work).
+  const waiting = all.filter((o) => o.status === "Entered").map((o) => (Date.parse(o.createdAt) - metrics.startedAt) / SIM_MIN);
+  const waitingValidation = {
+    total: waiting.length,
+    fromYesterday: waiting.filter((t) => t < 0).length,
+    arrivedBefore3pm: waiting.filter((t) => t >= 0 && t < 420).length,
+    arrivedAfter3pm: waiting.filter((t) => t >= 420).length,
+  };
   const cancelledHolding = all.filter((o) => o.status === "Cancelled" && (o.allocation || (o.pendingShipment?.length ?? 0) > 0)).length;
   const byStatus = {};
   for (const o of all) byStatus[o.status] = (byStatus[o.status] ?? 0) + 1;
@@ -662,6 +688,7 @@ async function audit(adminUser) {
     inventory: { docDriftItems: docDrift, docDriftUnits, ledgerDriftItems: ledgerDrift, negative, overcommittedItems: over, overcommittedUnits: overUnits, qtyOnPurchaseOrderMismatches: onPoMismatch, movementsToday: moves.length, sampleDrifts: samples.slice(0, 10) },
     overShippedLines,
     cancelledHoldingStock: cancelledHolding,
+    waitingValidation,
     vendorPos: { total: pos.length, received: pos.filter((p) => p.status === "Received").length, partial: pos.filter((p) => p.status === "Partially Received").length },
     returns: { issued: ras.filter((r) => r.status === "Issued").length, received: ras.filter((r) => r.status === "Received").length },
   };

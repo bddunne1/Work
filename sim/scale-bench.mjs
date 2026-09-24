@@ -72,7 +72,9 @@ async function main() {
   }
 
   const pages = {};
-  for (const [page, paths] of Object.entries(PAGES)) {
+  // SIM_PAGES="Closed Orders,Analytics" limits the run to those pages.
+  const only = (process.env.SIM_PAGES ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+  for (const [page, paths] of Object.entries(PAGES).filter(([p]) => !only.length || only.includes(p))) {
     const runs = [];
     for (let r = 0; r < ROUNDS; r++) {
       metrics.calls.length = 0;

@@ -142,7 +142,7 @@ async function main() {
     const page = await newPage();
     await login(page, "admin", "123");
     await page.goto(`${UI}/#/items/${item.id}`);
-    await page.getByText("Stock history").waitFor({ timeout: 10_000 }).catch(() => {});
+    await page.getByRole("cell", { name: "Returned to stock", exact: true }).first().waitFor({ timeout: 10_000 }).catch(() => {});
     const shippedRow = await page.getByRole("cell", { name: "Shipped", exact: true }).count();
     const returnRow = await page.getByRole("cell", { name: "Returned to stock", exact: true }).count();
     note("item profile shows the stock ledger", shippedRow > 0 && returnRow > 0, `ship rows=${shippedRow} return rows=${returnRow}`);
