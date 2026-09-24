@@ -1,0 +1,543 @@
+<title>Aamstrand ERP Review</title>
+<meta name="description" content="Code review, 15-user workday simulation and one-year scale test of the Aamstrand ERP, with the fixes applied on claude/practical-volta-02z5tg.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a;
+    --high: #b9620f;
+    --med: #7d6c0c;
+    --low: #5d6772;
+    --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08);
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62;
+      --high: #f0a24e;
+      --med: #d6c35c;
+      --low: #97a1ab;
+      --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12);
+      --ok-bg: rgba(95, 196, 141, 0.12);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62;
+    --high: #f0a24e;
+    --med: #d6c35c;
+    --low: #97a1ab;
+    --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12);
+    --ok-bg: rgba(95, 196, 141, 0.12);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Document header, laid out like the app's own printed forms */
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 70ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+
+  /* Verdict */
+  .verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); }
+  .verdict .big.good { color: var(--ok); }
+  @media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.bad { color: var(--crit); font-weight: 600; }
+  td.good { color: var(--ok); font-weight: 600; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  /* Bar charts */
+  .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.86rem; color: var(--ink-2); }
+  .metric { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 6px 16px; align-items: start; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .metric:first-of-type { border-top: 0; padding-top: 0; }
+  .metric-name { font-weight: 600; font-size: 0.93rem; }
+  .metric-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .bars { display: flex; flex-direction: column; gap: 3px; }
+  .bar-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; align-items: center; position: relative; }
+  .track { height: 14px; position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .fill.zero { width: 2px !important; border-radius: 0; opacity: 0.8; }
+  .bar-val { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .bar-row:hover .track { background: var(--accent-soft); }
+  .bar-row[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 2;
+    background: var(--ink); color: var(--paper); font-size: 0.78rem; padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  }
+  @media (max-width: 620px) { .metric { grid-template-columns: 1fr; } }
+
+  /* Findings */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  details.finding { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev); border-radius: 6px; }
+  details.finding[data-sev="critical"] { --sev: var(--crit); }
+  details.finding[data-sev="high"] { --sev: var(--high); }
+  details.finding[data-sev="medium"] { --sev: var(--med); }
+  details.finding[data-sev="low"] { --sev: var(--low); }
+  details.finding summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: baseline; }
+  details.finding summary::-webkit-details-marker { display: none; }
+  .fid { font-family: var(--mono); font-size: 0.8rem; color: var(--sev); font-weight: 600; }
+  .ftitle { font-weight: 600; }
+  .ftitle small { display: block; font-weight: 400; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+  .stamp { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; transform: rotate(-3deg); white-space: nowrap; }
+  .stamp.fixed { color: var(--ok); }
+  .stamp.partial { color: var(--high); }
+  .stamp.open { color: var(--muted); }
+  .fbody { padding: 0 14px 14px 84px; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
+  .fbody dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; }
+  .fbody dt { color: var(--muted); font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .fbody dd { margin: 0; }
+  @media (max-width: 620px) {
+    details.finding summary { grid-template-columns: 1fr auto; }
+    .fid { grid-column: 1 / -1; }
+    .fbody { padding-left: 14px; }
+    .fbody dl { grid-template-columns: 1fr; }
+  }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; }
+
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .panel ul, .prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+  pre { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.6; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span class="eyebrow">Code review · workday simulation · scale test</span>
+      <h1>Aamstrand ERP Review</h1>
+      <p class="lede">The workflow design is sound and the move to Postgres is nearly done. As the app is set up today, though, the warehouse can't ship and the dock can't receive. Once that's worked around, simultaneous users corrupt on-hand stock. And the app stops responding once it holds about a year of orders. All three are fixed on the review branch; the details are below.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Prepared</dt><dd>24 Sep 2026</dd>
+      <dt>Branch</dt><dd>claude/practical-volta-02z5tg</dd>
+      <dt>Reviewed at</dt><dd>4b05f21</dd>
+      <dt>Scope</dt><dd>17.8k lines · 139 files</dd>
+      <dt>Deployment</dt><dd>internal network</dd>
+    </dl>
+  </header>
+
+  <section aria-labelledby="summary">
+    <div class="section-head">
+      <span class="eyebrow">01 · Summary</span>
+      <h2 id="summary">Where it stands</h2>
+    </div>
+    <div class="verdict">
+      <div>
+        <span class="eyebrow">Today, as configured</span>
+        <span class="big bad">0 units</span>
+        <p>shipped by 15 staff in a full simulated day. All 66 ship attempts and all 43 receiving attempts were refused because the Warehouse role lacks a permission the server requires.</p>
+      </div>
+      <div>
+        <span class="eyebrow">Today, with the permission workaround</span>
+        <span class="big bad">16,250 units</span>
+        <p>of on-hand stock recorded wrong across 66 SKUs after one day. 15 SKUs went negative, 916 units were promised to two orders at once, and 18 orders were pushed back to an earlier stage.</p>
+      </div>
+      <div>
+        <span class="eyebrow">After the fixes</span>
+        <span class="big good">0 errors</span>
+        <p>in stock, allocation or order status after the same day. 70 orders and 76,365 units shipped. Every collision between users was refused with a clear message instead of corrupting data.</p>
+      </div>
+    </div>
+    <div class="prose">
+      <p>The biggest risk is how stock moves. When an order ships or a PO is received, the browser changes each item's quantity one request at a time and only then saves the order. If anyone else touched that order in the meantime, the save is rejected, but the stock has already moved. The screen says "reload and try again", and trying again moves it a second time. With 15 people working the same queues this happens every day. The fixes move ship, receive and undo into single database transactions, check free stock on the server when allocating, and stop a stale screen from pushing an order back to an earlier stage.</p>
+      <p>Found <strong>34 issues</strong>: 3 critical, 10 high, 15 medium, 6 low. <strong>19 are fixed</strong>, 5 are partly fixed and 10 are open, each with a recommendation. The fixes are in two commits on the review branch, and nothing was merged. The frontend and API both typecheck and lint clean, and a browser run confirmed each role's pages and the ship and receive flows (46 of 46 checks passed).</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="sim">
+    <div class="section-head">
+      <span class="eyebrow">02 · Simulation</span>
+      <h2 id="sim">15 people, one working day</h2>
+    </div>
+    <div class="prose">
+      <p>Fifteen scripted staff worked one 8-hour day, compressed into 12 minutes, against the real API and Postgres. Each person makes the same requests, in the same order, that the pages they use make. They spend work time in proportion to the size of the order, pick from the top of shared queues the way people do, and react to errors the way the screens let them: after a "changed by someone else" message they reload and try once more, and after a refusal or a crash they move on. At the end of the day an audit rebuilt every SKU's expected stock from the starting count, receipts and shipments, and compared it with the database.</p>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Staff</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Role</th><th class="num">People</th><th>Permissions</th></tr></thead>
+            <tbody>
+              <tr><td>Order entry</td><td class="num">4</td><td>Order Entry preset</td></tr>
+              <tr><td>Customer service</td><td class="num">1</td><td>Customer Service preset</td></tr>
+              <tr><td>Validation &amp; allocation</td><td class="num">2</td><td>Custom (no preset exists)</td></tr>
+              <tr><td>Pick, pack &amp; ship</td><td class="num">3</td><td>Warehouse preset</td></tr>
+              <tr><td>Receiving dock</td><td class="num">2</td><td>Custom: Receiving edit</td></tr>
+              <tr><td>Purchasing</td><td class="num">1</td><td>Purchasing preset</td></tr>
+              <tr><td>Sales manager</td><td class="num">1</td><td>Sales Manager preset</td></tr>
+              <tr><td>Admin</td><td class="num">1</td><td>Admin</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Workload</h3>
+        <ul>
+          <li><strong>150 new sales orders</strong> plus 60 left over from yesterday.</li>
+          <li><strong>200 customers</strong>. The top 20 place 80% of orders and carry 120–300 customer prices each.</li>
+          <li><strong>Order size</strong>: 10% have 20–40 lines of 100–900 units, 40% have 8–14 lines, and the rest are small, some just 1–2 lines of 3–4 units.</li>
+          <li><strong>500 SKUs</strong> with skewed popularity, stocked so that some orders go on backorder.</li>
+          <li><strong>12 vendors</strong> and 40 open vendor POs. Purchasing raises more during the day and the dock receives the ones that are due.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p>The day was run three times from the same starting database and random seed:</p>
+      <ul>
+        <li><strong>A · Original, as configured</strong>: the current code with the app's own permission presets.</li>
+        <li><strong>B · Original, with workaround</strong>: the current code, with the extra permissions an admin would have to grant to get shipping and receiving working at all.</li>
+        <li><strong>C · Fixed</strong>: the review branch with the preset permissions unchanged.</li>
+      </ul>
+    </div>
+
+    <figure class="chart" style="margin:0" aria-label="Simulation results by run">
+      <div class="legend" aria-hidden="true">
+        <span><span class="key" style="background:var(--s1)"></span>A · Original, as configured</span>
+        <span><span class="key" style="background:var(--s2)"></span>B · Original, with workaround</span>
+        <span><span class="key" style="background:var(--s3)"></span>C · Fixed</span>
+      </div>
+      <div id="sim-bars"></div>
+    </figure>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>End of day</th><th class="num">A · Original</th><th class="num">B · Workaround</th><th class="num">C · Fixed</th></tr></thead>
+        <tbody>
+          <tr><td>Orders fully shipped</td><td class="num bad">0</td><td class="num">52</td><td class="num good">70</td></tr>
+          <tr><td>Units shipped</td><td class="num bad">0</td><td class="num">61,216</td><td class="num good">76,365</td></tr>
+          <tr><td>Vendor PO receipts posted</td><td class="num bad">0</td><td class="num">15</td><td class="num good">17</td></tr>
+          <tr><td>Actions refused for permissions (403)</td><td class="num bad">109</td><td class="num">0</td><td class="num good">0</td></tr>
+          <tr><td>Server errors (500)</td><td class="num bad">1</td><td class="num">0</td><td class="num">0</td></tr>
+          <tr><td>SKUs with wrong on-hand</td><td class="num">0*</td><td class="num bad">66</td><td class="num good">0</td></tr>
+          <tr><td>Units of on-hand drift</td><td class="num">0*</td><td class="num bad">16,250</td><td class="num good">0</td></tr>
+          <tr><td>SKUs with negative stock</td><td class="num">0</td><td class="num bad">15</td><td class="num good">0</td></tr>
+          <tr><td>Units promised to two orders</td><td class="num bad">392</td><td class="num bad">916</td><td class="num good">0</td></tr>
+          <tr><td>Orders pushed back to an earlier stage</td><td class="num bad">23</td><td class="num bad">18</td><td class="num good">0</td></tr>
+          <tr><td>Collisions refused with a message (409)</td><td class="num">85</td><td class="num">83</td><td class="num">114</td></tr>
+          <tr><td>Key-account pricing save, median</td><td class="num">407 ms</td><td class="num">495 ms</td><td class="num good">38 ms</td></tr>
+          <tr><td>Slowest request of the day</td><td class="num">625 ms</td><td class="num">657 ms</td><td class="num good">225 ms</td></tr>
+          <tr><td>Data downloaded by all 15 users</td><td class="num">1,484 MB</td><td class="num">1,522 MB</td><td class="num">1,383 MB</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:0.9rem">* In run A nothing shipped or was received, so no stock moved that could drift. In run C the 114 refused collisions break down as 80 "this order already moved on", 31 "someone else saved first" and 3 "not enough free stock". Each one is a refusal that corrupts nothing: the person reloads and sees the current state. In runs A and B most of the 409s came after damage was already done.</p>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>What the day looked like, run A</h3>
+        <ul>
+          <li>By mid-morning, pick &amp; pack had packed and printed 74 orders, and every one stalled in Open Picks. Mark Shipped did nothing, because the 403 was never shown on screen.</li>
+          <li>Both dock clerks tried to receive every truck that was due and were refused 43 times.</li>
+          <li>Staff working from the tops of the same queues re-allocated or re-packed 23 orders that had already moved past that stage. This doubled reservations and put some orders back in Pick &amp; Pack. Separately, two allocators promised the same 392 units of one SKU.</li>
+          <li>A key-account customer record passed 100 KB after the day's call notes, and every later save of that customer failed with a server error.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>What the day looked like, run B</h3>
+        <ul>
+          <li>Shipping worked, but 9 shipments were confirmed a second time after a "changed by someone else" message. Each retry took the stock out again.</li>
+          <li>Three warehouse staff bulk-confirming overlapping Open Picks selections caused most of the damage. The list they worked from was already stale, so the stock was taken out for orders that someone else had already shipped.</li>
+          <li>At the end of the day, 15 SKUs showed negative on hand and 66 were off by 16,250 units in total. On paper, the physical shelves no longer match the system.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout ok">
+      <p><strong>A throughput finding the fixes don't change:</strong> in all three runs, 74–85 orders were still waiting at validation at the end of the day. Checking and allocating an order are two separate decisions, and at about 210 orders a day two people cannot make both before closing. This depends on how long I assumed each review takes (about 1 minute plus 9–15 seconds per line for each decision). It's worth timing your own staff. If the numbers hold, you need a third person on that desk, or validation and allocation combined into one step for small orders.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="scale">
+    <div class="section-head">
+      <span class="eyebrow">03 · Scale</span>
+      <h2 id="scale">After a year of orders</h2>
+    </div>
+    <div class="prose">
+      <p>At the volume above, the database holds about 37,800 orders and 352,000 order lines after 12 months. I loaded that much shipped history, then had 15 people open the same page at the same moment, as happens at the start of a shift. Each test ran three times and the middle result is reported. "Server frozen" is the longest wait on a health check that does no work. It measures how long the server couldn't answer anyone.</p>
+    </div>
+    <figure class="chart" style="margin:0" aria-label="Scale test by page">
+      <div class="legend" aria-hidden="true">
+        <span><span class="key" style="background:var(--s1)"></span>Original</span>
+        <span><span class="key" style="background:var(--s3)"></span>Fixed</span>
+      </div>
+      <div id="scale-bars"></div>
+    </figure>
+    <div class="table-wrap">
+      <table id="scale-table">
+        <thead><tr><th>15 people open…</th><th class="num">Original: wait</th><th class="num">Fixed: wait</th><th class="num">Original: downloaded</th><th class="num">Fixed: downloaded</th><th class="num">Original: server frozen</th><th class="num">Fixed: server frozen</th><th class="num">Original: failed requests</th><th class="num">Fixed: failed requests</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p id="scale-note"></p>
+    </div>
+  </section>
+
+  <section aria-labelledby="findings">
+    <div class="section-head">
+      <span class="eyebrow">04 · Findings</span>
+      <h2 id="findings">Findings</h2>
+    </div>
+    <p class="muted">Severity is rated for an internal network with about 15 users. Open any finding for where it is, what goes wrong and what was done about it.</p>
+    <div class="filters" role="group" aria-label="Filter findings">
+      <button type="button" class="chip" data-filter="all" aria-pressed="true" id="f-all">All</button>
+      <button type="button" class="chip" data-filter="critical" aria-pressed="false" id="f-critical">Critical</button>
+      <button type="button" class="chip" data-filter="high" aria-pressed="false" id="f-high">High</button>
+      <button type="button" class="chip" data-filter="medium" aria-pressed="false" id="f-medium">Medium</button>
+      <button type="button" class="chip" data-filter="low" aria-pressed="false" id="f-low">Low</button>
+      <button type="button" class="chip" data-filter="open" aria-pressed="false" id="f-open">Still open</button>
+      <span class="sev-count muted" id="f-count"></span>
+    </div>
+    <div class="findings" id="findings-list"></div>
+  </section>
+
+  <section aria-labelledby="changes">
+    <div class="section-head">
+      <span class="eyebrow">05 · Changes</span>
+      <h2 id="changes">What was changed</h2>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>API (<code>server/</code>)</h3>
+        <ul>
+          <li>New atomic endpoints <code>POST /sales-orders/:so/ship</code>, <code>/undo-shipment</code> and <code>/vendor-purchase-orders/:po/receive</code>. Each one locks the record, checks its version and status, and moves stock in the same transaction.</li>
+          <li>Allocation that adds to what an order holds is checked against free stock under an advisory lock (<code>lib/inventory.ts</code>).</li>
+          <li>Order writes need edit access on an order-workflow page. The optional <code>expectedStatus</code> field blocks stale screens, and a shipped order can't be changed back by a plain save.</li>
+          <li>Saving a whole order now clears fields the client left out.</li>
+          <li><code>qtyOnPurchaseOrder</code> is recomputed inside PO transactions.</li>
+          <li>Permission checks match the pages that actually call each endpoint.</li>
+          <li><code>syncChildren</code> writes only the rows that changed and refuses child ids that belong to another record.</li>
+          <li><code>?open=1</code>, <code>?shippedSince=</code>, <code>?limit=</code> and <code>?summary=1</code> list options.</li>
+          <li>Compare-and-set for Inventory Adjust, honest delete and constraint errors, a 5 MB request limit, login throttling, and sessions revoked on password reset.</li>
+          <li>Counter overrides can't be set to a number already in use. Saved reports now require the Reports permission.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Frontend (<code>src/</code>)</h3>
+        <ul>
+          <li>Stores return the server's saved copy, and pages keep it, so the next save doesn't conflict.</li>
+          <li>Validation, Allocation and Pick &amp; Pack refuse orders that have already moved on, and show a notice saying so.</li>
+          <li>Allocation starts each line at the stock actually available.</li>
+          <li>Workflow pages and the Dashboard load open orders only.</li>
+          <li>Order Entry guards against double submits.</li>
+          <li>An expired session returns to the sign-in page.</li>
+          <li>Failed saves show their message instead of doing nothing.</li>
+          <li>The settings cache no longer keeps fallback values after a failed load.</li>
+          <li>Dates use local time, and the importer accepts M/D/YYYY and whole-number quantities only.</li>
+          <li>Receiving staff can receive from the PO page.</li>
+          <li>CSV exports are protected against formula injection and include a byte-order mark so Excel reads the encoding correctly.</li>
+          <li>The README and stale in-app help text are updated.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted" style="font-size:0.92rem">No schema migration was needed. The one behavior change to know about: allocation now refuses to reserve more than is free. The allocator gets a message naming each short SKU and how much is available. If you sometimes allocate ahead of a delivery on purpose, say so and I'll add an override for that.</p>
+  </section>
+
+  <section aria-labelledby="next">
+    <div class="section-head">
+      <span class="eyebrow">06 · Next</span>
+      <h2 id="next">Recommended next steps</h2>
+    </div>
+    <div class="prose">
+      <ol>
+        <li><strong>Change the <code>admin</code> password and set a password policy</strong> (at least 10 characters, and a forced change on first login). Anyone on the network can try <code>admin</code> / <code>123</code> today.</li>
+        <li><strong>Add paging to the remaining full-history pages</strong>: Shipment History, Closed Orders, Analytics, Reports and Item Profile. Also give Order Entry a customer list without price sheets, and load the chosen customer's prices on selection. These still download every order ever entered and will slow down again as the second year fills in.</li>
+        <li><strong>Serve the app and API from one origin over HTTPS</strong>. Passwords and session tokens currently cross the network unencrypted, and the frontend points at <code>localhost:4000</code> unless it's rebuilt with a different address.</li>
+        <li><strong>Make returns and cancellations move stock</strong>. Receiving a return doesn't put units back on the shelf, and there is no way to cancel an order, so abandoned orders stay in the queues and keep holding stock.</li>
+        <li><strong>Store an item id on order and PO lines</strong> rather than the item number text, so renaming an item doesn't cut it off from its history.</li>
+        <li><strong>Add an audit trail for stock and orders</strong> covering who shipped, received, adjusted or allocated what, and when. The activity log currently covers accounts only.</li>
+        <li><strong>Add the Import fixes</strong>: per-row errors, a disabled button while saving, and skipping duplicates when an import is re-run.</li>
+        <li><strong>Run <code>sim/day.mjs</code> after significant changes</strong>. It finds this class of bug in 12 minutes.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section aria-labelledby="repro">
+    <div class="section-head">
+      <span class="eyebrow">07 · Reproduce</span>
+      <h2 id="repro">Running it yourself</h2>
+    </div>
+    <pre>cd server &amp;&amp; npx prisma migrate deploy &amp;&amp; npm run seed &amp;&amp; npm run dev     # API on :4000
+node sim/seed.mjs                                   # 15 staff, 500 SKUs, 200 customers, 40 POs
+pg_dump -Fc erp_dev &gt; seeded.dump                   # snapshot so every run starts equal
+SIM_DUMP=seeded.dump SIM_CLIENT=fixed sim/run.sh presets 12     # one 12-minute day, audited
+node sim/scale-seed.mjs 12                          # add 12 months of history (separate DB)
+SIM_MODE=fixed node sim/scale-bench.mjs             # 15 simultaneous page loads
+node sim/ui-check.mjs                               # browser check (needs Vite running)</pre>
+    <p class="muted" style="font-size:0.92rem">Limits of this simulation: time was compressed 40×. Each person's work time comes from the assumptions stated above, not from measuring your staff. The data is synthetic. Everything ran on one machine, with the API, the database and the 15 simulated clients sharing its CPU. Absolute timings will differ on your server. The comparisons between runs and the stock and order audit results do not depend on the hardware.</p>
+  </section>
+
+  <footer>
+    Raw results are in <code>docs/review/data/</code> in the repo. Review commits are on <code>claude/practical-volta-02z5tg</code>, and nothing has been merged to <code>main</code>.
+  </footer>
+</div>
+
+<script>
+(function () {
+  // ---- Simulation bars: one group per metric, scaled within the metric.
+  var sim = [
+    { name: "Orders fully shipped", note: "higher is better", fmt: "", v: [0, 52, 70] },
+    { name: "Units shipped", note: "higher is better", fmt: "", v: [0, 61216, 76365] },
+    { name: "Units of on-hand drift", note: "should be 0", fmt: "", v: [0, 16250, 0] },
+    { name: "Units promised twice", note: "should be 0", fmt: "", v: [392, 916, 0] },
+    { name: "Orders pushed back a stage", note: "should be 0", fmt: "", v: [23, 18, 0] },
+    { name: "Key-account pricing save", note: "median, lower is better", fmt: " ms", v: [407, 495, 38] }
+  ];
+  var runNames = ["A · Original, as configured", "B · Original, with workaround", "C · Fixed"];
+  var simColors = ["var(--s1)", "var(--s2)", "var(--s3)"];
+  function nf(n) { return n.toLocaleString("en-US"); }
+  function metricBlock(m, names, colors) {
+    var max = Math.max.apply(null, m.v) || 1;
+    var html = '<div class="metric"><div class="metric-name">' + m.name + '<small>' + m.note + '</small></div><div class="bars">';
+    m.v.forEach(function (val, i) {
+      if (val === null || val === undefined) return;
+      var pct = (val / max) * 100;
+      html += '<div class="bar-row" data-tip="' + names[i] + ': ' + nf(val) + m.fmt + '"><div class="track"><div class="fill' + (val === 0 ? ' zero' : '') + '" style="width:' + pct.toFixed(2) + '%;background:' + colors[i] + '"></div></div><div class="bar-val">' + nf(val) + m.fmt + '</div></div>';
+    });
+    return html + '</div></div>';
+  }
+  document.getElementById("sim-bars").innerHTML = sim.map(function (m) { return metricBlock(m, runNames, simColors); }).join("");
+
+  // ---- Scale results (median of 3 rounds).
+  var scale = {"pages": [{"page": "Dashboard", "base": {"wallS": 63.8, "mb": 1325, "frozenS": 17.7, "failed": 19}, "fixed": {"wallS": 0.43, "mb": 5.8, "frozenS": 0.16, "failed": 0}}, {"page": "Allocation decision", "base": {"wallS": 64.6, "mb": 1306, "frozenS": 15.4, "failed": 20}, "fixed": {"wallS": 0.2, "mb": 2.7, "frozenS": 0.08, "failed": 0}}, {"page": "Pick & Pack", "base": {"wallS": 61.0, "mb": 1306, "frozenS": 19.4, "failed": 31}, "fixed": {"wallS": 6.4, "mb": 175, "frozenS": 3.6, "failed": 0}}, {"page": "Order Entry", "base": {"wallS": 0.94, "mb": 36.8, "frozenS": 0.34, "failed": 0}, "fixed": {"wallS": 0.92, "mb": 36.8, "frozenS": 0.22, "failed": 0}}], "note": "With the original build, a single request for the order list returned <strong>145 MB and took 18 seconds</strong>. When 15 people asked at once the API process grew to <strong>8.9 GB of memory</strong>, used up its 9 database connections, and failed <strong>184 requests</strong> with connection timeouts. Everyone else was locked out for up to 19 seconds at a time. The fixed build loads open orders only, plus the 30-day shipping window the capacity banner needs. Pick &amp; Pack still moves 12 MB per person because of that window, and Order Entry still downloads every customer's price sheet (about 2.5 MB per person). Both are listed under H-03. Shipment History, Closed Orders, Analytics and Reports still request the full history and need paging before the second year."};
+  var sNames = ["Original", "Fixed"], sColors = ["var(--s1)", "var(--s3)"];
+  var scaleMetrics = [];
+  scale.pages.forEach(function (p) {
+    scaleMetrics.push({ name: p.page, note: "wait until every one of the 15 has the page", fmt: " s", v: [p.base.wallS, p.fixed.wallS] });
+  });
+  document.getElementById("scale-bars").innerHTML = scaleMetrics.map(function (m) { return metricBlock(m, sNames, sColors); }).join("");
+  var tb = document.querySelector("#scale-table tbody");
+  tb.innerHTML = scale.pages.map(function (p) {
+    return "<tr><td>" + p.page + "</td>" +
+      '<td class="num bad">' + p.base.wallS + " s</td>" +
+      '<td class="num good">' + p.fixed.wallS + " s</td>" +
+      '<td class="num">' + nf(p.base.mb) + " MB</td>" +
+      '<td class="num">' + nf(p.fixed.mb) + " MB</td>" +
+      '<td class="num">' + p.base.frozenS + " s</td>" +
+      '<td class="num">' + p.fixed.frozenS + " s</td>" +
+      '<td class="num' + (p.base.failed ? " bad" : "") + '">' + p.base.failed + "</td>" +
+      '<td class="num' + (p.fixed.failed ? " bad" : "") + '">' + p.fixed.failed + "</td></tr>";
+  }).join("");
+  document.getElementById("scale-note").innerHTML = scale.note;
+
+  // ---- Findings
+  var F = [{"id": "C-01", "sev": "critical", "status": "fixed", "title": "Warehouse and receiving staff can't ship or receive", "where": "src/lib/permissions.ts presets vs server/src/routes/items.ts:176, vendorPurchaseOrders.ts", "impact": "Shipping and receiving change stock through <code>PATCH /api/items/by-number/:n/qty</code>, which requires Catalog <em>edit</em>. The Warehouse and Order Entry presets have Catalog <em>view</em>, and receiving also needs Purchase Orders <em>edit</em>. Every Mark Shipped and Receive is refused. The refusal is never shown, so the button just does nothing and only admins can ship.", "evidence": "Run A: 66 ship attempts and 43 receipts refused, and 0 units shipped all day.", "fix": "Shipping and receiving are now dedicated endpoints gated on the page the person is actually using (Open Picks, Pick &amp; Pack or Receiving). Server permission checks now match the pages that call them. Receiving staff can receive from the PO page."}, {"id": "C-02", "sev": "critical", "status": "fixed", "title": "Ship, receive and undo move stock twice when a save conflicts", "where": "src/lib/orderStore.ts shipOrder / undoShipment, src/lib/vendorPoStore.ts receivePo", "impact": "The browser changes each item's quantity one request at a time and then saves the order or PO with a version check. If someone else touched the record in the meantime, the save is rejected but the stock has already moved. The screen asks the user to reload and retry, and the retry moves it again. Bulk confirm from a stale Open Picks list takes stock out for orders someone else already shipped. A failure halfway through leaves some lines moved and others not.", "evidence": "Run B: 16,250 units of drift across 66 SKUs, 15 SKUs negative, and 9 repeated shipments in one day.", "fix": "New <code>POST /sales-orders/:so/ship</code>, <code>/undo-shipment</code> and <code>/vendor-purchase-orders/:po/receive</code> endpoints. Each locks the row, checks version and status, and writes the record and every stock movement in one transaction. A stale retry now changes nothing. Run C: 0 drift."}, {"id": "C-03", "sev": "critical", "status": "fixed", "title": "Two allocators can promise the same stock", "where": "src/pages/AllocationDecision.tsx:47-49, 128-150; no server check", "impact": "Allocation starts every line at the full remaining quantity whatever the stock, and Confirm saves it even when Available is negative. Available comes from a snapshot taken when the page opened, so two people allocating different orders for the same SKU both see it as free. Neither gets a conflict, because they are saving different records.", "evidence": "Run A: 392 units double-promised. Run B: 916 units.", "fix": "The server checks free stock (on hand minus every other open order's reservation) whenever a save adds to what an order holds. These checks are serialized with an advisory lock, and a shortage returns a message naming the SKU and quantity. The page now starts each line at what is actually available."}, {"id": "H-01", "sev": "high", "status": "fixed", "title": "Stale queues push orders back to an earlier stage", "where": "ValidationDecision.tsx, AllocationDecision.tsx, PickPackDetail.tsx; server PUT accepts any status", "impact": "Queue pages load a fresh copy of each order, so the version check always passes, but nothing checks whether the order is still at that stage. Re-allocating an order that was already packed doubles its reservation and sends it back to Pick &amp; Pack. Checking an allocated order sends it back to Checked. A fully shipped order can be allocated and then disappears from every list.", "evidence": "23 orders affected in run A and 18 in run B. Run C: 0.", "fix": "The page refuses and explains when the order has moved on. It also sends <code>expectedStatus</code>, which the server enforces, and the server won't un-ship an order through a plain save."}, {"id": "H-02", "sev": "high", "status": "fixed", "title": "Any signed-in account can rewrite any order through the API", "where": "server/src/routes/salesOrders.ts; savedReports.ts; counters.ts", "impact": "Sales orders had no server-side permission check, so an account with view-only access (or anyone with a token and curl) could check, allocate, ship or edit orders. Saved reports could be deleted by anyone, and anyone could consume document numbers.", "fix": "Order writes require edit access on at least one order-workflow page, and shipping requires Open Picks, Pick &amp; Pack or Shipment History. Saved reports require the Reports permission. Counters are limited to known keys, and overrides are validated."}, {"id": "H-03", "sev": "high", "status": "partial", "title": "Pages download the entire order history", "where": "GET /api/sales-orders called by about 20 pages; GET /api/customers with every price sheet", "impact": "Each call returns every order ever entered, with its lines and shipments. It's about 0.4 MB on day one and 145 MB after a year, and building it blocks Node's single thread for everyone. The customer list is 2.3 MB because it carries every key account's price sheet.", "evidence": "At one year of data, 15 people opening the Dashboard, Allocation or Pick &amp; Pack each waited about a minute. 19–31 requests failed per page, and the server froze for up to 19 s (see Scale). After the fix: 0.4 s, 0.2 s and 6.4 s, with no failures.", "fix": "Workflow pages and the Dashboard now use <code>?open=1</code> (only orders that haven't shipped) and <code>?limit=</code>. The capacity banner uses <code>?shippedSince=</code> for its 30-day window, and the Dashboard uses <code>/customers?summary=1</code>. Still open: paging for Shipment History, Closed Orders, Analytics, Reports and Item Profile, and a slim customer list for Order Entry."}, {"id": "H-04", "sev": "high", "status": "fixed", "title": "Clearing a field never clears it on the server", "where": "types.ts unallocateOrder, PickPackDetail releasePick → salesOrders.ts PUT", "impact": "Fields set to <code>undefined</code> disappear from the request, and the server treated missing as \"unchanged\". Unallocate left the allocation in place, so the stock stayed reserved. A backorder's second release kept the old print stamps and skipped the Released Picks queue with no pick list printed.", "fix": "The whole-order save now treats missing optional fields as cleared."}, {"id": "H-05", "sev": "high", "status": "fixed", "title": "Every second action on the same screen fails with a conflict", "where": "OpenPicksDetail reprint → ship; PickPackDetail revise → release; PickPack print twice; OrderDetail, ReturnDetail, CustomerPricing, PurchaseOrderDetail", "impact": "Store functions threw away the saved record, so pages kept the old version. The next save on the same page is a guaranteed \"changed by someone else\" 409, and before the C-02 fix that meant stock moved twice.", "fix": "Store functions return the server's copy and pages keep it."}, {"id": "H-06", "sev": "high", "status": "fixed", "title": "Large customer records can't be saved", "where": "server/src/index.ts express.json() 100 KB default", "impact": "A key account with about 300 price overrides and a few weeks of notes goes past 100 KB, and every later save fails with a 500.", "evidence": "Hit in run A by customer service adding call notes.", "fix": "The limit is now 5 MB, with a clear 413 message if it's ever exceeded."}, {"id": "H-07", "sev": "high", "status": "partial", "title": "Default admin password, no password policy", "where": "server/src/seed.ts:16, routes/accounts.ts, routes/auth.ts", "impact": "The seed creates <code>admin</code> / <code>123</code>, any 1-character password is accepted, and sign-in attempts weren't limited.", "fix": "Sign-in is now throttled (10 failures per 15 minutes per user and address), and resetting a password ends existing sessions. Still open: change the admin password, set a minimum length, and force a change on first login."}, {"id": "H-08", "sev": "high", "status": "fixed", "title": "Inventory Adjust undoes shipments that land while you count", "where": "src/pages/InventoryAdjust.tsx:42", "impact": "The correction was sent as new count minus the on-hand shown when the page opened. A shipment posted in between is silently reversed.", "fix": "Compare-and-set: the count saves only if on-hand still matches what was on screen. Otherwise the person is shown the new figure."}, {"id": "H-09", "sev": "high", "status": "partial", "title": "Import crashes on US dates and can double-import", "where": "src/lib/dateUtils.ts, importParsers.ts, pages/Import.tsx", "impact": "Excel's default <code>9/22/2026</code> threw inside the file reader, so the preview never appeared and there was no error. <code>2.5</code> units passed the preview but failed on save partway through. The Import button stays enabled, so a second click imports every order again.", "fix": "Dates are normalized (ISO or M/D/YYYY) with row errors, and quantities must be whole numbers. Still open: disable the button while saving, per-row save errors, and duplicate detection on re-import."}, {"id": "H-10", "sev": "high", "status": "open", "title": "\"Open\" report presets include everything", "where": "src/lib/reports/presets.ts:7-43", "impact": "Open Sales Orders, Open POs and Open Returns have no status filter, so their totals include every shipped or closed record and overstate the backlog.", "fix": "Add an exclude/multi-select status filter and give each preset its default."}, {"id": "M-01", "sev": "medium", "status": "fixed", "title": "Failures look like empty data", "where": "src/lib/apiClient.ts, most pages' <code>.then(set)</code> loads", "impact": "An expired or revoked session just made lists render empty, and 403, 400 and 500 on save buttons were swallowed.", "fix": "A 401 sends the user back to sign in, and failed saves show the server's message."}, {"id": "M-02", "sev": "medium", "status": "fixed", "title": "Settings stuck on defaults after one failed load", "where": "src/lib/settingsCache.ts:37-40", "impact": "A failed first load cached an empty object for the whole session, so lead time and company info showed defaults. Saving the Settings page could then write those defaults over the real values.", "fix": "Failures aren't cached, and the cache is cleared on sign-in and sign-out."}, {"id": "M-03", "sev": "medium", "status": "fixed", "title": "Evening orders are dated tomorrow", "where": "OrderEntry, PurchaseOrderForm, GenerateBOL, importParsers, types.ts emptyReturn", "impact": "\"Today\" was the UTC date, which in US time zones is already tomorrow after about 7–8 pm.", "fix": "A shared <code>localIsoDate()</code> helper."}, {"id": "M-04", "sev": "medium", "status": "fixed", "title": "Double-clicking Save creates two sales orders", "where": "src/pages/OrderEntry.tsx handleSubmit", "impact": "There was no in-flight guard, so each click got its own S.O. number.", "fix": "The button is disabled while saving, and errors are shown."}, {"id": "M-05", "sev": "medium", "status": "fixed", "title": "On-PO quantities recomputed in the browser", "where": "src/lib/vendorPoStore.ts recomputeQtyOnPurchaseOrder", "impact": "Every PO save or receipt downloaded the full item list and the full PO list once per item on the PO (40 downloads for a 20-line PO), then set the total outright. Two receipts at once overwrote each other.", "fix": "Recomputed with an aggregate inside the PO transaction."}, {"id": "M-06", "sev": "medium", "status": "fixed", "title": "Saving a customer rewrites every price row", "where": "server/src/lib/syncChildren.ts", "impact": "One upsert per child row, so changing one price on a 300-row sheet ran about 300 queries in one transaction. A child id from another record would also be written onto that record.", "evidence": "Pricing save median fell from 407–495 ms to 38 ms.", "fix": "Only changed rows are written, new rows go in one batch insert, and ids from other records are rejected."}, {"id": "M-07", "sev": "medium", "status": "fixed", "title": "Blocked deletes report success", "where": "routes/customers.ts, vendors.ts, items.ts delete", "impact": "Deleting a customer or vendor that orders still reference fails at the database. The failure was swallowed, so the API returned 204 and the record reappeared.", "fix": "Returns a 409 that explains why."}, {"id": "M-08", "sev": "medium", "status": "fixed", "title": "A numbering override can block all new orders", "where": "server/src/routes/counters.ts PUT", "impact": "Setting the next S.O. number at or below an existing one makes every create fail its primary-key insert and roll the counter back, so nobody can enter an order.", "fix": "The server refuses a value below the highest number already issued."}, {"id": "M-09", "sev": "medium", "status": "fixed", "title": "Password reset leaves old sessions signed in", "where": "server/src/routes/accounts.ts", "impact": "Whoever had the old password stayed signed in for up to 30 days.", "fix": "Reset and deactivation bump the account's token version."}, {"id": "M-10", "sev": "medium", "status": "open", "title": "Vendors page saves on every keystroke", "where": "src/pages/Vendors.tsx:36-50", "impact": "Each keystroke sends a save with the same version. Fast typing triggers false \"changed by someone else\" alerts and loses characters.", "fix": "Keep edits in a draft and save on blur or with a Save button."}, {"id": "M-11", "sev": "medium", "status": "open", "title": "Side effects in customer notes and Settings", "where": "Customers.tsx:77-115, Settings.tsx:42-52", "impact": "Adding or deleting a note also saves half-finished edits to the address or terms. Clearing the lead-time field saves 0.", "fix": "Apply note changes to the last saved record, and validate Settings before saving it on blur."}, {"id": "M-12", "sev": "medium", "status": "open", "title": "Returns don't restock; orders can't be cancelled", "where": "ReturnDetail.tsx, no cancel flow; PickPackDetail release", "impact": "Receiving an RA doesn't add units back to stock. Abandoned orders stay in the queues and keep holding stock, and lines released at 0 hold their reservation until someone re-allocates.", "fix": "Add a transactional restock on receiving a return, and a cancel action that releases the reservation."}, {"id": "M-13", "sev": "medium", "status": "open", "title": "Backorder dates and capacity figures are optimistic", "where": "src/lib/backorderForecast.ts, warehouseCapacity.ts", "impact": "Every backordered order is forecast as if all incoming PO stock were its own, so ten orders get the date of one PO. The capacity banner compares against historical average load, not a maximum, and says \"Over capacity\" whenever a day is above average.", "fix": "Allocate incoming supply in queue order, and set capacity from a configured maximum."}, {"id": "M-14", "sev": "medium", "status": "partial", "title": "Order lines reference items by text", "where": "SalesOrderLine.item, VendorPoLine.itemNumber (no foreign key)", "impact": "Renaming an item cuts it off from its order history. A free-text item that isn't in the catalog used to stop shipping halfway, with earlier lines already taken out of stock.", "fix": "Shipping now fails the whole transaction with a message naming the missing item. Still open: store an item id on each line and validate lines when the order is saved."}, {"id": "M-15", "sev": "medium", "status": "open", "title": "Prices and costs default to the wrong values", "where": "LineItemsTable.tsx:62, PurchaseOrderForm.tsx:49, ReturnForm.tsx:50", "impact": "An order line is left at $0.00 when the customer has no override price. PO cost defaults to our selling price. Return credit uses the current catalog price instead of what was charged.", "fix": "Fall back to the catalog rate, add a cost field on items, and credit from the original S.O. line."}, {"id": "L-01", "sev": "low", "status": "fixed", "title": "CSV exports can run formulas in Excel", "where": "src/lib/csv.ts, ReportRunner.tsx", "impact": "A cell starting with =, +, - or @ is run as a formula, and accented names were garbled.", "fix": "Formula-like cells get a leading ', plain negative numbers are left alone, and exports include a byte-order mark so Excel reads the file as UTF-8."}, {"id": "L-02", "sev": "low", "status": "open", "title": "Analytics \"revenue\" is really bookings", "where": "src/pages/Analytics.tsx:147-190", "impact": "Includes tax and unshipped orders, and doesn't subtract returns. Inventory value uses the selling price.", "fix": "Rename these figures, or compute them from shipments and cost."}, {"id": "L-03", "sev": "low", "status": "open", "title": "Plain HTTP and a localhost default", "where": "src/lib/apiClient.ts:4, server/src/index.ts:23", "impact": "Passwords and tokens cross the network unencrypted. The API accepts requests from any origin, and the frontend only works on the API's own machine unless it's rebuilt with <code>VITE_API_URL</code>.", "fix": "Serve both from one origin behind TLS and restrict CORS."}, {"id": "L-04", "sev": "low", "status": "open", "title": "Money calculated in floating point", "where": "src/types.ts lineAmount, orderSubtotal", "impact": "On 20-line orders with 4-decimal rates, the printed line amounts can differ from the subtotal by a few cents.", "fix": "Calculate in integer cents and round each line."}, {"id": "L-05", "sev": "low", "status": "open", "title": "Item Quick Report matches partial item numbers", "where": "src/lib/reports/dataSources.ts:390", "impact": "The report for RP-10 also lists RP-100 and RP-1000 lines, while its summary uses exact matching.", "fix": "Use an exact item match for this report."}, {"id": "L-06", "sev": "low", "status": "partial", "title": "Maintainability", "where": "README.md, GenerateBOL.tsx (972 lines), three permission maps", "impact": "The README described the pre-backend app, and some in-app help was out of date. Permissions are defined in three places, which is the root cause of C-01.", "fix": "The README and help text are updated. Suggested next: one page-to-API permission map with a test that each preset can finish its own workflow, and split GenerateBOL into a form and a print view."}];
+  var list = document.getElementById("findings-list");
+  var label = { fixed: "Fixed", partial: "Partly fixed", open: "Open" };
+  list.innerHTML = F.map(function (f) {
+    return '<details class="finding" data-sev="' + f.sev + '" data-status="' + f.status + '" id="' + f.id.toLowerCase() + '">' +
+      '<summary><span class="fid">' + f.id + '</span><span class="ftitle">' + f.title + '<small>' + f.where + '</small></span><span class="stamp ' + f.status + '">' + label[f.status] + '</span></summary>' +
+      '<div class="fbody"><dl><dt>What happens</dt><dd>' + f.impact + '</dd>' +
+      (f.evidence ? '<dt>Evidence</dt><dd>' + f.evidence + '</dd>' : '') +
+      '<dt>' + (f.status === "open" ? "Recommendation" : "Resolution") + '</dt><dd>' + f.fix + '</dd></dl></div></details>';
+  }).join("");
+  var chips = document.querySelectorAll(".chip");
+  var count = document.getElementById("f-count");
+  function apply(filter) {
+    var shown = 0;
+    list.querySelectorAll("details.finding").forEach(function (d) {
+      var ok = filter === "all" || d.dataset.sev === filter || (filter === "open" && d.dataset.status !== "fixed");
+      d.hidden = !ok;
+      if (ok) shown++;
+    });
+    chips.forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.filter === filter)); });
+    count.textContent = shown + " of " + F.length + " shown";
+  }
+  chips.forEach(function (c) { c.addEventListener("click", function () { apply(c.dataset.filter); }); });
+  apply("all");
+  if (location.hash && document.querySelector(location.hash + ".finding")) document.querySelector(location.hash).open = true;
+})();
+</script>

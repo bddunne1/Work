@@ -19,7 +19,10 @@ const top = seed.customers.filter((c) => c.top);
 const rest = seed.customers.filter((c) => !c.top);
 let acc = 0;
 const cdf = seed.items.map((i) => (acc += i.share));
-const pickItem = () => seed.items[cdf.findIndex((c) => c >= rng.next() * acc)];
+const pickItem = () => {
+  const r = rng.next() * acc;
+  return seed.items[cdf.findIndex((c) => c >= r)];
+};
 
 const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
 const orders = [];
@@ -58,7 +61,9 @@ const sql = `
 \\copy "SalesOrder" ("soNumber","poNumber","orderDate","dueDate","customerId","billTo","shipTo","status","allocation","pendingShipment","checkedAt","pickedAt","pickListPrintedAt","packingSlipPrintedAt","pickPackStatus","rep","createdAt") FROM '${dir}/orders.csv' CSV
 \\copy "SalesOrderLine" ("id","soNumber","item","description","um","ordered","rate") FROM '${dir}/lines.csv' CSV
 \\copy "ShipmentRecord" ("id","soNumber","shippedAt","lines") FROM '${dir}/ships.csv' CSV
-ANALYZE;
+ANALYZE "SalesOrder";
+ANALYZE "SalesOrderLine";
+ANALYZE "ShipmentRecord";
 `;
 writeFileSync(join(dir, "load.sql"), sql);
 execFileSync("psql", ["-h", process.env.PGHOST ?? "localhost", "-U", process.env.PGUSER ?? "erp_app", "-d", process.env.PGDATABASE ?? "erp_dev", "-v", "ON_ERROR_STOP=1", "-q", "-f", join(dir, "load.sql")], { stdio: "inherit", env: { ...process.env, PGPASSWORD: process.env.PGPASSWORD ?? "erp_dev_pw" } });

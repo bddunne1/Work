@@ -5,7 +5,7 @@
 //  4. every main page loads for each role without console/page errors.
 //   SIM_API=http://localhost:4002 SIM_UI=http://localhost:5173 node sim/ui-check.mjs
 import { chromium } from "playwright";
-import { API, post, get, put, mapOrder, mapPo } from "./lib.mjs";
+import { post, get, put, mapOrder, mapPo } from "./lib.mjs";
 
 const UI = process.env.SIM_UI ?? "http://localhost:5173";
 const results = [];

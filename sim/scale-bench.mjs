@@ -23,7 +23,8 @@ const PAGES = {
   fixed: {
     Dashboard: ["/api/customers?summary=1", "/api/items", "/api/sales-orders?open=1", "/api/sales-orders?limit=5"],
     "Allocation decision": ["/api/items", "/api/sales-orders?open=1", "/api/sales-orders/{so}"],
-    "Pick & Pack list": ["/api/sales-orders?open=1", "/api/items", "/api/sales-orders"],
+    // WarehouseCapacityBanner: open orders + the lookback window's shipments (default 30 days).
+    "Pick & Pack list": ["/api/sales-orders?open=1", "/api/items", `/api/sales-orders?open=1&shippedSince=${new Date(Date.now() - 30 * 86400000).toISOString()}`],
     "Order Entry": ["/api/customers", "/api/items", "/api/counters/salesOrder"],
   },
 }[MODE];
@@ -36,7 +37,7 @@ async function probeWhile(promise) {
   promise.finally(() => (done = true));
   while (!done) {
     const t0 = performance.now();
-    await fetch(`${API}/api/health`).then((r) => r.text());
+    await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(120_000) }).then((r) => r.text()).catch(() => {});
     samples.push(performance.now() - t0);
     await new Promise((r) => setTimeout(r, 25));
   }
@@ -68,10 +69,11 @@ async function main() {
     for (let r = 0; r < ROUNDS; r++) {
       metrics.calls.length = 0;
       const t0 = performance.now();
-      const load = Promise.all(users.map((u) => Promise.all(paths.map((p) => get(u, p.replace("{so}", anyOpen))))));
+      let failed = 0;
+      const load = Promise.all(users.map((u) => Promise.all(paths.map((p) => get(u, p.replace("{so}", anyOpen)).catch(() => failed++)))));
       const [, healthMax] = await Promise.all([load, probeWhile(load)]);
       const wall = performance.now() - t0;
-      runs.push({ wallMs: Math.round(wall), healthMaxMs: Math.round(healthMax), mbTransferred: +(metrics.calls.reduce((s, c) => s + c.bytes, 0) / 1048576).toFixed(1), slowestCallMs: Math.round(Math.max(...metrics.calls.map((c) => c.ms))) });
+      runs.push({ wallMs: Math.round(wall), healthMaxMs: Math.round(healthMax), mbTransferred: +(metrics.calls.reduce((s, c) => s + c.bytes, 0) / 1048576).toFixed(1), slowestCallMs: Math.round(Math.max(...metrics.calls.map((c) => c.ms))), failedCalls: failed });
     }
     runs.sort((a, b) => a.wallMs - b.wallMs);
     pages[page] = { ...runs[1], rounds: runs.map((r) => r.wallMs) };

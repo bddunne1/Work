@@ -1,0 +1,8696 @@
+{
+ "scenario": "presets",
+ "realMinutes": 12,
+ "elapsedMs": 772824,
+ "ordersPlanned": 150,
+ "backlog": 60,
+ "ledger": {
+  "shipAttempts": 66,
+  "doubleShipRetries": 0,
+  "receiveRetries": 0
+ },
+ "summary": {
+  "totalCalls": 4279,
+  "statusTotals": {
+   "200": 3919,
+   "201": 159,
+   "403": 115,
+   "409": 85,
+   "500": 1
+  },
+  "overall": {
+   "p50": 23,
+   "p95": 135,
+   "p99": 168,
+   "max": 625
+  },
+  "totalMB": 1484,
+  "routes": [
+   {
+    "route": "GET /api/sales-orders",
+    "n": 1062,
+    "p50": 40,
+    "p95": 72,
+    "max": 175,
+    "avgKB": 430,
+    "status": {
+     "200": 1062
+    }
+   },
+   {
+    "route": "GET /api/items",
+    "n": 939,
+    "p50": 24,
+    "p95": 53,
+    "max": 139,
+    "avgKB": 183,
+    "status": {
+     "200": 939
+    }
+   },
+   {
+    "route": "PUT /api/sales-orders/:so",
+    "n": 515,
+    "p50": 20,
+    "p95": 52,
+    "max": 109,
+    "avgKB": 3,
+    "status": {
+     "200": 430,
+     "409": 85
+    }
+   },
+   {
+    "route": "GET /api/sales-orders/:so",
+    "n": 493,
+    "p50": 6,
+    "p95": 19,
+    "max": 63,
+    "avgKB": 3,
+    "status": {
+     "200": 493
+    }
+   },
+   {
+    "route": "GET /api/customers",
+    "n": 377,
+    "p50": 135,
+    "p95": 170,
+    "max": 263,
+    "avgKB": 2296,
+    "status": {
+     "200": 371,
+     "403": 6
+    }
+   },
+   {
+    "route": "PATCH /api/items/by-number/:item/qty",
+    "n": 162,
+    "p50": 4,
+    "p95": 38,
+    "max": 57,
+    "avgKB": 0,
+    "status": {
+     "200": 53,
+     "403": 109
+    }
+   },
+   {
+    "route": "GET /api/customers/:id",
+    "n": 156,
+    "p50": 9,
+    "p95": 22,
+    "max": 69,
+    "avgKB": 69,
+    "status": {
+     "200": 156
+    }
+   },
+   {
+    "route": "GET /api/counters/salesOrder",
+    "n": 150,
+    "p50": 5,
+    "p95": 16,
+    "max": 107,
+    "avgKB": 0,
+    "status": {
+     "200": 150
+    }
+   },
+   {
+    "route": "POST /api/sales-orders",
+    "n": 150,
+    "p50": 12,
+    "p95": 24,
+    "max": 33,
+    "avgKB": 3,
+    "status": {
+     "201": 150
+    }
+   },
+   {
+    "route": "GET /api/vendor-purchase-orders",
+    "n": 105,
+    "p50": 16,
+    "p95": 92,
+    "max": 129,
+    "avgKB": 86,
+    "status": {
+     "200": 105
+    }
+   },
+   {
+    "route": "GET /api/vendor-purchase-orders/:po",
+    "n": 43,
+    "p50": 6,
+    "p95": 22,
+    "max": 41,
+    "avgKB": 2,
+    "status": {
+     "200": 43
+    }
+   },
+   {
+    "route": "PUT /api/customers/:id",
+    "n": 21,
+    "p50": 407,
+    "p95": 587,
+    "max": 625,
+    "avgKB": 73,
+    "status": {
+     "200": 20,
+     "500": 1
+    }
+   },
+   {
+    "route": "POST /api/auth/login",
+    "n": 15,
+    "p50": 90,
+    "p95": 112,
+    "max": 112,
+    "avgKB": 1,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/auth/me",
+    "n": 15,
+    "p50": 3,
+    "p95": 56,
+    "max": 56,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/settings",
+    "n": 15,
+    "p50": 3,
+    "p95": 13,
+    "max": 13,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/accounts",
+    "n": 13,
+    "p50": 5,
+    "p95": 13,
+    "max": 13,
+    "avgKB": 6,
+    "status": {
+     "200": 13
+    }
+   },
+   {
+    "route": "GET /api/audit-log",
+    "n": 13,
+    "p50": 4,
+    "p95": 13,
+    "max": 13,
+    "avgKB": 16,
+    "status": {
+     "200": 13
+    }
+   },
+   {
+    "route": "GET /api/items/:id",
+    "n": 13,
+    "p50": 6,
+    "p95": 7,
+    "max": 7,
+    "avgKB": 0,
+    "status": {
+     "200": 13
+    }
+   },
+   {
+    "route": "PUT /api/items/:id",
+    "n": 13,
+    "p50": 13,
+    "p95": 34,
+    "max": 34,
+    "avgKB": 0,
+    "status": {
+     "200": 13
+    }
+   },
+   {
+    "route": "POST /api/vendor-purchase-orders",
+    "n": 9,
+    "p50": 12,
+    "p95": 26,
+    "max": 26,
+    "avgKB": 1,
+    "status": {
+     "201": 9
+    }
+   }
+  ],
+  "eventKinds": {
+   "order-checked": 130,
+   "order-entered": 150,
+   "order-allocated": 128,
+   "order-packed": 85,
+   "conflict-409": 79,
+   "batch-printed": 48,
+   "status-regression": 23,
+   "vendor-po-created": 9,
+   "item-edited": 13,
+   "gave-up": 6,
+   "pricing-saved": 13,
+   "blocked-403": 109,
+   "bol-generated": 2,
+   "error": 1
+  },
+  "eventsByRole": {
+   "Validation/Allocation": {
+    "order-checked": 130,
+    "order-allocated": 128,
+    "conflict-409": 32,
+    "status-regression": 6
+   },
+   "Order Entry": {
+    "order-entered": 125
+   },
+   "Warehouse Pick/Pack/Ship": {
+    "order-packed": 85,
+    "conflict-409": 47,
+    "batch-printed": 48,
+    "status-regression": 17,
+    "gave-up": 6,
+    "blocked-403": 66,
+    "bol-generated": 2
+   },
+   "Customer Service": {
+    "order-entered": 25,
+    "error": 1
+   },
+   "Purchasing": {
+    "vendor-po-created": 9
+   },
+   "Admin": {
+    "item-edited": 13
+   },
+   "Sales Manager": {
+    "pricing-saved": 13
+   },
+   "Receiving": {
+    "blocked-403": 43
+   }
+  },
+  "problems": {
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | This record was changed by someone else since you loaded it. Reload and try again.": 40,
+   "conflict-409 | Validation/Allocation | allocate | This record was changed by someone else since you loaded it. Reload and try again.": 20,
+   "gave-up | Warehouse Pick/Pack/Ship | pick-pack | This record was changed by someone else since you loaded it. Reload and try again.": 6,
+   "blocked-403 | Receiving | receive-po | Access denied": 43,
+   "conflict-409 | Warehouse Pick/Pack/Ship | batch-print | This record was changed by someone else since you loaded it. Reload and try again.": 7,
+   "blocked-403 | Warehouse Pick/Pack/Ship | ship-bulk | Access denied": 35,
+   "blocked-403 | Warehouse Pick/Pack/Ship | ship-detail | Access denied": 31,
+   "conflict-409 | Validation/Allocation | validate | This record was changed by someone else since you loaded it. Reload and try again.": 12,
+   "error | Customer Service | edit-customer-note | Internal server error": 1
+  }
+ },
+ "audit": {
+  "orders": {
+   "total": 210,
+   "byStatus": {
+    "Entered": 85,
+    "Checked": 7,
+    "Allocated": 27,
+    "Backordered": 17,
+    "Pick & Packed": 74
+   },
+   "orderedUnits": 436563,
+   "shippedUnits": 0
+  },
+  "inventory": {
+   "driftItems": 0,
+   "driftUnits": 0,
+   "negative": 0,
+   "overcommittedItems": 1,
+   "overcommittedUnits": 392,
+   "qtyOnPurchaseOrderMismatches": 0,
+   "sampleDrifts": []
+  },
+  "overShippedLines": 0,
+  "vendorPos": {
+   "total": 49,
+   "received": 0,
+   "partial": 0
+  }
+ },
+ "events": [
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10001"
+   },
+   "t": 3800
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10061",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 4755
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10062",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 6533
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10001",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 8012
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10002"
+   },
+   "t": 8138
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10063",
+    "kind": "small",
+    "lines": 6,
+    "units": 191
+   },
+   "t": 9955
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10064",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1037
+   },
+   "t": 12438
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10003"
+   },
+   "t": 13316
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10001",
+    "units": 130
+   },
+   "t": 13793
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10002",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 15079
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 16071
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 16160
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10001",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 16702
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 17091
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10001",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 18044
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 18128
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10005"
+   },
+   "t": 18587
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10065",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1176
+   },
+   "t": 19734
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10066",
+    "kind": "small",
+    "lines": 3,
+    "units": 89
+   },
+   "t": 20207
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5041",
+    "lines": 11
+   },
+   "t": 20212
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10067",
+    "kind": "medium",
+    "lines": 8,
+    "units": 449
+   },
+   "t": 20715
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1056"
+   },
+   "t": 20993
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10007"
+   },
+   "t": 21318
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10001",
+    "units": 0
+   },
+   "t": 21550
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10005",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 22043
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10068",
+    "kind": "medium",
+    "lines": 8,
+    "units": 526
+   },
+   "t": 22335
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 23258
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "pick-pack",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 24591
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10069",
+    "kind": "small",
+    "lines": 6,
+    "units": 179
+   },
+   "t": 25108
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10004"
+   },
+   "t": 26243
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10006"
+   },
+   "t": 27226
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 003 Supply",
+    "overrides": 127,
+    "ms": 257
+   },
+   "t": 28591
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 30443
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10006",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 30520
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10070",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 31262
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10071",
+    "kind": "small",
+    "lines": 4,
+    "units": 115
+   },
+   "t": 33517
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10003",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 33525
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10002",
+    "units": 961
+   },
+   "t": 33782
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10072",
+    "kind": "medium",
+    "lines": 12,
+    "units": 687
+   },
+   "t": 35172
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10010"
+   },
+   "t": 35687
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10009"
+   },
+   "t": 36480
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 37819
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10007",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 38135
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10004",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 39397
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 40042
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 40194
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10073",
+    "kind": "medium",
+    "lines": 11,
+    "units": 1022
+   },
+   "t": 40439
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10008"
+   },
+   "t": 41830
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 42749
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 42749
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 43400
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10011"
+   },
+   "t": 44477
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10009",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 46788
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10074",
+    "kind": "medium",
+    "lines": 11,
+    "units": 885
+   },
+   "t": 47800
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10075",
+    "kind": "small",
+    "lines": 5,
+    "units": 159
+   },
+   "t": 48837
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10003",
+    "units": 1201
+   },
+   "t": 48909
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10008",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 49134
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10005",
+    "units": 149
+   },
+   "t": 50746
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10076",
+    "kind": "small",
+    "lines": 7,
+    "units": 244
+   },
+   "t": 51542
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10014"
+   },
+   "t": 51993
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10077",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1095
+   },
+   "t": 52261
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 52725
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10012"
+   },
+   "t": 53036
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10010",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 55319
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 55692
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 56128
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10014",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 56248
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10003",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 56534
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 57191
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10078",
+    "kind": "small",
+    "lines": 4,
+    "units": 89
+   },
+   "t": 58170
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10013"
+   },
+   "t": 59060
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10079",
+    "kind": "large",
+    "lines": 40,
+    "units": 19443
+   },
+   "t": 59893
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10015"
+   },
+   "t": 60093
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10007",
+    "units": 3
+   },
+   "t": 60647
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 62522
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10004",
+    "units": 223
+   },
+   "t": 64001
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 64241
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10013",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 64657
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10080",
+    "kind": "medium",
+    "lines": 13,
+    "units": 931
+   },
+   "t": 65233
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 65610
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10013",
+    "from": "Allocated",
+    "action": "allocate"
+   },
+   "t": 66358
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10017"
+   },
+   "t": 67660
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10003",
+    "units": 0
+   },
+   "t": 67819
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 69766
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10006",
+    "units": 118
+   },
+   "t": 71102
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10011",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 71700
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10013",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 71978
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10008",
+    "units": 145
+   },
+   "t": 72917
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 73074
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 73212
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 73789
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10081",
+    "kind": "medium",
+    "lines": 9,
+    "units": 593
+   },
+   "t": 74179
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 74623
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 75474
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10016"
+   },
+   "t": 75510
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10019"
+   },
+   "t": 75936
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 76513
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10082",
+    "kind": "large",
+    "lines": 24,
+    "units": 12171
+   },
+   "t": 76694
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 78589
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10016",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 79203
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10012",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 81050
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "TB-1016"
+   },
+   "t": 82788
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10018"
+   },
+   "t": 83349
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10020"
+   },
+   "t": 83374
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10083",
+    "kind": "large",
+    "lines": 27,
+    "units": 13894
+   },
+   "t": 84338
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 008 Manufacturing",
+    "overrides": 151,
+    "ms": 361
+   },
+   "t": 86383
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10015",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 86963
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 87403
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10015",
+    "from": "Allocated",
+    "action": "allocate"
+   },
+   "t": 88140
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10084",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1226
+   },
+   "t": 88565
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10085",
+    "kind": "large",
+    "lines": 24,
+    "units": 11988
+   },
+   "t": 90451
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10009",
+    "units": 1248
+   },
+   "t": 91779
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10022"
+   },
+   "t": 92312
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10086",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 92429
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10015",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 92664
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5042",
+    "lines": 2
+   },
+   "t": 95258
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10087",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1197
+   },
+   "t": 95565
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10019",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 95981
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 96287
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 96448
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10088",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1193
+   },
+   "t": 98553
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 98889
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10021"
+   },
+   "t": 99112
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 99827
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 100475
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10011",
+    "units": 863
+   },
+   "t": 101625
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 102666
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10018",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 103186
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 103879
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 105018
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10089",
+    "kind": "small",
+    "lines": 5,
+    "units": 136
+   },
+   "t": 106299
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10023"
+   },
+   "t": 106434
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 106688
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10020",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 107164
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10010",
+    "units": 8
+   },
+   "t": 107256
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10090",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1119
+   },
+   "t": 107379
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 107517
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 109633
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10091",
+    "kind": "medium",
+    "lines": 13,
+    "units": 932
+   },
+   "t": 110317
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10012",
+    "units": 199
+   },
+   "t": 111925
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10092",
+    "kind": "medium",
+    "lines": 11,
+    "units": 777
+   },
+   "t": 113032
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10093",
+    "kind": "medium",
+    "lines": 9,
+    "units": 758
+   },
+   "t": 113684
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 114298
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 116721
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10021",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 119170
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10026"
+   },
+   "t": 120540
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10024"
+   },
+   "t": 121857
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10013",
+    "units": 704
+   },
+   "t": 121910
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10014",
+    "units": 584
+   },
+   "t": 122102
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10017",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 122922
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 123640
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 124775
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 124806
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10094",
+    "kind": "medium",
+    "lines": 9,
+    "units": 612
+   },
+   "t": 125033
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 125103
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 125529
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10028"
+   },
+   "t": 125996
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10024",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 128048
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10029"
+   },
+   "t": 128167
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10095",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1021
+   },
+   "t": 128364
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 128590
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 128720
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10096",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1172
+   },
+   "t": 129461
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10025"
+   },
+   "t": 131273
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 131584
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10017",
+    "units": 8
+   },
+   "t": 132536
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10022",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 133399
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10025",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 134250
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "CL-1036"
+   },
+   "t": 134476
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10097",
+    "kind": "large",
+    "lines": 26,
+    "units": 12308
+   },
+   "t": 135237
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 135650
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10016",
+    "units": 162
+   },
+   "t": 136051
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 136501
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10031"
+   },
+   "t": 137182
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10017",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 137509
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 138671
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10098",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 139709
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10099",
+    "kind": "small",
+    "lines": 6,
+    "units": 139
+   },
+   "t": 141207
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "pick-pack",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 142138
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10019",
+    "units": 170
+   },
+   "t": 142239
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10100",
+    "kind": "large",
+    "lines": 31,
+    "units": 14844
+   },
+   "t": 142360
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10101",
+    "kind": "medium",
+    "lines": 11,
+    "units": 1061
+   },
+   "t": 142694
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10102",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 143866
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 003 Supply",
+    "overrides": 127,
+    "ms": 393
+   },
+   "t": 144217
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 144560
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 144895
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10027"
+   },
+   "t": 145768
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10020",
+    "units": 3
+   },
+   "t": 146152
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 146921
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 147617
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10103",
+    "kind": "small",
+    "lines": 6,
+    "units": 191
+   },
+   "t": 153489
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10104",
+    "kind": "medium",
+    "lines": 8,
+    "units": 433
+   },
+   "t": 156523
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10026",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 156666
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10105",
+    "kind": "small",
+    "lines": 5,
+    "units": 152
+   },
+   "t": 157240
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10018",
+    "units": 668
+   },
+   "t": 157786
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10106",
+    "kind": "medium",
+    "lines": 13,
+    "units": 940
+   },
+   "t": 159091
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 159133
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10033"
+   },
+   "t": 159716
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10018",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 160116
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10023",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 162448
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10027",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 162471
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 163352
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10107",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 164136
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10030"
+   },
+   "t": 164970
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10108",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 165470
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10109",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 165711
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 165719
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10110",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1119
+   },
+   "t": 166168
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10028",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 167259
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10018",
+    "units": 0
+   },
+   "t": 167693
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10030"
+   },
+   "t": 169572
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 169664
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10032"
+   },
+   "t": 170103
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10029",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 172868
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5043",
+    "lines": 4
+   },
+   "t": 173576
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10030",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 174458
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10035"
+   },
+   "t": 176393
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10022",
+    "units": 990
+   },
+   "t": 176788
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10036"
+   },
+   "t": 176806
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10111",
+    "kind": "small",
+    "lines": 4,
+    "units": 145
+   },
+   "t": 177370
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10112",
+    "kind": "small",
+    "lines": 6,
+    "units": 143
+   },
+   "t": 177768
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 177786
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 178621
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10032",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 178797
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 179176
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10031",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 179597
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10113",
+    "kind": "small",
+    "lines": 7,
+    "units": 115
+   },
+   "t": 180445
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10037"
+   },
+   "t": 182230
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10034"
+   },
+   "t": 183024
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10036",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 184120
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10114",
+    "kind": "medium",
+    "lines": 12,
+    "units": 968
+   },
+   "t": 184400
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10115",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 186292
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10035",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 186746
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10038"
+   },
+   "t": 187242
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10041"
+   },
+   "t": 192031
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10116",
+    "kind": "medium",
+    "lines": 8,
+    "units": 588
+   },
+   "t": 193079
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10033",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 194429
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10117",
+    "kind": "large",
+    "lines": 26,
+    "units": 12879
+   },
+   "t": 194826
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10034",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 195006
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10118",
+    "kind": "small",
+    "lines": 7,
+    "units": 193
+   },
+   "t": 195666
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10039"
+   },
+   "t": 196501
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10021",
+    "units": 8992
+   },
+   "t": 197081
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10119",
+    "kind": "small",
+    "lines": 6,
+    "units": 202
+   },
+   "t": 198345
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10037",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 199027
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10042"
+   },
+   "t": 199289
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 010 Supply",
+    "overrides": 154,
+    "ms": 315
+   },
+   "t": 199785
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "GS-1053"
+   },
+   "t": 201286
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 202309
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10041",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 203147
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10043"
+   },
+   "t": 203222
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10120",
+    "kind": "medium",
+    "lines": 12,
+    "units": 565
+   },
+   "t": 203456
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10039",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 204940
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10121",
+    "kind": "small",
+    "lines": 6,
+    "units": 262
+   },
+   "t": 206732
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10122",
+    "kind": "small",
+    "lines": 5,
+    "units": 151
+   },
+   "t": 207693
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10044"
+   },
+   "t": 208983
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10045"
+   },
+   "t": 210461
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10023",
+    "units": 163
+   },
+   "t": 210552
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10038",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 211054
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 212329
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10123",
+    "kind": "medium",
+    "lines": 11,
+    "units": 816
+   },
+   "t": 212708
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10047"
+   },
+   "t": 214565
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 214642
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10042",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 214951
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10124",
+    "kind": "small",
+    "lines": 3,
+    "units": 68
+   },
+   "t": 215049
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 215786
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "bol-generated",
+   "detail": {
+    "so": "10021"
+   },
+   "t": 216735
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10125",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 217336
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10046"
+   },
+   "t": 217831
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 218107
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10126",
+    "kind": "large",
+    "lines": 25,
+    "units": 12875
+   },
+   "t": 218613
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 219544
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10044",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 219859
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 220308
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10024",
+    "units": 118
+   },
+   "t": 221305
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 221541
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10048"
+   },
+   "t": 222270
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10045",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 222691
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10025",
+    "units": 7
+   },
+   "t": 225414
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10127",
+    "kind": "small",
+    "lines": 3,
+    "units": 122
+   },
+   "t": 225752
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 226871
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10050"
+   },
+   "t": 227117
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10015",
+    "units": 202
+   },
+   "t": 227662
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 227697
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 228685
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10128",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1112
+   },
+   "t": 228761
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10047",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 230963
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 231254
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10129",
+    "kind": "medium",
+    "lines": 9,
+    "units": 737
+   },
+   "t": 232192
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10049"
+   },
+   "t": 233087
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10130",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 234354
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10030",
+    "units": 162
+   },
+   "t": 234436
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10131",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1305
+   },
+   "t": 234462
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 234638
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 235103
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10046",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 236730
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10132",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1019
+   },
+   "t": 236767
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10048",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 237680
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 4
+   },
+   "t": 238301
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 240309
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10051"
+   },
+   "t": 240673
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 240910
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 241040
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10133",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 243897
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10049",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 245082
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10050",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 245419
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10031",
+    "units": 80
+   },
+   "t": 245928
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10040"
+   },
+   "t": 247339
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 015 Distribution",
+    "overrides": 247,
+    "ms": 560
+   },
+   "t": 248614
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 248727
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10052"
+   },
+   "t": 249850
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10134",
+    "kind": "medium",
+    "lines": 8,
+    "units": 753
+   },
+   "t": 250273
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "HX-1002"
+   },
+   "t": 250746
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10051",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 250916
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 251232
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10135",
+    "kind": "large",
+    "lines": 20,
+    "units": 10339
+   },
+   "t": 251977
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10136",
+    "kind": "small",
+    "lines": 7,
+    "units": 266
+   },
+   "t": 251992
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10032",
+    "units": 7
+   },
+   "t": 252620
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10043",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 253964
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 254518
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10137",
+    "kind": "small",
+    "lines": 6,
+    "units": 178
+   },
+   "t": 254657
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10055"
+   },
+   "t": 255325
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10054"
+   },
+   "t": 259083
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 259746
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10052",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 260275
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 262185
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10138",
+    "kind": "large",
+    "lines": 33,
+    "units": 15566
+   },
+   "t": 262292
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10054",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 264041
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10053"
+   },
+   "t": 264968
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10139",
+    "kind": "small",
+    "lines": 6,
+    "units": 201
+   },
+   "t": 266285
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 267401
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10040",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 267764
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5044",
+    "lines": 8
+   },
+   "t": 267884
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10140",
+    "kind": "medium",
+    "lines": 13,
+    "units": 988
+   },
+   "t": 268110
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10141",
+    "kind": "medium",
+    "lines": 9,
+    "units": 598
+   },
+   "t": 269537
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10033",
+    "units": 156
+   },
+   "t": 269814
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10056"
+   },
+   "t": 270600
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10053"
+   },
+   "t": 272441
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10142",
+    "kind": "small",
+    "lines": 5,
+    "units": 189
+   },
+   "t": 272453
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10056",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 272788
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 272846
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 274922
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10143",
+    "kind": "medium",
+    "lines": 14,
+    "units": 937
+   },
+   "t": 275255
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10058"
+   },
+   "t": 275524
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10056",
+    "from": "Allocated",
+    "action": "allocate"
+   },
+   "t": 275931
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10028",
+    "units": 8
+   },
+   "t": 277419
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10056",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 278065
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 280261
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 281523
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10144",
+    "kind": "small",
+    "lines": 5,
+    "units": 195
+   },
+   "t": 281868
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10055",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 282754
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10060"
+   },
+   "t": 283305
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 283893
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10145",
+    "kind": "medium",
+    "lines": 11,
+    "units": 924
+   },
+   "t": 284646
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10146",
+    "kind": "medium",
+    "lines": 10,
+    "units": 783
+   },
+   "t": 287560
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10057"
+   },
+   "t": 287576
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10147",
+    "kind": "small",
+    "lines": 5,
+    "units": 97
+   },
+   "t": 287890
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10058",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 289566
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10053",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 289838
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10148",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 290759
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 290784
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10061"
+   },
+   "t": 292170
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10062"
+   },
+   "t": 292991
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10061",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 293684
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 294659
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10149",
+    "kind": "small",
+    "lines": 4,
+    "units": 134
+   },
+   "t": 297867
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10059"
+   },
+   "t": 298058
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10026",
+    "units": 16234
+   },
+   "t": 298663
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10063"
+   },
+   "t": 298671
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10150",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 299680
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10034",
+    "units": 1059
+   },
+   "t": 300593
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10151",
+    "kind": "large",
+    "lines": 22,
+    "units": 10102
+   },
+   "t": 301798
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 301932
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10026",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 302700
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 302925
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10059",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 303376
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1030"
+   },
+   "t": 303871
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10152",
+    "kind": "small",
+    "lines": 7,
+    "units": 199
+   },
+   "t": 304517
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10066"
+   },
+   "t": 305794
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 305835
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10038",
+    "units": 8
+   },
+   "t": 308359
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10153",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 309817
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 310591
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10154",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1194
+   },
+   "t": 311017
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10057",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 312089
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10155",
+    "kind": "small",
+    "lines": 7,
+    "units": 235
+   },
+   "t": 313019
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10059",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 314514
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10039",
+    "units": 4
+   },
+   "t": 315179
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 005 Fabrication",
+    "overrides": 179,
+    "ms": 501
+   },
+   "t": 315444
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 317471
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10065"
+   },
+   "t": 317821
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 317930
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10156",
+    "kind": "small",
+    "lines": 3,
+    "units": 111
+   },
+   "t": 318250
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10034",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 318404
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10064"
+   },
+   "t": 318439
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10036",
+    "units": 3
+   },
+   "t": 321945
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10060",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 323562
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 324455
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10026",
+    "units": 0
+   },
+   "t": 325874
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10068"
+   },
+   "t": 326911
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10034",
+    "units": 0
+   },
+   "t": 327139
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10157",
+    "kind": "medium",
+    "lines": 9,
+    "units": 593
+   },
+   "t": 327383
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10040",
+    "units": 6
+   },
+   "t": 327682
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 328222
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 328249
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10062",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 328774
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 328858
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 4
+   },
+   "t": 329088
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10060",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 329667
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 329779
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 331912
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10158",
+    "kind": "medium",
+    "lines": 12,
+    "units": 816
+   },
+   "t": 332102
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10069"
+   },
+   "t": 332317
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10159",
+    "kind": "large",
+    "lines": 28,
+    "units": 11892
+   },
+   "t": 333263
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 333586
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10037",
+    "units": 4
+   },
+   "t": 333590
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 334192
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5045",
+    "lines": 2
+   },
+   "t": 334366
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 334577
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10160",
+    "kind": "large",
+    "lines": 24,
+    "units": 10631
+   },
+   "t": 335281
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 336476
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10069"
+   },
+   "t": 337979
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10065",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 338195
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10043",
+    "units": 158
+   },
+   "t": 340656
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10070"
+   },
+   "t": 341052
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10063",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 341058
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10161",
+    "kind": "small",
+    "lines": 6,
+    "units": 225
+   },
+   "t": 341930
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 343219
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10066",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 343227
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10042",
+    "units": 247
+   },
+   "t": 344457
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10162",
+    "kind": "small",
+    "lines": 6,
+    "units": 217
+   },
+   "t": 344645
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10067"
+   },
+   "t": 345278
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10071"
+   },
+   "t": 346271
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10163",
+    "kind": "medium",
+    "lines": 9,
+    "units": 731
+   },
+   "t": 346530
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 346921
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 347394
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10164",
+    "kind": "large",
+    "lines": 29,
+    "units": 14346
+   },
+   "t": 347500
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10067",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 349231
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10068",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 350174
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10072"
+   },
+   "t": 353081
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 354369
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10070",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 354932
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10165",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 357699
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 357742
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10166",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1257
+   },
+   "t": 357746
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10069",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 359154
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10074"
+   },
+   "t": 359650
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10044",
+    "units": 938
+   },
+   "t": 362204
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10167",
+    "kind": "medium",
+    "lines": 8,
+    "units": 480
+   },
+   "t": 363194
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "bol-generated",
+   "detail": {
+    "so": "10026"
+   },
+   "t": 363372
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 364162
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10073"
+   },
+   "t": 364272
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 364551
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10044",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 365074
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "PN-1003"
+   },
+   "t": 365429
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10168",
+    "kind": "medium",
+    "lines": 9,
+    "units": 703
+   },
+   "t": 365824
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10072",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 366075
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10169",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 367014
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10170",
+    "kind": "large",
+    "lines": 31,
+    "units": 16278
+   },
+   "t": 367932
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10075"
+   },
+   "t": 369043
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 370277
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 370678
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 016 Distribution",
+    "overrides": 239,
+    "ms": 458
+   },
+   "t": 371654
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10071",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 371820
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 372262
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10171",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 375706
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10076"
+   },
+   "t": 376288
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10077"
+   },
+   "t": 376760
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10172",
+    "kind": "small",
+    "lines": 3,
+    "units": 126
+   },
+   "t": 377666
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10045",
+    "units": 1060
+   },
+   "t": 377755
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10044",
+    "units": 0
+   },
+   "t": 379023
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 380620
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10045",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 381366
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 381471
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10074",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 381901
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10173",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1067
+   },
+   "t": 382378
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10174",
+    "kind": "medium",
+    "lines": 11,
+    "units": 1018
+   },
+   "t": 383470
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10064",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 383612
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 384182
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10080"
+   },
+   "t": 386321
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10175",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 387589
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10176",
+    "kind": "small",
+    "lines": 7,
+    "units": 178
+   },
+   "t": 389402
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 389802
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10177",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 390892
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "pick-pack",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 391027
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10076",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 391320
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 393512
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10080"
+   },
+   "t": 394076
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 395606
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10041",
+    "units": 748
+   },
+   "t": 395673
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 395975
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 397398
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10073",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 398257
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10178",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 400036
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 400192
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10179",
+    "kind": "small",
+    "lines": 4,
+    "units": 158
+   },
+   "t": 400629
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10180",
+    "kind": "large",
+    "lines": 30,
+    "units": 16306
+   },
+   "t": 401309
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10079"
+   },
+   "t": 401728
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10078"
+   },
+   "t": 401933
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 403025
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10181",
+    "kind": "medium",
+    "lines": 12,
+    "units": 712
+   },
+   "t": 403067
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 403515
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10041",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 404349
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10048",
+    "units": 4
+   },
+   "t": 405146
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10075",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 405330
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 406961
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 406993
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10081"
+   },
+   "t": 409791
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 411161
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10182",
+    "kind": "small",
+    "lines": 4,
+    "units": 151
+   },
+   "t": 411939
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 412369
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10078",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 413521
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10041",
+    "units": 0
+   },
+   "t": 415883
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10079",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 415965
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10183",
+    "kind": "small",
+    "lines": 5,
+    "units": 203
+   },
+   "t": 417069
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10049",
+    "units": 166
+   },
+   "t": 419060
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10184",
+    "kind": "medium",
+    "lines": 10,
+    "units": 991
+   },
+   "t": 419169
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 419512
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 420465
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10185",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 420827
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 421052
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10049",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 421159
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10084"
+   },
+   "t": 421296
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 421427
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10082"
+   },
+   "t": 422040
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10186",
+    "kind": "medium",
+    "lines": 12,
+    "units": 983
+   },
+   "t": 423030
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 424578
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5046",
+    "lines": 1
+   },
+   "t": 427781
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10187",
+    "kind": "large",
+    "lines": 38,
+    "units": 20305
+   },
+   "t": 428605
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1046"
+   },
+   "t": 428994
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10077",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 429259
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "pick-pack",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 429463
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10046",
+    "units": 219
+   },
+   "t": 429588
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 430199
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10047",
+    "units": 150
+   },
+   "t": 430939
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10086"
+   },
+   "t": 432248
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10188",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 432468
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 433377
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10189",
+    "kind": "medium",
+    "lines": 8,
+    "units": 485
+   },
+   "t": 433534
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 434067
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 011 Distribution",
+    "overrides": 277,
+    "ms": 556
+   },
+   "t": 436148
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 436660
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "error",
+   "detail": {
+    "action": "edit-customer-note",
+    "status": 500,
+    "message": "Internal server error"
+   },
+   "t": 436699
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10190",
+    "kind": "medium",
+    "lines": 13,
+    "units": 828
+   },
+   "t": 436807
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10191",
+    "kind": "medium",
+    "lines": 13,
+    "units": 984
+   },
+   "t": 437014
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10080",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 437613
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 438195
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10192",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 438778
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10052",
+    "units": 191
+   },
+   "t": 439257
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10085"
+   },
+   "t": 440253
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10051",
+    "units": 191
+   },
+   "t": 442161
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 442434
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10051",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 443247
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 4
+   },
+   "t": 444798
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 444862
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10081",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 445146
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10193",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 446859
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 447014
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10194",
+    "kind": "medium",
+    "lines": 9,
+    "units": 799
+   },
+   "t": 448384
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "pick-pack",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 449863
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10088"
+   },
+   "t": 451484
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 451971
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10195",
+    "kind": "medium",
+    "lines": 11,
+    "units": 901
+   },
+   "t": 454487
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 455566
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10196",
+    "kind": "medium",
+    "lines": 10,
+    "units": 837
+   },
+   "t": 456521
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 457772
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10054",
+    "units": 951
+   },
+   "t": 458291
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 460230
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10082",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 460551
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10197",
+    "kind": "medium",
+    "lines": 9,
+    "units": 703
+   },
+   "t": 461400
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10085",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 462101
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10198",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 463291
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10089"
+   },
+   "t": 464014
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10056",
+    "units": 4
+   },
+   "t": 464214
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10199",
+    "kind": "medium",
+    "lines": 10,
+    "units": 623
+   },
+   "t": 465188
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10050",
+    "units": 661
+   },
+   "t": 466061
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 466667
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10200",
+    "kind": "small",
+    "lines": 5,
+    "units": 140
+   },
+   "t": 468000
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10083"
+   },
+   "t": 468570
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 468980
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 469006
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10054",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 469757
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 469767
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 469835
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10088",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 470331
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 473151
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 473249
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10201",
+    "kind": "large",
+    "lines": 23,
+    "units": 12455
+   },
+   "t": 473613
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10058",
+    "units": 3
+   },
+   "t": 475328
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10087"
+   },
+   "t": 476889
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10083",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 477397
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10202",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 477494
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10054",
+    "units": 0
+   },
+   "t": 479808
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 482777
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10203",
+    "kind": "small",
+    "lines": 6,
+    "units": 127
+   },
+   "t": 483346
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10091"
+   },
+   "t": 483585
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10204",
+    "kind": "small",
+    "lines": 3,
+    "units": 156
+   },
+   "t": 485407
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1021"
+   },
+   "t": 485604
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10205",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 485608
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10086",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 485777
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10053",
+    "units": 734
+   },
+   "t": 486254
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 488421
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 489650
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10093"
+   },
+   "t": 490202
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 005 Fabrication",
+    "overrides": 179,
+    "ms": 436
+   },
+   "t": 490665
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 490707
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 491387
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10206",
+    "kind": "large",
+    "lines": 24,
+    "units": 13220
+   },
+   "t": 491492
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10089",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 493054
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10062",
+    "units": 7
+   },
+   "t": 493810
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10207",
+    "kind": "large",
+    "lines": 31,
+    "units": 15651
+   },
+   "t": 495049
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 496030
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 496580
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5047",
+    "lines": 10
+   },
+   "t": 497112
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 498008
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10090"
+   },
+   "t": 499556
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 499994
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10208",
+    "kind": "medium",
+    "lines": 11,
+    "units": 959
+   },
+   "t": 500513
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10057",
+    "units": 744
+   },
+   "t": 501170
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10083",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 501640
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 504030
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10063",
+    "units": 191
+   },
+   "t": 505283
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10092"
+   },
+   "t": 505770
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 506177
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10063",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 506922
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10084",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 507384
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 507874
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "pick-pack",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 511826
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10061",
+    "units": 4
+   },
+   "t": 511886
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 512059
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10084",
+    "from": "Allocated",
+    "action": "allocate"
+   },
+   "t": 513081
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10096"
+   },
+   "t": 513665
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 513906
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 514565
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10087",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 518662
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10066",
+    "units": 89
+   },
+   "t": 519434
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10209",
+    "kind": "large",
+    "lines": 35,
+    "units": 17633
+   },
+   "t": 519827
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 520065
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10084",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 521062
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10064",
+    "units": 1037
+   },
+   "t": 521198
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10210",
+    "kind": "large",
+    "lines": 29,
+    "units": 15743
+   },
+   "t": 522104
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 523105
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 523229
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 525755
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10097"
+   },
+   "t": 526662
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 529691
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10067",
+    "units": 421
+   },
+   "t": 530741
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 531637
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 531813
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 001 Manufacturing",
+    "overrides": 124,
+    "ms": 265
+   },
+   "t": 532426
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10068",
+    "units": 439
+   },
+   "t": 534411
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10090",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 534806
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 536600
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 536718
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 537137
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10092",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 537701
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10069",
+    "units": 179
+   },
+   "t": 539028
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10095"
+   },
+   "t": 540104
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10098"
+   },
+   "t": 540627
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 542395
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10071",
+    "units": 115
+   },
+   "t": 543298
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10093",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 544221
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 545570
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 545948
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10095",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 549421
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10094"
+   },
+   "t": 549712
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 549988
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1013"
+   },
+   "t": 551642
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10072",
+    "units": 607
+   },
+   "t": 553141
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10101"
+   },
+   "t": 553747
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10094",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 554379
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10102"
+   },
+   "t": 557563
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 558351
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10070",
+    "units": 7
+   },
+   "t": 558353
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 559705
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 559940
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 560367
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10072",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 560770
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10099"
+   },
+   "t": 563027
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10096",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 563132
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 565005
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10104"
+   },
+   "t": 567947
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 570534
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10076",
+    "units": 244
+   },
+   "t": 570536
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10072",
+    "units": 0
+   },
+   "t": 570636
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10098",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 570690
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 575689
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10096",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 578070
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10105"
+   },
+   "t": 581566
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10100"
+   },
+   "t": 581941
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10077",
+    "units": 1009
+   },
+   "t": 582518
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5048",
+    "lines": 2
+   },
+   "t": 583819
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 584498
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10091",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 586658
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 587311
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 588141
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10077",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 588895
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 588939
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 589191
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10107"
+   },
+   "t": 589235
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 589556
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 589945
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 590161
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "HX-1010"
+   },
+   "t": 593577
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 014 Fabrication",
+    "overrides": 139,
+    "ms": 334
+   },
+   "t": 593955
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10106"
+   },
+   "t": 594665
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10078",
+    "units": 89
+   },
+   "t": 596265
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10075",
+    "units": 159
+   },
+   "t": 597290
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10077",
+    "units": 0
+   },
+   "t": 597393
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 598574
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10100",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 603899
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 604008
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 606987
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10103"
+   },
+   "t": 607758
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10081",
+    "units": 593
+   },
+   "t": 609230
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10108"
+   },
+   "t": 610558
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 611693
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 612093
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 617274
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 619005
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10097",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 621303
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10109"
+   },
+   "t": 623384
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 624737
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10097",
+    "from": "Allocated",
+    "action": "allocate"
+   },
+   "t": 625653
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10102",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 626106
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 627722
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10112"
+   },
+   "t": 629202
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10103",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 632927
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10097",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 635307
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10113"
+   },
+   "t": 637344
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10110"
+   },
+   "t": 639445
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10099",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 641621
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 644987
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10104",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 645296
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10114"
+   },
+   "t": 646239
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10082",
+    "units": 9944
+   },
+   "t": 648550
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 014 Fabrication",
+    "overrides": 139,
+    "ms": 382
+   },
+   "t": 648580
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10105",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 649940
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 650218
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 650236
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10101",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 650521
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10111"
+   },
+   "t": 653123
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10115"
+   },
+   "t": 653219
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10107",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 655184
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 655870
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10107",
+    "from": "Allocated",
+    "action": "allocate"
+   },
+   "t": 656734
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 656813
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10107",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 658481
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10116"
+   },
+   "t": 658758
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 659676
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "PN-1006"
+   },
+   "t": 660590
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10108",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 661312
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10119"
+   },
+   "t": 664287
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 666403
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10117"
+   },
+   "t": 668251
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10109",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 670577
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10106",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 672706
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5049",
+    "lines": 13
+   },
+   "t": 673984
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10120"
+   },
+   "t": 676465
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10121"
+   },
+   "t": 676815
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10112",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 680151
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10118"
+   },
+   "t": 683646
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10110",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 685192
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10113",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 686978
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10124"
+   },
+   "t": 687560
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10111",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 690247
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 690873
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10123"
+   },
+   "t": 691804
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10079",
+    "units": 17042
+   },
+   "t": 693798
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 696222
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 696499
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 698587
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10114",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 699383
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 018 Supply",
+    "overrides": 232,
+    "ms": 506
+   },
+   "t": 699987
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 701079
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-detail",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 701603
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 701699
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10123"
+   },
+   "t": 701912
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "status-regression",
+   "detail": {
+    "so": "10079",
+    "from": "Pick & Packed",
+    "action": "pick-pack"
+   },
+   "t": 702730
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "FS-1055"
+   },
+   "t": 703778
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10115",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 704859
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10086",
+    "units": 3
+   },
+   "t": 705081
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10126"
+   },
+   "t": 708965
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 711711
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10116",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 713134
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 713333
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10127"
+   },
+   "t": 716323
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10118",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 719547
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10079",
+    "units": 0
+   },
+   "t": 725451
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 726153
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10117",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 726746
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "receive-po",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 730074
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 731309
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10085",
+    "units": 10166
+   },
+   "t": 749840
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 752807
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 764914
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "blocked-403",
+   "detail": {
+    "action": "ship-bulk",
+    "status": 403,
+    "message": "Access denied"
+   },
+   "t": 772040
+  }
+ ]
+}
