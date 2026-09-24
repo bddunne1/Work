@@ -216,8 +216,12 @@ function ReturnDetailInner() {
               <td>
                 {editing ? (
                   <input value={view.soNumber ?? ""} onChange={(e) => setField("soNumber", e.target.value)} />
+                ) : view.soNumber ? (
+                  <Link to={`/storage/${view.soNumber}`} className="row-action-outline">
+                    {view.soNumber}
+                  </Link>
                 ) : (
-                  view.soNumber || "—"
+                  "—"
                 )}
               </td>
               <td>

@@ -64,7 +64,15 @@ export default function Returns() {
                 <td>{r.raNumber}</td>
                 <td>{r.billTo.name}</td>
                 <td>{r.requestDate}</td>
-                <td>{r.soNumber || "—"}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  {r.soNumber ? (
+                    <Link to={`/storage/${r.soNumber}`} className="row-action-outline">
+                      {r.soNumber}
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td>
                   <span className="status-pill">{r.status}</span>
                 </td>

@@ -181,7 +181,11 @@ export default function GenerateBOL() {
                   const d = details[o.soNumber] ?? emptyBolInput();
                   return (
                     <tr key={o.soNumber}>
-                      <td>{o.soNumber}</td>
+                      <td>
+                        <Link to={`/storage/${o.soNumber}`} target="_blank" className="row-action-outline">
+                          {o.soNumber}
+                        </Link>
+                      </td>
                       <td>
                         <input
                           type="number"

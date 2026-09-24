@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listOrders } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
@@ -66,7 +66,11 @@ export default function Validation() {
                 className="clickable-row"
                 onClick={() => navigate(`/validation/${o.soNumber}`)}
               >
-                <td>{o.soNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                    {o.soNumber}
+                  </Link>
+                </td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>

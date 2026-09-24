@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { listOrders } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -55,7 +55,11 @@ export default function BackOrderQueue() {
                 className="clickable-row"
                 onClick={() => navigate(`/allocation/${o.soNumber}`)}
               >
-                <td>{o.soNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                    {o.soNumber}
+                  </Link>
+                </td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>

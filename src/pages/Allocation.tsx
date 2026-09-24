@@ -72,7 +72,11 @@ export default function Allocation() {
                 className="clickable-row"
                 onClick={() => navigate(`/allocation/${o.soNumber}`)}
               >
-                <td>{o.soNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                    {o.soNumber}
+                  </Link>
+                </td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>

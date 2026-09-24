@@ -142,7 +142,9 @@ export default function WarehouseCapacity() {
                 return (
                   <tr key={p.soNumber}>
                     <td>
-                      <Link to={`/storage/${p.soNumber}`}>{p.soNumber}</Link>
+                      <Link to={`/storage/${p.soNumber}`} className="row-action-outline">
+                        {p.soNumber}
+                      </Link>
                     </td>
                     <td>{p.poNumber}</td>
                     <td>{p.customer}</td>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, undoShipment } from "../lib/orderStore";
@@ -99,7 +99,11 @@ export default function ShipmentHistory() {
                   className="clickable-row"
                   onClick={() => navigate(`/storage/${o.soNumber}`)}
                 >
-                  <td>{o.soNumber}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                      {o.soNumber}
+                    </Link>
+                  </td>
                   <td>{o.poNumber}</td>
                   <td>{o.billTo.name}</td>
                   <td>
