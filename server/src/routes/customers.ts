@@ -38,7 +38,12 @@ const partMappingSchema = z.object({
 const priceOverrideSchema = z.object({
   id: z.string().optional(),
   itemNumber: z.string(),
+  customerPartNumber: z.string().default(""),
+  description: z.string().default(""),
   price: z.number(),
+  pricePerFt: z.number().nullish(),
+  length: z.number().nullish(),
+  weight: z.number().nullish(),
 });
 
 const routingGuideSchema = z
@@ -138,7 +143,15 @@ router.post("/", requirePermission("customers", "edit"), async (req, res) => {
         })),
       },
       priceOverrides: {
-        create: data.priceOverrides.map((p) => ({ itemNumber: p.itemNumber, price: p.price })),
+        create: data.priceOverrides.map((p) => ({
+          itemNumber: p.itemNumber,
+          customerPartNumber: p.customerPartNumber,
+          description: p.description,
+          price: p.price,
+          pricePerFt: p.pricePerFt ?? null,
+          length: p.length ?? null,
+          weight: p.weight ?? null,
+        })),
       },
     },
     include,
@@ -192,7 +205,12 @@ router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
       }));
       await syncChildren(tx.customerPriceOverride, id, "customerId", data.priceOverrides, (p) => ({
         itemNumber: p.itemNumber,
+        customerPartNumber: p.customerPartNumber,
+        description: p.description,
         price: p.price,
+        pricePerFt: p.pricePerFt ?? null,
+        length: p.length ?? null,
+        weight: p.weight ?? null,
       }));
     });
   } catch (err) {

@@ -158,11 +158,16 @@ model CustomerPartMapping {
 }
 
 model CustomerPriceOverride {
-  id         String   @id @default(uuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  itemNumber String
-  price      Decimal  @db.Decimal(12, 4)
+  id                 String   @id @default(uuid())
+  customerId         String
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  itemNumber         String
+  customerPartNumber String   @default("")
+  description        String   @default("")
+  price              Decimal  @db.Decimal(12, 4)
+  pricePerFt         Decimal? @db.Decimal(12, 4)
+  length             Decimal? @db.Decimal(12, 4)
+  weight             Decimal? @db.Decimal(12, 4)
 
   @@index([customerId])
   @@index([itemNumber])

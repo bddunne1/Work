@@ -639,6 +639,41 @@ a.brand:hover .brand-name {
   line-height: 1.45;
 }
 
+/* Dashboard's module cards reuse the hub-card look at half scale - there
+   are far more of them than the Customers hub, so full size would make
+   the page unmanageably long. Customers hub keeps the full-size cards. */
+.hub-card-grid-compact {
+  grid-template-columns: repeat(auto-fit, 108px);
+  gap: 10px;
+}
+
+.hub-card-compact {
+  min-height: 184px;
+  padding: 12px;
+  gap: 8px;
+  border-radius: 10px;
+}
+
+.hub-card-compact .hub-card-icon {
+  min-height: 88px;
+  border-radius: 8px;
+}
+
+.hub-card-compact .hub-card-icon svg {
+  width: 38px;
+  height: 38px;
+}
+
+.hub-card-compact .hub-card-name {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.hub-card-compact .hub-card-desc {
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
 .module-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -1430,6 +1465,21 @@ a.brand:hover .brand-name {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.sort-dir-btn {
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .select-hint {

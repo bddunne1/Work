@@ -9,6 +9,23 @@ import type { Customer, CustomerPriceOverride, Item } from "../types";
 
 const ITEM_DATALIST_ID = "customer-pricing-item-options";
 
+// A blank table always ready with a few lines to type into, QuickBooks-
+// style - no "add row" step, and the grid grows on its own as the last
+// blank line gets filled in.
+const MIN_BLANK_ROWS = 5;
+
+function emptyOverride(): CustomerPriceOverride {
+  return { id: crypto.randomUUID(), itemNumber: "", customerPartNumber: "", description: "", price: 0 };
+}
+
+function withTrailingBlank(overrides: CustomerPriceOverride[], minTotal = 0): CustomerPriceOverride[] {
+  const next = [...overrides];
+  while (next.length < minTotal) next.push(emptyOverride());
+  const last = next[next.length - 1];
+  if (!last || last.itemNumber.trim()) next.push(emptyOverride());
+  return next;
+}
+
 export default function CustomerPricing() {
   const canEdit = useCanEdit();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -26,46 +43,55 @@ export default function CustomerPricing() {
     const c = customers.find((x) => x.id === id);
     if (!c) return;
     setQuery(c.name);
-    setDraft(c);
+    setDraft({ ...c, priceOverrides: withTrailingBlank(c.priceOverrides ?? [], MIN_BLANK_ROWS) });
     setSaved(false);
-  }
-
-  function addOverride() {
-    if (!draft) return;
-    const override: CustomerPriceOverride = { id: crypto.randomUUID(), itemNumber: "", price: 0 };
-    setDraft({ ...draft, priceOverrides: [...(draft.priceOverrides ?? []), override] });
   }
 
   function updateOverride(id: string, patch: Partial<CustomerPriceOverride>) {
     if (!draft) return;
-    setDraft({
-      ...draft,
-      priceOverrides: (draft.priceOverrides ?? []).map((o) => (o.id === id ? { ...o, ...patch } : o)),
-    });
+    const next = (draft.priceOverrides ?? []).map((o) => (o.id === id ? { ...o, ...patch } : o));
+    setDraft({ ...draft, priceOverrides: withTrailingBlank(next) });
   }
 
   function removeOverride(id: string) {
     if (!draft) return;
-    setDraft({ ...draft, priceOverrides: (draft.priceOverrides ?? []).filter((o) => o.id !== id) });
+    const next = (draft.priceOverrides ?? []).filter((o) => o.id !== id);
+    setDraft({ ...draft, priceOverrides: withTrailingBlank(next) });
   }
 
   function applyItemLookup(id: string, itemNumber: string) {
+    if (!draft) return;
     const q = itemNumber.trim().toLowerCase();
-    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
-    if (!match) return;
-    updateOverride(id, { itemNumber: match.itemNumber });
+    const item = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    if (!item) return;
+    const mapping = (draft.partNumberMap ?? []).find((m) => m.itemNumber.trim().toLowerCase() === q);
+    const current = (draft.priceOverrides ?? []).find((o) => o.id === id);
+    updateOverride(id, {
+      itemNumber: item.itemNumber,
+      description: current?.description?.trim() ? current.description : item.description,
+      customerPartNumber: current?.customerPartNumber?.trim()
+        ? current.customerPartNumber
+        : mapping?.customerPartNumber,
+      weight: current?.weight ?? item.weight,
+    });
   }
 
   async function handleSave() {
     if (!draft) return;
+    const payload = {
+      ...draft,
+      priceOverrides: (draft.priceOverrides ?? []).filter((o) => o.itemNumber.trim()),
+    };
     try {
-      setDraft(await updateCustomer(draft));
+      const result = await updateCustomer(payload);
+      setDraft({ ...result, priceOverrides: withTrailingBlank(result.priceOverrides ?? [], MIN_BLANK_ROWS) });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
-        setDraft(await getCustomer(draft.id));
+        const fresh = await getCustomer(draft.id);
+        if (fresh) setDraft({ ...fresh, priceOverrides: withTrailingBlank(fresh.priceOverrides ?? [], MIN_BLANK_ROWS) });
         return;
       }
       throw err;
@@ -103,28 +129,29 @@ export default function CustomerPricing() {
         <section className="lane-section">
           <div className="ship-locations-header">
             <h3>Price Overrides for {draft.name}</h3>
-            {canEdit && (
-              <button type="button" className="secondary-btn" onClick={addOverride}>
-                + Add Override
-              </button>
-            )}
           </div>
-          {(draft.priceOverrides ?? []).length === 0 ? (
-            <p className="muted">No price overrides yet - this customer pays catalog rate on everything.</p>
-          ) : (
-            <>
-            <datalist id={ITEM_DATALIST_ID}>
-              {catalog.map((c) => (
-                <option key={c.id} value={c.itemNumber}>
-                  {c.description}
-                </option>
-              ))}
-            </datalist>
-            <table className="data-table">
+          <p className="muted">
+            Type a part # to auto-fill its description, customer part #, and weight - price, price per ft,
+            and length are yours to set. A blank row is added automatically as you fill the last one.
+          </p>
+          <datalist id={ITEM_DATALIST_ID}>
+            {catalog.map((c) => (
+              <option key={c.id} value={c.itemNumber}>
+                {c.description}
+              </option>
+            ))}
+          </datalist>
+          <div className="table-scroll">
+            <table className="data-table pricing-grid">
               <thead>
                 <tr>
-                  <th>Item #</th>
+                  <th>Part #</th>
+                  <th>Customer Part #</th>
+                  <th>Description</th>
                   <th>Price</th>
+                  <th>Price/Ft</th>
+                  <th>Length</th>
+                  <th>Weight</th>
                   {canEdit && <th></th>}
                 </tr>
               </thead>
@@ -133,6 +160,7 @@ export default function CustomerPricing() {
                   <tr key={o.id}>
                     <td>
                       <input
+                        className="bol-input"
                         value={o.itemNumber}
                         disabled={!canEdit}
                         list={canEdit ? ITEM_DATALIST_ID : undefined}
@@ -142,11 +170,66 @@ export default function CustomerPricing() {
                     </td>
                     <td>
                       <input
+                        className="bol-input"
+                        value={o.customerPartNumber ?? ""}
+                        disabled={!canEdit}
+                        onChange={(e) => updateOverride(o.id, { customerPartNumber: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="bol-input"
+                        value={o.description ?? ""}
+                        disabled={!canEdit}
+                        onChange={(e) => updateOverride(o.id, { description: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="bol-input bol-input-narrow"
                         type="number"
                         step="0.01"
                         value={o.price}
                         disabled={!canEdit}
                         onChange={(e) => updateOverride(o.id, { price: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="bol-input bol-input-narrow"
+                        type="number"
+                        step="0.01"
+                        value={o.pricePerFt ?? ""}
+                        disabled={!canEdit}
+                        onChange={(e) =>
+                          updateOverride(o.id, {
+                            pricePerFt: e.target.value === "" ? undefined : Number(e.target.value),
+                          })
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="bol-input bol-input-narrow"
+                        type="number"
+                        step="0.01"
+                        value={o.length ?? ""}
+                        disabled={!canEdit}
+                        onChange={(e) =>
+                          updateOverride(o.id, { length: e.target.value === "" ? undefined : Number(e.target.value) })
+                        }
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="bol-input bol-input-narrow"
+                        type="number"
+                        step="0.01"
+                        value={o.weight ?? ""}
+                        disabled={!canEdit}
+                        onChange={(e) =>
+                          updateOverride(o.id, { weight: e.target.value === "" ? undefined : Number(e.target.value) })
+                        }
                       />
                     </td>
                     {canEdit && (
@@ -164,8 +247,7 @@ export default function CustomerPricing() {
                 ))}
               </tbody>
             </table>
-            </>
-          )}
+          </div>
 
           {canEdit && (
             <div className="button-row">

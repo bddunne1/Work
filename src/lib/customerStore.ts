@@ -2,13 +2,19 @@ import { api } from "./apiClient";
 import type { Customer } from "../types";
 
 // Prisma serializes Decimal fields as strings over JSON (to avoid float
-// precision loss when round-tripping) - convert priceOverrides[].price back
-// to a number here so the rest of the app can keep treating it as one, same
-// as it did when everything lived in localStorage.
+// precision loss when round-tripping) - convert priceOverrides[]' decimal
+// fields back to numbers here so the rest of the app can keep treating them
+// as such, same as it did when everything lived in localStorage.
 function mapCustomer(c: Customer): Customer {
   return {
     ...c,
-    priceOverrides: c.priceOverrides?.map((p) => ({ ...p, price: Number(p.price) })),
+    priceOverrides: c.priceOverrides?.map((p) => ({
+      ...p,
+      price: Number(p.price),
+      pricePerFt: p.pricePerFt == null ? undefined : Number(p.pricePerFt),
+      length: p.length == null ? undefined : Number(p.length),
+      weight: p.weight == null ? undefined : Number(p.weight),
+    })),
   };
 }
 

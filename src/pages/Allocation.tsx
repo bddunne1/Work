@@ -4,10 +4,21 @@ import { listOrders } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
+type SortKey = "soNumber" | "customer" | "orderDate" | "total";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "orderDate", label: "Order Date" },
+  { value: "soNumber", label: "S.O. #" },
+  { value: "customer", label: "Customer" },
+  { value: "total", label: "Total" },
+];
+
 export default function Allocation() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
+  const [sortBy, setSortBy] = useState<SortKey>("orderDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     listOrders().then(setAllOrders);
@@ -15,6 +26,23 @@ export default function Allocation() {
 
   const pending = useMemo(() => allOrders.filter((o) => o.status === "Checked"), [allOrders]);
   const filtered = useMemo(() => pending.filter((o) => matchesOrderQuery(o, query)), [pending, query]);
+
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "soNumber":
+          return (Number(a.soNumber) - Number(b.soNumber)) * dir;
+        case "customer":
+          return a.billTo.name.localeCompare(b.billTo.name) * dir;
+        case "total":
+          return (orderTotal(a) - orderTotal(b)) * dir;
+        case "orderDate":
+        default:
+          return a.orderDate.localeCompare(b.orderDate) * dir;
+      }
+    });
+  }, [filtered, sortBy, sortDir]);
 
   function startQueue() {
     if (pending.length === 0) return;
@@ -40,6 +68,29 @@ export default function Allocation() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className="inline-actions">
+          <label className="sort-control">
+            Sort by
+            <select
+              className="status-filter-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              aria-label="Sort orders by"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="secondary-btn sort-dir-btn"
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            title={sortDir === "asc" ? "Ascending - click for descending" : "Descending - click for ascending"}
+          >
+            {sortDir === "asc" ? "↑ Asc" : "↓ Desc"}
+          </button>
           <p className="muted">
             {pending.length} order{pending.length === 1 ? "" : "s"} awaiting allocation.
           </p>
@@ -52,7 +103,7 @@ export default function Allocation() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {sorted.length === 0 ? (
         <p className="muted">Nothing to allocate right now.</p>
       ) : (
         <table className="data-table">
@@ -66,7 +117,7 @@ export default function Allocation() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((o) => (
+            {sorted.map((o) => (
               <tr
                 key={o.soNumber}
                 className="clickable-row"

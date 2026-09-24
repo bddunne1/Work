@@ -326,12 +326,12 @@ export default function Dashboard() {
         >
           <div className="lane-band" />
           <h2 className="lane-title">{lane.lane}</h2>
-          <div className="hub-card-grid">
+          <div className="hub-card-grid hub-card-grid-compact">
             {lane.modules.map((m) => (
               <Link
                 key={m.name}
                 to={m.to}
-                className="hub-card"
+                className="hub-card hub-card-compact"
                 style={{ "--page-accent": lane.color } as React.CSSProperties}
               >
                 <div className="hub-card-body">

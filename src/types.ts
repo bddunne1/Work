@@ -141,7 +141,12 @@ export interface CustomerPartMapping {
 export interface CustomerPriceOverride {
   id: string;
   itemNumber: string;
+  customerPartNumber?: string;
+  description?: string;
   price: number;
+  pricePerFt?: number;
+  length?: number;
+  weight?: number;
 }
 
 // Carrier routing / compliance requirements some customers (especially
