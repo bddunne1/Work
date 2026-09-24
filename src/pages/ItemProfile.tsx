@@ -5,10 +5,13 @@ import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { deleteItem, getItem, updateItem } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import Pager from "../components/Pager";
+import StatusPill from "../components/StatusPill";
+import { OPEN_ORDER_STATUSES, searchAllOrders } from "../lib/orderStore";
+import { usePagedOrders, usePageForFilters } from "../lib/usePagedOrders";
 import { listVendors } from "../lib/vendorStore";
 import type { Item, ItemComponent, ItemLink, PurchaseOrder, Vendor } from "../types";
-import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders, remainingToShip } from "../types";
 
 export default function ItemProfile() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +27,9 @@ function ItemProfileInner() {
   const [item, setItem] = useState<Item | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
+  // Only this item's unshipped orders - all that on-sales-order and
+  // allocated are computed from (a fully shipped order adds 0 to both).
+  const [openOrders, setOpenOrders] = useState<PurchaseOrder[]>([]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Item | undefined>(undefined);
   const [vendorQuery, setVendorQuery] = useState("");
@@ -39,8 +44,19 @@ function ItemProfileInner() {
 
   useEffect(() => {
     listVendors().then(setVendors);
-    listOrders().then(setAllOrders);
   }, []);
+
+  const itemNumber = item?.itemNumber;
+  useEffect(() => {
+    if (!itemNumber) return;
+    let cancelled = false;
+    searchAllOrders({ item: itemNumber, status: OPEN_ORDER_STATUSES }, Number.MAX_SAFE_INTEGER).then((r) => {
+      if (!cancelled) setOpenOrders(r.orders);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [itemNumber]);
 
   if (loading) {
     return (
@@ -60,8 +76,8 @@ function ItemProfileInner() {
   }
 
   const view = editing && draft ? draft : item;
-  const onSalesOrder = qtyOnOpenSalesOrders(item.itemNumber, allOrders);
-  const allocated = qtyAllocatedOnOrders(item.itemNumber, allOrders);
+  const onSalesOrder = qtyOnOpenSalesOrders(item.itemNumber, openOrders);
+  const allocated = qtyAllocatedOnOrders(item.itemNumber, openOrders);
   const preferredVendor = vendors.find((v) => v.id === view.preferredVendorId);
 
   function startEdit() {
@@ -444,12 +460,84 @@ function ItemProfileInner() {
             <p className="muted">{view.notes || "No notes."}</p>
           )}
         </label>
+
+        {!editing && <ItemSalesOrders itemNumber={item.itemNumber} />}
       </div>
 
       <div className="item-profile-section">
         <h3>Stock history</h3>
         <StockLedger itemId={item.id} />
       </div>
+    </div>
+  );
+}
+
+// This item's sales orders, newest first, a page at a time from the server.
+function ItemSalesOrders({ itemNumber }: { itemNumber: string }) {
+  const navigate = useNavigate();
+  const [pageSize, setPageSize] = useState(25);
+  const [page, setPage] = usePageForFilters(`${itemNumber}|${pageSize}`);
+  const { rows, total, loading, loaded } = usePagedOrders({
+    item: itemNumber,
+    page,
+    pageSize,
+    sort: "soNumber",
+    dir: "desc",
+  });
+  const key = itemNumber.trim().toLowerCase();
+
+  return (
+    <div className="ship-locations">
+      <div className="ship-locations-header">
+        <h3>Sales Orders</h3>
+      </div>
+      {rows.length === 0 ? (
+        <p className="muted">{loaded ? "This item is not on any sales order." : "Loading..."}</p>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>S.O. #</th>
+              <th>Customer</th>
+              <th>Order Date</th>
+              <th>Status</th>
+              <th>Ordered</th>
+              <th>Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((o) => {
+              const lines = o.lineItems.filter((li) => li.item.trim().toLowerCase() === key);
+              return (
+                <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/storage/${o.soNumber}`)}>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                      {o.soNumber}
+                    </Link>
+                  </td>
+                  <td>{o.billTo.name}</td>
+                  <td>{o.orderDate}</td>
+                  <td>
+                    <StatusPill order={o} />
+                  </td>
+                  <td>{lines.reduce((s, li) => s + li.ordered, 0)}</td>
+                  <td>{lines.reduce((s, li) => s + remainingToShip(o, li), 0)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {total > 0 && (
+        <Pager
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          loading={loading}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      )}
     </div>
   );
 }

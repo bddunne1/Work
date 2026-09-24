@@ -34,6 +34,9 @@ export default function ReportRunner() {
     () => preset?.defaultColumns ?? dataSource?.defaultColumns ?? []
   );
   const [rows, setRows] = useState<ReportRow[]>([]);
+  // Set when the data source couldn't return every matching row (order
+  // history is fetched up to a cap) - shown above the results.
+  const [notice, setNotice] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [saveName, setSaveName] = useState(preset?.label ?? "");
   const [savedMessage, setSavedMessage] = useState(false);
@@ -54,13 +57,15 @@ export default function ReportRunner() {
     setFilters({});
     setVisibleColumns(next?.defaultColumns ?? []);
     setRows([]);
+    setNotice(undefined);
   }
 
   function runReport() {
     if (!dataSource) return;
     setLoading(true);
     dataSource.buildRows(filters).then((r) => {
-      setRows(r);
+      setRows(Array.isArray(r) ? r : r.rows);
+      setNotice(Array.isArray(r) ? undefined : r.notice);
       setLoading(false);
     });
   }
@@ -216,6 +221,7 @@ export default function ReportRunner() {
           <p className="muted">
             {rows.length} row{rows.length === 1 ? "" : "s"}.
           </p>
+          {notice && <p className="muted">{notice}</p>}
           {rows.length === 0 ? (
             <p className="muted">No results for the current filters.</p>
           ) : (

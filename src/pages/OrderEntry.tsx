@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { listCustomers } from "../lib/customerStore";
+import { getCustomer, listCustomerSummaries } from "../lib/customerStore";
 import { addBusinessDays, localIsoDate } from "../lib/dateUtils";
 import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
 import { getLeadTimeDays } from "../lib/settingsStore";
@@ -47,11 +47,16 @@ export default function OrderEntry() {
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // The picker lists customer summaries (names, addresses, ship-to
+  // locations); the selected customer's full record - price overrides and
+  // part-number map, which drive line-item autofill - is loaded on selection.
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [fullCustomer, setFullCustomer] = useState<Customer | undefined>();
+  const requestedCustomerId = useRef<string | undefined>(undefined);
   const [customerQuery, setCustomerQuery] = useState("");
 
   useEffect(() => {
-    listCustomers().then(setCustomers);
+    listCustomerSummaries().then(setCustomers);
     nextSalesOrderNumber().then((n) => setOrder((o) => (o.soNumber ? o : { ...o, soNumber: n })));
   }, []);
 
@@ -59,12 +64,19 @@ export default function OrderEntry() {
     setOrder((o) => ({ ...o, [key]: value }));
   }
 
-  const selectedCustomer = customers.find((c) => c.id === order.customerId);
+  const selectedCustomer =
+    fullCustomer && fullCustomer.id === order.customerId
+      ? fullCustomer
+      : customers.find((c) => c.id === order.customerId);
   const company = getCompanyInfo();
 
   function handleSelectCustomer(id: string) {
     const customer = customers.find((c) => c.id === id);
     if (!customer) return;
+    requestedCustomerId.current = id;
+    getCustomer(id).then((full) => {
+      if (full && requestedCustomerId.current === id) setFullCustomer(full);
+    });
     setCustomerQuery(customer.name);
     setSameAsBillTo(false);
     const defaultLocation = customer.shipToLocations[0];
@@ -128,7 +140,9 @@ export default function OrderEntry() {
     setSameAsBillTo(false);
     setSaved(false);
     setCustomerQuery("");
-    setCustomers(await listCustomers());
+    requestedCustomerId.current = undefined;
+    setFullCustomer(undefined);
+    setCustomers(await listCustomerSummaries());
     nextSalesOrderNumber().then((n) => setOrder((o) => ({ ...o, soNumber: n })));
   }
 

@@ -1,6 +1,7 @@
 import { listCustomers } from "../customerStore";
 import { getItemByNumber, listItems } from "../itemStore";
-import { listOrders } from "../orderStore";
+import { listOpenOrders, OPEN_ORDER_STATUSES, searchAllOrders, searchOrders } from "../orderStore";
+import type { OrderSearchParams } from "../orderStore";
 import { listReturns } from "../returnStore";
 import { listVendorPos } from "../vendorPoStore";
 import { listVendors } from "../vendorStore";
@@ -19,7 +20,7 @@ import {
   vendorPoLineOutstanding,
   vendorPoOutstandingTotal,
 } from "../../types";
-import type { ReportDataSource, ReportFilterValues, ReportRow } from "./types";
+import type { ReportDataSource, ReportFilterValues, ReportRow, ReportRowsResult } from "./types";
 
 const ORDER_STATUSES: OrderStatus[] = ["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped"];
 const VENDOR_PO_STATUSES: VendorPoStatus[] = ["Open", "Partially Received", "Received", "Closed"];
@@ -34,6 +35,78 @@ function withinDateRange(date: string, from: string, to: string): boolean {
 function includesText(haystack: string, needle: string): boolean {
   if (!needle.trim()) return true;
   return haystack.toLowerCase().includes(needle.trim().toLowerCase());
+}
+
+// Order-based reports fetch through the paged search endpoint with their
+// filters applied on the server, instead of downloading every order ever
+// entered - most recent orders first, until they yield this many rows.
+export const REPORT_ROW_CAP = 5000;
+// An item # filter is a substring match; the server matches one exact
+// item # per query, so a filter matching up to this many catalog items is
+// sent as one query per item. Anything broader is filtered in the browser.
+const MAX_ITEM_QUERIES = 10;
+const REPORT_PAGE_SIZE = 500;
+
+const ROW_CAP_NOTICE = `Showing the first ${REPORT_ROW_CAP.toLocaleString()} rows (most recent orders first) - more orders matched. Narrow the date range or filters to see the rest.`;
+
+// Pages through one search until the orders fetched so far produce `cap`
+// report rows (or run out). `truncated` means more orders were left unread.
+async function collectOrders(
+  params: Omit<OrderSearchParams, "page" | "pageSize">,
+  toRows: (orders: PurchaseOrder[]) => ReportRow[],
+  cap: number
+): Promise<{ orders: PurchaseOrder[]; truncated: boolean }> {
+  const orders: PurchaseOrder[] = [];
+  const seen = new Set<string>();
+  let rowCount = 0;
+  for (let page = 1; ; page++) {
+    const result = await searchOrders({ ...params, page, pageSize: REPORT_PAGE_SIZE });
+    for (const [i, o] of result.rows.entries()) {
+      if (seen.has(o.soNumber)) continue;
+      seen.add(o.soNumber);
+      orders.push(o);
+      rowCount += toRows([o]).length;
+      if (rowCount >= cap) {
+        const moreLeft = i < result.rows.length - 1 || page * REPORT_PAGE_SIZE < result.total;
+        return { orders, truncated: rowCount > cap || moreLeft };
+      }
+    }
+    if (result.rows.length < REPORT_PAGE_SIZE || page * REPORT_PAGE_SIZE >= result.total) {
+      return { orders, truncated: false };
+    }
+  }
+}
+
+// Rows for an order-based report: date range, status and customer go to
+// the server (the customer text rides along as `q`, a superset of a
+// bill-to name match - `toRows` still applies every filter exactly).
+async function buildOrderReport(
+  filters: ReportFilterValues,
+  toRows: (orders: PurchaseOrder[]) => ReportRow[]
+): Promise<ReportRowsResult> {
+  const base: Omit<OrderSearchParams, "page" | "pageSize"> = {
+    orderFrom: filters.orderDateFrom || undefined,
+    orderTo: filters.orderDateTo || undefined,
+    status: filters.status ? [filters.status] : undefined,
+    q: filters.customer?.trim() || undefined,
+    sort: "soNumber",
+    dir: "desc",
+  };
+
+  const itemText = filters.item?.trim() ?? "";
+  let queries = [base];
+  if (itemText) {
+    const matches = (await listItems()).map((i) => i.itemNumber).filter((n) => includesText(n, itemText));
+    if (matches.length > 0 && matches.length <= MAX_ITEM_QUERIES) queries = matches.map((item) => ({ ...base, item }));
+  }
+
+  const results = await Promise.all(queries.map((q) => collectOrders(q, toRows, REPORT_ROW_CAP)));
+  const bySo = new Map<string, PurchaseOrder>();
+  for (const r of results) for (const o of r.orders) bySo.set(o.soNumber, o);
+  const orders = [...bySo.values()].sort((x, y) => Number(y.soNumber) - Number(x.soNumber));
+  const rows = toRows(orders);
+  const truncated = results.some((r) => r.truncated) || rows.length > REPORT_ROW_CAP;
+  return { rows: rows.slice(0, REPORT_ROW_CAP), notice: truncated ? ROW_CAP_NOTICE : undefined };
 }
 
 const salesOrders: ReportDataSource = {
@@ -57,34 +130,40 @@ const salesOrders: ReportDataSource = {
     { key: "status", label: "Status", type: "select", options: ORDER_STATUSES.map((s) => ({ value: s, label: s })) },
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
   ],
-  async buildRows(filters) {
-    const orders = await listOrders();
-    return orders
-      .filter((o) => withinDateRange(o.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? ""))
-      .filter((o) => !filters.status || o.status === filters.status)
-      .filter((o) => includesText(o.billTo.name, filters.customer ?? ""))
-      .map((o) => ({
-        soNumber: o.soNumber,
-        poNumber: o.poNumber,
-        customer: o.billTo.name,
-        orderDate: o.orderDate,
-        dueDate: o.dueDate,
-        status: o.status,
-        shipVia: o.shipVia,
-        rep: o.rep,
-        total: orderTotal(o),
-      }));
+  async buildRows(filters): Promise<ReportRowsResult> {
+    return buildOrderReport(filters, (orders) =>
+      orders
+        .filter((o) => withinDateRange(o.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? ""))
+        .filter((o) => !filters.status || o.status === filters.status)
+        .filter((o) => includesText(o.billTo.name, filters.customer ?? ""))
+        .map((o) => ({
+          soNumber: o.soNumber,
+          poNumber: o.poNumber,
+          customer: o.billTo.name,
+          orderDate: o.orderDate,
+          dueDate: o.dueDate,
+          status: o.status,
+          shipVia: o.shipVia,
+          rep: o.rep,
+          total: orderTotal(o),
+        }))
+    );
   },
 };
 
-function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues): ReportRow[] {
+// `exactItem` matches the item # exactly (case-insensitive) instead of the
+// report filter's substring match - for the one-item quick report.
+function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues, exactItem?: string): ReportRow[] {
+  const exact = exactItem?.trim().toLowerCase();
   const rows: ReportRow[] = [];
   for (const o of orders) {
     if (!withinDateRange(o.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? "")) continue;
     if (filters.status && o.status !== filters.status) continue;
     if (!includesText(o.billTo.name, filters.customer ?? "")) continue;
     for (const li of o.lineItems) {
-      if (!includesText(li.item, filters.item ?? "")) continue;
+      if (exact !== undefined ? li.item.trim().toLowerCase() !== exact : !includesText(li.item, filters.item ?? "")) {
+        continue;
+      }
       rows.push({
         soNumber: o.soNumber,
         customer: o.billTo.name,
@@ -131,8 +210,8 @@ const salesOrderLines: ReportDataSource = {
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
     { key: "item", label: "Item #", type: "text", placeholder: "Search item #..." },
   ],
-  async buildRows(filters) {
-    return salesOrderLineRows(await listOrders(), filters);
+  async buildRows(filters): Promise<ReportRowsResult> {
+    return buildOrderReport(filters, (orders) => salesOrderLineRows(orders, filters));
   },
 };
 
@@ -252,7 +331,9 @@ const inventory: ReportDataSource = {
   filterFields: [{ key: "item", label: "Item #", type: "text", placeholder: "Search item # or description..." }],
   async buildRows(filters) {
     const items = await listItems();
-    const orders = await listOrders();
+    // On-sales-order and allocated only count unshipped orders - a fully
+    // shipped order contributes 0 to both.
+    const orders = await listOpenOrders();
     return items
       .filter((i) => includesText(`${i.itemNumber} ${i.description}`, filters.item ?? ""))
       .map((i) => {
@@ -382,12 +463,19 @@ export function getDataSource(key: string): ReportDataSource | undefined {
 // and purchase-order-line builders directly, scoped to one item number,
 // rather than going through the generic filter UI.
 export async function itemQuickReportData(itemNumber: string) {
-  const orders = await listOrders();
-  const pos = await listVendorPos();
-  const catalogItem = await getItemByNumber(itemNumber);
+  const [history, open, pos, catalogItem] = await Promise.all([
+    // Every order with this item, most recent first, up to the cap...
+    collectOrders({ item: itemNumber, sort: "soNumber", dir: "desc" }, (os) => salesOrderLineRows(os, {}, itemNumber), REPORT_ROW_CAP),
+    // ...and, separately and uncapped, the unshipped ones the stock
+    // figures are computed from.
+    searchAllOrders({ item: itemNumber, status: OPEN_ORDER_STATUSES }, Number.MAX_SAFE_INTEGER),
+    listVendorPos(),
+    getItemByNumber(itemNumber),
+  ]);
+  const orders = open.orders;
   const allocated = qtyAllocatedOnOrders(itemNumber, orders);
 
-  const soLines = salesOrderLineRows(orders, { item: itemNumber });
+  const soLines = salesOrderLineRows(history.orders, {}, itemNumber).slice(0, REPORT_ROW_CAP);
   const poLines: ReportRow[] = [];
   for (const p of pos) {
     for (const l of p.lines) {
@@ -418,5 +506,6 @@ export async function itemQuickReportData(itemNumber: string) {
       : null,
     soLines,
     poLines,
+    notice: history.truncated ? ROW_CAP_NOTICE : undefined,
   };
 }

@@ -61,6 +61,10 @@ const sql = `
 \\copy "SalesOrder" ("soNumber","poNumber","orderDate","dueDate","customerId","billTo","shipTo","status","allocation","pendingShipment","checkedAt","pickedAt","pickListPrintedAt","packingSlipPrintedAt","pickPackStatus","rep","createdAt") FROM '${dir}/orders.csv' CSV
 \\copy "SalesOrderLine" ("id","soNumber","item","description","um","ordered","rate") FROM '${dir}/lines.csv' CSV
 \\copy "ShipmentRecord" ("id","soNumber","shippedAt","lines") FROM '${dir}/ships.csv' CSV
+-- History numbers sit below the live counter; make sure the next S.O. # is
+-- above everything loaded so new orders never collide.
+INSERT INTO "Counter" ("key", "value") VALUES ('salesOrder', GREATEST(10000, ${so}))
+  ON CONFLICT ("key") DO UPDATE SET "value" = GREATEST("Counter"."value", ${so});
 ANALYZE "SalesOrder";
 ANALYZE "SalesOrderLine";
 ANALYZE "ShipmentRecord";
