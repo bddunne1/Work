@@ -14,6 +14,8 @@ interface QuickReportData {
     available: number;
   } | null;
   soLines: ReportRow[];
+  // Set when the item's order history was cut off at the fetch cap.
+  notice?: string;
   poLines: ReportRow[];
 }
 
@@ -157,6 +159,7 @@ export default function ItemQuickReport() {
 
       <section className="lane-section">
         <h3 className="item-profile-heading">Sales Orders</h3>
+        {data.notice && <p className="muted">{data.notice}</p>}
         <ReportTable columns={SO_COLUMNS} rows={data.soLines} emptyText="This item is not on any sales order." />
       </section>
 

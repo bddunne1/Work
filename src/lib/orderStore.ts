@@ -179,3 +179,86 @@ export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder>
     })
   );
 }
+
+// ---- Paged order search -----------------------------------------------------
+// GET /api/sales-orders/search: filtering, sorting and paging happen on the
+// server, so history pages fetch one page of orders instead of every order
+// ever entered. Statuses are the app-facing names ("Shipped", "Cancelled"...);
+// ones the server doesn't know are ignored.
+
+export const OPEN_ORDER_STATUSES = ["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed"];
+export const CLOSED_ORDER_STATUSES = ["Shipped", "Cancelled"];
+
+export interface OrderSearchParams {
+  status?: string[];
+  // S.O. # (exact when numeric), P.O. #, bill-to / ship-to name.
+  q?: string;
+  customerId?: string;
+  // Orders with a line for exactly this item # (case-insensitive).
+  item?: string;
+  poNumber?: string;
+  // YYYY-MM-DD, inclusive.
+  orderFrom?: string;
+  orderTo?: string;
+  // YYYY-MM-DD (whole UTC day) or a full ISO timestamp, inclusive.
+  shippedFrom?: string;
+  shippedTo?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "soNumber" | "orderDate" | "shippedAt";
+  dir?: "asc" | "desc";
+}
+
+export interface OrderSearchResult {
+  rows: PurchaseOrder[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export const MAX_SEARCH_PAGE_SIZE = 500;
+
+function searchQueryString(params: OrderSearchParams): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    if (Array.isArray(value)) {
+      if (value.length > 0) qs.set(key, value.join(","));
+    } else {
+      qs.set(key, String(value));
+    }
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+}
+
+export async function searchOrders(params: OrderSearchParams = {}): Promise<OrderSearchResult> {
+  const result = await api.get<OrderSearchResult>(`/api/sales-orders/search${searchQueryString(params)}`);
+  return { ...result, rows: result.rows.map(mapOrder) };
+}
+
+// Every order matching `params`, fetched a page at a time, up to `cap` rows -
+// for reports and totals that genuinely need the whole matching set.
+// `capped` is true when more orders matched than were returned.
+export async function searchAllOrders(
+  params: Omit<OrderSearchParams, "page" | "pageSize"> = {},
+  cap = 5000
+): Promise<{ orders: PurchaseOrder[]; total: number; capped: boolean }> {
+  const pageSize = Math.min(MAX_SEARCH_PAGE_SIZE, Math.max(1, cap));
+  const orders: PurchaseOrder[] = [];
+  // An order entered mid-fetch shifts later pages by one - skip the repeat.
+  const seen = new Set<string>();
+  let total = 0;
+  for (let page = 1; orders.length < cap; page++) {
+    const result = await searchOrders({ ...params, page, pageSize });
+    total = result.total;
+    for (const o of result.rows) {
+      if (seen.has(o.soNumber)) continue;
+      seen.add(o.soNumber);
+      orders.push(o);
+    }
+    if (result.rows.length < pageSize || orders.length >= total) break;
+  }
+  if (orders.length > cap) orders.length = cap;
+  return { orders, total, capped: total > orders.length };
+}

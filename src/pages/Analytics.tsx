@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import BarList from "../components/charts/BarList";
 import LineChart from "../components/charts/LineChart";
 import SearchSelect from "../components/SearchSelect";
-import { listCustomers } from "../lib/customerStore";
-import { listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
-import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
-import { orderTotal } from "../types";
+import { getAnalyticsSummary, getCustomerAnalytics } from "../lib/analyticsStore";
+import type { AnalyticsSummary, CustomerAnalytics, MonthlyRevenuePoint } from "../lib/analyticsStore";
+import { listCustomerSummaries } from "../lib/customerStore";
+import type { Customer, OrderStatus } from "../types";
 
 type Tab = "customer" | "inventory" | "sales";
 
@@ -66,128 +65,108 @@ function currency(v: number): string {
   return `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
+const EMPTY_SUMMARY: AnalyticsSummary = {
+  sales: { totalOrders: 0, totalRevenue: 0, openOrders: 0, ordersThisMonth: 0 },
+  ordersByStatus: {},
+  monthlyRevenue: [],
+  topCustomers: [],
+  inventory: { totalItems: 0, totalOnHand: 0, totalOnPO: 0, outOfStock: 0, totalValue: 0 },
+  topInventoryValue: [],
+  outOfStockItems: [],
+};
+
+function monthlyPoints(months: string[], series: MonthlyRevenuePoint[]) {
+  const map = new Map(series.map((p) => [p.month, p.revenue]));
+  return months.map((m) => ({ label: monthLabel(m), value: map.get(m) ?? 0 }));
+}
+
+// Every figure here is totalled on the server (see analyticsStore) - the
+// page used to download every order ever entered to add them up itself.
 export default function Analytics() {
   const [tab, setTab] = useState<Tab>("customer");
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
+  const [summary, setSummary] = useState<AnalyticsSummary>(EMPTY_SUMMARY);
+  const [customerData, setCustomerData] = useState<{ id: string; data: CustomerAnalytics } | undefined>();
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerId, setCustomerId] = useState<string | undefined>();
   const months12 = useMemo(() => lastNMonths(12), []);
+  // The chart window ends at this (local) month; "Orders This Month" has
+  // always keyed off the UTC month - both passed through unchanged.
+  const analyticsWindow = useMemo(
+    () => ({ endMonth: months12[months12.length - 1], thisMonth: monthKey(new Date().toISOString()), months: 12 }),
+    [months12]
+  );
 
   useEffect(() => {
-    listCustomers().then(setCustomers);
-    listItems().then(setItems);
-    listOrders().then(setOrders);
-  }, []);
+    listCustomerSummaries().then(setCustomers);
+    getAnalyticsSummary(analyticsWindow).then(setSummary);
+  }, [analyticsWindow]);
 
-  const revenueByCustomer = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const o of orders) {
-      if (!o.customerId) continue;
-      map.set(o.customerId, (map.get(o.customerId) ?? 0) + orderTotal(o));
-    }
-    return map;
-  }, [orders]);
+  useEffect(() => {
+    if (!customerId) return;
+    let cancelled = false;
+    getCustomerAnalytics(customerId, analyticsWindow).then((data) => {
+      if (!cancelled) setCustomerData({ id: customerId, data });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId, analyticsWindow]);
 
   const topCustomers = useMemo(
-    () =>
-      customers
-        .map((c) => ({ label: c.name, value: revenueByCustomer.get(c.id) ?? 0 }))
-        .filter((c) => c.value > 0)
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 8),
-    [customers, revenueByCustomer]
+    () => summary.topCustomers.map((c) => ({ label: c.name, value: c.revenue })),
+    [summary]
   );
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
-  const customerOrders = useMemo(
-    () => (customerId ? orders.filter((o) => o.customerId === customerId) : []),
-    [orders, customerId]
+  const customerDetail = customerData && customerData.id === customerId ? customerData.data : undefined;
+
+  const itemsPurchased = useMemo(
+    () =>
+      (customerDetail?.itemsPurchased ?? []).map((i) => ({
+        label: i.item,
+        value: i.revenue,
+        sublabel: `${i.qty} units`,
+      })),
+    [customerDetail]
   );
 
-  const itemsPurchased = useMemo(() => {
-    const map = new Map<string, { qty: number; revenue: number }>();
-    for (const o of customerOrders) {
-      for (const li of o.lineItems) {
-        const entry = map.get(li.item) ?? { qty: 0, revenue: 0 };
-        entry.qty += li.ordered;
-        entry.revenue += li.ordered * li.rate;
-        map.set(li.item, entry);
-      }
-    }
-    return Array.from(map.entries())
-      .map(([item, v]) => ({ label: item, value: v.revenue, sublabel: `${v.qty} units` }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [customerOrders]);
-
-  const monthlyForCustomer = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const o of customerOrders) {
-      map.set(monthKey(o.orderDate), (map.get(monthKey(o.orderDate)) ?? 0) + orderTotal(o));
-    }
-    return months12.map((m) => ({ label: monthLabel(m), value: map.get(m) ?? 0 }));
-  }, [customerOrders, months12]);
+  const monthlyForCustomer = useMemo(
+    () => monthlyPoints(months12, customerDetail?.monthlyRevenue ?? []),
+    [customerDetail, months12]
+  );
 
   const customerStats = useMemo(() => {
-    if (!selectedCustomer) return undefined;
-    const totalRevenue = customerOrders.reduce((s, o) => s + orderTotal(o), 0);
+    if (!selectedCustomer || !customerDetail) return undefined;
     return {
-      totalOrders: customerOrders.length,
-      lifetimeRevenue: totalRevenue,
-      avgOrderValue: customerOrders.length ? totalRevenue / customerOrders.length : 0,
-      lastOrderDate: customerOrders.reduce<string | undefined>(
-        (latest, o) => (!latest || o.orderDate > latest ? o.orderDate : latest),
-        undefined
-      ),
+      totalOrders: customerDetail.totalOrders,
+      lifetimeRevenue: customerDetail.lifetimeRevenue,
+      avgOrderValue: customerDetail.avgOrderValue,
+      lastOrderDate: customerDetail.lastOrderDate ?? undefined,
     };
-  }, [selectedCustomer, customerOrders]);
+  }, [selectedCustomer, customerDetail]);
 
-  const inventoryStats = useMemo(() => {
-    const totalOnHand = items.reduce((s, i) => s + i.qtyOnHand, 0);
-    const totalOnPO = items.reduce((s, i) => s + i.qtyOnPurchaseOrder, 0);
-    const outOfStock = items.filter((i) => i.qtyOnHand <= 0).length;
-    const totalValue = items.reduce((s, i) => s + i.qtyOnHand * i.rate, 0);
-    return { totalOnHand, totalOnPO, outOfStock, totalValue };
-  }, [items]);
+  const inventoryStats = summary.inventory;
 
   const topInventoryValue = useMemo(
-    () =>
-      items
-        .map((i) => ({ label: i.itemNumber, value: i.qtyOnHand * i.rate, sublabel: i.description }))
-        .filter((i) => i.value > 0)
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10),
-    [items]
+    () => summary.topInventoryValue.map((i) => ({ label: i.itemNumber, value: i.value, sublabel: i.description })),
+    [summary]
   );
 
-  const outOfStockItems = useMemo(() => items.filter((i) => i.qtyOnHand <= 0).slice(0, 10), [items]);
+  const outOfStockItems = summary.outOfStockItems;
 
-  const salesStats = useMemo(() => {
-    const totalRevenue = orders.reduce((s, o) => s + orderTotal(o), 0);
-    const openOrders = orders.filter((o) => o.status !== "Shipped").length;
-    const thisMonthKey = monthKey(new Date().toISOString());
-    const ordersThisMonth = orders.filter((o) => monthKey(o.orderDate) === thisMonthKey).length;
-    return { totalOrders: orders.length, totalRevenue, openOrders, ordersThisMonth };
-  }, [orders]);
+  const salesStats = summary.sales;
 
   const ordersByStatus = useMemo(
     () =>
       STATUS_ORDER.map((status) => ({
         label: status,
-        value: orders.filter((o) => o.status === status).length,
+        value: summary.ordersByStatus[status] ?? 0,
       })),
-    [orders]
+    [summary]
   );
 
-  const monthlyRevenueAll = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const o of orders) {
-      map.set(monthKey(o.orderDate), (map.get(monthKey(o.orderDate)) ?? 0) + orderTotal(o));
-    }
-    return months12.map((m) => ({ label: monthLabel(m), value: map.get(m) ?? 0 }));
-  }, [orders, months12]);
+  const monthlyRevenueAll = useMemo(() => monthlyPoints(months12, summary.monthlyRevenue), [summary, months12]);
 
   return (
     <div className="page">
@@ -250,7 +229,9 @@ export default function Analytics() {
             </div>
 
             {!selectedCustomer || !customerStats ? (
-              <p className="muted">Select a customer to see their purchase history.</p>
+              <p className="muted">
+                {selectedCustomer ? "Loading..." : "Select a customer to see their purchase history."}
+              </p>
             ) : (
               <>
                 <div className="stat-row analytics-stat-row">
@@ -288,7 +269,7 @@ export default function Analytics() {
           <section className="lane-section">
             <div className="stat-row analytics-stat-row">
               <div className="stat-card">
-                <div className="stat-value">{items.length}</div>
+                <div className="stat-value">{inventoryStats.totalItems}</div>
                 <div className="stat-label">Total Items</div>
               </div>
               <div className="stat-card">

@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Pager from "../components/Pager";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { listOrders, undoShipment } from "../lib/orderStore";
+import { undoShipment } from "../lib/orderStore";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
+import { usePagedOrders, usePageForFilters } from "../lib/usePagedOrders";
 import type { PurchaseOrder } from "../types";
-import { itemLabel, matchesOrderQuery, orderTotal } from "../types";
+import { itemLabel, orderTotal } from "../types";
 
 function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undefined {
   return shipmentHistory.reduce<string | undefined>(
@@ -13,27 +16,30 @@ function lastShippedAt(shipmentHistory: { shippedAt: string }[]): string | undef
   );
 }
 
-function shippedOrders(orders: PurchaseOrder[]): PurchaseOrder[] {
-  return orders
-    .filter((o) => o.status === "Shipped")
-    .sort((a, b) => {
-      const aDate = lastShippedAt(a.shipmentHistory ?? []) ?? "";
-      const bDate = lastShippedAt(b.shipmentHistory ?? []) ?? "";
-      return bDate.localeCompare(aDate);
-    });
-}
-
+// Shipped orders, most recently shipped first - searched, sorted and paged
+// on the server (see searchOrders) rather than downloading every order.
 export default function ShipmentHistory() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [pageSize, setPageSize] = useState(50);
+  const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const [page, setPage] = usePageForFilters(`${debouncedQuery}|${pageSize}`);
 
-  useEffect(() => {
-    listOrders().then((os) => setOrders(shippedOrders(os)));
-  }, []);
-
-  const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
+  const {
+    rows: filtered,
+    total,
+    loading,
+    loaded,
+    reload,
+  } = usePagedOrders({
+    status: ["Shipped"],
+    q: debouncedQuery,
+    page,
+    pageSize,
+    sort: "shippedAt",
+    dir: "desc",
+  });
 
   async function handleUndo(order: PurchaseOrder) {
     const last = (order.shipmentHistory ?? []).at(-1);
@@ -51,12 +57,15 @@ export default function ShipmentHistory() {
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
-        listOrders().then((os) => setOrders(shippedOrders(os)));
+        reload();
         return;
       }
       throw err;
     }
-    setOrders((os) => os.filter((o) => o.soNumber !== order.soNumber));
+    // The order is back in Open Picks now - drop it from this page. If it
+    // was the only row on the last page, step back a page.
+    if (filtered.length === 1 && page > 1) setPage(page - 1);
+    else reload();
   }
 
   return (
@@ -76,7 +85,9 @@ export default function ShipmentHistory() {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="muted">No orders have shipped yet.</p>
+        <p className="muted">
+          {!loaded ? "Loading..." : debouncedQuery ? "No shipped orders match your search." : "No orders have shipped yet."}
+        </p>
       ) : (
         <table className="data-table">
           <thead>
@@ -128,6 +139,15 @@ export default function ShipmentHistory() {
           </tbody>
         </table>
       )}
+
+      <Pager
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        loading={loading}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </div>
   );
 }

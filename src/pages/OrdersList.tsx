@@ -1,26 +1,37 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Pager from "../components/Pager";
 import StatusPill from "../components/StatusPill";
-import { listOrders } from "../lib/orderStore";
-import type { PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { CLOSED_ORDER_STATUSES, OPEN_ORDER_STATUSES } from "../lib/orderStore";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
+import { usePagedOrders, usePageForFilters } from "../lib/usePagedOrders";
+import { orderTotal } from "../types";
 
 interface Props {
   closed: boolean;
 }
 
 export default function OrdersList({ closed }: Props) {
+  return <OrdersListInner key={closed ? "closed" : "open"} closed={closed} />;
+}
+
+// Searched, sorted and paged on the server (see searchOrders) - Closed
+// Orders alone grows by ~150 orders a day, far too many to download whole.
+function OrdersListInner({ closed }: Props) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
+  const [pageSize, setPageSize] = useState(50);
+  const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const [page, setPage] = usePageForFilters(`${debouncedQuery}|${pageSize}`);
 
-  useEffect(() => {
-    listOrders().then(setAllOrders);
-  }, []);
-
-  const orders = useMemo(() => allOrders.filter((o) => (o.status === "Shipped") === closed), [allOrders, closed]);
-
-  const filtered = useMemo(() => orders.filter((o) => matchesOrderQuery(o, query)), [orders, query]);
+  const { rows: filtered, total, loading, loaded } = usePagedOrders({
+    status: closed ? CLOSED_ORDER_STATUSES : OPEN_ORDER_STATUSES,
+    q: debouncedQuery,
+    page,
+    pageSize,
+    sort: "soNumber",
+    dir: "desc",
+  });
 
   return (
     <div className="page">
@@ -28,7 +39,7 @@ export default function OrdersList({ closed }: Props) {
         <h1>{closed ? "Closed Orders" : "Open Orders"}</h1>
         <p className="muted">
           {closed
-            ? "Orders that have shipped complete."
+            ? "Orders that have shipped complete or been cancelled."
             : "Orders still moving through validation, allocation, and fulfillment."}
         </p>
       </div>
@@ -51,7 +62,7 @@ export default function OrdersList({ closed }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="muted">No orders found.</p>
+        <p className="muted">{loaded ? "No orders found." : "Loading..."}</p>
       ) : (
         <table className="data-table">
           <thead>
@@ -90,6 +101,15 @@ export default function OrdersList({ closed }: Props) {
           </tbody>
         </table>
       )}
+
+      <Pager
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        loading={loading}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </div>
   );
 }

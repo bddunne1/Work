@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
-import { listCustomers } from "../lib/customerStore";
+import { listCustomerSummaries } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import { nextReturnNumber, saveReturn } from "../lib/returnStore";
 import type { Customer, Item, ReturnAuthorization, ReturnLine } from "../types";
@@ -21,7 +21,9 @@ export default function ReturnForm() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    listCustomers().then(setCustomers);
+    // Names and bill-to addresses are all a return needs - not every
+    // customer's price sheet and part-number map.
+    listCustomerSummaries().then(setCustomers);
     listItems().then(setCatalog);
     nextReturnNumber().then((n) => setRa((r) => (r.raNumber ? r : { ...r, raNumber: n })));
   }, []);
