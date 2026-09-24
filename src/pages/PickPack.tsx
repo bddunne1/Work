@@ -4,7 +4,8 @@ import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
 import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
 import { isConflictError } from "../lib/apiClient";
-import { useCanEdit } from "../lib/authContext";
+import { useAuth, useCanEdit } from "../lib/authContext";
+import { canEdit as canEditPath } from "../lib/permissions";
 import { listOpenOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { allocatedQtyFor, canUnallocate, unallocateOrder } from "../types";
@@ -31,6 +32,10 @@ function releasedPicks(orders: PurchaseOrder[]): PurchaseOrder[] {
 export default function PickPack() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
+  const { account } = useAuth();
+  // Releasing a pick (the per-order review) is its own permission - order
+  // entry prints released picks here but can't release or unallocate them.
+  const canRelease = Boolean(account && canEditPath("/pick-pack/review", account));
   const [pickable, setPickable] = useState<PurchaseOrder[]>([]);
   const [queue, setQueue] = useState<PurchaseOrder[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -82,7 +87,8 @@ export default function PickPack() {
   const [printing, setPrinting] = useState(false);
 
   const selectedOrders = queue.filter((o) => selected[o.soNumber]);
-  const canPrint = selectedOrders.length > 0 && (includePick || includeSlip);
+  // Printing marks orders printed (a save), so it needs edit on this page.
+  const canPrint = canEdit && selectedOrders.length > 0 && (includePick || includeSlip);
 
   function toggleSelected(soNumber: string) {
     setSelected((s) => ({ ...s, [soNumber]: !s[soNumber] }));
@@ -175,7 +181,7 @@ export default function PickPack() {
           <button
             type="button"
             className="primary-btn"
-            disabled={pickable.length === 0}
+            disabled={pickable.length === 0 || !canRelease}
             onClick={startReviewQueue}
           >
             Review Queue
@@ -196,7 +202,11 @@ export default function PickPack() {
             </thead>
             <tbody>
               {pickable.map((o) => (
-                <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/pick-pack/${o.soNumber}`)}>
+                <tr
+                  key={o.soNumber}
+                  className={canRelease ? "clickable-row" : undefined}
+                  onClick={canRelease ? () => navigate(`/pick-pack/${o.soNumber}`) : undefined}
+                >
                   <td onClick={(e) => e.stopPropagation()}>
                     <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
                       {o.soNumber}
@@ -208,13 +218,15 @@ export default function PickPack() {
                     <StatusPill order={o} />
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="row-action-outline"
-                      onClick={() => navigate(`/pick-pack/${o.soNumber}`)}
-                    >
-                      Review
-                    </button>
+                    {canRelease && (
+                      <button
+                        type="button"
+                        className="row-action-outline"
+                        onClick={() => navigate(`/pick-pack/${o.soNumber}`)}
+                      >
+                        Review
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -292,7 +304,7 @@ export default function PickPack() {
                       )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      {canEdit && canUnallocate(o) && (
+                      {canRelease && canUnallocate(o) && (
                         <button
                           type="button"
                           className="row-action-outline danger-link"

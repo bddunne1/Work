@@ -13,18 +13,80 @@ export async function findItemByNumber(tx: Tx, itemNumber: string) {
   return tx.item.findFirst({ where: { itemNumber: { equals: itemNumber.trim(), mode: "insensitive" } } });
 }
 
-// Moves qtyOnHand by `delta` inside the caller's transaction. Fails the
-// whole transaction (so nothing else in it sticks either) when the item
-// isn't in the catalog.
-export async function adjustOnHand(tx: Tx, itemNumber: string, delta: number): Promise<void> {
-  if (delta === 0) return;
+export interface StockContext {
+  // SHIP | UNDO_SHIP | RECEIVE_PO | RETURN | ADJUST | ITEM_EDIT
+  reason: string;
+  refType?: string;
+  refId?: string;
+  actor: { id: string; username: string };
+}
+
+// Resolves an item # to its catalog row, or fails the caller's transaction
+// with a message naming the item.
+export async function requireItem(tx: Tx, itemNumber: string) {
   const item = await findItemByNumber(tx, itemNumber);
   if (!item) throw new HttpError(400, `Item "${itemNumber}" is not in the catalog - fix the line before continuing.`);
-  await tx.item.update({
-    where: { id: item.id },
+  return item;
+}
+
+// Moves qtyOnHand by `delta` inside the caller's transaction and writes the
+// matching StockMovement row, so every change to stock is attributable.
+// Pass `itemId` when the line already carries its catalog link; otherwise
+// the item # is resolved (and an unknown item fails the whole transaction).
+export async function adjustOnHand(
+  tx: Tx,
+  item: { itemId?: string | null; itemNumber: string },
+  delta: number,
+  ctx: StockContext
+): Promise<void> {
+  if (delta === 0) return;
+  const target = item.itemId
+    ? ((await tx.item.findUnique({ where: { id: item.itemId } })) ?? (await requireItem(tx, item.itemNumber)))
+    : await requireItem(tx, item.itemNumber);
+  const updated = await tx.item.update({
+    where: { id: target.id },
     data: { qtyOnHand: { increment: delta }, version: { increment: 1 } },
   });
+  await tx.stockMovement.create({
+    data: {
+      itemId: updated.id,
+      itemNumber: updated.itemNumber,
+      delta,
+      qtyAfter: updated.qtyOnHand,
+      reason: ctx.reason,
+      refType: ctx.refType ?? null,
+      refId: ctx.refId ?? null,
+      actorId: ctx.actor.id,
+      actorUsername: ctx.actor.username,
+    },
+  });
 }
+
+// Maps each distinct item # on a set of lines to its catalog id, failing
+// with one message listing every unknown item. Used on every order / PO /
+// return save so lines always carry their catalog link.
+export async function resolveItemIds(tx: Tx, itemNumbers: string[]): Promise<Map<string, string>> {
+  const wanted = [...new Set(itemNumbers.map((n) => n.trim()).filter(Boolean))];
+  const out = new Map<string, string>();
+  if (wanted.length === 0) return out;
+  const rows = await tx.item.findMany({
+    where: { OR: wanted.map((n) => ({ itemNumber: { equals: n, mode: "insensitive" as const } })) },
+    select: { id: true, itemNumber: true },
+  });
+  const byLower = new Map(rows.map((r) => [r.itemNumber.toLowerCase(), r.id]));
+  const missing: string[] = [];
+  for (const n of wanted) {
+    const id = byLower.get(n.toLowerCase());
+    if (id) out.set(n.toLowerCase(), id);
+    else missing.push(n);
+  }
+  if (missing.length > 0) {
+    throw new HttpError(400, `Not in the catalog: ${missing.join(", ")}. Add ${missing.length === 1 ? "it" : "them"} under Items or correct the line${missing.length === 1 ? "" : "s"}.`, { missingItems: missing });
+  }
+  return out;
+}
+
+export const itemIdFor = (ids: Map<string, string>, itemNumber: string) => ids.get(itemNumber.trim().toLowerCase()) ?? null;
 
 // qtyOnPurchaseOrder is a cached total of what's still outstanding on every
 // non-closed vendor PO. Recomputed here, in the same transaction as whatever
@@ -96,7 +158,7 @@ export async function assertAllocationAvailable(
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ALLOCATION_LOCK})`;
 
   const others = await tx.salesOrder.findMany({
-    where: { soNumber: { not: soNumber }, status: { not: "SHIPPED" } },
+    where: { soNumber: { not: soNumber }, status: { notIn: ["SHIPPED", "CANCELLED"] } },
     select: { allocation: true, pendingShipment: true, lineItems: { select: { id: true, item: true } } },
   });
   const heldElsewhere = new Map<string, number>();

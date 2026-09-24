@@ -169,6 +169,18 @@ export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Pr
   );
 }
 
+// Cancels `order` (or what's left of a partly shipped one): the server
+// releases its allocation / staged pick, records who and why, and takes it
+// out of every queue.
+export async function cancelOrder(order: PurchaseOrder, reason: string): Promise<PurchaseOrder> {
+  return mapOrder(
+    await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/cancel`, {
+      version: order.version,
+      reason,
+    })
+  );
+}
+
 // Undoes the most recent shipment on `order` - the server puts those units
 // back into qtyOnHand and re-stages them for Open Picks atomically.
 export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder> {

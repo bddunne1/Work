@@ -12,6 +12,8 @@ export interface Address {
 
 export interface LineItem {
   id: string;
+  // Catalog link, resolved by the server on save (read-only on the client).
+  itemId?: string | null;
   item: string;
   description: string;
   um: string;
@@ -29,7 +31,13 @@ export type OrderStatus =
   | "Allocated"
   | "Backordered"
   | "Pick & Packed"
-  | "Shipped";
+  | "Shipped"
+  | "Cancelled";
+
+// Statuses that are finished - nothing left to pick, ship or hold stock for.
+export function isClosedStatus(status: OrderStatus): boolean {
+  return status === "Shipped" || status === "Cancelled";
+}
 
 export interface AllocationLine {
   lineItemId: string;
@@ -112,6 +120,10 @@ export interface PurchaseOrder {
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";
   bol?: BolDetails;
+  // Set by Cancel Order (see cancelOrder in orderStore).
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
+  cancelReason?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -332,11 +344,12 @@ export function remainingToShip(order: Pick<PurchaseOrder, "shipmentHistory">, l
 // need to filter by status - closed orders drop out on their own.
 export function qtyOnOpenSalesOrders(
   itemNumber: string,
-  orders: Pick<PurchaseOrder, "lineItems" | "shipmentHistory">[]
+  orders: Pick<PurchaseOrder, "lineItems" | "shipmentHistory" | "status">[]
 ): number {
   const q = itemNumber.trim().toLowerCase();
   return orders.reduce(
     (sum, o) =>
+      o.status === "Cancelled" ? sum :
       sum +
       o.lineItems
         .filter((li) => li.item.trim().toLowerCase() === q)
@@ -576,10 +589,13 @@ export interface ReturnLine {
   qty: number;
   rate: number;
   reason: string;
+  // Whether units go back on the shelf when the return is received
+  // (false = damaged / scrap).
+  restock?: boolean;
 }
 
 export function emptyReturnLine(): ReturnLine {
-  return { id: crypto.randomUUID(), itemNumber: "", description: "", um: "EA", qty: 1, rate: 0, reason: "" };
+  return { id: crypto.randomUUID(), itemNumber: "", description: "", um: "EA", qty: 1, rate: 0, reason: "", restock: true };
 }
 
 export interface ReturnAuthorization {
@@ -599,6 +615,9 @@ export interface ReturnAuthorization {
   writtenBy?: string;
   writtenById?: string;
   writtenByColor?: string;
+  // Set when the goods were received back (see receiveReturn).
+  receivedAt?: string | null;
+  receivedBy?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;

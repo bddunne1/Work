@@ -52,7 +52,12 @@ export const PAGE_DEFS: PageDef[] = [
     rules: pageWithEditGatedSubpaths("/returns", ["/returns/new"]),
   },
 
-  { key: "pick-pack", label: "Pick & Pack", group: "Fulfillment", rules: simplePage("/pick-pack") },
+  // Pick & Pack is split in two: the list page (print released pick lists
+  // and packing slips) and the per-order review that releases a pick to the
+  // floor (/pick-pack/<S.O. #>) - so order entry can print picks without
+  // being able to release them.
+  { key: "pick-pack", label: "Pick & Pack (print picks)", group: "Fulfillment", rules: simplePage("/pick-pack") },
+  { key: "pick-release", label: "Release Picks", group: "Fulfillment", rules: simplePage("/pick-pack/") },
   { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: simplePage("/open-picks") },
   {
     key: "warehouse-capacity",
@@ -147,93 +152,150 @@ export interface PermissionPreset {
   permissions: Record<string, AccessLevel>;
 }
 
+// Role presets - a starting point for each job; every page stays editable
+// per account afterwards. Matches the server's per-endpoint checks (see
+// server/src/routes/*.ts): each preset can complete its own workflow.
 export const PERMISSION_PRESETS: PermissionPreset[] = [
   {
-    key: "order-entry",
-    label: "Order Entry",
+    key: "purchasing",
+    label: "Purchasing",
     description:
-      "Enter and pick/pack orders, generate BOLs, with view-only access to customers, catalog, inventory, and schedule.",
+      "Everything coming into the building: vendor POs, receiving shipments and returned goods, vendors, stock counts and the item catalog.",
     permissions: {
-      "order-entry": "edit",
-      "pick-pack": "edit",
-      bol: "edit",
-      customers: "view",
-      catalog: "view",
-      inventory: "view",
-      schedule: "view",
-      "order-detail": "view",
-      "open-orders": "view",
-      "closed-orders": "view",
-      analytics: "view",
-    },
-  },
-  {
-    key: "warehouse",
-    label: "Warehouse / Fulfillment",
-    description:
-      "Pick, pack, ship, and schedule - the physical fulfillment side of the building, no order entry or customer edits.",
-    permissions: {
-      "pick-pack": "edit",
-      "open-picks": "edit",
-      "warehouse-capacity": "view",
-      schedule: "edit",
-      bol: "edit",
-      labels: "edit",
-      "shipment-history": "view",
+      "purchase-orders": "edit",
+      receiving: "edit",
+      vendors: "edit",
+      inventory: "edit",
+      catalog: "edit",
+      returns: "view",
+      import: "edit",
       "back-orders": "view",
-      inventory: "view",
-      catalog: "view",
+      "open-orders": "view",
       "order-detail": "view",
+      "warehouse-capacity": "view",
+      reports: "view",
       analytics: "view",
     },
   },
   {
     key: "customer-service",
     label: "Customer Service",
-    description: "Manage customers and enter orders, with view access to check status on anything already entered.",
+    description:
+      "Take orders, answer order-status calls, quote pricing and availability, issue returns and cancel orders at the customer's request.",
     permissions: {
-      customers: "edit",
-      "customer-pricing": "view",
-      "routing-guide": "edit",
       "order-entry": "edit",
-      "order-detail": "view",
       "open-orders": "view",
       "closed-orders": "view",
+      "order-detail": "edit",
+      "back-orders": "view",
       schedule: "view",
+      "shipment-history": "view",
+      customers: "edit",
+      "customer-pricing": "view",
+      "routing-guide": "view",
       catalog: "view",
+      inventory: "view",
+      returns: "edit",
+      reports: "view",
+    },
+  },
+  {
+    key: "order-entry",
+    label: "Order Entry",
+    description:
+      "Key in customer purchase orders and print pick lists / packing slips for picks that have been released. Cannot validate or release.",
+    permissions: {
+      "order-entry": "edit",
+      import: "edit",
+      "pick-pack": "edit",
+      "open-orders": "view",
+      "order-detail": "view",
+      customers: "view",
+      catalog: "view",
+      inventory: "view",
+    },
+  },
+  {
+    key: "analyst",
+    label: "Analyst",
+    description:
+      "Validate and allocate orders, work the back order queue, release picks, and coordinate stock and ship dates with purchasing and logistics.",
+    permissions: {
+      validation: "edit",
+      allocation: "edit",
+      "back-orders": "edit",
+      "pick-release": "edit",
+      "pick-pack": "view",
+      schedule: "edit",
+      "open-orders": "view",
+      "closed-orders": "view",
+      "order-detail": "edit",
+      "shipment-history": "view",
+      "warehouse-capacity": "view",
+      inventory: "view",
+      catalog: "view",
+      customers: "view",
+      "purchase-orders": "view",
+      receiving: "view",
+      reports: "edit",
       analytics: "view",
     },
   },
   {
-    key: "purchasing",
-    label: "Purchasing / Inventory",
-    description: "Manage stock, vendors, and outbound purchase orders, and receive against them.",
+    key: "logistics",
+    label: "Logistics",
+    description:
+      "Schedule pickups with truck lines, generate BOLs and labels, confirm what shipped, and report the day's shipments.",
     permissions: {
-      inventory: "edit",
-      catalog: "edit",
-      "purchase-orders": "edit",
-      receiving: "edit",
-      vendors: "edit",
-      import: "edit",
+      schedule: "edit",
+      bol: "edit",
+      "open-picks": "edit",
+      "shipment-history": "edit",
+      labels: "edit",
+      "routing-guide": "view",
+      "warehouse-capacity": "view",
+      "pick-pack": "view",
+      "open-orders": "view",
       "order-detail": "view",
-      analytics: "view",
+      "back-orders": "view",
+      customers: "view",
+      inventory: "view",
+      reports: "view",
     },
   },
   {
     key: "sales-manager",
     label: "Sales Manager",
-    description: "Oversight across sales, customers, and pricing, with read access to the fulfillment pipeline.",
+    description:
+      "Win and manage accounts: add new customers, maintain customer records, pricing and routing guides, and follow their orders and analytics.",
     permissions: {
       customers: "edit",
       "customer-pricing": "edit",
       "routing-guide": "edit",
-      "order-detail": "view",
       "open-orders": "view",
       "closed-orders": "view",
+      "order-detail": "view",
       "back-orders": "view",
+      "shipment-history": "view",
       schedule: "view",
       catalog: "view",
+      inventory: "view",
       analytics: "edit",
+      reports: "edit",
     },
+  },
+  {
+    key: "director",
+    label: "Director",
+    description:
+      "Every page at full access. For account management too (Accounts page), give the account the Admin role instead.",
+    permissions: Object.fromEntries(
+      [
+        "order-entry", "validation", "allocation", "back-orders", "labels", "open-orders", "closed-orders",
+        "order-detail", "returns", "pick-pack", "pick-release", "open-picks", "warehouse-capacity", "schedule",
+        "bol", "shipment-history", "customers", "customer-pricing", "routing-guide", "catalog", "inventory",
+        "import", "analytics", "reports", "purchase-orders", "receiving", "vendors", "settings", "audit-log",
+      ].map((k) => [k, "edit" as AccessLevel])
+    ),
   },
 ];

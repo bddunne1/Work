@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -131,7 +132,7 @@ router.get("/:id", requireAnyPermission(CUSTOMER_VIEW_PAGES, "view"), async (req
   res.json(customer);
 });
 
-router.post("/", requirePermission("customers", "edit"), async (req, res) => {
+router.post("/", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {
   const parsed = customerSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -172,10 +173,11 @@ router.post("/", requirePermission("customers", "edit"), async (req, res) => {
     },
     include,
   });
+  logAudit(req.account!, "CUSTOMER_CREATED", "customer", customer.id, customer.name);
   res.status(201).json(customer);
 });
 
-router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
+router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -238,17 +240,22 @@ router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
   }
 
   const updated = await prisma.customer.findUnique({ where: { id }, include });
+  logAudit(req.account!, "CUSTOMER_UPDATED", "customer", id, data.name, {
+    ...(existing.name !== data.name ? { renamedFrom: existing.name } : {}),
+    priceOverrides: data.priceOverrides.length,
+  });
   res.json(updated);
 });
 
-router.delete("/:id", requirePermission("customers", "edit"), async (req, res) => {
+router.delete("/:id", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {
   // A missing row is fine (already gone); anything else - notably a
   // foreign-key violation because orders/POs still reference it - goes to
   // the error handler as a 409 instead of a false "deleted" 204.
-  await prisma.customer.delete({ where: { id: req.params.id } }).catch((err) => {
+  const doomed = await prisma.customer.delete({ where: { id: req.params.id } }).catch((err) => {
     if (err?.code === "P2025") return null;
     throw err;
   });
+  if (doomed) logAudit(req.account!, "CUSTOMER_DELETED", "customer", doomed.id, doomed.name);
   res.status(204).end();
 });
 

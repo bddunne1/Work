@@ -2931,3 +2931,27 @@ a.brand:hover .brand-name {
   background: color-mix(in srgb, var(--danger) 8%, transparent);
   font-weight: 500;
 }
+
+.status-pill-cancelled {
+  background: rgba(134, 142, 150, 0.18);
+  color: #868e96;
+  text-decoration: line-through;
+}
+
+.return-receive {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}

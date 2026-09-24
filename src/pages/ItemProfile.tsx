@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import StockLedger from "../components/StockLedger";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
@@ -443,6 +444,11 @@ function ItemProfileInner() {
             <p className="muted">{view.notes || "No notes."}</p>
           )}
         </label>
+      </div>
+
+      <div className="item-profile-section">
+        <h3>Stock history</h3>
+        <StockLedger itemId={item.id} />
       </div>
     </div>
   );

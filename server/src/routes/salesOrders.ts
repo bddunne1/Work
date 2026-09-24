@@ -1,9 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { requireAnyPermission, requireAuth } from "../middleware/auth.js";
+import { hasPermission, requireAnyPermission, requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
-import { adjustOnHand, assertAllocationAvailable } from "../lib/inventory.js";
+import { adjustOnHand, assertAllocationAvailable, itemIdFor, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -18,6 +19,7 @@ const STATUS_IN = {
   Backordered: "BACKORDERED",
   "Pick & Packed": "PICK_PACKED",
   Shipped: "SHIPPED",
+  Cancelled: "CANCELLED",
 } as const;
 const STATUS_OUT: Record<string, string> = {
   ENTERED: "Entered",
@@ -26,6 +28,7 @@ const STATUS_OUT: Record<string, string> = {
   BACKORDERED: "Backordered",
   PICK_PACKED: "Pick & Packed",
   SHIPPED: "Shipped",
+  CANCELLED: "Cancelled",
 };
 const PICK_PACK_STATUS_IN = { Partial: "PARTIAL", Complete: "COMPLETE" } as const;
 const PICK_PACK_STATUS_OUT: Record<string, string> = { PARTIAL: "Partial", COMPLETE: "Complete" };
@@ -109,7 +112,7 @@ const createSchema = z.object({
 });
 
 const updateSchema = createSchema.extend({
-  status: z.enum(["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped"]),
+  status: z.enum(["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped", "Cancelled"]),
   checkedAt: z.string().nullish(),
   checkedBy: z.string().nullish(),
   checkedByColor: z.string().nullish(),
@@ -128,11 +131,12 @@ const updateSchema = createSchema.extend({
   // in. A decision page opened from a stale queue (someone else already
   // moved the order on) gets a 409 instead of silently dragging the order
   // backwards through the workflow.
-  expectedStatus: z.enum(["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped"]).optional(),
+  expectedStatus: z.enum(["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped", "Cancelled"]).optional(),
 });
 
 const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema) });
 const undoSchema = z.object({ version: z.number().int() });
+const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling") });
 
 const include = {
   lineItems: true,
@@ -162,17 +166,48 @@ const ORDER_WRITE_PAGES = [
   "allocation",
   "back-orders",
   "pick-pack",
+  "pick-release",
   "open-picks",
   "schedule",
   "bol",
   "labels",
   "import",
 ];
-const ORDER_SHIP_PAGES = ["open-picks", "pick-pack", "shipment-history", "order-detail"];
+// Confirming or undoing a shipment is logistics' job (Open Picks /
+// Shipment History) - not something order entry or pick release can do.
+const ORDER_SHIP_PAGES = ["open-picks", "shipment-history"];
+// Cancelling: customer service (order detail) or the analysts who own
+// allocation.
+const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
+
+type DbStatus = keyof typeof STATUS_OUT;
+// Which workflow step a status change is, and whose job it is. A plain save
+// that keeps the status needs edit access on any order page (ORDER_WRITE_PAGES);
+// a change of status needs the page that owns that step - e.g. order entry
+// can't validate, and nobody can move an order sideways past a step.
+// Shipping, un-shipping and cancelling go through their own endpoints.
+const TRANSITIONS: Partial<Record<DbStatus, Partial<Record<DbStatus, string[]>>>> = {
+  ENTERED: { CHECKED: ["validation"] },
+  CHECKED: { ALLOCATED: ["allocation", "back-orders"], BACKORDERED: ["allocation", "back-orders"], ENTERED: ["validation"] },
+  BACKORDERED: { ALLOCATED: ["allocation", "back-orders"] },
+  ALLOCATED: { PICK_PACKED: ["pick-release"], CHECKED: ["pick-release", "allocation"], BACKORDERED: ["allocation", "back-orders"] },
+  PICK_PACKED: { CHECKED: ["pick-release", "allocation"] },
+};
+
+function assertTransitionAllowed(account: NonNullable<AuthedRequest["account"]>, from: DbStatus, to: DbStatus): void {
+  if (from === to) return;
+  const pages = TRANSITIONS[from]?.[to];
+  if (!pages) {
+    throw new HttpError(409, `An order can't go from ${STATUS_OUT[from]} to ${STATUS_OUT[to]} directly.`, { conflict: true });
+  }
+  if (!pages.some((key) => hasPermission(account, key, "edit"))) {
+    throw new HttpError(403, `Moving an order from ${STATUS_OUT[from]} to ${STATUS_OUT[to]} needs edit access to ${pages.join(" or ")}.`);
+  }
+}
 
 router.use(requireAuth);
 
-// `?open=1` returns only orders that haven't fully shipped - everything the
+// `?open=1` returns only orders that haven't fully shipped (or been cancelled) - everything the
 // workflow queues and stock-availability math need - instead of every order
 // ever entered (which grows by ~150/day and was fetched by ~20 pages).
 // `?limit=N` returns just the N most recent (e.g. the Dashboard's list).
@@ -186,8 +221,8 @@ router.get("/", async (req, res) => {
   const orders = await prisma.salesOrder.findMany({
     where: openOnly
       ? shippedSince
-        ? { OR: [{ status: { not: "SHIPPED" } }, { shipmentHistory: { some: { shippedAt: { gte: shippedSince } } } }] }
-        : { status: { not: "SHIPPED" } }
+        ? { OR: [{ status: { notIn: ["SHIPPED", "CANCELLED"] } }, { shipmentHistory: { some: { shippedAt: { gte: shippedSince } } } }] }
+        : { status: { notIn: ["SHIPPED", "CANCELLED"] } }
       : undefined,
     orderBy: { createdAt: "desc" },
     take: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : undefined,
@@ -213,7 +248,7 @@ router.get("/:soNumber", async (req, res) => {
 // Assigns the S.O. # itself (atomically, via the shared Counter table)
 // rather than trusting one the client precomputed - same reasoning as
 // vendor PO and RA numbers.
-router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req, res) => {
+router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -221,6 +256,7 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req, r
   }
   const data = parsed.data;
   const order = await prisma.$transaction(async (tx) => {
+    const itemIds = await resolveItemIds(tx, data.lineItems.map((l) => l.item));
     const counter = await tx.counter.upsert({
       where: { key: SO_COUNTER_KEY },
       create: { key: SO_COUNTER_KEY, value: SO_START },
@@ -248,6 +284,7 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req, r
         writtenByColor: data.writtenByColor,
         lineItems: {
           create: data.lineItems.map((l) => ({
+            itemId: itemIdFor(itemIds, l.item),
             item: l.item,
             description: l.description,
             um: l.um,
@@ -260,10 +297,15 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req, r
       include,
     });
   });
+  logAudit(req.account!, "ORDER_CREATED", "sales-order", String(order.soNumber), `S.O. #${order.soNumber}`, {
+    poNumber: order.poNumber,
+    customer: (order.billTo as { name?: string }).name,
+    lines: order.lineItems.length,
+  });
   res.status(201).json(mapOut(order));
 });
 
-router.put("/:soNumber", requireAnyPermission(ORDER_WRITE_PAGES, "edit"), async (req, res) => {
+router.put("/:soNumber", requireAnyPermission(ORDER_WRITE_PAGES, "edit"), async (req: AuthedRequest, res) => {
   const soNumber = parseInt(req.params.soNumber, 10);
   if (!Number.isFinite(soNumber)) {
     res.status(404).json({ error: "Order not found" });
@@ -294,9 +336,41 @@ router.put("/:soNumber", requireAnyPermission(ORDER_WRITE_PAGES, "edit"), async 
     res.status(409).json({ error: `S.O. #${soNumber} has already shipped. Use Undo Last Shipment instead.`, conflict: true });
     return;
   }
+  if (existing.status === "CANCELLED") {
+    res.status(409).json({ error: `S.O. #${soNumber} was cancelled and can't be changed.`, conflict: true });
+    return;
+  }
+  const toStatus = STATUS_IN[data.status] as DbStatus;
+  if (toStatus === "SHIPPED" && existing.status !== "SHIPPED") {
+    res.status(409).json({ error: "Confirm shipments from Open Picks - a plain save can't mark an order shipped.", conflict: true });
+    return;
+  }
+  if (toStatus === "CANCELLED") {
+    res.status(409).json({ error: "Use Cancel Order to cancel - it records a reason and releases the stock.", conflict: true });
+    return;
+  }
+  assertTransitionAllowed(req.account!, existing.status as DbStatus, toStatus);
+  // Once stock is committed to an order, its lines are frozen: changing a
+  // quantity or item under an allocation or a packed pick leaves them out of
+  // step. Unallocate first (back to Checked), then edit.
+  if (!["ENTERED", "CHECKED"].includes(existing.status)) {
+    const before = new Map(existing.lineItems.map((l) => [l.id, `${l.item.trim().toLowerCase()}|${l.ordered}`]));
+    const after = new Map(data.lineItems.filter((l) => l.id).map((l) => [l.id as string, `${l.item.trim().toLowerCase()}|${l.ordered}`]));
+    const linesChanged =
+      before.size !== data.lineItems.length ||
+      [...before].some(([id, sig]) => after.get(id) !== sig);
+    if (linesChanged) {
+      res.status(409).json({
+        error: `S.O. #${soNumber} is ${STATUS_OUT[existing.status]} - unallocate it (back to Checked) before changing items or quantities.`,
+        conflict: true,
+      });
+      return;
+    }
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
+      const itemIds = await resolveItemIds(tx, data.lineItems.map((l) => l.item));
       const result = await tx.salesOrder.updateMany({
         where: { soNumber, version: data.version },
         data: {
@@ -347,6 +421,7 @@ router.put("/:soNumber", requireAnyPermission(ORDER_WRITE_PAGES, "edit"), async 
         }
       );
       await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
+        itemId: itemIdFor(itemIds, l.item),
         item: l.item,
         description: l.description,
         um: l.um,
@@ -367,6 +442,14 @@ router.put("/:soNumber", requireAnyPermission(ORDER_WRITE_PAGES, "edit"), async 
     throw err;
   }
 
+  if (existing.status !== toStatus) {
+    logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+      from: STATUS_OUT[existing.status],
+      to: data.status,
+    });
+  } else {
+    logAudit(req.account!, "ORDER_UPDATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { status: data.status });
+  }
   const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
   res.json(mapOut(updated!));
 });
@@ -405,7 +488,7 @@ async function lockOrder(tx: Prisma.TransactionClient, soNumber: number, version
 // line by line and then saved the order; a 409 on that save (someone else
 // touched the order) left stock already decremented, and the natural retry
 // decremented it a second time.
-router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req, res) => {
+router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req: AuthedRequest, res) => {
   const soNumber = parseInt(req.params.soNumber, 10);
   const parsed = shipSchema.safeParse(req.body);
   if (!Number.isFinite(soNumber) || !parsed.success) {
@@ -423,7 +506,12 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     for (const l of shipped) {
       const li = lineById.get(l.lineItemId);
       if (!li) throw new HttpError(400, "Shipment references a line that is no longer on this order - reload and try again.");
-      await adjustOnHand(tx, li.item, -l.qty);
+      await adjustOnHand(tx, { itemId: li.itemId, itemNumber: li.item }, -l.qty, {
+        reason: "SHIP",
+        refType: "sales-order",
+        refId: String(soNumber),
+        actor: req.account!,
+      });
     }
     if (shipped.length > 0) {
       await tx.shipmentRecord.create({ data: { soNumber, shippedAt: new Date(), lines: shipped } });
@@ -436,6 +524,10 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
       where: { soNumber },
       data: { status: fullyShipped ? "SHIPPED" : "BACKORDERED", pendingShipment: [], version: { increment: 1 } },
     });
+    logAudit(req.account!, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+      units: shipped.reduce((sum, l) => sum + l.qty, 0),
+      result: fullyShipped ? "Shipped" : "Backordered",
+    });
   });
   const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
   res.json(mapOut(updated!));
@@ -444,7 +536,7 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
 // Reverses the most recent shipment: puts its units back into qtyOnHand,
 // re-stages them as pendingShipment and returns the order to Pick & Packed -
 // atomically, for the same reason as /ship above.
-router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req, res) => {
+router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req: AuthedRequest, res) => {
   const soNumber = parseInt(req.params.soNumber, 10);
   const parsed = undoSchema.safeParse(req.body);
   if (!Number.isFinite(soNumber) || !parsed.success) {
@@ -465,14 +557,58 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     const lines = last.lines as { lineItemId: string; qty: number }[];
     for (const l of lines) {
       const li = lineById.get(l.lineItemId);
-      if (li && l.qty > 0) await adjustOnHand(tx, li.item, l.qty);
+      if (li && l.qty > 0) {
+        await adjustOnHand(tx, { itemId: li.itemId, itemNumber: li.item }, l.qty, {
+          reason: "UNDO_SHIP",
+          refType: "sales-order",
+          refId: String(soNumber),
+          actor: req.account!,
+        });
+      }
     }
     await tx.shipmentRecord.delete({ where: { id: last.id } });
     await tx.salesOrder.update({
       where: { soNumber },
       data: { status: "PICK_PACKED", pendingShipment: lines, version: { increment: 1 } },
     });
+    logAudit(req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+      units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
+    });
   });
+  const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
+  res.json(mapOut(updated!));
+});
+
+// Cancels an order (or what's left of a partly shipped one): releases its
+// allocation and any packed-but-unshipped pick, records who and why, and
+// takes it out of every queue. Shipped units stay shipped - undo those
+// separately if the goods are coming back (that's a return).
+router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseInt(req.params.soNumber, 10);
+  const parsed = cancelSchema.safeParse(req.body);
+  if (!Number.isFinite(soNumber) || !parsed.success) {
+    res.status(400).json({ error: parsed.success ? "Order not found" : parsed.error.issues[0]?.message ?? "Invalid request" });
+    return;
+  }
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    if (order.status === "SHIPPED" || order.status === "CANCELLED") {
+      throw new HttpError(409, `S.O. #${soNumber} is already ${STATUS_OUT[order.status]}.`, { conflict: true });
+    }
+    await tx.salesOrder.update({
+      where: { soNumber },
+      data: {
+        status: "CANCELLED",
+        allocation: Prisma.JsonNull,
+        pendingShipment: [],
+        cancelledAt: new Date(),
+        cancelledBy: req.account!.username,
+        cancelReason: parsed.data.reason,
+        version: { increment: 1 },
+      },
+    });
+  });
+  logAudit(req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason });
   const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
   res.json(mapOut(updated!));
 });

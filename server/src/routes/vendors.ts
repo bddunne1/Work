@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { prisma } from "../prisma.js";
 
@@ -38,7 +39,7 @@ router.get("/", requirePermission("vendors", "view"), async (_req, res) => {
   res.json(vendors);
 });
 
-router.post("/", requirePermission("vendors", "edit"), async (req, res) => {
+router.post("/", requirePermission("vendors", "edit"), async (req: AuthedRequest, res) => {
   const parsed = vendorSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -46,6 +47,7 @@ router.post("/", requirePermission("vendors", "edit"), async (req, res) => {
   }
   const { address, ...rest } = parsed.data;
   const vendor = await prisma.vendor.create({ data: { ...rest, address: address ?? Prisma.JsonNull } });
+  logAudit(req.account!, "VENDOR_CREATED", "vendor", vendor.id, vendor.name);
   res.status(201).json(vendor);
 });
 
@@ -53,7 +55,7 @@ router.post("/", requirePermission("vendors", "edit"), async (req, res) => {
 // endpoint is technically partial-update, though the frontend always sends
 // the whole fetched record) - there's no prior version to compare a field
 // that's genuinely absent against, so the check would be meaningless there.
-router.put("/:id", requirePermission("vendors", "edit"), async (req, res) => {
+router.put("/:id", requirePermission("vendors", "edit"), async (req: AuthedRequest, res) => {
   const parsed = vendorSchema.partial().extend({ version: z.number().int() }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -77,17 +79,19 @@ router.put("/:id", requirePermission("vendors", "edit"), async (req, res) => {
   }
 
   const vendor = await prisma.vendor.findUnique({ where: { id: req.params.id } });
+  if (vendor) logAudit(req.account!, "VENDOR_UPDATED", "vendor", vendor.id, vendor.name);
   res.json(vendor);
 });
 
-router.delete("/:id", requirePermission("vendors", "edit"), async (req, res) => {
+router.delete("/:id", requirePermission("vendors", "edit"), async (req: AuthedRequest, res) => {
   // A missing row is fine (already gone); anything else - notably a
   // foreign-key violation because orders/POs still reference it - goes to
   // the error handler as a 409 instead of a false "deleted" 204.
-  await prisma.vendor.delete({ where: { id: req.params.id } }).catch((err) => {
+  const doomed = await prisma.vendor.delete({ where: { id: req.params.id } }).catch((err) => {
     if (err?.code === "P2025") return null;
     throw err;
   });
+  if (doomed) logAudit(req.account!, "VENDOR_DELETED", "vendor", doomed.id, doomed.name);
   res.status(204).end();
 });
 

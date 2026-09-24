@@ -18,6 +18,7 @@ import returnsRouter from "./routes/returns.js";
 import salesOrdersRouter from "./routes/salesOrders.js";
 import savedReportsRouter from "./routes/savedReports.js";
 import settingsRouter from "./routes/settings.js";
+import stockMovementsRouter from "./routes/stockMovements.js";
 import vendorPurchaseOrdersRouter from "./routes/vendorPurchaseOrders.js";
 import vendorsRouter from "./routes/vendors.js";
 
@@ -42,6 +43,7 @@ app.use("/api/counters", countersRouter);
 app.use("/api/vendor-purchase-orders", vendorPurchaseOrdersRouter);
 app.use("/api/returns", returnsRouter);
 app.use("/api/sales-orders", salesOrdersRouter);
+app.use("/api/stock-movements", stockMovementsRouter);
 
 // Catches anything a route didn't handle itself (including an async
 // handler's rejected promise, via express-async-errors above) - the whole
