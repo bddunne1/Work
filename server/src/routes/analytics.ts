@@ -56,13 +56,15 @@ function monthWindow(endMonth: string, n: number): string[] {
 }
 
 // Per-order totals, same formula as orderTotal() in src/types.ts.
-function orderTotalsCte(where: Prisma.Sql = Prisma.empty): Prisma.Sql {
+// Cancelled orders were never sold, so they're always excluded; callers add
+// their own conditions.
+function orderTotalsCte(conds: Prisma.Sql[] = []): Prisma.Sql {
+  const where = Prisma.sql`WHERE ${Prisma.join([Prisma.sql`so."status" <> 'CANCELLED'`, ...conds], " AND ")}`;
   return Prisma.sql`
     WITH ot AS (
       SELECT so."soNumber", so."customerId", so."status"::text AS "status", so."orderDate",
              COALESCE(SUM(l."ordered" * l."rate"), 0) * (1 + COALESCE(so."taxRate", 0) / 100) AS "total"
-      -- Cancelled orders were never sold: keep them out of bookings.
-      FROM (SELECT * FROM "SalesOrder" WHERE "status" <> 'CANCELLED') so
+      FROM "SalesOrder" so
       LEFT JOIN "SalesOrderLine" l ON l."soNumber" = so."soNumber"
       ${where}
       GROUP BY so."soNumber"
@@ -74,7 +76,7 @@ async function monthlySeries(window: string[], customerId?: string) {
   const conds = [Prisma.sql`so."orderDate" >= ${start}::date`];
   if (customerId) conds.push(Prisma.sql`so."customerId" = ${customerId}`);
   const rows = await prisma.$queryRaw<{ month: string; revenue: number }[]>`
-    ${orderTotalsCte(Prisma.sql`WHERE ${Prisma.join(conds, " AND ")}`)}
+    ${orderTotalsCte(conds)}
     SELECT to_char("orderDate", 'YYYY-MM') AS "month", SUM("total")::float8 AS "revenue"
     FROM ot GROUP BY 1`;
   const byMonth = new Map(rows.map((r) => [r.month, r.revenue]));
@@ -102,7 +104,7 @@ router.get("/summary", async (req, res) => {
         SELECT "status"::text AS "status", COUNT(*)::int AS "count" FROM "SalesOrder" GROUP BY 1`,
       // Ties keep the page's old order: customers were listed by name.
       prisma.$queryRaw<{ customerId: string; name: string; revenue: number }[]>`
-        ${orderTotalsCte(Prisma.sql`WHERE so."customerId" IS NOT NULL`)}
+        ${orderTotalsCte([Prisma.sql`so."customerId" IS NOT NULL`])}
         SELECT c."id" AS "customerId", c."name", SUM(ot."total")::float8 AS "revenue"
         FROM ot JOIN "Customer" c ON c."id" = ot."customerId"
         GROUP BY c."id", c."name"
@@ -153,7 +155,7 @@ router.get("/customer/:customerId", async (req, res) => {
   const window = monthWindow(monthParam(req.query.endMonth), monthsParam(req.query.months));
   const [statsRows, itemsPurchased, monthly] = await Promise.all([
     prisma.$queryRaw<{ totalOrders: number; lifetimeRevenue: number; lastOrderDate: string | null }[]>`
-      ${orderTotalsCte(Prisma.sql`WHERE so."customerId" = ${customerId}`)}
+      ${orderTotalsCte([Prisma.sql`so."customerId" = ${customerId}`])}
       SELECT COUNT(*)::int AS "totalOrders",
              COALESCE(SUM("total"), 0)::float8 AS "lifetimeRevenue",
              to_char(MAX("orderDate"), 'YYYY-MM-DD') AS "lastOrderDate"

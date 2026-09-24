@@ -19,13 +19,20 @@ const PAGES = {
     "Allocation decision": ["/api/items", "/api/sales-orders", "/api/sales-orders/{so}"],
     "Pick & Pack list": ["/api/sales-orders", "/api/items", "/api/sales-orders"],
     "Order Entry": ["/api/customers", "/api/items", "/api/counters/salesOrder"],
+    "Closed Orders": ["/api/sales-orders"],
+    "Shipment History": ["/api/sales-orders"],
+    Analytics: ["/api/customers", "/api/items", "/api/sales-orders"],
   },
   fixed: {
     Dashboard: ["/api/customers?summary=1", "/api/items", "/api/sales-orders?open=1", "/api/sales-orders?limit=5"],
     "Allocation decision": ["/api/items", "/api/sales-orders?open=1", "/api/sales-orders/{so}"],
     // WarehouseCapacityBanner: open orders + the lookback window's shipments (default 30 days).
     "Pick & Pack list": ["/api/sales-orders?open=1", "/api/items", `/api/sales-orders?open=1&shippedSince=${new Date(Date.now() - 30 * 86400000).toISOString()}`],
-    "Order Entry": ["/api/customers", "/api/items", "/api/counters/salesOrder"],
+    // Round 2: slim customer list; the chosen customer's price sheet loads on selection.
+    "Order Entry": ["/api/customers?summary=1", "/api/items", "/api/counters/salesOrder", "/api/customers/{cust}"],
+    "Closed Orders": ["/api/sales-orders/search?status=Shipped,Cancelled&page=1&pageSize=50"],
+    "Shipment History": ["/api/sales-orders/search?status=Shipped&sort=shippedAt&dir=desc&page=1&pageSize=50"],
+    Analytics: ["/api/customers?summary=1", "/api/analytics/summary"],
   },
 }[MODE];
 
@@ -54,6 +61,7 @@ async function main() {
     users.push(u);
   }
   const anyOpen = (await get(users[0], "/api/sales-orders?limit=1"))[0]?.soNumber ?? "10001";
+  const anyCustomer = (await get(users[0], "/api/customers?summary=1"))[0]?.id ?? "";
 
   const single = {};
   {
@@ -70,7 +78,7 @@ async function main() {
       metrics.calls.length = 0;
       const t0 = performance.now();
       let failed = 0;
-      const load = Promise.all(users.map((u) => Promise.all(paths.map((p) => get(u, p.replace("{so}", anyOpen)).catch(() => failed++)))));
+      const load = Promise.all(users.map((u) => Promise.all(paths.map((p) => get(u, p.replace("{so}", anyOpen).replace("{cust}", anyCustomer)).catch(() => failed++)))));
       const [, healthMax] = await Promise.all([load, probeWhile(load)]);
       const wall = performance.now() - t0;
       runs.push({ wallMs: Math.round(wall), healthMaxMs: Math.round(healthMax), mbTransferred: +(metrics.calls.reduce((s, c) => s + c.bytes, 0) / 1048576).toFixed(1), slowestCallMs: Math.round(Math.max(...metrics.calls.map((c) => c.ms))), failedCalls: failed });
