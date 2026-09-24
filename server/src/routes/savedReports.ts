@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requirePermission } from "../middleware/auth.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -14,12 +14,12 @@ const createSchema = z.object({
   columns: z.array(z.string()),
 });
 
-router.get("/", async (_req, res) => {
+router.get("/", requirePermission("reports", "view"), async (_req, res) => {
   const reports = await prisma.savedReport.findMany({ orderBy: { name: "asc" } });
   res.json(reports);
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requirePermission("reports", "edit"), async (req, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
   res.status(201).json(report);
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requirePermission("reports", "edit"), async (req, res) => {
   await prisma.savedReport.delete({ where: { id: req.params.id } }).catch(() => null);
   res.status(204).end();
 });

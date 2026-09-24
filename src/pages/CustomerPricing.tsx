@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { getCustomer, listCustomers, updateCustomer } from "../lib/customerStore";
+import { getCustomer, listCustomerSummaries, updateCustomer } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import type { Customer, CustomerPriceOverride, Item } from "../types";
 
@@ -32,19 +32,33 @@ export default function CustomerPricing() {
   const [catalog, setCatalog] = useState<Item[]>([]);
   const [query, setQuery] = useState("");
 
+  // The picker only needs names (summaries); the chosen customer's full
+  // record, price sheet included, is fetched when it's selected.
   useEffect(() => {
-    listCustomers().then(setCustomers);
+    listCustomerSummaries().then(setCustomers);
     listItems().then(setCatalog);
   }, []);
   const [draft, setDraft] = useState<Customer | undefined>();
   const [saved, setSaved] = useState(false);
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const requestedId = useRef<string | undefined>(undefined);
 
-  function handleSelect(id: string) {
+  async function handleSelect(id: string) {
     const c = customers.find((x) => x.id === id);
     if (!c) return;
     setQuery(c.name);
-    setDraft({ ...c, priceOverrides: withTrailingBlank(c.priceOverrides ?? [], MIN_BLANK_ROWS) });
     setSaved(false);
+    setDraft(undefined);
+    setLoadingCustomer(true);
+    requestedId.current = id;
+    const full = await getCustomer(id);
+    if (requestedId.current !== id) return;
+    setLoadingCustomer(false);
+    if (!full) {
+      alert(`Couldn't load ${c.name}'s pricing. Try selecting the customer again.`);
+      return;
+    }
+    setDraft({ ...full, priceOverrides: withTrailingBlank(full.priceOverrides ?? [], MIN_BLANK_ROWS) });
   }
 
   function updateOverride(id: string, patch: Partial<CustomerPriceOverride>) {
@@ -84,6 +98,9 @@ export default function CustomerPricing() {
     };
     try {
       const result = await updateCustomer(payload);
+      // Refresh the picker's copy too - re-selecting this customer later
+      // otherwise starts from the pre-save version and 409s on the next save.
+      setCustomers((cs) => cs.map((c) => (c.id === result.id ? result : c)));
       setDraft({ ...result, priceOverrides: withTrailingBlank(result.priceOverrides ?? [], MIN_BLANK_ROWS) });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -124,7 +141,7 @@ export default function CustomerPricing() {
       </div>
 
       {!draft ? (
-        <p className="muted">Select a customer to manage their pricing.</p>
+        <p className="muted">{loadingCustomer ? "Loading..." : "Select a customer to manage their pricing."}</p>
       ) : (
         <section className="lane-section">
           <div className="ship-locations-header">

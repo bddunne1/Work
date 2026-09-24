@@ -23,9 +23,11 @@ export function setToken(token: string | null): void {
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  method: string;
+  constructor(status: number, message: string, method = "GET") {
     super(message);
     this.status = status;
+    this.method = method;
   }
 }
 
@@ -44,12 +46,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  // The session ended server-side (expired, force-logged-out, deactivated,
+  // password reset). Without this every page just rendered empty lists and
+  // looked like the data was gone - send the user back to sign in instead.
+  if (res.status === 401 && token && !path.startsWith("/api/auth/login")) {
+    setToken(null);
+    // The app uses a HashRouter, so routes live after the "#".
+    if (typeof window !== "undefined" && !window.location.hash.startsWith("#/login")) {
+      window.location.assign("#/login");
+    }
+  }
   if (res.status === 204) return undefined as T;
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const message =
       body && typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, (options.method ?? "GET").toUpperCase());
   }
   return body as T;
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
+import { getOrder, listOpenOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Item, PurchaseOrder } from "../types";
@@ -32,7 +32,7 @@ function PickPackDetailInner() {
 
   useEffect(() => {
     listItems().then(setItems);
-    listOrders().then(setAllOrders);
+    listOpenOrders().then(setAllOrders);
   }, []);
 
   useEffect(() => {
@@ -95,8 +95,7 @@ function PickPackDetailInner() {
       },
     };
     try {
-      await updateOrder(updated);
-      setOrder(updated);
+      setOrder(await updateOrder(updated, "Allocated"));
       setSaved(true);
     } catch (err) {
       if (isConflictError(err)) {
@@ -134,7 +133,7 @@ function PickPackDetailInner() {
         pickListPrintedAt: undefined,
         packingSlipPrintedAt: undefined,
         allocation: order.allocation ? { ...order.allocation, lines: newAllocationLines } : order.allocation,
-      });
+      }, "Allocated");
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -156,7 +155,7 @@ function PickPackDetailInner() {
       return;
     }
     try {
-      await updateOrder(unallocateOrder(order));
+      await updateOrder(unallocateOrder(order), order.status);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -168,7 +167,10 @@ function PickPackDetailInner() {
     goNext();
   }
 
-  const readyToRelease = order.lineItems.some((li) => (qtys[li.id] ?? 0) > 0);
+  // Opened from a queue snapshot (or a bookmark) after someone else already
+  // released or unallocated this order - don't offer to release it again.
+  const staleStatus = order.status !== "Allocated";
+  const readyToRelease = !staleStatus && order.lineItems.some((li) => (qtys[li.id] ?? 0) > 0);
 
   return (
     <div className="page">
@@ -186,6 +188,13 @@ function PickPackDetailInner() {
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
         </div>
       </div>
+
+      {staleStatus && (
+        <p className="stale-status-notice">
+          This order is already {order.status} - someone else moved it on since this queue was loaded. Nothing here
+          can be released again; skip to the next order.
+        </p>
+      )}
 
       <div className="sales-order">
         <div className="line-items">

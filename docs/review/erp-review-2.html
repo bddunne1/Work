@@ -1,0 +1,423 @@
+<title>Aamstrand ERP Round 2</title>
+<meta name="description" content="Round 2: roles redesign, cancellations and returns, item links, stock ledger, paging and import fixes, a new 15-person workday simulation and a staffing what-if.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a;
+    --high: #b9620f;
+    --med: #7d6c0c;
+    --low: #5d6772;
+    --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08);
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62;
+      --high: #f0a24e;
+      --med: #d6c35c;
+      --low: #97a1ab;
+      --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12);
+      --ok-bg: rgba(95, 196, 141, 0.12);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62;
+    --high: #f0a24e;
+    --med: #d6c35c;
+    --low: #97a1ab;
+    --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12);
+    --ok-bg: rgba(95, 196, 141, 0.12);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Document header, laid out like the app's own printed forms */
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 70ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+
+  /* Verdict */
+  .verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); }
+  .verdict .big.good { color: var(--ok); }
+  @media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.bad { color: var(--crit); font-weight: 600; }
+  td.good { color: var(--ok); font-weight: 600; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  /* Bar charts */
+  .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.86rem; color: var(--ink-2); }
+  .metric { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 6px 16px; align-items: start; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .metric:first-of-type { border-top: 0; padding-top: 0; }
+  .metric-name { font-weight: 600; font-size: 0.93rem; }
+  .metric-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .bars { display: flex; flex-direction: column; gap: 3px; }
+  .bar-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; align-items: center; position: relative; }
+  .track { height: 14px; position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .fill.zero { width: 2px !important; border-radius: 0; opacity: 0.8; }
+  .bar-val { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .bar-row:hover .track { background: var(--accent-soft); }
+  .bar-row[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 2;
+    background: var(--ink); color: var(--paper); font-size: 0.78rem; padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  }
+  @media (max-width: 620px) { .metric { grid-template-columns: 1fr; } }
+
+  /* Findings */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  details.finding { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev); border-radius: 6px; }
+  details.finding[data-sev="critical"] { --sev: var(--crit); }
+  details.finding[data-sev="high"] { --sev: var(--high); }
+  details.finding[data-sev="medium"] { --sev: var(--med); }
+  details.finding[data-sev="low"] { --sev: var(--low); }
+  details.finding summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: baseline; }
+  details.finding summary::-webkit-details-marker { display: none; }
+  .fid { font-family: var(--mono); font-size: 0.8rem; color: var(--sev); font-weight: 600; }
+  .ftitle { font-weight: 600; }
+  .ftitle small { display: block; font-weight: 400; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+  .stamp { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; transform: rotate(-3deg); white-space: nowrap; }
+  .stamp.fixed { color: var(--ok); }
+  .stamp.partial { color: var(--high); }
+  .stamp.open { color: var(--muted); }
+  .fbody { padding: 0 14px 14px 84px; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
+  .fbody dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; }
+  .fbody dt { color: var(--muted); font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .fbody dd { margin: 0; }
+  @media (max-width: 620px) {
+    details.finding summary { grid-template-columns: 1fr auto; }
+    .fid { grid-column: 1 / -1; }
+    .fbody { padding-left: 14px; }
+    .fbody dl { grid-template-columns: 1fr; }
+  }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; }
+
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .panel ul, .prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+  pre { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.6; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+  td.mono, .mono { font-family: var(--mono); font-size: 0.84rem; }
+  .rec { border-left: 4px solid var(--ok); background: var(--ok-bg); padding: 14px 16px; border-radius: 0 6px 6px 0; display: flex; flex-direction: column; gap: 8px; }
+  .rec ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 76ch; }
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <span class="eyebrow">Round 2 · roles, workflow fixes, simulation</span>
+      <h1>Aamstrand ERP Round 2</h1>
+      <p class="lede">All five next steps you picked are built: history paging, cancellations and returns that restock, item links on every line, a stock ledger with an audit trail, and a reliable import. The app now has your seven roles, and the server enforces who can move an order to each stage. The new 15-person day ended with the books exact. It also showed that two analysts can't keep up with validation, allocation and pick release at 150 orders a day.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Prepared</dt><dd>24 Sep 2026</dd>
+      <dt>Branch</dt><dd>claude/practical-volta-02z5tg</dd>
+      <dt>Round 1</dt><dd><a href="https://claude.ai/artifact/GVRBZGQBNYjDKn3Bi4oug7">erp-review.html</a></dd>
+      <dt>Migration</dt><dd>1 (additive)</dd>
+    </dl>
+  </header>
+
+  <section aria-labelledby="summary">
+    <div class="section-head"><span class="eyebrow">01 · Summary</span><h2 id="summary">Where it stands</h2></div>
+    <div class="verdict">
+      <div><span class="eyebrow">Stock and order integrity</span><span class="big good">0 errors</span>
+        <p>after a full day: on-hand matches the stock ledger and the documents for all 500 SKUs, nothing went negative, no units were promised twice, and cancelled orders released everything they held. 482 stock movements were recorded, each with who and why.</p></div>
+      <div><span class="eyebrow">Bottleneck</span><span class="big bad">91 orders</span>
+        <p>that arrived before 3 pm were still waiting for validation at close. The two analysts were 98% busy all day: they validate, allocate and release every pick. Customer service averaged 56% and sales managers 37%.</p></div>
+      <div><span class="eyebrow">Checks</span><span class="big good">73 / 73</span>
+        <p>browser checks passed for every role's pages and key actions. There were 16 of 16 server behavior checks, 0 permission refusals and 0 server errors in the simulated day, and the typecheck and lint are clean.</p></div>
+    </div>
+    <div class="prose">
+      <p><strong>Push to main tonight?</strong> Yes, through a pull request, once you've done the four steps in section 07. The database change is additive, and every workflow was exercised end to end. A few behavior changes are deliberate and will look different to your team (see section 07).</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="roles">
+    <div class="section-head"><span class="eyebrow">02 · Roles</span><h2 id="roles">Seven roles, enforced by the server</h2></div>
+    <div class="prose"><p>Each role is a preset on the Accounts page. The server checks the same permissions, so a role can't do more through the API than its screens allow. Status changes are checked step by step:</p>
+    <ul>
+      <li>Entered → Checked needs Validation.</li>
+      <li>Checked → Allocated needs Allocation.</li>
+      <li>Allocated → Pick &amp; Packed needs the new <strong>Release Picks</strong> permission.</li>
+      <li>Confirming a shipment needs Open Picks.</li>
+      <li>Cancelling needs Sales Order View or Allocation.</li>
+      <li>Nobody can skip a step.</li>
+    </ul>
+    <p>Pick &amp; Pack is split in two, so Order Entry can print released picks without releasing them.</p></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Role</th><th class="num">People</th><th>Does</th><th>Access</th></tr></thead>
+      <tbody><tr><td><strong>Purchasing</strong></td><td class='num'>2</td><td>Writes vendor POs, receives trucks and customer returns, keeps vendors and the catalog current, runs cycle counts.</td><td class='muted'>Purchase Orders, Receiving, Vendors, Inventory, Item Catalog, Import (edit). Returns, back orders, capacity, reports (view).</td></tr><tr><td><strong>Customer Service</strong></td><td class='num'>4</td><td>Takes phone orders, answers order-status calls, quotes price and availability, issues RAs, cancels orders at the customer&#x27;s request.</td><td class='muted'>Order Entry, Sales Order View, Customers, Returns (edit). Open/closed orders, back orders, schedule, shipment history, pricing, routing guide, catalog, inventory, reports (view).</td></tr><tr><td><strong>Order Entry</strong></td><td class='num'>2</td><td>Keys customer POs and prints pick lists and packing slips for picks the analysts have released. Can&#x27;t validate or release.</td><td class='muted'>Order Entry, Import, Pick &amp; Pack print (edit). Open orders, order view, customers, catalog, inventory (view).</td></tr><tr><td><strong>Analyst</strong></td><td class='num'>2</td><td>Validates and allocates orders, works the back-order queue, releases picks to the floor, and sets ship dates from vendor ETAs.</td><td class='muted'>Validation, Allocation, Back Orders, Release Picks, Schedule, Sales Order View, Reports (edit). POs, receiving, capacity, inventory, catalog, customers, shipment history (view).</td></tr><tr><td><strong>Logistics</strong></td><td class='num'>1</td><td>Confirms what shipped once the floor finishes a pick, generates BOLs, books carrier pickups, runs the end-of-day shipped report.</td><td class='muted'>Open Picks, Shipment History, Schedule, BOL, Labels (edit). Routing guide, capacity, pick &amp; pack, orders, customers, inventory, reports (view).</td></tr><tr><td><strong>Director</strong></td><td class='num'>1</td><td>Oversight: dashboard, analytics, activity log and stock ledger, reports; can do any task.</td><td class='muted'>Admin role (every page, plus Accounts). A Director preset (every page at edit, no Accounts) is also available.</td></tr><tr><td><strong>Sales Manager</strong></td><td class='num'>3</td><td>Sets up new accounts, maintains customer records, pricing and routing guides, and reviews their accounts&#x27; orders and analytics.</td><td class='muted'>Customers, Customer Pricing, Routing Guide, Analytics, Reports (edit). Orders, back orders, shipments, schedule, catalog, inventory (view).</td></tr></tbody></table></div>
+    <div class="panel">
+      <h3>Roles you may have missed</h3>
+      <ul>
+        <li><strong>Warehouse floor (pick and pack).</strong> Nobody in the roster physically picks. The sim models the floor as time between printing a pick and logistics confirming it, and logistics keys in any shorts. A Warehouse role on a tablet at the dock could confirm picks and record shorts directly, which would take load off the single logistics person (71% busy).</li>
+        <li><strong>Accounting / billing.</strong> Nothing invoices shipped orders, applies payments or turns returns into credit memos. You need either this role and module, or an export to your accounting system.</li>
+        <li><strong>System admin.</strong> Right now only the Director has the Admin role, which covers account management. A second admin avoids a single point of failure for password resets and new hires.</li>
+        <li><strong>Sales managers' lead capture.</strong> The app has no leads, quotes or follow-ups. Sales managers can only add a customer once it's won. This gap is on the to-do list.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="sim">
+    <div class="section-head"><span class="eyebrow">03 · Simulation</span><h2 id="sim">A day with the new team</h2></div>
+    <div class="prose">
+      <p>The 15 people above worked one 8-hour day, compressed into 12 minutes, against the real API. The load was the same as round 1: 150 new orders plus 60 left over from yesterday, the top 20 customers placing 80% of them, and 10% of orders with 20 or more lines. How each role spent the day:</p>
+      <ul>
+        <li><strong>Order entry</strong> keyed 55% of the orders and printed picks.</li>
+        <li><strong>Customer service</strong> took the phone orders, plus status calls, quotes, returns and cancellations.</li>
+        <li><strong>Analysts</strong> validated, allocated and released picks.</li>
+        <li><strong>The warehouse floor</strong> took 10 minutes plus about 1.5 minutes per line to pick an order after printing.</li>
+        <li><strong>Logistics</strong> confirmed shipments, booked pickups, generated BOLs and ran the end-of-day report.</li>
+        <li><strong>Purchasing</strong> received trucks and returns, wrote POs and ran cycle counts.</li>
+        <li><strong>Sales managers</strong> opened new accounts and worked their existing ones.</li>
+      </ul>
+      <p>Busy time is what each person spent on tasks. Idle time is waiting for work to show up.</p>
+    </div>
+
+    <figure class="chart" style="margin:0" aria-label="Busy share by role">
+      <div class="legend" aria-hidden="true">
+        <span><span class="key" style="background:var(--s1)"></span>As staffed (2 analysts, 4 CS)</span>
+        <span><span class="key" style="background:var(--s3)"></span>What-if (3 analysts, 3 CS)</span>
+      </div>
+      <div class="metric"><div class="metric-name">Analyst<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 98%"><div class="track"><div class="fill" style="width:98.99%;background:var(--s1)"></div></div><div class="bar-val">98%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 99%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s3)"></div></div><div class="bar-val">99%</div></div></div></div><div class="metric"><div class="metric-name">Order Entry<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 78%"><div class="track"><div class="fill" style="width:88.64%;background:var(--s1)"></div></div><div class="bar-val">78%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 88%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s3)"></div></div><div class="bar-val">88%</div></div></div></div><div class="metric"><div class="metric-name">Logistics<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 71%"><div class="track"><div class="fill" style="width:85.54%;background:var(--s1)"></div></div><div class="bar-val">71%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 83%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s3)"></div></div><div class="bar-val">83%</div></div></div></div><div class="metric"><div class="metric-name">Customer Service<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 56%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">56%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 55%"><div class="track"><div class="fill" style="width:98.21%;background:var(--s3)"></div></div><div class="bar-val">55%</div></div></div></div><div class="metric"><div class="metric-name">Director<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 48%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">48%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 46%"><div class="track"><div class="fill" style="width:95.83%;background:var(--s3)"></div></div><div class="bar-val">46%</div></div></div></div><div class="metric"><div class="metric-name">Purchasing<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 42%"><div class="track"><div class="fill" style="width:95.45%;background:var(--s1)"></div></div><div class="bar-val">42%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 44%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s3)"></div></div><div class="bar-val">44%</div></div></div></div><div class="metric"><div class="metric-name">Sales Manager<small>average busy share of the day</small></div><div class="bars"><div class="bar-row" data-tip="As staffed (2 analysts, 4 CS): 37%"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">37%</div></div><div class="bar-row" data-tip="What-if (3 analysts, 3 CS): 36%"><div class="track"><div class="fill" style="width:97.30%;background:var(--s3)"></div></div><div class="bar-val">36%</div></div></div></div>
+    </figure>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>End of day</th><th class='num'>As staffed</th><th class='num'>What-if: 3 analysts, 3 CS</th></tr></thead>
+      <tbody>
+        <tr><td>Orders entered today</td><td class='num'>144</td><td class='num'>143</td></tr>
+        <tr><td>Orders validated</td><td class='num'>93</td><td class='num'>111</td></tr>
+        <tr><td>Allocation decisions</td><td class='num'>97</td><td class='num'>121</td></tr>
+        <tr><td>Picks released to the floor</td><td class='num'>78</td><td class='num'>98</td></tr>
+        <tr><td>Shipments confirmed</td><td class='num'>69</td><td class='num'>88</td></tr>
+        <tr><td>Orders fully shipped</td><td class='num'>46</td><td class='num'>51</td></tr>
+        <tr><td>Units shipped</td><td class='num'>46,209</td><td class='num'>62,716</td></tr>
+        <tr><td>Waiting for validation at close: arrived before 3 pm or yesterday</td><td class='num bad'>91</td><td class='num bad'>70</td></tr>
+        <tr><td>Waiting for validation at close: arrived after 3 pm</td><td class='num'>20</td><td class='num'>22</td></tr>
+        <tr><td>Backordered (waiting on stock)</td><td class='num'>36</td><td class='num'>50</td></tr>
+        <tr><td>Orders cancelled by customer service</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>Vendor PO receipts posted</td><td class='num'>7</td><td class='num'>5</td></tr>
+        <tr><td>Customer returns received back into stock</td><td class='num'>8</td><td class='num'>5</td></tr>
+        <tr><td>Order-status calls answered</td><td class='num'>67</td><td class='num'>36</td></tr>
+        <tr><td>Price & availability quotes</td><td class='num'>35</td><td class='num'>22</td></tr>
+        <tr><td>New customers set up</td><td class='num'>7</td><td class='num'>4</td></tr>
+        <tr><td>SKUs where on-hand ≠ documents</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>SKUs where on-hand ≠ stock ledger</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>SKUs with negative stock</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>Units promised twice</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>Cancelled orders still holding stock</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>Permission refusals</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>Server errors</td><td class='num'>0</td><td class='num'>0</td></tr>
+        <tr><td>Collisions refused with a message (409)</td><td class='num'>60</td><td class='num'>150</td></tr>
+        <tr><td>Slowest request of the day</td><td class='num'>163 ms</td><td class='num'>147 ms</td></tr>
+      </tbody></table></div>
+    <p class="muted" style="font-size:0.9rem">There were no server errors in either run. The 409s are the app refusing an action after someone else got there first, most often "this order already moved on" when two analysts reach for the top of the same queue. Nothing is written in that case; the person reloads and picks the next order.</p>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>How long each step waited (as staffed)</h3>
+        <ul>
+          <li><strong>Entered → validated:</strong> 313 min (90% within 344) for the orders that got validated at all.</li>
+          <li><strong>Pick released → confirmed shipped:</strong> 36 min (90% within 56). That's floor time plus logistics.</li>
+          <li><strong>Entered → shipped, same day:</strong> 352 min (90% within 377).</li>
+        </ul>
+        <p class="muted">Once an order is validated it moves quickly: allocation and release each happen within minutes. The wait is almost entirely at validation.</p>
+      </div>
+      <div class="panel">
+        <h3>Everyone's day (as staffed)</h3>
+        <div class="table-wrap"><table><thead><tr><th>Role</th><th>Person</th><th class="num">Busy</th></tr></thead><tbody><tr><td>Analyst</td><td class='mono'>an.derek</td><td class='num bad'>99%</td></tr><tr><td>Analyst</td><td class='mono'>an.sofia</td><td class='num bad'>98%</td></tr><tr><td>Order Entry</td><td class='mono'>oe.rosa</td><td class='num'>79%</td></tr><tr><td>Order Entry</td><td class='mono'>oe.tom</td><td class='num'>78%</td></tr><tr><td>Logistics</td><td class='mono'>log.marcus</td><td class='num'>71%</td></tr><tr><td>Customer Service</td><td class='mono'>cs.james</td><td class='num'>55%</td></tr><tr><td>Customer Service</td><td class='mono'>cs.linda</td><td class='num'>56%</td></tr><tr><td>Customer Service</td><td class='mono'>cs.maria</td><td class='num'>53%</td></tr><tr><td>Customer Service</td><td class='mono'>cs.priya</td><td class='num'>58%</td></tr><tr><td>Director</td><td class='mono'>dir.sam</td><td class='num'>48%</td></tr><tr><td>Purchasing</td><td class='mono'>pur.ali</td><td class='num'>32%</td></tr><tr><td>Purchasing</td><td class='mono'>pur.dan</td><td class='num'>52%</td></tr><tr><td>Sales Manager</td><td class='mono'>sm.grace</td><td class='num'>38%</td></tr><tr><td>Sales Manager</td><td class='mono'>sm.helen</td><td class='num'>35%</td></tr><tr><td>Sales Manager</td><td class='mono'>sm.kenji</td><td class='num'>37%</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <p><strong>Staffing:</strong> each order takes an analyst about 8 minutes across validation, allocation and pick release, plus page loads, re-checking back orders and collisions. At 150 orders a day that's more than two people can do; three nearly keep up at steady state, but not with yesterday's backlog on top. The options, cheapest first:</p>
+      <ul>
+        <li><strong>Let customer service validate the phone orders they take.</strong> That's a one-line change to their preset, and they run at about 55% busy.</li>
+        <li>Skip separate validation for small repeat orders from key accounts.</li>
+        <li>Add a third analyst (a fourth to clear backlogs).</li>
+        <li>Time real reviews first: if your analysts are faster than my assumptions, the gap shrinks.</li>
+      </ul>
+    </div>
+    <p><strong>What-if, one customer service rep moved to Analyst (3 CS, 3 analysts):</strong> the orders that arrived before 3 pm and were still waiting for validation fell from <strong>91</strong> to <strong>70</strong>. Units shipped rose from 46,209 to 62,716 (+36%). The three analysts were still 99% busy, so three is better but not enough at these time assumptions. Customer service still kept up with every phone order at 55% busy. Collisions at the top of the shared queue rose from 60 to 150 refusals; splitting the queues (one person validates, the others allocate and release) would avoid most of them.</p>
+    <p class="muted" style="font-size:0.9rem">These conclusions depend on my time assumptions for each task. Validating takes 1 minute plus 9 seconds per line, allocating 1 minute plus 15 seconds per line, and releasing 1 minute plus 6 seconds per line. Time a few real orders; if your analysts are faster, the gap shrinks. Other options besides hiring: let customer service validate the phone orders they took (a one-line preset change), or skip separate validation for small repeat orders from key accounts.</p>
+  </section>
+
+  <section aria-labelledby="scale">
+    <div class="section-head"><span class="eyebrow">04 · Scale</span><h2 id="scale">A year of orders, round 2</h2></div>
+    <div class="prose"><p>This is the same test as round 1: 37,800 shipped orders in the database, with 15 people opening a page at the same moment. The middle of three runs is shown. This round adds the pages that were still downloading the entire history.</p></div>
+    <figure class="chart" style="margin:0" aria-label="Scale test"><div class="legend" aria-hidden="true"><span><span class="key" style="background:var(--s1)"></span>Original</span><span><span class="key" style="background:var(--s3)"></span>Round 2</span></div><div class="metric"><div class="metric-name">Dashboard<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Original: 63.83 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">63.83 s</div></div><div class="bar-row" data-tip="Round 2: 0.45 s"><div class="track"><div class="fill" style="width:0.70%;background:var(--s3)"></div></div><div class="bar-val">0.45 s</div></div></div></div><div class="metric"><div class="metric-name">Allocation decision<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Original: 64.62 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">64.62 s</div></div><div class="bar-row" data-tip="Round 2: 0.2 s"><div class="track"><div class="fill" style="width:0.31%;background:var(--s3)"></div></div><div class="bar-val">0.2 s</div></div></div></div><div class="metric"><div class="metric-name">Pick &amp; Pack list<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Original: 60.99 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">60.99 s</div></div><div class="bar-row" data-tip="Round 2: 6.45 s"><div class="track"><div class="fill" style="width:10.58%;background:var(--s3)"></div></div><div class="bar-val">6.45 s</div></div></div></div><div class="metric"><div class="metric-name">Order Entry<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Original: 0.94 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">0.94 s</div></div><div class="bar-row" data-tip="Round 2: 0.22 s"><div class="track"><div class="fill" style="width:23.40%;background:var(--s3)"></div></div><div class="bar-val">0.22 s</div></div></div></div><div class="metric"><div class="metric-name">Closed Orders<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Original: 67.83 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s1)"></div></div><div class="bar-val">67.83 s</div></div><div class="bar-row" data-tip="Round 2: 0.13 s"><div class="track"><div class="fill" style="width:0.19%;background:var(--s3)"></div></div><div class="bar-val">0.13 s</div></div></div></div><div class="metric"><div class="metric-name">Shipment History<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Round 2: 0.41 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s3)"></div></div><div class="bar-val">0.41 s</div></div></div></div><div class="metric"><div class="metric-name">Analytics<small>15 people open it at once</small></div><div class="bars"><div class="bar-row" data-tip="Round 2: 0.14 s"><div class="track"><div class="fill" style="width:100.00%;background:var(--s3)"></div></div><div class="bar-val">0.14 s</div></div></div></div></figure>
+    <div class="table-wrap"><table><thead><tr><th>15 people open…</th><th class="num">Original: wait</th><th class="num">Round 2: wait</th><th class="num">Original: downloaded</th><th class="num">Round 2: downloaded</th><th class="num">Original: server frozen</th><th class="num">Round 2: server frozen</th><th class="num">Original: failed</th><th class="num">Round 2: failed</th></tr></thead><tbody><tr><td>Dashboard</td><td class='num bad'>63.8 s</td><td class='num good'>0.45 s</td><td class='num'>1,324 MB</td><td class='num'>5.8 MB</td><td class='num'>17.7 s</td><td class='num'>0.23 s</td><td class='num bad'>19</td><td class='num'>0</td></tr><tr><td>Allocation decision</td><td class='num bad'>64.6 s</td><td class='num good'>0.20 s</td><td class='num'>1,306 MB</td><td class='num'>2.7 MB</td><td class='num'>15.4 s</td><td class='num'>0.09 s</td><td class='num bad'>20</td><td class='num'>0</td></tr><tr><td>Pick &amp; Pack list</td><td class='num bad'>61.0 s</td><td class='num good'>6.45 s</td><td class='num'>1,306 MB</td><td class='num'>196.3 MB</td><td class='num'>19.4 s</td><td class='num'>3.68 s</td><td class='num bad'>31</td><td class='num'>0</td></tr><tr><td>Order Entry</td><td class='num bad'>0.9 s</td><td class='num good'>0.22 s</td><td class='num'>37 MB</td><td class='num'>5.6 MB</td><td class='num'>0.3 s</td><td class='num'>0.11 s</td><td class='num'>0</td><td class='num'>0</td></tr><tr><td>Closed Orders</td><td class='num bad'>67.8 s</td><td class='num good'>0.13 s</td><td class='num'>1,305 MB</td><td class='num'>3.1 MB</td><td class='num'>27.0 s</td><td class='num'>0.05 s</td><td class='num bad'>6</td><td class='num'>0</td></tr><tr><td>Shipment History</td><td class='num bad' colspan='1'>crashed*</td><td class='num good'>0.41 s</td><td class='num'>—</td><td class='num'>3.1 MB</td><td class='num'>—</td><td class='num'>0.06 s</td><td class='num'>—</td><td class='num'>0</td></tr><tr><td>Analytics</td><td class='num bad' colspan='1'>crashed*</td><td class='num good'>0.14 s</td><td class='num'>—</td><td class='num'>3 MB</td><td class='num'>—</td><td class='num'>0.03 s</td><td class='num'>—</td><td class='num'>0</td></tr></tbody></table></div>
+    <div class="callout"><p><strong>* The original build crashed.</strong> On the third round of 15 people opening Closed Orders, the original API grew to about 10 GB of memory and the operating system killed it, which disconnects everyone. Shipment History and Analytics make the same full-history request, so they weren't re-run against it. With round 2, every page opens with no failures. Pick &amp; Pack is still the slowest at 6.4 s, because its capacity banner loads 30 days of shipments (logged as N-05). Analytics shares one computation for 60 seconds, so a burst of openings runs the heavy query once.</p></div>
+  </section>
+
+  <section aria-labelledby="built">
+    <div class="section-head"><span class="eyebrow">05 · Built</span><h2 id="built">What changed this round</h2></div>
+    <div class="two-col">
+      <div class="panel"><h3>Step 2 · Paging</h3><p>A paged order search (status, customer, item, PO, and order and ship dates) and server-side analytics replace the full-history downloads on these pages:</p><ul><li>Open and Closed Orders</li><li>Shipment History</li><li>Analytics</li><li>Reports (capped at 5,000 rows, with a notice)</li><li>Item Profile</li><li>Item Quick Report (which now matches the exact item)</li></ul><p>Order Entry, Pricing and Returns load a slim customer list and fetch one customer's price sheet when it's picked. Schedule Shipments, Product Labels and the Settings number check no longer load history either.</p></div>
+      <div class="panel"><h3>Step 4 · Cancel and restock</h3><ul><li><strong>Cancel Order</strong> needs a reason, releases allocated and packed stock, and takes the order out of every queue.</li><li><strong>Receive Return</strong> puts each line marked restock back on hand, and logs damaged lines as scrap.</li><li>An RA tied to an S.O. can't return more than that order shipped.</li><li>An RA can no longer be marked Received by a plain save.</li></ul></div>
+      <div class="panel"><h3>Step 5 · Item links</h3><ul><li>Order, PO and return lines carry the catalog item's id, and existing lines were backfilled.</li><li>Unknown items are rejected when an order is saved, with the item named.</li><li>Renaming an item carries its orders, POs, returns, customer prices and part numbers with it.</li><li>An item with history can't be deleted.</li></ul></div>
+      <div class="panel"><h3>Step 6 · Audit trail</h3><ul><li>Every change to on-hand (ship, undo, receive, return, count, edit) writes a stock-ledger row in the same transaction, with who did it and which document caused it.</li><li>The Activity Log records order, PO, return, item, customer and vendor events, with filters and a Stock ledger tab.</li><li>Item Profile shows the item's stock history.</li></ul></div>
+      <div class="panel"><h3>Step 7 · Import</h3><ul><li>Rows are saved one at a time; a failure never stops the run.</li><li>Each row gets a result, and failed rows can be downloaded as a CSV.</li><li>Existing records and duplicates within the file are skipped.</li><li>Amounts like "$1,234.50" parse; anything else is a row error.</li><li>The button is locked while saving, and view-only accounts can't import.</li></ul></div>
+      <div class="panel"><h3>Roles and workflow rules</h3><ul><li>Seven presets.</li><li>A separate Release Picks permission.</li><li>Each status change is checked, with no skipping steps.</li><li>An order's lines are frozen once stock is committed (unallocate first to change them).</li><li>Stale screens are refused.</li></ul></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="verify">
+    <div class="section-head"><span class="eyebrow">06 · Verification</span><h2 id="verify">How it was checked</h2></div>
+    <div class="prose"><ul>
+      <li><strong>Types and lint:</strong> the frontend and API typecheck and lint clean. The only warnings are 2 older ones in <code>authContext.tsx</code>.</li>
+      <li><strong>Server behavior, 16 of 16:</strong>
+        <ul>
+          <li>unknown items are rejected</li>
+          <li>order entry can't validate</li>
+          <li>skipping steps is refused</li>
+          <li>lines are frozen once allocated</li>
+          <li>cancel releases stock</li>
+          <li>an RA can't exceed what shipped</li>
+          <li>ship −5 and restock +3 (with 2 scrapped) balance</li>
+          <li>a return can't be received twice</li>
+          <li>ship, return and count adjustments appear in the ledger</li>
+          <li>a rename carries order lines along</li>
+          <li>an item with history can't be deleted</li>
+          <li>the order audit trail is recorded</li>
+        </ul></li>
+      <li><strong>Browser, 73 of 73:</strong>
+        <ul>
+          <li>logistics ships, and purchasing receives a PO and a return, in the real UI</li>
+          <li>customer service cancels an order</li>
+          <li>order entry can't release picks</li>
+          <li>a stale allocation page refuses to act</li>
+          <li>the stock ledger appears on Item Profile</li>
+          <li>66 page loads across the 7 roles with no console errors</li>
+        </ul></li>
+      <li><strong>Paging, 41 of 41:</strong> the new search and analytics results match the old client-side calculations on 37,808 orders.</li>
+      <li><strong>Import:</strong> 26 parser checks, plus an end-to-end run. It covered a simulated failure mid-import, a double-click, re-importing a partly failed file, and a view-only account.</li>
+    </ul>
+    <p class="muted">The simulation also caught one regression I introduced while merging: the analytics query broke after I excluded cancelled orders. It was fixed before the run reported here.</p></div>
+  </section>
+
+  <section aria-labelledby="main">
+    <div class="section-head"><span class="eyebrow">07 · Main</span><h2 id="main">Pushing to main for tonight's tests</h2></div>
+    <div class="rec">
+      <p><strong>Recommendation: merge through a pull request tonight</strong>, after these four steps:</p>
+      <ol>
+        <li><strong>Back up the database</strong> (<code>pg_dump -Fc</code>). The new migration is additive: a new status value, new columns and a new stock-ledger table, with existing lines linked to items automatically. Still, keep a backup.</li>
+        <li><strong>Apply the migration</strong> with <code>cd server &amp;&amp; npx prisma migrate deploy</code>, then restart the API.</li>
+        <li><strong>Re-apply a role preset to each account</strong> on the Accounts page. Existing accounts keep their old permissions, and anyone who releases picks now needs the new Release Picks permission.</li>
+        <li><strong>Change the <code>admin</code> password.</strong></li>
+      </ol>
+      <p>Behavior your team will notice:</p>
+      <ul>
+        <li>Allocation won't reserve more than is free.</li>
+        <li>Orders with items that aren't in the catalog are refused.</li>
+        <li>Allocated orders can't have their lines edited until they're unallocated.</li>
+        <li>Only logistics (Open Picks / Shipment History) can confirm or undo shipments.</li>
+        <li>An RA is received with the Receive Return button.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="open">
+    <div class="section-head"><span class="eyebrow">08 · Still open</span><h2 id="open">What's left</h2></div>
+    <div class="prose"><p>The <a href="https://claude.ai/artifact/XSgiB7gPhEWoufPbgTP1rZ">shared to-do list</a> tracks the remaining next steps (admin password and policy, HTTPS on one address, and running the simulation regularly), the open bugs and the role gaps; status and notes can be updated right on the page. The same bugs are logged in the repo at <code>docs/review/open-bugs.md</code>.</p></div>
+  </section>
+
+  <footer>Raw results: <code>docs/review/data/round2/</code>. The simulation scripts are in <code>sim/</code>. To re-run: restore the seeded snapshot, restart the API, then run <code>SIM_MINUTES=12 node sim/day.mjs</code>; add <code>SIM_SWAP="cs.priya:analyst"</code> for the what-if.</footer>
+</div>
+<script>
+  // tooltips are CSS-only; nothing to initialise
+</script>

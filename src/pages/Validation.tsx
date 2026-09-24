@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { listOrders } from "../lib/orderStore";
+import { listOpenOrders } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -10,7 +10,7 @@ export default function Validation() {
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
 
   useEffect(() => {
-    listOrders().then(setAllOrders);
+    listOpenOrders().then(setAllOrders);
   }, []);
 
   const pending = useMemo(() => allOrders.filter((o) => o.status === "Entered"), [allOrders]);

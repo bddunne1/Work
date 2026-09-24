@@ -64,25 +64,41 @@ function normalizeHeader(h: string): string {
 }
 
 export interface ParsedCsv {
+  // Normalized (lower-case, single-spaced) header names - the keys of `rows`.
   headers: string[];
+  // The header cells as they appeared in the file, same order as `headers` -
+  // for writing rows back out (e.g. the failed-rows download) under the
+  // user's own column names.
+  rawHeaders: string[];
   rows: Record<string, string>[];
+  // The spreadsheet row number of each entry in `rows` (header = row 1 when
+  // it's the first line), counting the blank rows that were skipped - so
+  // messages point at the row the user actually sees in Excel.
+  rowNumbers: number[];
 }
 
 export function parseCsvWithHeaders(text: string): ParsedCsv {
-  const table = parseRows(text).filter((r) => !(r.length === 1 && r[0].trim() === ""));
-  if (table.length === 0) return { headers: [], rows: [] };
-  const headers = table[0].map(normalizeHeader);
+  // Excel's "CSV UTF-8" export starts with a byte-order mark, which would
+  // otherwise stick to the first header and stop it matching.
+  const table = parseRows(text.replace(/^﻿/, ""));
+  const isBlank = (cells: string[]) => cells.every((c) => c.trim() === "");
+  const headerIdx = table.findIndex((cells) => !isBlank(cells));
+  if (headerIdx === -1) return { headers: [], rawHeaders: [], rows: [], rowNumbers: [] };
+  const rawHeaders = table[headerIdx].map((h) => h.trim());
+  const headers = rawHeaders.map(normalizeHeader);
   const rows: Record<string, string>[] = [];
-  for (let r = 1; r < table.length; r++) {
+  const rowNumbers: number[] = [];
+  for (let r = headerIdx + 1; r < table.length; r++) {
     const cells = table[r];
-    if (cells.every((c) => c.trim() === "")) continue;
+    if (isBlank(cells)) continue;
     const obj: Record<string, string> = {};
     for (let c = 0; c < headers.length; c++) {
       obj[headers[c]] = (cells[c] ?? "").trim();
     }
     rows.push(obj);
+    rowNumbers.push(r + 1);
   }
-  return { headers, rows };
+  return { headers, rawHeaders, rows, rowNumbers };
 }
 
 // Looks up a cell by trying each alias (case/spacing-insensitive) in turn,
@@ -95,7 +111,21 @@ export function field(row: Record<string, string>, ...aliases: string[]): string
   return "";
 }
 
+// One CSV cell, safe to open in Excel: quoted when it contains a comma,
+// quote or line break, and prefixed with ' when it would otherwise be run as
+// a formula (a customer named "=HYPERLINK(...)" or "@SUM(...)"). Plain
+// negative numbers are left alone so they stay numeric.
+export function csvCell(value: string): string {
+  let v = value;
+  if (/^[=+@\t\r]/.test(v) || (/^-/.test(v) && !/^-\d+(\.\d+)?$/.test(v))) v = `'${v}`;
+  return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
 export function toCsv(headers: string[], sampleRow: string[]): string {
-  const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  return [headers.map(escape).join(","), sampleRow.map(escape).join(",")].join("\n");
+  return [headers.map(csvCell).join(","), sampleRow.map(csvCell).join(",")].join("\n");
+}
+
+// A header row plus any number of data rows, every cell through csvCell.
+export function toCsvTable(headers: string[], rows: string[][]): string {
+  return [headers, ...rows].map((cells) => cells.map(csvCell).join(",")).join("\n");
 }

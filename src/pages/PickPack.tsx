@@ -4,8 +4,9 @@ import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
 import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
 import { isConflictError } from "../lib/apiClient";
-import { useCanEdit } from "../lib/authContext";
-import { listOrders, updateOrder } from "../lib/orderStore";
+import { useAuth, useCanEdit } from "../lib/authContext";
+import { canEdit as canEditPath } from "../lib/permissions";
+import { listOpenOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { allocatedQtyFor, canUnallocate, unallocateOrder } from "../types";
 
@@ -31,12 +32,16 @@ function releasedPicks(orders: PurchaseOrder[]): PurchaseOrder[] {
 export default function PickPack() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
+  const { account } = useAuth();
+  // Releasing a pick (the per-order review) is its own permission - order
+  // entry prints released picks here but can't release or unallocate them.
+  const canRelease = Boolean(account && canEditPath("/pick-pack/review", account));
   const [pickable, setPickable] = useState<PurchaseOrder[]>([]);
   const [queue, setQueue] = useState<PurchaseOrder[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    listOrders().then((orders) => {
+    listOpenOrders().then((orders) => {
       setPickable(readyToPick(orders));
       const released = releasedPicks(orders);
       setQueue(released);
@@ -56,11 +61,11 @@ export default function PickPack() {
       return;
     }
     try {
-      await updateOrder(unallocateOrder(order));
+      await updateOrder(unallocateOrder(order), order.status);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
-        listOrders().then((orders) => {
+        listOpenOrders().then((orders) => {
           setPickable(readyToPick(orders));
           setQueue(releasedPicks(orders));
         });
@@ -82,7 +87,8 @@ export default function PickPack() {
   const [printing, setPrinting] = useState(false);
 
   const selectedOrders = queue.filter((o) => selected[o.soNumber]);
-  const canPrint = selectedOrders.length > 0 && (includePick || includeSlip);
+  // Printing marks orders printed (a save), so it needs edit on this page.
+  const canPrint = canEdit && selectedOrders.length > 0 && (includePick || includeSlip);
 
   function toggleSelected(soNumber: string) {
     setSelected((s) => ({ ...s, [soNumber]: !s[soNumber] }));
@@ -114,18 +120,25 @@ export default function PickPack() {
       if (!confirmed) return;
       const now = new Date().toISOString();
       const printedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
+      // Server copies (with their new versions) of each order just marked
+      // printed - the queue keeps these so a second print (e.g. the packing
+      // slip after the pick list) doesn't 409 on every order.
+      const savedBySo = new Map<string, PurchaseOrder>();
       try {
         for (const o of selectedOrders) {
-          await updateOrder({
-            ...o,
-            pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
-            packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
-          });
+          savedBySo.set(
+            o.soNumber,
+            await updateOrder({
+              ...o,
+              pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
+              packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
+            })
+          );
         }
       } catch (err) {
         if (isConflictError(err)) {
           alert(`${err.message} Some orders in this batch may not have been marked printed - review and retry.`);
-          listOrders().then((orders) => {
+          listOpenOrders().then((orders) => {
             setPickable(readyToPick(orders));
             setQueue(releasedPicks(orders));
           });
@@ -137,11 +150,11 @@ export default function PickPack() {
         os
           .map((o) =>
             printedSoNumbers.has(o.soNumber)
-              ? {
+              ? (savedBySo.get(o.soNumber) ?? {
                   ...o,
                   pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
                   packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
-                }
+                })
               : o
           )
           .filter((o) => !isFullyPrinted(o))
@@ -168,7 +181,7 @@ export default function PickPack() {
           <button
             type="button"
             className="primary-btn"
-            disabled={pickable.length === 0}
+            disabled={pickable.length === 0 || !canRelease}
             onClick={startReviewQueue}
           >
             Review Queue
@@ -189,7 +202,11 @@ export default function PickPack() {
             </thead>
             <tbody>
               {pickable.map((o) => (
-                <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/pick-pack/${o.soNumber}`)}>
+                <tr
+                  key={o.soNumber}
+                  className={canRelease ? "clickable-row" : undefined}
+                  onClick={canRelease ? () => navigate(`/pick-pack/${o.soNumber}`) : undefined}
+                >
                   <td onClick={(e) => e.stopPropagation()}>
                     <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
                       {o.soNumber}
@@ -201,13 +218,15 @@ export default function PickPack() {
                     <StatusPill order={o} />
                   </td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="row-action-outline"
-                      onClick={() => navigate(`/pick-pack/${o.soNumber}`)}
-                    >
-                      Review
-                    </button>
+                    {canRelease && (
+                      <button
+                        type="button"
+                        className="row-action-outline"
+                        onClick={() => navigate(`/pick-pack/${o.soNumber}`)}
+                      >
+                        Review
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -285,7 +304,7 @@ export default function PickPack() {
                       )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      {canEdit && canUnallocate(o) && (
+                      {canRelease && canUnallocate(o) && (
                         <button
                           type="button"
                           className="row-action-outline danger-link"

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
-import { adjustQtyOnHand, listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import { isConflictError } from "../lib/apiClient";
+import { listItems, setQtyOnHandIfUnchanged } from "../lib/itemStore";
+import { listOpenOrders } from "../lib/orderStore";
 import type { Item, PurchaseOrder } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
@@ -16,7 +17,7 @@ export default function InventoryAdjust() {
 
   useEffect(() => {
     listItems().then(setItems);
-    listOrders().then(setAllOrders);
+    listOpenOrders().then(setAllOrders);
   }, []);
 
   const selectedItem = items.find((i) => i.id === itemId);
@@ -34,13 +35,20 @@ export default function InventoryAdjust() {
 
   async function handleSave() {
     if (!selectedItem || !Number.isFinite(newQty) || newQty < 0) return;
-    // A cycle-count correction is a delta against whatever qtyOnHand
-    // actually is right now, not a whole-object PUT of a value fetched
-    // possibly seconds ago - goes through the same atomic endpoint
-    // shipping/receiving use, so it can't race a concurrent shipment or
-    // receipt against this same item.
-    await adjustQtyOnHand(selectedItem.itemNumber, newQty - selectedItem.qtyOnHand);
-    const updated = { ...selectedItem, qtyOnHand: newQty };
+    // Compare-and-set against the figure on screen: if a shipment or receipt
+    // moved stock since this page loaded, the server refuses (409) rather
+    // than a delta computed from the stale figure quietly undoing it.
+    let updated: Item;
+    try {
+      updated = await setQtyOnHandIfUnchanged(selectedItem.itemNumber, selectedItem.qtyOnHand, newQty);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setItems(await listItems());
+        return;
+      }
+      throw err;
+    }
     setItems((its) => its.map((i) => (i.id === updated.id ? updated : i)));
     setSaved({ itemNumber: selectedItem.itemNumber, from: selectedItem.qtyOnHand, to: newQty });
   }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import LineChart from "../components/charts/LineChart";
 import { listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import { listCapacityOrders } from "../lib/orderStore";
 import { getCapacityLookbackDays } from "../lib/settingsStore";
 import type { Item, PurchaseOrder } from "../types";
 import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
@@ -29,8 +29,13 @@ export default function WarehouseCapacity() {
 
   useEffect(() => {
     listItems().then(setItems);
-    listOrders().then(setOrders);
   }, []);
+
+  // Only open orders plus the lookback window's shipments - not the whole
+  // order history.
+  useEffect(() => {
+    listCapacityOrders(lookbackDays).then(setOrders);
+  }, [lookbackDays]);
 
   const metrics = useMemo(
     () => computeCapacityMetrics(orders, items, lookbackDays),

@@ -41,7 +41,15 @@ export interface ReportDataSource {
   columns: ReportColumn[];
   filterFields: ReportFilterField[];
   defaultColumns: string[];
-  buildRows(filters: ReportFilterValues): Promise<ReportRow[]>;
+  buildRows(filters: ReportFilterValues): Promise<ReportRow[] | ReportRowsResult>;
+}
+
+// What buildRows returns when the rows come with a caveat - e.g. order
+// history is fetched from the server up to a row cap, and `notice` says so
+// when more orders matched than were fetched.
+export interface ReportRowsResult {
+  rows: ReportRow[];
+  notice?: string;
 }
 
 export interface ReportPreset {

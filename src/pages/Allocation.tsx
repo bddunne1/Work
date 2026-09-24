@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { listOrders } from "../lib/orderStore";
+import { listOpenOrders } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -21,7 +21,7 @@ export default function Allocation() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
-    listOrders().then(setAllOrders);
+    listOpenOrders().then(setAllOrders);
   }, []);
 
   const pending = useMemo(() => allOrders.filter((o) => o.status === "Checked"), [allOrders]);

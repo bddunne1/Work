@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { getCompanyInfo } from "../lib/companyStore";
-import { listCustomers } from "../lib/customerStore";
+import { listCustomerSummaries } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import { searchAllOrders } from "../lib/orderStore";
 import type { Customer, Item, PurchaseOrder } from "../types";
 
 type Mode = "customer" | "all";
@@ -42,14 +42,30 @@ export default function ProductLabels() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
+  const [customerOrders, setCustomerOrders] = useState<{ customerId: string; orders: PurchaseOrder[] } | null>(null);
 
   useEffect(() => {
-    listCustomers().then(setCustomers);
+    listCustomerSummaries().then(setCustomers);
     listItems().then(setItems);
-    listOrders().then(setAllOrders);
   }, []);
   const [customerId, setCustomerId] = useState<string | undefined>();
+
+  // Only the chosen customer's orders (most recent 2,000) - not the whole
+  // order history - to list what they've bought.
+  useEffect(() => {
+    if (!customerId) return;
+    let cancelled = false;
+    searchAllOrders({ customerId, sort: "orderDate", dir: "desc" }, 2000).then(
+      (r) => !cancelled && setCustomerOrders({ customerId, orders: r.orders })
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [customerId]);
+  const allOrders = useMemo(
+    () => (customerOrders && customerOrders.customerId === customerId ? customerOrders.orders : []),
+    [customerOrders, customerId]
+  );
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 

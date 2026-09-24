@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requirePermission } from "../middleware/auth.js";
-import { ConflictError } from "../lib/conflictError.js";
+import type { Prisma } from "@prisma/client";
+import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { logAudit } from "../lib/audit.js";
+import { ConflictError, HttpError } from "../lib/conflictError.js";
+import { adjustOnHand, itemIdFor, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -30,8 +33,8 @@ const lineSchema = z.object({
   id: z.string().optional(),
   itemNumber: z.string(),
   description: z.string(),
-  orderedQty: z.number().int(),
-  receivedQty: z.number().int().default(0),
+  orderedQty: z.number().int().nonnegative(),
+  receivedQty: z.number().int().nonnegative().default(0),
   cost: z.number(),
 });
 
@@ -56,6 +59,17 @@ const updateSchema = createSchema.extend({
   version: z.number().int(),
 });
 
+const receiveSchema = z.object({
+  version: z.number().int(),
+  lines: z.array(z.object({ lineId: z.string(), qty: z.number().int().nonnegative() })),
+});
+
+// Who can see vendor POs: purchasing, plus the pages that show PO data as
+// context - receiving (the dock works from the PO list), the back order
+// queue (ETAs) and catalog/inventory (on-order quantities, Item Quick Report).
+const PO_VIEW_PAGES = ["purchase-orders", "receiving", "back-orders", "catalog", "inventory"];
+const PO_RECEIVE_PAGES = ["receiving", "purchase-orders"];
+
 const include = {
   lines: true,
   receivingHistory: { orderBy: { receivedAt: "asc" as const } },
@@ -67,12 +81,12 @@ function mapOut<T extends { status: string }>(po: T) {
 
 router.use(requireAuth);
 
-router.get("/", requirePermission("purchase-orders", "view"), async (_req, res) => {
+router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (_req, res) => {
   const pos = await prisma.vendorPurchaseOrder.findMany({ orderBy: { createdAt: "desc" }, include });
   res.json(pos.map(mapOut));
 });
 
-router.get("/:poNumber", requirePermission("purchase-orders", "view"), async (req, res) => {
+router.get("/:poNumber", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req, res) => {
   const po = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber: req.params.poNumber }, include });
   if (!po) {
     res.status(404).json({ error: "Purchase order not found" });
@@ -84,7 +98,7 @@ router.get("/:poNumber", requirePermission("purchase-orders", "view"), async (re
 // Assigns the PO number itself (atomically, via the shared Counter table)
 // rather than trusting one the client precomputed - two people saving a new
 // PO at the same moment can never land on the same number.
-router.post("/", requirePermission("purchase-orders", "edit"), async (req, res) => {
+router.post("/", requirePermission("purchase-orders", "edit"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -92,12 +106,13 @@ router.post("/", requirePermission("purchase-orders", "edit"), async (req, res) 
   }
   const data = parsed.data;
   const po = await prisma.$transaction(async (tx) => {
+    const itemIds = await resolveItemIds(tx, data.lines.map((l) => l.itemNumber));
     const counter = await tx.counter.upsert({
       where: { key: VENDOR_PO_COUNTER_KEY },
       create: { key: VENDOR_PO_COUNTER_KEY, value: VENDOR_PO_START },
       update: { value: { increment: 1 } },
     });
-    return tx.vendorPurchaseOrder.create({
+    const created = await tx.vendorPurchaseOrder.create({
       data: {
         poNumber: `PO-${counter.value}`,
         vendorId: data.vendorId,
@@ -108,6 +123,7 @@ router.post("/", requirePermission("purchase-orders", "edit"), async (req, res) 
         notes: data.notes,
         lines: {
           create: data.lines.map((l) => ({
+            itemId: itemIdFor(itemIds, l.itemNumber),
             itemNumber: l.itemNumber,
             description: l.description,
             orderedQty: l.orderedQty,
@@ -118,11 +134,14 @@ router.post("/", requirePermission("purchase-orders", "edit"), async (req, res) 
       },
       include,
     });
+    await recomputeQtyOnPurchaseOrder(tx, created.lines.map((l) => l.itemNumber));
+    return created;
   });
+  logAudit(req.account!, "VENDOR_PO_CREATED", "vendor-po", po.poNumber, po.poNumber, { vendor: po.vendorName, lines: po.lines.length });
   res.status(201).json(mapOut(po));
 });
 
-router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (req, res) => {
+router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (req: AuthedRequest, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -152,7 +171,10 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         },
       });
       if (result.count === 0) throw new ConflictError();
+      const itemIds = await resolveItemIds(tx, data.lines.map((l) => l.itemNumber));
+      const beforeItems = (await tx.vendorPoLine.findMany({ where: { poNumber }, select: { itemNumber: true } })).map((l) => l.itemNumber);
       await syncChildren(tx.vendorPoLine, poNumber, "poNumber", data.lines, (l) => ({
+        itemId: itemIdFor(itemIds, l.itemNumber),
         itemNumber: l.itemNumber,
         description: l.description,
         orderedQty: l.orderedQty,
@@ -163,6 +185,8 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         receivedAt: new Date(r.receivedAt),
         lines: r.lines,
       }));
+      // Items removed from the PO need their on-order total dropped too.
+      await recomputeQtyOnPurchaseOrder(tx, [...beforeItems, ...data.lines.map((l) => l.itemNumber)]);
     });
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -172,6 +196,60 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
     throw err;
   }
 
+  logAudit(req.account!, "VENDOR_PO_UPDATED", "vendor-po", poNumber, poNumber, { status: data.status });
+  const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });
+  res.json(mapOut(updated!));
+});
+
+// Receives stock against a PO in one transaction: bumps each line's
+// receivedQty, records the receipt, rolls up the PO status, adds the units
+// to qtyOnHand and recomputes qtyOnPurchaseOrder. Replaces the browser doing
+// per-line stock PATCHes followed by a separate version-checked PO save -
+// where a 409 on the save left stock already added and a retry added it
+// again.
+router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const parsed = receiveSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const poNumber = req.params.poNumber;
+  const { version, lines } = parsed.data;
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const rows = await tx.$queryRaw<{ version: number; status: string }[]>`SELECT "version", "status"::text AS "status" FROM "VendorPurchaseOrder" WHERE "poNumber" = ${poNumber} FOR UPDATE`;
+    if (rows.length === 0) throw new HttpError(404, "Purchase order not found");
+    if (rows[0].version !== version) throw new ConflictError();
+    if (rows[0].status === "CLOSED") throw new HttpError(409, `${poNumber} is closed - reopen it before receiving against it.`, { conflict: true });
+
+    const received = lines.filter((l) => l.qty > 0);
+    if (received.length === 0) return;
+    const poLines = await tx.vendorPoLine.findMany({ where: { poNumber } });
+    const byId = new Map(poLines.map((l) => [l.id, l]));
+    for (const r of received) {
+      const line = byId.get(r.lineId);
+      if (!line) throw new HttpError(400, "Receipt references a line that is no longer on this PO - reload and try again.");
+      await tx.vendorPoLine.update({ where: { id: line.id }, data: { receivedQty: { increment: r.qty } } });
+      line.receivedQty += r.qty;
+      await adjustOnHand(tx, { itemId: line.itemId, itemNumber: line.itemNumber }, r.qty, {
+        reason: "RECEIVE_PO",
+        refType: "vendor-po",
+        refId: poNumber,
+        actor: req.account!,
+      });
+    }
+    await tx.vendorReceivingRecord.create({ data: { poNumber, receivedAt: new Date(), lines: received } });
+    const full = poLines.every((l) => l.receivedQty >= l.orderedQty);
+    const any = poLines.some((l) => l.receivedQty > 0);
+    await tx.vendorPurchaseOrder.update({
+      where: { poNumber },
+      data: { status: full ? "RECEIVED" : any ? "PARTIALLY_RECEIVED" : undefined, version: { increment: 1 } },
+    });
+    await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemNumber));
+    logAudit(req.account!, "VENDOR_PO_RECEIVED", "vendor-po", poNumber, poNumber, {
+      units: received.reduce((sum, l) => sum + l.qty, 0),
+      lines: received.length,
+    });
+  });
   const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });
   res.json(mapOut(updated!));
 });

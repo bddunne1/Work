@@ -1,0 +1,8919 @@
+{
+ "scenario": "presets",
+ "client": "fixed",
+ "realMinutes": 12,
+ "elapsedMs": 802625,
+ "ordersPlanned": 150,
+ "backlog": 60,
+ "ledger": {
+  "shipAttempts": 117,
+  "doubleShipRetries": 18,
+  "receiveRetries": 0
+ },
+ "summary": {
+  "totalCalls": 4605,
+  "statusTotals": {
+   "200": 4332,
+   "201": 159,
+   "409": 114
+  },
+  "overall": {
+   "p50": 23,
+   "p95": 130,
+   "p99": 150,
+   "max": 225
+  },
+  "totalMB": 1383,
+  "routes": [
+   {
+    "route": "GET /api/sales-orders",
+    "n": 1296,
+    "p50": 34,
+    "p95": 55,
+    "max": 95,
+    "avgKB": 333,
+    "status": {
+     "200": 1296
+    }
+   },
+   {
+    "route": "GET /api/items",
+    "n": 999,
+    "p50": 24,
+    "p95": 39,
+    "max": 87,
+    "avgKB": 183,
+    "status": {
+     "200": 999
+    }
+   },
+   {
+    "route": "GET /api/sales-orders/:so",
+    "n": 560,
+    "p50": 6,
+    "p95": 18,
+    "max": 55,
+    "avgKB": 3,
+    "status": {
+     "200": 560
+    }
+   },
+   {
+    "route": "PUT /api/sales-orders/:so",
+    "n": 548,
+    "p50": 16,
+    "p95": 52,
+    "max": 118,
+    "avgKB": 2,
+    "status": {
+     "200": 461,
+     "409": 87
+    }
+   },
+   {
+    "route": "GET /api/customers",
+    "n": 390,
+    "p50": 133,
+    "p95": 164,
+    "max": 225,
+    "avgKB": 1994,
+    "status": {
+     "200": 390
+    }
+   },
+   {
+    "route": "GET /api/customers/:id",
+    "n": 167,
+    "p50": 9,
+    "p95": 18,
+    "max": 40,
+    "avgKB": 74,
+    "status": {
+     "200": 167
+    }
+   },
+   {
+    "route": "GET /api/counters/salesOrder",
+    "n": 150,
+    "p50": 5,
+    "p95": 15,
+    "max": 42,
+    "avgKB": 0,
+    "status": {
+     "200": 150
+    }
+   },
+   {
+    "route": "POST /api/sales-orders",
+    "n": 150,
+    "p50": 12,
+    "p95": 19,
+    "max": 52,
+    "avgKB": 2,
+    "status": {
+     "201": 150
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/ship",
+    "n": 117,
+    "p50": 24,
+    "p95": 60,
+    "max": 84,
+    "avgKB": 3,
+    "status": {
+     "200": 91,
+     "409": 26
+    }
+   },
+   {
+    "route": "GET /api/vendor-purchase-orders",
+    "n": 57,
+    "p50": 13,
+    "p95": 23,
+    "max": 40,
+    "avgKB": 89,
+    "status": {
+     "200": 57
+    }
+   },
+   {
+    "route": "PUT /api/customers/:id",
+    "n": 25,
+    "p50": 38,
+    "p95": 50,
+    "max": 76,
+    "avgKB": 87,
+    "status": {
+     "200": 25
+    }
+   },
+   {
+    "route": "GET /api/vendor-purchase-orders/:po",
+    "n": 17,
+    "p50": 7,
+    "p95": 12,
+    "max": 12,
+    "avgKB": 2,
+    "status": {
+     "200": 17
+    }
+   },
+   {
+    "route": "POST /api/vendor-purchase-orders/:po/receive",
+    "n": 17,
+    "p50": 28,
+    "p95": 79,
+    "max": 79,
+    "avgKB": 2,
+    "status": {
+     "200": 17
+    }
+   },
+   {
+    "route": "POST /api/auth/login",
+    "n": 15,
+    "p50": 92,
+    "p95": 118,
+    "max": 118,
+    "avgKB": 1,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/auth/me",
+    "n": 15,
+    "p50": 3,
+    "p95": 5,
+    "max": 5,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/settings",
+    "n": 15,
+    "p50": 3,
+    "p95": 4,
+    "max": 4,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/items/:id",
+    "n": 15,
+    "p50": 6,
+    "p95": 22,
+    "max": 22,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "PUT /api/items/:id",
+    "n": 15,
+    "p50": 13,
+    "p95": 26,
+    "max": 26,
+    "avgKB": 0,
+    "status": {
+     "200": 14,
+     "409": 1
+    }
+   },
+   {
+    "route": "GET /api/accounts",
+    "n": 14,
+    "p50": 6,
+    "p95": 16,
+    "max": 16,
+    "avgKB": 6,
+    "status": {
+     "200": 14
+    }
+   },
+   {
+    "route": "GET /api/audit-log",
+    "n": 14,
+    "p50": 5,
+    "p95": 8,
+    "max": 8,
+    "avgKB": 16,
+    "status": {
+     "200": 14
+    }
+   },
+   {
+    "route": "POST /api/vendor-purchase-orders",
+    "n": 9,
+    "p50": 32,
+    "p95": 75,
+    "max": 75,
+    "avgKB": 1,
+    "status": {
+     "201": 9
+    }
+   }
+  ],
+  "eventKinds": {
+   "order-checked": 133,
+   "order-entered": 150,
+   "order-allocated": 133,
+   "order-packed": 95,
+   "conflict-409": 112,
+   "batch-printed": 53,
+   "order-shipped": 91,
+   "item-edited": 14,
+   "pricing-saved": 14,
+   "vendor-po-created": 9,
+   "po-received": 17,
+   "bol-generated": 1,
+   "gave-up": 2
+  },
+  "eventsByRole": {
+   "Validation/Allocation": {
+    "order-checked": 133,
+    "order-allocated": 133,
+    "conflict-409": 39,
+    "gave-up": 1
+   },
+   "Order Entry": {
+    "order-entered": 120
+   },
+   "Warehouse Pick/Pack/Ship": {
+    "order-packed": 95,
+    "conflict-409": 72,
+    "batch-printed": 53,
+    "order-shipped": 91,
+    "bol-generated": 1,
+    "gave-up": 1
+   },
+   "Customer Service": {
+    "order-entered": 30
+   },
+   "Admin": {
+    "item-edited": 14,
+    "conflict-409": 1
+   },
+   "Sales Manager": {
+    "pricing-saved": 14
+   },
+   "Purchasing": {
+    "vendor-po-created": 9
+   },
+   "Receiving": {
+    "po-received": 17
+   }
+  },
+  "problems": {
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10001 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 2,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10002 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | ship-detail | This record was changed by someone else since you loaded it. Reload and try again.": 8,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10009 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10002 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10008 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10004 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10008 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | ship-bulk | This record was changed by someone else since you loaded it. Reload and try again.": 17,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10012 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10003 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10013 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | batch-print | This record was changed by someone else since you loaded it. Reload and try again.": 4,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10008 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10010 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 2,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10020 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10012 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | Not enough stock to allocate - someone else may have just allocated it. PN-1143: 327 available, 449 requested. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10011 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10018 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10026 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10026 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10022 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 2,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10023 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10027 is already Backordered - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10031 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10033 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10021 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10032 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10021 is already Backordered - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10034 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10019 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10035 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10044 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10026 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10046 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10026 is already Backordered - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10039 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10040 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10055 is already Backordered - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10041 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10067 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10044 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10065 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10072 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10043 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10046 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10072 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10078 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10077 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10053 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10051 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10085 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10062 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10057 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | Not enough stock to allocate - someone else may have just allocated it. PN-1113: 428 available, 439 requested. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10091 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10082 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10065 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 2,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10070 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10096 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10071 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10067 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10093 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10075 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 2,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10094 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10099 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10074 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10079 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10109 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10114 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10081 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10124 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10089 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "gave-up | Warehouse Pick/Pack/Ship | ship-detail | This record was changed by someone else since you loaded it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | Not enough stock to allocate - someone else may have just allocated it. GS-1035: 89 available, 138 requested. Reload and try again.": 1,
+   "conflict-409 | Admin | edit-item | This record was changed by someone else since you loaded it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10092 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "gave-up | Validation/Allocation | allocate | S.O. #10119 is already Allocated - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | validate | S.O. #10131 is already Checked - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10100 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Validation/Allocation | allocate | S.O. #10128 is already Backordered - someone else moved it on since you opened it. Reload and try again.": 1,
+   "conflict-409 | Warehouse Pick/Pack/Ship | pick-pack | S.O. #10105 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again.": 1
+  }
+ },
+ "audit": {
+  "orders": {
+   "total": 210,
+   "byStatus": {
+    "Entered": 77,
+    "Checked": 3,
+    "Allocated": 21,
+    "Backordered": 35,
+    "Pick & Packed": 4,
+    "Shipped": 70
+   },
+   "orderedUnits": 311440,
+   "shippedUnits": 76365
+  },
+  "inventory": {
+   "driftItems": 0,
+   "driftUnits": 0,
+   "negative": 0,
+   "overcommittedItems": 0,
+   "overcommittedUnits": 0,
+   "qtyOnPurchaseOrderMismatches": 0,
+   "sampleDrifts": []
+  },
+  "overShippedLines": 0,
+  "vendorPos": {
+   "total": 49,
+   "received": 7,
+   "partial": 0
+  }
+ },
+ "events": [
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10001"
+   },
+   "t": 3720
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10061",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 4605
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10062",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 6408
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10001",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 7978
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10002"
+   },
+   "t": 8015
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10063",
+    "kind": "small",
+    "lines": 6,
+    "units": 191
+   },
+   "t": 9838
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10064",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1037
+   },
+   "t": 12122
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10003"
+   },
+   "t": 13281
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10001",
+    "units": 130
+   },
+   "t": 13823
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10002",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 15014
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10001 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 16086
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 16142
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10001 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 17102
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10002 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 18090
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10001",
+    "via": "bulk"
+   },
+   "t": 18486
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10006"
+   },
+   "t": 18884
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10065",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1176
+   },
+   "t": 19469
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 19682
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10066",
+    "kind": "medium",
+    "lines": 8,
+    "units": 449
+   },
+   "t": 20613
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1056"
+   },
+   "t": 20770
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10067",
+    "kind": "small",
+    "lines": 6,
+    "units": 208
+   },
+   "t": 21364
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 21365
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10005"
+   },
+   "t": 22003
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10068",
+    "kind": "medium",
+    "lines": 8,
+    "units": 526
+   },
+   "t": 22189
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10006",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 22391
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 012 Industries",
+    "overrides": 272,
+    "ms": 42
+   },
+   "t": 24937
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10004"
+   },
+   "t": 25256
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10005",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 25422
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10069",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1154
+   },
+   "t": 27350
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10070",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 28437
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10004",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 29366
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5041",
+    "lines": 11
+   },
+   "t": 29620
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5008",
+    "units": 12998
+   },
+   "t": 30515
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10006",
+    "units": 118
+   },
+   "t": 30631
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10071",
+    "kind": "small",
+    "lines": 3,
+    "units": 110
+   },
+   "t": 31379
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10009"
+   },
+   "t": 31706
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10009 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 34373
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10005",
+    "units": 149
+   },
+   "t": 36061
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10072",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 36679
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10073",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 36928
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10002",
+    "units": 961
+   },
+   "t": 37834
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5008",
+    "units": 1564
+   },
+   "t": 37882
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10002 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 39870
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10003",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 40033
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10009",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 40300
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10074",
+    "kind": "medium",
+    "lines": 8,
+    "units": 538
+   },
+   "t": 40666
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10075",
+    "kind": "medium",
+    "lines": 10,
+    "units": 779
+   },
+   "t": 41417
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 42539
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10004",
+    "units": 223
+   },
+   "t": 42906
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10008"
+   },
+   "t": 43454
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10008 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 43977
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10076",
+    "kind": "small",
+    "lines": 5,
+    "units": 219
+   },
+   "t": 44551
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10005",
+    "via": "detail"
+   },
+   "t": 44608
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 45006
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10004 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 45071
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10077",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 47844
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10008",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 48321
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10008 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 48644
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10002",
+    "via": "bulk"
+   },
+   "t": 49829
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10004",
+    "via": "bulk"
+   },
+   "t": 49867
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 50309
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10007"
+   },
+   "t": 50426
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10007",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 52736
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10012"
+   },
+   "t": 53384
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10078",
+    "kind": "small",
+    "lines": 5,
+    "units": 159
+   },
+   "t": 53883
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10010"
+   },
+   "t": 55865
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10012",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 56556
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10079",
+    "kind": "small",
+    "lines": 6,
+    "units": 216
+   },
+   "t": 58210
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10012 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 59042
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10080",
+    "kind": "small",
+    "lines": 4,
+    "units": 115
+   },
+   "t": 59087
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10009",
+    "units": 1248
+   },
+   "t": 60729
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10003",
+    "units": 1201
+   },
+   "t": 61619
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10013"
+   },
+   "t": 61939
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10010",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 63630
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10006",
+    "via": "bulk"
+   },
+   "t": 63680
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10011"
+   },
+   "t": 64061
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 64332
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10016"
+   },
+   "t": 67217
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5008",
+    "units": 0
+   },
+   "t": 68057
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10013",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 68613
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10081",
+    "kind": "large",
+    "lines": 24,
+    "units": 13629
+   },
+   "t": 69410
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10003 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 70042
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10007",
+    "units": 3
+   },
+   "t": 70125
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10082",
+    "kind": "medium",
+    "lines": 8,
+    "units": 730
+   },
+   "t": 71087
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 019 Supply",
+    "overrides": 228,
+    "ms": 76
+   },
+   "t": 71259
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10008",
+    "units": 145
+   },
+   "t": 71742
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10013 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 71817
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10015"
+   },
+   "t": 72232
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 72459
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10083",
+    "kind": "large",
+    "lines": 23,
+    "units": 11557
+   },
+   "t": 72570
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "HX-1002"
+   },
+   "t": 73208
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 74223
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 4
+   },
+   "t": 75028
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10011",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 76519
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10084",
+    "kind": "small",
+    "lines": 6,
+    "units": 167
+   },
+   "t": 76956
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10085",
+    "kind": "large",
+    "lines": 25,
+    "units": 12687
+   },
+   "t": 77101
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10008 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 77730
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10018"
+   },
+   "t": 77861
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10003",
+    "via": "bulk"
+   },
+   "t": 78043
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 79241
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10017"
+   },
+   "t": 79482
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10009",
+    "via": "bulk"
+   },
+   "t": 80001
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10007",
+    "via": "bulk"
+   },
+   "t": 80019
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 80399
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5041",
+    "units": 8682
+   },
+   "t": 80716
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10086",
+    "kind": "small",
+    "lines": 5,
+    "units": 127
+   },
+   "t": 80955
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10087",
+    "kind": "small",
+    "lines": 4,
+    "units": 122
+   },
+   "t": 81885
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10010",
+    "units": 8
+   },
+   "t": 82671
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10018",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 83201
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10088",
+    "kind": "small",
+    "lines": 3,
+    "units": 105
+   },
+   "t": 83225
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10010 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 83606
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10015",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 83777
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10020"
+   },
+   "t": 85187
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10020 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 85915
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10010 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 87000
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10020",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 87489
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10017",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 89599
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10019"
+   },
+   "t": 90374
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 90426
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10089",
+    "kind": "small",
+    "lines": 6,
+    "units": 174
+   },
+   "t": 90693
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5038",
+    "units": 12023
+   },
+   "t": 91119
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10012",
+    "units": 199
+   },
+   "t": 93059
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10016",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 93809
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10090",
+    "kind": "small",
+    "lines": 4,
+    "units": 124
+   },
+   "t": 93894
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10012 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 93953
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10091",
+    "kind": "small",
+    "lines": 6,
+    "units": 217
+   },
+   "t": 95137
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10092",
+    "kind": "small",
+    "lines": 7,
+    "units": 280
+   },
+   "t": 95548
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10008",
+    "via": "bulk"
+   },
+   "t": 95883
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10010",
+    "via": "bulk"
+   },
+   "t": 95900
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 96152
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 97675
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10093",
+    "kind": "medium",
+    "lines": 13,
+    "units": 854
+   },
+   "t": 98346
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10021"
+   },
+   "t": 98918
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10022"
+   },
+   "t": 99885
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10094",
+    "kind": "medium",
+    "lines": 8,
+    "units": 875
+   },
+   "t": 103721
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10022",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 106071
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10015",
+    "units": 202
+   },
+   "t": 106618
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10095",
+    "kind": "small",
+    "lines": 3,
+    "units": 85
+   },
+   "t": 107035
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10096",
+    "kind": "small",
+    "lines": 3,
+    "units": 69
+   },
+   "t": 107362
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5042",
+    "lines": 2
+   },
+   "t": 107530
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10011",
+    "units": 863
+   },
+   "t": 108109
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10013",
+    "units": 704
+   },
+   "t": 108303
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10023"
+   },
+   "t": 108739
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 109888
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "Not enough stock to allocate - someone else may have just allocated it. PN-1143: 327 available, 449 requested. Reload and try again."
+   },
+   "t": 111971
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10023",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 112142
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10097",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1216
+   },
+   "t": 112357
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10098",
+    "kind": "small",
+    "lines": 3,
+    "units": 111
+   },
+   "t": 114234
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10016",
+    "units": 162
+   },
+   "t": 114379
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10025"
+   },
+   "t": 114931
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10099",
+    "kind": "medium",
+    "lines": 10,
+    "units": 698
+   },
+   "t": 115416
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10100",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 116119
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10011 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 116528
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10101",
+    "kind": "small",
+    "lines": 4,
+    "units": 129
+   },
+   "t": 116608
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5036",
+    "units": 11881
+   },
+   "t": 116882
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10025",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 117311
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 117339
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10018",
+    "units": 704
+   },
+   "t": 119853
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10011",
+    "via": "bulk"
+   },
+   "t": 120422
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10012",
+    "via": "bulk"
+   },
+   "t": 120447
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 122224
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "PN-1059"
+   },
+   "t": 122579
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10102",
+    "kind": "small",
+    "lines": 4,
+    "units": 151
+   },
+   "t": 123704
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10021",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 124247
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10020",
+    "units": 3
+   },
+   "t": 124657
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 017 Supply",
+    "overrides": 272,
+    "ms": 34
+   },
+   "t": 124698
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10015",
+    "via": "detail"
+   },
+   "t": 124888
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5036",
+    "units": 1856
+   },
+   "t": 125259
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10103",
+    "kind": "medium",
+    "lines": 9,
+    "units": 589
+   },
+   "t": 127999
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10104",
+    "kind": "small",
+    "lines": 3,
+    "units": 111
+   },
+   "t": 128820
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10017",
+    "units": 8
+   },
+   "t": 129943
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10026"
+   },
+   "t": 130214
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10018 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 131169
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10105",
+    "kind": "small",
+    "lines": 6,
+    "units": 105
+   },
+   "t": 131170
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 131818
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10026 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 132098
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10106",
+    "kind": "medium",
+    "lines": 9,
+    "units": 750
+   },
+   "t": 132309
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10016",
+    "via": "detail"
+   },
+   "t": 135344
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10013",
+    "via": "bulk"
+   },
+   "t": 135445
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10107",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 138702
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10108",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 141241
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10109",
+    "kind": "medium",
+    "lines": 8,
+    "units": 670
+   },
+   "t": 141722
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10022",
+    "units": 1112
+   },
+   "t": 142688
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10026",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 146577
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10018",
+    "via": "detail"
+   },
+   "t": 147494
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10026 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 147815
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5036",
+    "units": 0
+   },
+   "t": 149052
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10110",
+    "kind": "small",
+    "lines": 4,
+    "units": 114
+   },
+   "t": 149266
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10111",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 149793
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10022 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 149835
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10112",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 150473
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10113",
+    "kind": "medium",
+    "lines": 10,
+    "units": 1039
+   },
+   "t": 150777
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10024"
+   },
+   "t": 151676
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 152178
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10020",
+    "via": "detail"
+   },
+   "t": 154063
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10022 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 155194
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10023",
+    "units": 163
+   },
+   "t": 155425
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10019",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 155736
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10027"
+   },
+   "t": 156723
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 157800
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10024",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 158672
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10028"
+   },
+   "t": 158883
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10114",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 159552
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10115",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 160269
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10023 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 160550
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10030"
+   },
+   "t": 162091
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5041",
+    "units": 234
+   },
+   "t": 162538
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10025",
+    "units": 7
+   },
+   "t": 162834
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10116",
+    "kind": "small",
+    "lines": 6,
+    "units": 185
+   },
+   "t": 163461
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10117",
+    "kind": "medium",
+    "lines": 9,
+    "units": 743
+   },
+   "t": 167350
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10118",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 168804
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10119",
+    "kind": "large",
+    "lines": 36,
+    "units": 16124
+   },
+   "t": 174168
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10027",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 174329
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10120",
+    "kind": "small",
+    "lines": 4,
+    "units": 79
+   },
+   "t": 174377
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10027 is already Backordered - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 175222
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10031"
+   },
+   "t": 176917
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10028",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 179480
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5043",
+    "lines": 8
+   },
+   "t": 181695
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10121",
+    "kind": "medium",
+    "lines": 9,
+    "units": 694
+   },
+   "t": 183174
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10014"
+   },
+   "t": 183354
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10122",
+    "kind": "medium",
+    "lines": 12,
+    "units": 954
+   },
+   "t": 186345
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10014",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 187425
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10123",
+    "kind": "medium",
+    "lines": 12,
+    "units": 937
+   },
+   "t": 187720
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 017 Supply",
+    "overrides": 272,
+    "ms": 50
+   },
+   "t": 188981
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "HX-1009"
+   },
+   "t": 189870
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10029"
+   },
+   "t": 190790
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10124",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 193280
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10029",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 193804
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10027",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 195420
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10125",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 195493
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10021",
+    "units": 9335
+   },
+   "t": 197821
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10034"
+   },
+   "t": 198154
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10032"
+   },
+   "t": 198246
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5041",
+    "units": 234
+   },
+   "t": 199918
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10031",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 201288
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10031 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 201433
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5041",
+    "units": 0
+   },
+   "t": 201613
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10126",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8
+   },
+   "t": 202692
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10033"
+   },
+   "t": 203507
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10022",
+    "via": "detail"
+   },
+   "t": 204652
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10033 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 204939
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10032",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 206044
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10127",
+    "kind": "medium",
+    "lines": 11,
+    "units": 824
+   },
+   "t": 206231
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10128",
+    "kind": "large",
+    "lines": 31,
+    "units": 15012
+   },
+   "t": 207734
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10021 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 208597
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10032 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 208724
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10129",
+    "kind": "large",
+    "lines": 37,
+    "units": 17180
+   },
+   "t": 208731
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10035"
+   },
+   "t": 209847
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 210971
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10130",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 211268
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10024",
+    "units": 118
+   },
+   "t": 211558
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10037"
+   },
+   "t": 212549
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 214083
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10131",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1113
+   },
+   "t": 214308
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10017",
+    "via": "bulk"
+   },
+   "t": 216258
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10021",
+    "via": "bulk"
+   },
+   "t": 216316
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10021 is already Backordered - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 216359
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10034",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 216825
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10039"
+   },
+   "t": 219397
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 219772
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10034 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 220527
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10023",
+    "via": "bulk"
+   },
+   "t": 220696
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 220893
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10028",
+    "units": 8
+   },
+   "t": 221155
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10030",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 223645
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10132",
+    "kind": "small",
+    "lines": 4,
+    "units": 100
+   },
+   "t": 223927
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10040"
+   },
+   "t": 224273
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10024",
+    "via": "bulk"
+   },
+   "t": 224709
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10133",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 225363
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10037",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 225951
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10038"
+   },
+   "t": 226252
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10019",
+    "units": 170
+   },
+   "t": 226695
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10042"
+   },
+   "t": 229488
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10025",
+    "via": "bulk"
+   },
+   "t": 229576
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10134",
+    "kind": "medium",
+    "lines": 12,
+    "units": 820
+   },
+   "t": 230105
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10019 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 230173
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10035",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 231009
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 233057
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10035 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 233835
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10041"
+   },
+   "t": 234371
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10135",
+    "kind": "large",
+    "lines": 29,
+    "units": 14644
+   },
+   "t": 234893
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10136",
+    "kind": "medium",
+    "lines": 14,
+    "units": 944
+   },
+   "t": 235609
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10019",
+    "via": "bulk"
+   },
+   "t": 236257
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10039",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 236834
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10036"
+   },
+   "t": 237909
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 001 Manufacturing",
+    "overrides": 124,
+    "ms": 28
+   },
+   "t": 238536
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10137",
+    "kind": "small",
+    "lines": 3,
+    "units": 83
+   },
+   "t": 238961
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10033",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 240505
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10044"
+   },
+   "t": 241662
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10030",
+    "units": 162
+   },
+   "t": 242375
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1040"
+   },
+   "t": 243984
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10038",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 244063
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10044 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 244671
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10138",
+    "kind": "medium",
+    "lines": 9,
+    "units": 520
+   },
+   "t": 244758
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10139",
+    "kind": "small",
+    "lines": 3,
+    "units": 75
+   },
+   "t": 245595
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10028",
+    "via": "bulk"
+   },
+   "t": 245956
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10036",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 247987
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10045"
+   },
+   "t": 249171
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10031",
+    "units": 80
+   },
+   "t": 251726
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10043"
+   },
+   "t": 251727
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10140",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 252117
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10040",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 253849
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10042",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 254487
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10047"
+   },
+   "t": 257284
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10048"
+   },
+   "t": 257299
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10141",
+    "kind": "medium",
+    "lines": 14,
+    "units": 948
+   },
+   "t": 258753
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10142",
+    "kind": "medium",
+    "lines": 8,
+    "units": 795
+   },
+   "t": 260059
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10143",
+    "kind": "medium",
+    "lines": 13,
+    "units": 876
+   },
+   "t": 260481
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10043",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 261719
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10041",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 262422
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10049"
+   },
+   "t": 264605
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10050"
+   },
+   "t": 266977
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10144",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 267739
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10145",
+    "kind": "medium",
+    "lines": 11,
+    "units": 722
+   },
+   "t": 270487
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10146",
+    "kind": "small",
+    "lines": 4,
+    "units": 104
+   },
+   "t": 271076
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10047",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 271506
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5044",
+    "lines": 1
+   },
+   "t": 272893
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10044",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 273404
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10026",
+    "units": 16234
+   },
+   "t": 273697
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10052"
+   },
+   "t": 274264
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10147",
+    "kind": "large",
+    "lines": 39,
+    "units": 17985
+   },
+   "t": 274379
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10049",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 277136
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10148",
+    "kind": "medium",
+    "lines": 13,
+    "units": 947
+   },
+   "t": 277460
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10046"
+   },
+   "t": 277992
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10149",
+    "kind": "small",
+    "lines": 5,
+    "units": 173
+   },
+   "t": 279808
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10032",
+    "units": 7
+   },
+   "t": 279946
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10051"
+   },
+   "t": 280755
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 4
+   },
+   "t": 281925
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10048",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 282826
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10026 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 282900
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10045",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 282945
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10150",
+    "kind": "small",
+    "lines": 7,
+    "units": 166
+   },
+   "t": 284273
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10151",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 286264
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10152",
+    "kind": "small",
+    "lines": 5,
+    "units": 179
+   },
+   "t": 286300
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10030",
+    "via": "detail"
+   },
+   "t": 286580
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10053"
+   },
+   "t": 286650
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10055"
+   },
+   "t": 288004
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10046",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 290086
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10153",
+    "kind": "medium",
+    "lines": 11,
+    "units": 839
+   },
+   "t": 291575
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10154",
+    "kind": "medium",
+    "lines": 10,
+    "units": 892
+   },
+   "t": 292758
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10046 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 293234
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10054"
+   },
+   "t": 295043
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10035",
+    "units": 227
+   },
+   "t": 295740
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10034",
+    "units": 1059
+   },
+   "t": 297449
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10057"
+   },
+   "t": 298324
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "PN-1045"
+   },
+   "t": 298682
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 001 Manufacturing",
+    "overrides": 124,
+    "ms": 31
+   },
+   "t": 298767
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10051",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 298777
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 300370
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10033",
+    "units": 156
+   },
+   "t": 301567
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10052",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 301906
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10155",
+    "kind": "medium",
+    "lines": 11,
+    "units": 956
+   },
+   "t": 302174
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 303671
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10056"
+   },
+   "t": 304086
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10026",
+    "via": "bulk"
+   },
+   "t": 304269
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10059"
+   },
+   "t": 304279
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10031",
+    "via": "bulk"
+   },
+   "t": 304285
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10156",
+    "kind": "medium",
+    "lines": 11,
+    "units": 750
+   },
+   "t": 305377
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10157",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1152
+   },
+   "t": 306425
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10158",
+    "kind": "medium",
+    "lines": 12,
+    "units": 929
+   },
+   "t": 308412
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10038",
+    "units": 8
+   },
+   "t": 308636
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10053",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 309473
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10054",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 309774
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 310534
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 310551
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10032",
+    "via": "bulk"
+   },
+   "t": 311544
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10061"
+   },
+   "t": 312118
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 314036
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10060"
+   },
+   "t": 315181
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10039",
+    "units": 4
+   },
+   "t": 315628
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10056",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 317455
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10159",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 317674
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10050",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 317712
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10026 is already Backordered - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 318120
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 318334
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10039 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 318670
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10058"
+   },
+   "t": 320175
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10035",
+    "via": "detail"
+   },
+   "t": 321608
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10058",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 321871
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10063"
+   },
+   "t": 321971
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10160",
+    "kind": "medium",
+    "lines": 11,
+    "units": 1023
+   },
+   "t": 323892
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10040",
+    "units": 6
+   },
+   "t": 324078
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10062"
+   },
+   "t": 324119
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10040 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 326146
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10034",
+    "via": "detail"
+   },
+   "t": 326354
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 327049
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10161",
+    "kind": "medium",
+    "lines": 12,
+    "units": 791
+   },
+   "t": 327078
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10162",
+    "kind": "large",
+    "lines": 28,
+    "units": 14257
+   },
+   "t": 328814
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10055",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 330617
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10037",
+    "units": 4
+   },
+   "t": 330751
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10055 is already Backordered - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 330987
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10036",
+    "units": 3
+   },
+   "t": 331965
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10163",
+    "kind": "medium",
+    "lines": 9,
+    "units": 811
+   },
+   "t": 332606
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 333374
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 333717
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 334674
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10066"
+   },
+   "t": 335091
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10164",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 337223
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10055",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 338772
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10033",
+    "via": "bulk"
+   },
+   "t": 339339
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10036",
+    "via": "bulk"
+   },
+   "t": 339352
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10037",
+    "via": "bulk"
+   },
+   "t": 339365
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10165",
+    "kind": "small",
+    "lines": 4,
+    "units": 107
+   },
+   "t": 339407
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10059",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 340349
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10041",
+    "units": 748
+   },
+   "t": 340425
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10042",
+    "units": 247
+   },
+   "t": 341608
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10064"
+   },
+   "t": 343571
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 343680
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10065"
+   },
+   "t": 344472
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10038",
+    "via": "bulk"
+   },
+   "t": 346734
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10039",
+    "via": "bulk"
+   },
+   "t": 346747
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10040",
+    "via": "bulk"
+   },
+   "t": 346761
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10166",
+    "kind": "large",
+    "lines": 30,
+    "units": 14687
+   },
+   "t": 347766
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10057",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 349431
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10167",
+    "kind": "large",
+    "lines": 25,
+    "units": 12535
+   },
+   "t": 349575
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10168",
+    "kind": "small",
+    "lines": 3,
+    "units": 65
+   },
+   "t": 350333
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10169",
+    "kind": "small",
+    "lines": 4,
+    "units": 77
+   },
+   "t": 350346
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5045",
+    "lines": 6
+   },
+   "t": 350739
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 350977
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10060",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 351171
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10041 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 351385
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10170",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1041
+   },
+   "t": 351752
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10041",
+    "via": "bulk"
+   },
+   "t": 351953
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10067"
+   },
+   "t": 353700
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10062",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 355631
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10067 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 355650
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10042",
+    "via": "detail"
+   },
+   "t": 356021
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 004 Supply",
+    "overrides": 234,
+    "ms": 50
+   },
+   "t": 356023
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10061",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 358461
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10171",
+    "kind": "small",
+    "lines": 6,
+    "units": 222
+   },
+   "t": 359523
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "PN-1058"
+   },
+   "t": 359746
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10068"
+   },
+   "t": 361953
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10069"
+   },
+   "t": 361980
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10172",
+    "kind": "small",
+    "lines": 5,
+    "units": 97
+   },
+   "t": 362946
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10044",
+    "units": 938
+   },
+   "t": 364225
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10044 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 366391
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10065",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 366652
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10173",
+    "kind": "medium",
+    "lines": 11,
+    "units": 876
+   },
+   "t": 366889
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 366967
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10065 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 367030
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10174",
+    "kind": "medium",
+    "lines": 8,
+    "units": 526
+   },
+   "t": 367204
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10072"
+   },
+   "t": 368802
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10175",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1258
+   },
+   "t": 368969
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10176",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 369177
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10072 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 370189
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10066",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 372801
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10045",
+    "units": 1060
+   },
+   "t": 373274
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10044",
+    "via": "detail"
+   },
+   "t": 373810
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 375194
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10073"
+   },
+   "t": 375448
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10043",
+    "units": 158
+   },
+   "t": 375805
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10064",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 376060
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10177",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 376533
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10178",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 377341
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10179",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 377470
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10071"
+   },
+   "t": 378901
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10067",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 379468
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10180",
+    "kind": "small",
+    "lines": 4,
+    "units": 142
+   },
+   "t": 380780
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10043 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 382706
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10075"
+   },
+   "t": 383456
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10063",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 383716
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10047",
+    "units": 150
+   },
+   "t": 383994
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10181",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 385839
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10046",
+    "units": 219
+   },
+   "t": 386098
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10045",
+    "via": "bulk"
+   },
+   "t": 386116
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10070"
+   },
+   "t": 386703
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10070",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 388666
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 389007
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10069",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 389166
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10182",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1086
+   },
+   "t": 391263
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10077"
+   },
+   "t": 391778
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10076"
+   },
+   "t": 392060
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10072",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 393704
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10046 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 393710
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10072 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 393882
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10183",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1299
+   },
+   "t": 397059
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10078"
+   },
+   "t": 397605
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10184",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1152
+   },
+   "t": 397739
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10049",
+    "units": 166
+   },
+   "t": 398708
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10078 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 398760
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10050",
+    "units": 661
+   },
+   "t": 398812
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10048",
+    "units": 4
+   },
+   "t": 399684
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10071",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 400405
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10043",
+    "via": "bulk"
+   },
+   "t": 401186
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 401672
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 401736
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 402531
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10073",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 402569
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10185",
+    "kind": "small",
+    "lines": 5,
+    "units": 181
+   },
+   "t": 402589
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10186",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1112
+   },
+   "t": 403288
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10079"
+   },
+   "t": 403790
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10046",
+    "via": "bulk"
+   },
+   "t": 405530
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10074"
+   },
+   "t": 405924
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1040"
+   },
+   "t": 407244
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5045",
+    "units": 878
+   },
+   "t": 407332
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10187",
+    "kind": "small",
+    "lines": 4,
+    "units": 134
+   },
+   "t": 407554
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10052",
+    "units": 191
+   },
+   "t": 409622
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10075",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 409855
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10074",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 410064
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5045",
+    "units": 0
+   },
+   "t": 410287
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10053",
+    "units": 768
+   },
+   "t": 411215
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10188",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 411344
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10080"
+   },
+   "t": 413275
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 413982
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10189",
+    "kind": "large",
+    "lines": 39,
+    "units": 18896
+   },
+   "t": 415224
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10081"
+   },
+   "t": 415896
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 007 Distribution",
+    "overrides": 268,
+    "ms": 47
+   },
+   "t": 415961
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10077",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 416007
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10190",
+    "kind": "small",
+    "lines": 7,
+    "units": 239
+   },
+   "t": 416690
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10191",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1153
+   },
+   "t": 418139
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10077 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 418631
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10056",
+    "units": 4
+   },
+   "t": 419142
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10053 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 420467
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10054",
+    "units": 1062
+   },
+   "t": 420604
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10082"
+   },
+   "t": 420923
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 421240
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10048",
+    "via": "detail"
+   },
+   "t": 422126
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10192",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 424650
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10078",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 424844
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10047",
+    "via": "bulk"
+   },
+   "t": 425078
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 425082
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10193",
+    "kind": "medium",
+    "lines": 11,
+    "units": 748
+   },
+   "t": 425176
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10194",
+    "kind": "small",
+    "lines": 6,
+    "units": 247
+   },
+   "t": 425417
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10195",
+    "kind": "small",
+    "lines": 3,
+    "units": 144
+   },
+   "t": 426062
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10058",
+    "units": 3
+   },
+   "t": 426734
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10083"
+   },
+   "t": 427638
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10051",
+    "units": 191
+   },
+   "t": 427679
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10049",
+    "via": "detail"
+   },
+   "t": 430112
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10076",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 432145
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10196",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4
+   },
+   "t": 432785
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10085"
+   },
+   "t": 433191
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10197",
+    "kind": "medium",
+    "lines": 8,
+    "units": 723
+   },
+   "t": 434765
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10080",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 435633
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10057",
+    "units": 744
+   },
+   "t": 435744
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10051 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 435932
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10198",
+    "kind": "small",
+    "lines": 5,
+    "units": 119
+   },
+   "t": 436608
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5046",
+    "lines": 3
+   },
+   "t": 436781
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10199",
+    "kind": "small",
+    "lines": 3,
+    "units": 138
+   },
+   "t": 437893
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10086"
+   },
+   "t": 438934
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10062",
+    "units": 7
+   },
+   "t": 440127
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10085 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 441608
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10200",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7
+   },
+   "t": 442033
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10062 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 442339
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 5
+   },
+   "t": 442404
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10068",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 443242
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10050",
+    "via": "detail"
+   },
+   "t": 445252
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10201",
+    "kind": "medium",
+    "lines": 11,
+    "units": 810
+   },
+   "t": 445398
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10079",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 445701
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10052",
+    "via": "detail"
+   },
+   "t": 445840
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10057 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 446220
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10087"
+   },
+   "t": 446860
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10202",
+    "kind": "small",
+    "lines": 5,
+    "units": 179
+   },
+   "t": 448982
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10084"
+   },
+   "t": 449357
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10061",
+    "units": 4
+   },
+   "t": 451251
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10053",
+    "via": "detail"
+   },
+   "t": 452166
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10063",
+    "units": 191
+   },
+   "t": 452723
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "FS-1041"
+   },
+   "t": 452921
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 453967
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10083",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 454965
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "batch-print",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 455165
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10203",
+    "kind": "medium",
+    "lines": 9,
+    "units": 718
+   },
+   "t": 455774
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 455984
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10056",
+    "via": "detail"
+   },
+   "t": 456181
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10204",
+    "kind": "medium",
+    "lines": 14,
+    "units": 848
+   },
+   "t": 457406
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10090"
+   },
+   "t": 457881
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10205",
+    "kind": "small",
+    "lines": 3,
+    "units": 54
+   },
+   "t": 458762
+  },
+  {
+   "user": "oe.maria",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10206",
+    "kind": "medium",
+    "lines": 8,
+    "units": 626
+   },
+   "t": 460792
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10084",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 461888
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10207",
+    "kind": "medium",
+    "lines": 8,
+    "units": 622
+   },
+   "t": 462366
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "Not enough stock to allocate - someone else may have just allocated it. PN-1113: 428 available, 439 requested. Reload and try again."
+   },
+   "t": 462472
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10060",
+    "units": 846
+   },
+   "t": 463111
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10051",
+    "via": "bulk"
+   },
+   "t": 463155
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10054",
+    "via": "bulk"
+   },
+   "t": 463190
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 463194
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10088"
+   },
+   "t": 464558
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 464903
+  },
+  {
+   "user": "oe.priya",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10208",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6
+   },
+   "t": 465647
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10209",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3
+   },
+   "t": 466925
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10064",
+    "units": 916
+   },
+   "t": 468841
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10057",
+    "via": "detail"
+   },
+   "t": 470773
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5046",
+    "units": 414
+   },
+   "t": 471126
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 471261
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 005 Fabrication",
+    "overrides": 179,
+    "ms": 29
+   },
+   "t": 472066
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5046",
+    "units": 0
+   },
+   "t": 472639
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10081",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 473668
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10066",
+    "units": 449
+   },
+   "t": 476037
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10085",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 477489
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10091"
+   },
+   "t": 478232
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 478684
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10091 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 481616
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10082",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 483904
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10082 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 486589
+  },
+  {
+   "user": "oe.james",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10210",
+    "kind": "large",
+    "lines": 23,
+    "units": 10460
+   },
+   "t": 487244
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10092"
+   },
+   "t": 487748
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10065",
+    "units": 1176
+   },
+   "t": 489665
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10065 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 490128
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10065 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 490409
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10086",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 491680
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10089"
+   },
+   "t": 491910
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 492646
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10061",
+    "via": "detail"
+   },
+   "t": 494503
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10087",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 494877
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10070",
+    "units": 8
+   },
+   "t": 495370
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10093"
+   },
+   "t": 496252
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10058",
+    "via": "bulk"
+   },
+   "t": 498478
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10094"
+   },
+   "t": 498553
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10070 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 499675
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10089",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 500956
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10088",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 501869
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10068",
+    "units": 526
+   },
+   "t": 502674
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "CL-1017"
+   },
+   "t": 503254
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10096"
+   },
+   "t": 503526
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10071",
+    "units": 110
+   },
+   "t": 503883
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10096 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 505175
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 505776
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10063",
+    "via": "detail"
+   },
+   "t": 506861
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10071 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 507296
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10090",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 507388
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10062",
+    "via": "detail"
+   },
+   "t": 507805
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10091",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 510960
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10072",
+    "units": 7
+   },
+   "t": 513110
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10095"
+   },
+   "t": 513521
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10097"
+   },
+   "t": 514074
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 515492
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10067",
+    "units": 208
+   },
+   "t": 516661
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10067 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 517700
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 518356
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10092",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 518919
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10098"
+   },
+   "t": 521264
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10093",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 521633
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10060",
+    "via": "bulk"
+   },
+   "t": 521932
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10064",
+    "via": "bulk"
+   },
+   "t": 521967
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10065",
+    "via": "bulk"
+   },
+   "t": 522007
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5047",
+    "lines": 6
+   },
+   "t": 524566
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10101"
+   },
+   "t": 524904
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10096",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 527201
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 005 Fabrication",
+    "overrides": 179,
+    "ms": 29
+   },
+   "t": 527851
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10093 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 529228
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10075",
+    "units": 779
+   },
+   "t": 529499
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10100"
+   },
+   "t": 529679
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10102"
+   },
+   "t": 532458
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10075 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 533245
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10094",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 534434
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10094 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 536805
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10075 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 536868
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10066",
+    "via": "bulk"
+   },
+   "t": 537955
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 538599
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10070",
+    "via": "bulk"
+   },
+   "t": 539254
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10068",
+    "via": "bulk"
+   },
+   "t": 539282
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10067",
+    "via": "bulk"
+   },
+   "t": 539306
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10099"
+   },
+   "t": 540041
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 540122
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10099 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 541403
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10098",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 542296
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10071",
+    "via": "bulk"
+   },
+   "t": 544145
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10072",
+    "via": "bulk"
+   },
+   "t": 544161
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10095",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 545247
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10105"
+   },
+   "t": 545581
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10074",
+    "units": 538
+   },
+   "t": 547404
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10103"
+   },
+   "t": 549456
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10073",
+    "units": 7
+   },
+   "t": 550430
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10074 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 550479
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10097",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 550641
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 2
+   },
+   "t": 553266
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10104"
+   },
+   "t": 553807
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "GS-1049"
+   },
+   "t": 554883
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10076",
+    "units": 219
+   },
+   "t": 555176
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10099",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 555421
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10075",
+    "via": "detail"
+   },
+   "t": 555548
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 557075
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10101",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 557129
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10077",
+    "units": 3
+   },
+   "t": 557953
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 559753
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10108"
+   },
+   "t": 559909
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10106"
+   },
+   "t": 560882
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10100",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 562015
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10102",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 563681
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10079",
+    "units": 216
+   },
+   "t": 563815
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10073",
+    "via": "bulk"
+   },
+   "t": 565207
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10074",
+    "via": "bulk"
+   },
+   "t": 565237
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10076",
+    "via": "bulk"
+   },
+   "t": 565258
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10079 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 565657
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10109"
+   },
+   "t": 565688
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10109 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 568909
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10078",
+    "units": 159
+   },
+   "t": 569462
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10103",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 569534
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10077",
+    "via": "bulk"
+   },
+   "t": 571694
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10105",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 572387
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10110"
+   },
+   "t": 572933
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10111"
+   },
+   "t": 575047
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10106",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 577273
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10108",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 577706
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10080",
+    "units": 115
+   },
+   "t": 578645
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10112"
+   },
+   "t": 579170
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 006 Industries",
+    "overrides": 199,
+    "ms": 37
+   },
+   "t": 580262
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10113"
+   },
+   "t": 581987
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10109",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 583577
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10104",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 585158
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10114"
+   },
+   "t": 586146
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10114 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 588202
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10110",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 588496
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10115"
+   },
+   "t": 591178
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10111",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 591278
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10082",
+    "units": 730
+   },
+   "t": 592233
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10112",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 592716
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10116"
+   },
+   "t": 595793
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10117"
+   },
+   "t": 596028
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10115",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 598202
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10118"
+   },
+   "t": 601091
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10113",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 602513
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10116",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 605569
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10120"
+   },
+   "t": 605656
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10118",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 607865
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10121"
+   },
+   "t": 609157
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10107"
+   },
+   "t": 610796
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10120",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 612161
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10117",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 616121
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "BR-1030"
+   },
+   "t": 616310
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10081",
+    "units": 9810
+   },
+   "t": 617056
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 5
+   },
+   "t": 618903
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10081 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 620288
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10122"
+   },
+   "t": 620581
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5048",
+    "lines": 9
+   },
+   "t": 622322
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10078",
+    "via": "bulk"
+   },
+   "t": 622445
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10114",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 622499
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10119"
+   },
+   "t": 625328
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10107",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 627050
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10084",
+    "units": 167
+   },
+   "t": 627945
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10085",
+    "units": 11787
+   },
+   "t": 627998
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10123"
+   },
+   "t": 628280
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10087",
+    "units": 122
+   },
+   "t": 629702
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10125"
+   },
+   "t": 629753
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 630015
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10121",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 633809
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10122",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 634017
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10079",
+    "via": "bulk"
+   },
+   "t": 634408
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10080",
+    "via": "bulk"
+   },
+   "t": 634428
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10081",
+    "via": "bulk"
+   },
+   "t": 634488
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 002 Industries",
+    "overrides": 265,
+    "ms": 42
+   },
+   "t": 634576
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10089",
+    "units": 168
+   },
+   "t": 635690
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10124"
+   },
+   "t": 636268
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10124 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 636399
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 3
+   },
+   "t": 637707
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10124",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 638162
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10089 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 638648
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10088",
+    "units": 105
+   },
+   "t": 641877
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10127"
+   },
+   "t": 643077
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 643836
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "bol-generated",
+   "detail": {
+    "so": "10085"
+   },
+   "t": 644581
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10123",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 644610
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 646993
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10082",
+    "via": "bulk"
+   },
+   "t": 651311
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10084",
+    "via": "bulk"
+   },
+   "t": 651336
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 651340
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10085",
+    "via": "bulk"
+   },
+   "t": 652247
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10093",
+    "units": 816
+   },
+   "t": 656651
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10129"
+   },
+   "t": 657543
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "gave-up",
+   "detail": {
+    "action": "ship-detail",
+    "status": 409,
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 658627
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "Not enough stock to allocate - someone else may have just allocated it. GS-1035: 89 available, 138 requested. Reload and try again."
+   },
+   "t": 658840
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 658925
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10092",
+    "units": 280
+   },
+   "t": 659723
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10087",
+    "via": "detail"
+   },
+   "t": 662071
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "edit-item",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 662758
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 665255
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10088",
+    "via": "bulk"
+   },
+   "t": 665981
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "PN-1026"
+   },
+   "t": 668937
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10092 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 668990
+  },
+  {
+   "user": "rcv.dan",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5048",
+    "units": 5722
+   },
+   "t": 669887
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10119",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 671743
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10094",
+    "units": 875
+   },
+   "t": 672419
+  },
+  {
+   "user": "rcv.ali",
+   "role": "Receiving",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5048",
+    "units": 0
+   },
+   "t": 673101
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "gave-up",
+   "detail": {
+    "action": "allocate",
+    "status": 409,
+    "message": "S.O. #10119 is already Allocated - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 674417
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10089",
+    "via": "detail"
+   },
+   "t": 675845
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10091",
+    "units": 217
+   },
+   "t": 676398
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10095",
+    "units": 85
+   },
+   "t": 676558
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10126"
+   },
+   "t": 676984
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10093",
+    "via": "bulk"
+   },
+   "t": 679730
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 680486
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10128"
+   },
+   "t": 683557
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10127",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 683601
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10096",
+    "units": 69
+   },
+   "t": 685353
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10125",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 685744
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10098",
+    "units": 111
+   },
+   "t": 685891
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 019 Supply",
+    "overrides": 228,
+    "ms": 31
+   },
+   "t": 687074
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 6
+   },
+   "t": 688020
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10131"
+   },
+   "t": 688298
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10100",
+    "units": 7
+   },
+   "t": 690133
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "S.O. #10131 is already Checked - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 691138
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10100 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 692493
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 692965
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10126",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 694761
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10097",
+    "units": 1216
+   },
+   "t": 696033
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10133"
+   },
+   "t": 697463
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10091",
+    "via": "bulk"
+   },
+   "t": 697559
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10092",
+    "via": "bulk"
+   },
+   "t": 697584
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 698752
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 699601
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10095",
+    "via": "bulk"
+   },
+   "t": 700403
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10094",
+    "via": "bulk"
+   },
+   "t": 700430
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10128",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 702413
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-bulk",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 704369
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10132"
+   },
+   "t": 705479
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10102",
+    "units": 151
+   },
+   "t": 708843
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10099",
+    "units": 698
+   },
+   "t": 709928
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "S.O. #10128 is already Backordered - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 710108
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "batch-printed",
+   "detail": {
+    "count": 1
+   },
+   "t": 711302
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10101",
+    "units": 115
+   },
+   "t": 712810
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10131",
+    "status": "Allocated",
+    "fully": false
+   },
+   "t": 712897
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10096",
+    "via": "bulk"
+   },
+   "t": 715362
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10097",
+    "via": "bulk"
+   },
+   "t": 715405
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10098",
+    "via": "bulk"
+   },
+   "t": 715428
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10100",
+    "via": "bulk"
+   },
+   "t": 715446
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 715703
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "ship-detail",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 717243
+  },
+  {
+   "user": "adm.sam",
+   "role": "Admin",
+   "kind": "item-edited",
+   "detail": {
+    "item": "GS-1005"
+   },
+   "t": 717244
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10134"
+   },
+   "t": 717879
+  },
+  {
+   "user": "wh.marcus",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10105",
+    "units": 84
+   },
+   "t": 721322
+  },
+  {
+   "user": "val.sofia",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10132",
+    "status": "Allocated",
+    "fully": true
+   },
+   "t": 721582
+  },
+  {
+   "user": "buy.grace",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5049",
+    "lines": 4
+   },
+   "t": 722620
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "pick-pack",
+    "message": "S.O. #10105 is already Pick & Packed - someone else moved it on since you opened it. Reload and try again."
+   },
+   "t": 724606
+  },
+  {
+   "user": "wh.rosa",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-packed",
+   "detail": {
+    "so": "10106",
+    "units": 750
+   },
+   "t": 727578
+  },
+  {
+   "user": "wh.kenji",
+   "role": "Warehouse Pick/Pack/Ship",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10102",
+    "via": "bulk"
+   },
+   "t": 727764
+  },
+  {
+   "user": "val.derek",
+   "role": "Validation/Allocation",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10128",
+    "status": "Backordered",
+    "fully": false
+   },
+   "t": 727767
+  },
+  {
+   "user": "mgr.helen",
+   "role": "Sales Manager",
+   "kind": "pricing-saved",
+   "detail": {
+    "customer": "Key Acct 007 Distribution",
+    "overrides": 268,
+    "ms": 39
+   },
+   "t": 742733
+  }
+ ]
+}

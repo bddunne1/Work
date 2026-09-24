@@ -37,6 +37,8 @@ enum OrderStatus {
   BACKORDERED
   PICK_PACKED
   SHIPPED
+  // Closed without (fully) shipping - releases any stock the order held.
+  CANCELLED
 }
 
 enum PickPackStatus {
@@ -85,19 +87,20 @@ model Account {
 // still live in each browser's localStorage and have no server side to log
 // from; see the localStorage stores' own migration note.
 model AuditLog {
-  id             String   @id @default(uuid())
+  id            String   @id @default(uuid())
   // Snapshotted rather than a relation, so the log still reads correctly
   // after the actor or target account is deleted.
-  actorId        String?
-  actorUsername  String
-  action         String
-  targetType     String
-  targetId       String?
-  targetLabel    String?
-  detail         Json?
-  createdAt      DateTime @default(now())
+  actorId       String?
+  actorUsername String
+  action        String
+  targetType    String
+  targetId      String?
+  targetLabel   String?
+  detail        Json?
+  createdAt     DateTime @default(now())
 
   @@index([createdAt])
+  @@index([targetType, targetId])
 }
 
 model Customer {
@@ -195,7 +198,7 @@ model Item {
   itemNumber         String   @unique
   description        String
   um                 String   @default("EA")
-  rate               Decimal  @db.Decimal(12, 4) @default(0)
+  rate               Decimal  @default(0) @db.Decimal(12, 4)
   qtyOnHand          Int      @default(0)
   qtyOnPurchaseOrder Int      @default(0)
   reorderPoint       Int?
@@ -216,6 +219,11 @@ model Item {
 
   components ItemComponent[]
   links      ItemLink[]
+
+  salesOrderLines SalesOrderLine[] @relation("SalesOrderLineItem")
+  vendorPoLines   VendorPoLine[]   @relation("VendorPoLineItem")
+  returnLines     ReturnLine[]     @relation("ReturnLineItem")
+  stockMovements  StockMovement[]
 
   @@index([itemNumber])
   @@index([preferredVendorId])
@@ -261,7 +269,7 @@ model SalesOrder {
   shipVia              String          @default("")
   terms                String          @default("")
   rep                  String          @default("")
-  taxRate              Decimal         @db.Decimal(6, 3) @default(0)
+  taxRate              Decimal         @default(0) @db.Decimal(6, 3)
   notes                String          @default("")
   status               OrderStatus     @default(ENTERED)
   writtenBy            String?
@@ -283,6 +291,10 @@ model SalesOrder {
   // Optimistic concurrency - see Item.version.
   version              Int             @default(1)
 
+  cancelledAt  DateTime?
+  cancelledBy  String?
+  cancelReason String?
+
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]
 
@@ -292,17 +304,22 @@ model SalesOrder {
 
 model SalesOrderLine {
   id                 String     @id @default(uuid())
-  soNumber            Int
-  salesOrder          SalesOrder @relation(fields: [soNumber], references: [soNumber], onDelete: Cascade)
-  item                String
-  description         String
-  um                  String     @default("EA")
-  ordered             Int
-  rate                Decimal    @db.Decimal(12, 4)
-  customerPartNumber  String?
+  soNumber           Int
+  salesOrder         SalesOrder @relation(fields: [soNumber], references: [soNumber], onDelete: Cascade)
+  // Catalog link resolved server-side on save. `item` keeps the item # as
+  // entered/printed, and follows a rename of the catalog item.
+  itemId             String?
+  catalogItem        Item?      @relation("SalesOrderLineItem", fields: [itemId], references: [id], onDelete: SetNull)
+  item               String
+  description        String
+  um                 String     @default("EA")
+  ordered            Int
+  rate               Decimal    @db.Decimal(12, 4)
+  customerPartNumber String?
 
   @@index([soNumber])
   @@index([item])
+  @@index([itemId])
 }
 
 model ShipmentRecord {
@@ -341,6 +358,8 @@ model VendorPoLine {
   id          String              @id @default(uuid())
   poNumber    String
   vendorPo    VendorPurchaseOrder @relation(fields: [poNumber], references: [poNumber], onDelete: Cascade)
+  itemId      String?
+  catalogItem Item?               @relation("VendorPoLineItem", fields: [itemId], references: [id], onDelete: SetNull)
   itemNumber  String
   description String
   orderedQty  Int
@@ -349,6 +368,7 @@ model VendorPoLine {
 
   @@index([poNumber])
   @@index([itemNumber])
+  @@index([itemId])
 }
 
 model VendorReceivingRecord {
@@ -379,6 +399,10 @@ model ReturnAuthorization {
   writtenById    String?
   writtenByColor String?
   createdAt      DateTime     @default(now())
+  // Set when the returned goods are received back at the dock (restocking
+  // any lines marked restock) - see POST /returns/:ra/receive.
+  receivedAt     DateTime?
+  receivedBy     String?
   // Optimistic concurrency - see Item.version.
   version        Int          @default(1)
 
@@ -392,15 +416,43 @@ model ReturnLine {
   id          String              @id @default(uuid())
   raNumber    String
   returnAuth  ReturnAuthorization @relation(fields: [raNumber], references: [raNumber], onDelete: Cascade)
+  itemId      String?
+  catalogItem Item?               @relation("ReturnLineItem", fields: [itemId], references: [id], onDelete: SetNull)
   itemNumber  String
   description String
   um          String              @default("EA")
   qty         Int
   rate        Decimal             @db.Decimal(12, 4)
   reason      String              @default("")
+  // Whether received units go back on the shelf (false = damaged/scrap).
+  restock     Boolean             @default(true)
 
   @@index([raNumber])
   @@index([itemNumber])
+  @@index([itemId])
+}
+
+// Every change to an item's qtyOnHand, written in the same transaction as
+// the change itself - the stock ledger behind "who moved this, and why".
+model StockMovement {
+  id            String   @id @default(uuid())
+  itemId        String
+  item          Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemNumber    String
+  delta         Int
+  qtyAfter      Int
+  // SHIP | UNDO_SHIP | RECEIVE_PO | RETURN | ADJUST
+  reason        String
+  // e.g. "sales-order" / "10042", "vendor-po" / "PO-5003", "return" / "RA-3001"
+  refType       String?
+  refId         String?
+  actorId       String?
+  actorUsername String
+  createdAt     DateTime @default(now())
+
+  @@index([itemId, createdAt])
+  @@index([createdAt])
+  @@index([refType, refId])
 }
 
 // Small key/value bag for app-wide settings (company profile, default lead

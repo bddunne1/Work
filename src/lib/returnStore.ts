@@ -15,6 +15,21 @@ function mapReturn(ra: ReturnAuthorization): ReturnAuthorization {
   };
 }
 
+// Receives the returned goods back in one server transaction: lines marked
+// restock go back on hand (recorded in the stock ledger), the RA moves to
+// Received. `restock` overrides the per-line flag decided at the dock.
+export async function receiveReturn(
+  ra: ReturnAuthorization,
+  restock: Record<string, boolean>
+): Promise<ReturnAuthorization> {
+  return mapReturn(
+    await api.post<ReturnAuthorization>(`/api/returns/${encodeURIComponent(ra.raNumber)}/receive`, {
+      version: ra.version,
+      lines: Object.entries(restock).map(([lineId, value]) => ({ lineId, restock: value })),
+    })
+  );
+}
+
 // Next RA # that will be assigned, for display only (the form's disabled
 // "RA No." preview field before anyone saves) - doesn't reserve anything.
 export async function nextReturnNumber(): Promise<string> {
@@ -43,6 +58,7 @@ export async function saveReturn(ra: Omit<ReturnAuthorization, "raNumber">): Pro
   return mapReturn(await api.post<ReturnAuthorization>("/api/returns", ra));
 }
 
-export async function updateReturn(ra: ReturnAuthorization): Promise<void> {
-  await api.put(`/api/returns/${encodeURIComponent(ra.raNumber)}`, ra);
+// Returns the server's copy (with its new `version`) - keep that one.
+export async function updateReturn(ra: ReturnAuthorization): Promise<ReturnAuthorization> {
+  return mapReturn(await api.put<ReturnAuthorization>(`/api/returns/${encodeURIComponent(ra.raNumber)}`, ra));
 }

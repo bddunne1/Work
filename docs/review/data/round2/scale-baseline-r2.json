@@ -1,0 +1,26 @@
+{
+ "mode": "baseline",
+ "api": "http://localhost:4001",
+ "single": {
+  "allOrders": {
+   "ms": 15326,
+   "mb": 145,
+   "count": 37800
+  }
+ },
+ "pages": {
+  "Closed Orders": {
+   "wallMs": 67834,
+   "healthMaxMs": 26987,
+   "mbTransferred": 1304.7,
+   "slowestCallMs": 66658,
+   "failedCalls": 6,
+   "rounds": [
+    61699,
+    67834,
+    88554
+   ]
+  }
+ },
+ "note": "The original API was killed by the kernel for running out of memory (~10 GB resident) during the third Closed Orders round. Shipment History and Analytics issue the same full-history request and were not re-measured."
+}

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { listOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, updateOrder } from "../lib/orderStore";
 import type { OrderStatus, PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -13,7 +13,6 @@ const STATUS_OPTIONS: OrderStatus[] = [
   "Allocated",
   "Backordered",
   "Pick & Packed",
-  "Shipped",
 ];
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -46,7 +45,7 @@ export default function ScheduleShipments() {
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
 
   useEffect(() => {
-    listOrders().then(setOrders);
+    listOpenOrders().then(setOrders);
   }, []);
 
   const filtered = useMemo(
@@ -62,12 +61,12 @@ export default function ScheduleShipments() {
     if (!order) return;
     const updated = { ...order, estimatedShipDate: value || undefined };
     try {
-      await updateOrder(updated);
-      setOrders((os) => os.map((o) => (o.soNumber === soNumber ? updated : o)));
+      const saved = await updateOrder(updated);
+      setOrders((os) => os.map((o) => (o.soNumber === soNumber ? saved : o)));
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
-        setOrders(await listOrders());
+        setOrders(await listOpenOrders());
         return;
       }
       throw err;

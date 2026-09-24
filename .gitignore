@@ -28,3 +28,6 @@ server/*.tsbuildinfo
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code agent worktrees
+.claude/worktrees/

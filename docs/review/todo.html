@@ -1,0 +1,302 @@
+<title>Aamstrand ERP To-Do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1; --surface: #ffffff; --ink: #16202a; --ink-2: #3c4753; --muted: #5d6772;
+    --rule: #d6dad2; --rule-strong: #b8beb4; --accent: #2f5fdb; --accent-soft: rgba(47,95,219,0.08);
+    --crit: #b8322a; --high: #b9620f; --med: #7d6c0c; --low: #5d6772; --ok: #2b7a4b; --prog: #2f5fdb;
+    --display: "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519; --surface: #181d23; --ink: #e8ebef; --ink-2: #c3cad2; --muted: #97a1ab;
+      --rule: #2a3139; --rule-strong: #3b444e; --accent: #7b98f2; --accent-soft: rgba(123,152,242,0.12);
+      --crit: #ef6e62; --high: #f0a24e; --med: #d6c35c; --low: #97a1ab; --ok: #5fc48d; --prog: #7b98f2;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519; --surface: #181d23; --ink: #e8ebef; --ink-2: #c3cad2; --muted: #97a1ab;
+    --rule: #2a3139; --rule-strong: #3b444e; --accent: #7b98f2; --accent-soft: rgba(123,152,242,0.12);
+    --crit: #ef6e62; --high: #f0a24e; --med: #d6c35c; --low: #97a1ab; --ok: #5fc48d; --prog: #7b98f2;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 28px 56px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  h1, h2 { font-family: var(--display); margin: 0; line-height: 1.1; text-wrap: balance; }
+  h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); }
+  h2 { font-size: 1.3rem; }
+  p { margin: 0; max-width: 70ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--display); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.8rem; color: var(--muted); }
+  header { display: flex; flex-direction: column; gap: 8px; border-bottom: 2px solid var(--ink); padding-bottom: 16px; }
+  .meter { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.92rem; }
+  .meter b { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+  .bar { height: 8px; border-radius: 4px; background: var(--rule); overflow: hidden; display: flex; max-width: 520px; }
+  .bar span { display: block; height: 100%; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notice { border-left: 4px solid var(--high); background: var(--surface); padding: 10px 12px; border-radius: 0 6px 6px 0; font-size: 0.92rem; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .group h2 { display: flex; gap: 10px; align-items: baseline; }
+  .group h2 small { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+  .item { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev, var(--rule-strong)); border-radius: 6px; }
+  .item[data-sev="critical"] { --sev: var(--crit); } .item[data-sev="high"] { --sev: var(--high); }
+  .item[data-sev="medium"] { --sev: var(--med); } .item[data-sev="low"] { --sev: var(--low); }
+  .item[data-status="done"], .item[data-status="wontfix"] { opacity: 0.72; }
+  .item[data-status="done"] .title { text-decoration: line-through; text-decoration-color: var(--muted); }
+  .row { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px 12px; align-items: center; padding: 10px 12px; }
+  .ref { font-family: var(--mono); font-size: 0.78rem; color: var(--sev, var(--muted)); font-weight: 600; }
+  .title { font-weight: 600; }
+  .sub { font-size: 0.84rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  select, input, textarea { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 5px 8px; }
+  select:disabled, input:disabled, textarea:disabled { opacity: 0.7; }
+  .status-sel { min-width: 132px; }
+  details.more summary { cursor: pointer; font-size: 0.86rem; color: var(--accent); padding: 0 12px 10px 88px; list-style: none; }
+  details.more summary::-webkit-details-marker { display: none; }
+  .detail { padding: 0 12px 12px 88px; display: flex; flex-direction: column; gap: 8px; font-size: 0.93rem; }
+  .detail textarea { width: 100%; min-height: 64px; resize: vertical; }
+  .saved { font-size: 0.8rem; color: var(--ok); }
+  form.add { background: var(--surface); border: 1px dashed var(--rule-strong); border-radius: 6px; padding: 12px; display: grid; grid-template-columns: 1fr 150px 130px auto; gap: 8px; align-items: center; }
+  form.add textarea { grid-column: 1 / -1; min-height: 52px; }
+  .btn { font: inherit; font-weight: 600; border: 0; border-radius: 6px; padding: 7px 14px; background: var(--ink); color: var(--paper); cursor: pointer; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  @media (max-width: 680px) {
+    .row { grid-template-columns: 1fr auto; }
+    .ref { grid-column: 1 / -1; }
+    details.more summary, .detail { padding-left: 12px; }
+    form.add { grid-template-columns: 1fr 1fr; }
+    form.add input[name="title"] { grid-column: 1 / -1; }
+  }
+  footer { font-size: 0.84rem; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Review branch · claude/practical-volta-02z5tg</span>
+    <h1>Aamstrand ERP To-Do</h1>
+    <p class="muted">The remaining next steps and open bugs from the ERP review. Change a status or add a note and it's saved for everyone who opens this page. Claude reads and updates the same list.</p>
+    <div class="meter" id="meter"></div>
+    <div class="bar" id="bar" aria-hidden="true"></div>
+  </header>
+
+  <p class="notice" id="notice" hidden></p>
+
+  <div class="toolbar" role="group" aria-label="Filter">
+    <button type="button" class="chip" data-f="active" aria-pressed="true" id="f-active">Not done</button>
+    <button type="button" class="chip" data-f="all" aria-pressed="false" id="f-all">Everything</button>
+    <button type="button" class="chip" data-f="step" aria-pressed="false" id="f-step">Next steps</button>
+    <button type="button" class="chip" data-f="bug" aria-pressed="false" id="f-bug">Bugs</button>
+    <button type="button" class="chip" data-f="idea" aria-pressed="false" id="f-idea">Ideas &amp; gaps</button>
+    <button type="button" class="chip" data-f="done" aria-pressed="false" id="f-done">Done</button>
+  </div>
+
+  <div id="list" class="group"></div>
+
+  <form class="add" id="add-form" hidden>
+    <input name="title" id="add-title" placeholder="New item title" aria-label="Title" required maxlength="160">
+    <select name="kind" id="add-kind" aria-label="Kind">
+      <option value="step">Next step</option>
+      <option value="bug">Bug</option>
+      <option value="idea">Idea / gap</option>
+    </select>
+    <select name="severity" id="add-sev" aria-label="Severity">
+      <option value="high">High</option>
+      <option value="medium" selected>Medium</option>
+      <option value="low">Low</option>
+      <option value="critical">Critical</option>
+    </select>
+    <button class="btn" type="submit" id="add-btn">Add</button>
+    <textarea name="detail" id="add-detail" placeholder="Details (optional)" aria-label="Details"></textarea>
+  </form>
+
+  <footer>Severity: <b style="color:var(--crit)">critical</b>, <b style="color:var(--high)">high</b>, <b style="color:var(--med)">medium</b>, <b style="color:var(--low)">low</b>. IDs like H-07 refer to findings in the review report in the repo (<code>docs/review/</code>).</footer>
+</div>
+
+<script>
+(function () {
+  var STATUS = [
+    ["open", "Open"], ["progress", "In progress"], ["done", "Done"], ["wontfix", "Won't fix"]
+  ];
+  var KIND = { step: "Next step", bug: "Bug", idea: "Idea / gap" };
+  var SEV_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+  var GROUPS = [
+    ["progress", "In progress"], ["open", "Open"], ["done", "Done"], ["wontfix", "Won't fix"]
+  ];
+  var state = { items: [], filter: "active", canWrite: true, db: null, userNs: null, userId: null, names: {} };
+  try { state.filter = localStorage.getItem("todo-filter") || "active"; } catch (e) {}
+
+  var list = document.getElementById("list");
+  var notice = document.getElementById("notice");
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function showNotice(t) { notice.textContent = t; notice.hidden = !t; }
+
+  function visible(it) {
+    var f = state.filter;
+    if (f === "all") return true;
+    if (f === "active") return it.status === "open" || it.status === "progress";
+    if (f === "done") return it.status === "done" || it.status === "wontfix";
+    return it.kind === f;
+  }
+
+  function render() {
+    var items = state.items.slice().sort(function (a, b) {
+      return (SEV_ORDER[a.severity] - SEV_ORDER[b.severity]) || ((a.order || 0) - (b.order || 0)) || String(a.ref).localeCompare(String(b.ref));
+    });
+    var total = items.length, done = 0, prog = 0;
+    items.forEach(function (i) { if (i.status === "done" || i.status === "wontfix") done++; else if (i.status === "progress") prog++; });
+    document.getElementById("meter").innerHTML =
+      "<span><b>" + (total - done - prog) + "</b> open</span><span><b>" + prog + "</b> in progress</span><span><b>" + done + "</b> done</span><span><b>" + total + "</b> total</span>";
+    var bar = document.getElementById("bar");
+    bar.innerHTML = total ? '<span style="width:' + (done / total * 100) + '%;background:var(--ok)"></span><span style="width:' + (prog / total * 100) + '%;background:var(--prog)"></span>' : "";
+    document.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.f === state.filter)); });
+
+    var shown = items.filter(visible);
+    if (!shown.length) { list.innerHTML = '<p class="muted">Nothing here.</p>'; return; }
+    var html = "";
+    GROUPS.forEach(function (g) {
+      var rows = shown.filter(function (i) { return i.status === g[0]; });
+      if (!rows.length) return;
+      html += '<div class="group"><h2>' + g[1] + " <small>" + rows.length + "</small></h2>";
+      rows.forEach(function (it) {
+        var who = it.updatedBy ? (state.names[it.updatedBy] || "someone") : "";
+        html += '<article class="item" data-sev="' + esc(it.severity) + '" data-status="' + esc(it.status) + '" data-id="' + esc(it.id) + '">' +
+          '<div class="row"><span class="ref">' + esc(it.ref || KIND[it.kind] || "") + '</span>' +
+          '<div><div class="title">' + esc(it.title) + '</div><div class="sub"><span>' + esc(KIND[it.kind] || it.kind) + "</span><span>" + esc(it.severity) + "</span>" +
+          (it.updatedAt ? "<span>updated " + esc(new Date(it.updatedAt).toLocaleDateString()) + (who ? " by " + esc(who) : "") + "</span>" : "") + "</div></div>" +
+          '<select class="status-sel" id="st-' + esc(it.id) + '" aria-label="Status for ' + esc(it.title) + '"' + (state.canWrite ? "" : " disabled") + ">" +
+          STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === it.status ? " selected" : "") + ">" + s[1] + "</option>"; }).join("") +
+          "</select></div>" +
+          '<details class="more"><summary>Details &amp; notes</summary><div class="detail">' +
+          (it.detail ? "<p>" + esc(it.detail) + "</p>" : "") +
+          '<label class="muted" for="nt-' + esc(it.id) + '">Notes</label><textarea id="nt-' + esc(it.id) + '" data-note="' + esc(it.id) + '"' + (state.canWrite ? "" : " disabled") + ">" + esc(it.note || "") + '</textarea><span class="saved" data-saved="' + esc(it.id) + '" hidden>Saved</span>' +
+          "</div></details></article>";
+      });
+      html += "</div>";
+    });
+    // Keep open <details> open across re-renders.
+    var open = {};
+    list.querySelectorAll("article").forEach(function (a) { var d = a.querySelector("details"); if (d && d.open) open[a.dataset.id] = true; });
+    var focusedNote = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.note : null;
+    if (focusedNote) return; // don't clobber a note being typed; next snapshot after blur re-renders
+    list.innerHTML = html;
+    list.querySelectorAll("article").forEach(function (a) { if (open[a.dataset.id]) a.querySelector("details").open = true; });
+  }
+
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () {
+      state.filter = c.dataset.f;
+      try { localStorage.setItem("todo-filter", state.filter); } catch (e) {}
+      render();
+    });
+  });
+
+  function stamp() {
+    var p = { updatedAt: new Date().toISOString() };
+    if (state.userId) p.updatedBy = state.userId;
+    return p;
+  }
+  function writeFailed(e) {
+    if (e && e.code === "invalid_argument") {
+      state.canWrite = false;
+      showNotice("You can view this list but not change it. Ask the owner for edit access.");
+      render();
+    } else if (e && e.code === "quota_exceeded") {
+      showNotice("The list is full - delete some done items first.");
+    } else {
+      showNotice("That change didn't save. Check your connection and try again.");
+    }
+  }
+
+  list.addEventListener("change", function (ev) {
+    var sel = ev.target.closest("select.status-sel");
+    if (!sel || !state.db) return;
+    var id = sel.closest("article").dataset.id;
+    var patch = stamp(); patch.status = sel.value;
+    state.db.doc("items/" + id).update(patch).catch(writeFailed);
+  });
+  list.addEventListener("focusout", function (ev) {
+    var ta = ev.target.closest("textarea[data-note]");
+    if (!ta || !state.db) return;
+    var id = ta.dataset.note;
+    var it = state.items.find(function (i) { return i.id === id; });
+    if (!it || (it.note || "") === ta.value) { render(); return; }
+    var patch = stamp(); patch.note = ta.value;
+    state.db.doc("items/" + id).update(patch).then(function () {
+      var s = list.querySelector('[data-saved="' + id + '"]'); if (s) { s.hidden = false; setTimeout(function () { s.hidden = true; }, 1500); }
+    }).catch(writeFailed).finally(render);
+  });
+
+  var form = document.getElementById("add-form");
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!state.db) return;
+    var title = document.getElementById("add-title").value.trim();
+    if (!title) return;
+    var btn = document.getElementById("add-btn");
+    btn.disabled = true;
+    var body = stamp();
+    body.title = title;
+    body.kind = document.getElementById("add-kind").value;
+    body.severity = document.getElementById("add-sev").value;
+    body.detail = document.getElementById("add-detail").value.trim();
+    body.status = "open";
+    body.ref = "";
+    body.note = "";
+    body.order = Date.now();
+    state.db.collection("items").add(body).then(function () {
+      form.reset();
+      document.getElementById("add-sev").value = "medium";
+    }).catch(writeFailed).finally(function () { btn.disabled = false; });
+  });
+
+  function resolveNames() {
+    if (!state.userNs) return;
+    var ids = [];
+    state.items.forEach(function (i) { if (i.updatedBy && ids.indexOf(i.updatedBy) < 0) ids.push(i.updatedBy); });
+    if (!ids.length) return;
+    state.userNs.profiles(ids).then(function (ps) {
+      ids.forEach(function (id) { state.names[id] = (ps[id] && ps[id].name) || "someone"; });
+      render();
+    }).catch(function () {});
+  }
+
+  list.innerHTML = '<p class="muted">Loading the list…</p>';
+  var host = window.claude;
+  if (!host || typeof host.use !== "function") {
+    list.innerHTML = '<p class="muted">The shared list isn\'t available in this view. Open the page on claude.ai to see and update it.</p>';
+    return;
+  }
+  host.use("user").then(function (u) {
+    if (!u) return;
+    state.userNs = u;
+    Promise.resolve(u.id()).then(function (id) { state.userId = id; resolveNames(); }).catch(function () {});
+    Promise.resolve(u.can("data.write")).then(function (ok) {
+      if (ok === false) { state.canWrite = false; showNotice("You can view this list but not change it."); render(); }
+    }).catch(function () {});
+  }).catch(function () {});
+
+  host.use("db").then(function (db) {
+    if (!db) {
+      list.innerHTML = '<p class="muted">The shared list isn\'t available in this view. Open the page on claude.ai to see and update it.</p>';
+      return;
+    }
+    state.db = db;
+    form.hidden = false;
+    db.collection("items").onSnapshot(function (snap) {
+      state.items = snap.docs.map(function (d) { var o = Object.assign({}, d.data()); o.id = d.id; return o; });
+      render();
+      resolveNames();
+    }, function () {
+      showNotice("Lost the connection to the shared list. Reload the page.");
+    });
+  });
+})();
+</script>

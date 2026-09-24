@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { listItems } from "../lib/itemStore";
-import { listOrders, shipOrder } from "../lib/orderStore";
+import { listOpenOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { pendingShipmentWeight, weightIndex } from "../types";
 
@@ -28,7 +28,7 @@ export default function OpenPicks() {
 
   useEffect(() => {
     listItems().then((items) => setWeights(weightIndex(items)));
-    listOrders().then((os) => setOrders(openPickOrders(os)));
+    listOpenOrders().then((os) => setOrders(openPickOrders(os)));
   }, []);
 
   const selectedOrders = orders.filter((o) => selected[o.soNumber]);
@@ -57,7 +57,7 @@ export default function OpenPicks() {
     } catch (err) {
       if (isConflictError(err)) {
         alert(`${err.message} Some selected orders may not have shipped - review and retry.`);
-        listOrders().then((os) => setOrders(openPickOrders(os)));
+        listOpenOrders().then((os) => setOrders(openPickOrders(os)));
         return;
       }
       throw err;

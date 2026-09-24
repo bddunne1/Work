@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
-import { listOrders } from "../lib/orderStore";
+import { listOpenOrders } from "../lib/orderStore";
 import type { Item, PurchaseOrder } from "../types";
 import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
 
@@ -15,7 +15,7 @@ export default function Inventory() {
 
   useEffect(() => {
     listItems().then(setItems);
-    listOrders().then(setOrders);
+    listOpenOrders().then(setOrders);
   }, []);
 
   const filtered = useMemo(() => {
@@ -32,8 +32,8 @@ export default function Inventory() {
         <h1>Inventory</h1>
         <p className="muted">
           On hand and on purchase order are reference figures here - adjust on hand from the dedicated
-          screen, or import a spreadsheet to update many items at once. On purchase order will
-          auto-populate once outbound POs are tracked. On Sales Order is every unit still owed on an
+          screen, or import a spreadsheet to update many items at once. On purchase order is what's
+          still outstanding on open vendor POs. On Sales Order is every unit still owed on an
           order regardless of stage; Allocated is only what's actually reserved (allocated or packed but
           not yet shipped) - Available is On Hand minus Allocated.
         </p>

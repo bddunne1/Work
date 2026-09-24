@@ -5,7 +5,8 @@ import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listItems } from "../lib/itemStore";
-import { getReturn, updateReturn } from "../lib/returnStore";
+import { canEdit as canEditPath } from "../lib/permissions";
+import { getReturn, receiveReturn, updateReturn } from "../lib/returnStore";
 import type { Item, ReturnAuthorization, ReturnLine, ReturnStatus } from "../types";
 import { returnTotal } from "../types";
 
@@ -31,6 +32,7 @@ function ReturnDetailInner() {
   const [ra, setRa] = useState<ReturnAuthorization | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [restock, setRestock] = useState<Record<string, boolean>>({});
   const [draft, setDraft] = useState<ReturnAuthorization | undefined>(undefined);
 
   useEffect(() => {
@@ -56,6 +58,8 @@ function ReturnDetailInner() {
 
   const isWriter = Boolean(account && ra.writtenById && ra.writtenById === account.id);
   const canEditRa = canEdit || isWriter;
+  // The dock (Receiving) or anyone with Returns edit can receive the goods.
+  const canReceive = Boolean(account && (canEdit || canEditPath("/receiving", account)));
   const view = editing && draft ? draft : ra;
   const company = getCompanyInfo();
 
@@ -84,11 +88,34 @@ function ReturnDetailInner() {
     updateLine(id, { itemNumber: match.itemNumber, description: match.description, um: match.um, rate: match.rate });
   }
 
+  async function handleReceive() {
+    if (!ra) return;
+    const scrapped = ra.lines.filter((l) => !(restock[l.id] ?? l.restock ?? true));
+    if (
+      !confirm(
+        `Receive ${ra.raNumber}? ${ra.lines.length - scrapped.length} line(s) go back on hand` +
+          (scrapped.length ? `, ${scrapped.length} line(s) are logged as not restocked (damaged/scrap).` : ".")
+      )
+    ) {
+      return;
+    }
+    try {
+      setRa(await receiveReturn(ra, restock));
+      setRestock({});
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setRa(await getReturn(ra.raNumber));
+        return;
+      }
+      throw err;
+    }
+  }
+
   async function saveEdit() {
     if (!draft) return;
     try {
-      await updateReturn(draft);
-      setRa(draft);
+      setRa(await updateReturn(draft));
       setDraft(undefined);
       setEditing(false);
     } catch (err) {
@@ -170,7 +197,8 @@ function ReturnDetailInner() {
                         value={view.status}
                         onChange={(e) => setField("status", e.target.value as ReturnStatus)}
                       >
-                        {STATUSES.map((s) => (
+                        {/* Issued -> Received only through Receive Return below (it restocks). */}
+                        {STATUSES.filter((s) => (ra.status === "Issued" ? s !== "Received" : s !== "Issued")).map((s) => (
                           <option key={s} value={s}>
                             {s}
                           </option>
@@ -345,6 +373,54 @@ function ReturnDetailInner() {
             </tbody>
           </table>
         </div>
+
+        {!editing && ra.status === "Issued" && canReceive && (
+          <div className="no-print return-receive">
+            <h3>Receive Return</h3>
+            <p className="muted">
+              Tick the lines going back on the shelf. Unticked lines are logged as received but not restocked
+              (damaged or scrap).
+            </p>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th className="amount-cell">Qty</th>
+                  <th>Restock</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ra.lines.map((l) => (
+                  <tr key={l.id}>
+                    <td>{l.itemNumber}</td>
+                    <td className="amount-cell">{l.qty}</td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        id={`restock-${l.id}`}
+                        aria-label={`Restock ${l.itemNumber}`}
+                        checked={restock[l.id] ?? l.restock ?? true}
+                        onChange={(e) => setRestock((r) => ({ ...r, [l.id]: e.target.checked }))}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="button-row">
+              <button type="button" className="primary-btn" onClick={handleReceive}>
+                Receive Return
+              </button>
+            </div>
+          </div>
+        )}
+
+        {ra.receivedAt && (
+          <p className="muted no-print">
+            Received {new Date(ra.receivedAt).toLocaleString()}
+            {ra.receivedBy ? ` by ${ra.receivedBy}` : ""}
+          </p>
+        )}
 
         {view.writtenBy && (
           <div className="so-signature">

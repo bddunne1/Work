@@ -4,13 +4,14 @@ import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
 import { saveVendorPo } from "../lib/vendorPoStore";
 import { listVendors } from "../lib/vendorStore";
+import { localIsoDate } from "../lib/dateUtils";
 import type { Item, Vendor, VendorPoLine, VendorPurchaseOrder } from "../types";
 import { emptyVendorPoLine, vendorPoCostTotal } from "../types";
 
 const ITEM_DATALIST_ID = "po-item-catalog-options";
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localIsoDate();
 }
 
 export default function PurchaseOrderForm() {

@@ -1,14 +1,25 @@
-import { useRef, useState } from "react";
-import { isConflictError } from "../lib/apiClient";
-import { parseCsvWithHeaders, toCsv } from "../lib/csv";
+import { useEffect, useRef, useState } from "react";
+import { ApiError } from "../lib/apiClient";
+import { useCanEdit } from "../lib/authContext";
+import { parseCsvWithHeaders, toCsv, toCsvTable, type ParsedCsv } from "../lib/csv";
 import { saveCustomer } from "../lib/customerStore";
-import type { RowResult } from "../lib/importParsers";
-import { parseCustomers, parseInventory, parseItems, parseSalesOrders } from "../lib/importParsers";
+import type { RowResult, RowStatus } from "../lib/importParsers";
+import {
+  loadImportContext,
+  markExistingOrders,
+  parseCustomers,
+  parseInventory,
+  parseItems,
+  parseSalesOrders,
+  rowStatus,
+} from "../lib/importParsers";
 import { saveItem, updateItem } from "../lib/itemStore";
 import { saveOrder } from "../lib/orderStore";
 import type { Customer, Item, PurchaseOrder } from "../types";
 
 type ImportType = "customers" | "items" | "orders" | "inventory";
+type ImportRecord = Customer | Item | PurchaseOrder;
+type Row = RowResult<ImportRecord>;
 
 const LABELS: Record<ImportType, string> = {
   customers: "Customers",
@@ -86,108 +97,256 @@ const TEMPLATES: Record<ImportType, { headers: string[]; sample: string[] }> = {
   },
 };
 
+// What happened to one row when the import ran.
+type Outcome =
+  | { kind: "created" | "updated"; detail: string }
+  | { kind: "skipped"; detail: string }
+  | { kind: "failed"; detail: string }
+  | { kind: "invalid"; detail: string };
+
+type Phase = "idle" | "parsing" | "ready" | "saving" | "done";
+
+const PREVIEW_STATUS: Record<RowStatus, { text: string; cls: string }> = {
+  ready: { text: "Ready", cls: "import-status-ready" },
+  duplicate: { text: "Skip (already exists)", cls: "import-status-skipped" },
+  error: { text: "Error", cls: "import-status-failed" },
+};
+
+const OUTCOME_STATUS: Record<Outcome["kind"], { text: string; cls: string }> = {
+  created: { text: "Created", cls: "import-status-created" },
+  updated: { text: "Updated", cls: "import-status-created" },
+  skipped: { text: "Skipped (already exists)", cls: "import-status-skipped" },
+  failed: { text: "Failed", cls: "import-status-failed" },
+  invalid: { text: "Not imported", cls: "import-status-failed" },
+};
+
+function errorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    // Validation failures come back as a structured object rather than a
+    // message, which apiClient turns into "Request failed (400)".
+    if (err.status === 400) return "The server rejected this row as invalid (400) - check its values";
+    if (err.status === 403) return "You don't have permission to create these records";
+    return err.message;
+  }
+  if (err instanceof TypeError) return "Couldn't reach the server";
+  return err instanceof Error ? err.message : String(err);
+}
+
+function rowDetail(r: Row): string {
+  if (r.errors.length > 0) return r.errors.join("; ");
+  return r.duplicateReason ?? "";
+}
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+async function saveRow(type: ImportType, data: ImportRecord): Promise<Outcome> {
+  switch (type) {
+    case "customers":
+      await saveCustomer(data as Customer);
+      return { kind: "created", detail: "" };
+    case "items":
+      try {
+        await saveItem(data as Item);
+        return { kind: "created", detail: "" };
+      } catch (err) {
+        // Someone added the same item # after the preview was built.
+        if (err instanceof ApiError && err.status === 409) return { kind: "skipped", detail: err.message };
+        throw err;
+      }
+    case "orders": {
+      const saved = await saveOrder(data as PurchaseOrder);
+      return { kind: "created", detail: saved?.soNumber ? `S.O. #${saved.soNumber}` : "" };
+    }
+    case "inventory":
+      await updateItem(data as Item);
+      return { kind: "updated", detail: "" };
+  }
+}
+
 export default function Import() {
+  const canEdit = useCanEdit();
   const [type, setType] = useState<ImportType>("customers");
   const [fileName, setFileName] = useState("");
-  const [customerRows, setCustomerRows] = useState<RowResult<Customer>[] | null>(null);
-  const [itemRows, setItemRows] = useState<RowResult<Item>[] | null>(null);
-  const [orderRows, setOrderRows] = useState<RowResult<PurchaseOrder>[] | null>(null);
-  const [orderSourceRowCount, setOrderSourceRowCount] = useState(0);
-  const [inventoryRows, setInventoryRows] = useState<RowResult<Item>[] | null>(null);
-  const [imported, setImported] = useState<number | null>(null);
+  const [csv, setCsv] = useState<ParsedCsv | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [loadError, setLoadError] = useState("");
+  const [orderCheckWarning, setOrderCheckWarning] = useState("");
+  const [outcomes, setOutcomes] = useState<(Outcome | undefined)[]>([]);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Bumped whenever the file or type changes, so a slow parse for an
+  // earlier file can't overwrite the current one's preview.
+  const parseToken = useRef(0);
+
+  const saving = phase === "saving";
+
+  // Leaving mid-import would silently stop it partway through.
+  useEffect(() => {
+    if (!saving) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [saving]);
 
   function reset() {
-    setCustomerRows(null);
-    setItemRows(null);
-    setOrderRows(null);
-    setOrderSourceRowCount(0);
-    setInventoryRows(null);
-    setImported(null);
+    parseToken.current++;
+    setCsv(null);
+    setRows(null);
+    setPhase("idle");
+    setLoadError("");
+    setOrderCheckWarning("");
+    setOutcomes([]);
+    setProgress({ done: 0, total: 0 });
     setFileName("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   function switchType(next: ImportType) {
+    if (saving) return;
     setType(next);
     reset();
   }
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImported(null);
-    setFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const parsed = parseCsvWithHeaders(String(reader.result ?? ""));
-      if (type === "customers") setCustomerRows(parseCustomers(parsed));
-      else if (type === "items") setItemRows(parseItems(parsed));
-      else if (type === "inventory") setInventoryRows(await parseInventory(parsed));
+  async function buildPreview(importType: ImportType, parsed: ParsedCsv, token: number) {
+    try {
+      const ctx = await loadImportContext(importType);
+      let result: Row[];
+      let warning = "";
+      if (importType === "customers") result = parseCustomers(parsed, ctx.customers);
+      else if (importType === "items") result = parseItems(parsed, ctx.items);
+      else if (importType === "inventory") result = parseInventory(parsed, ctx.items);
       else {
-        setOrderRows(await parseSalesOrders(parsed));
-        setOrderSourceRowCount(parsed.rows.length);
+        const orders = parseSalesOrders(parsed, ctx.customers, ctx.items, ctx.leadTimeDays);
+        const checked = await markExistingOrders(orders);
+        result = checked.results;
+        if (checked.unchecked > 0) {
+          warning = `${plural(checked.unchecked, "order")} couldn't be compared against existing sales orders, so they'll be created even if they were imported before. Check Open Orders for these PO numbers first.`;
+        }
       }
-    };
-    reader.readAsText(file);
+      if (token !== parseToken.current) return;
+      setRows(result);
+      setOrderCheckWarning(warning);
+      setPhase("ready");
+    } catch (err) {
+      if (token !== parseToken.current) return;
+      setLoadError(`Couldn't load existing records to check this file against: ${errorMessage(err)}`);
+      setPhase("idle");
+    }
   }
 
-  function downloadTemplate() {
-    const t = TEMPLATES[type];
-    const blob = new Blob([toCsv(t.headers, t.sample)], { type: "text/csv" });
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || saving) return;
+    const importType = type;
+    reset();
+    const token = parseToken.current;
+    setFileName(file.name);
+    setPhase("parsing");
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (token !== parseToken.current) return;
+      const parsed = parseCsvWithHeaders(String(reader.result ?? ""));
+      setCsv(parsed);
+      void buildPreview(importType, parsed, token);
+    };
+    reader.onerror = () => {
+      if (token !== parseToken.current) return;
+      setLoadError("Couldn't read that file.");
+      setPhase("idle");
+    };
+    reader.readAsText(file);
+    // Clear the input so picking the same (now corrected) file again still
+    // fires onChange - the chosen name is shown next to it instead.
+    e.target.value = "";
+  }
+
+  function downloadBlob(text: string, name: string) {
+    const blob = new Blob([text], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${type}-import-template.csv`;
+    a.download = name;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  async function commitImport() {
-    if (type === "customers" && customerRows) {
-      const valid = customerRows.filter((r) => r.data).map((r) => r.data!);
-      for (const c of valid) await saveCustomer(c);
-      setImported(valid.length);
-    } else if (type === "items" && itemRows) {
-      const valid = itemRows.filter((r) => r.data).map((r) => r.data!);
-      for (const it of valid) await saveItem(it);
-      setImported(valid.length);
-    } else if (type === "orders" && orderRows) {
-      const valid = orderRows.filter((r) => r.data).map((r) => r.data!);
-      for (const o of valid) await saveOrder(o);
-      setImported(valid.length);
-    } else if (type === "inventory" && inventoryRows) {
-      const valid = inventoryRows.filter((r) => r.data).map((r) => r.data!);
-      let count = 0;
-      try {
-        for (const it of valid) {
-          await updateItem(it);
-          count++;
-        }
-      } catch (err) {
-        if (isConflictError(err)) {
-          alert(
-            `${err.message} Imported ${count} of ${valid.length} rows before that item was changed elsewhere - re-run the import to pick up the rest.`
-          );
-          setImported(count);
-          return;
-        }
-        throw err;
-      }
-      setImported(valid.length);
-    }
+  function downloadTemplate() {
+    const t = TEMPLATES[type];
+    downloadBlob(toCsv(t.headers, t.sample), `${type}-import-template.csv`);
   }
 
-  const rows =
-    type === "customers"
-      ? customerRows
-      : type === "items"
-        ? itemRows
-        : type === "inventory"
-          ? inventoryRows
-          : orderRows;
-  const validCount = rows?.filter((r) => r.errors.length === 0).length ?? 0;
-  const errorRows = rows?.filter((r) => r.errors.length > 0) ?? [];
+  async function commitImport() {
+    if (!rows || phase !== "ready" || !canEdit) return;
+    const importType = type;
+    const token = parseToken.current;
+    const initial: (Outcome | undefined)[] = rows.map((r) => {
+      const status = rowStatus(r);
+      if (status === "error") return { kind: "invalid", detail: rowDetail(r) };
+      if (status === "duplicate") return { kind: "skipped", detail: r.duplicateReason ?? "" };
+      return undefined;
+    });
+    const todo = rows.map((_, i) => i).filter((i) => initial[i] === undefined);
+    setOutcomes(initial);
+    setProgress({ done: 0, total: todo.length });
+    setPhase("saving");
+
+    const results = [...initial];
+    // One row at a time, never stopping the run on a rejection: each row's
+    // outcome is recorded so the user sees exactly what was and wasn't saved.
+    for (let n = 0; n < todo.length; n++) {
+      const i = todo[n];
+      try {
+        results[i] = await saveRow(importType, rows[i].data!);
+      } catch (err) {
+        results[i] = { kind: "failed", detail: errorMessage(err) };
+      }
+      if (token === parseToken.current) {
+        setOutcomes([...results]);
+        setProgress({ done: n + 1, total: todo.length });
+      }
+    }
+    if (token === parseToken.current) setPhase("done");
+  }
+
+  function downloadFailedRows() {
+    if (!csv || !rows) return;
+    // Drop an "Error" column carried over from a previous failed-rows file
+    // so re-exporting doesn't stack them up.
+    const keep = csv.headers.map((h, i) => ({ h, i })).filter(({ h }) => h !== "error");
+    const headers = [...keep.map(({ i }) => csv.rawHeaders[i] ?? csv.headers[i]), "Error"];
+    const out: string[][] = [];
+    rows.forEach((r, idx) => {
+      const outcome = outcomes[idx];
+      const failed = outcome ? outcome.kind === "failed" || outcome.kind === "invalid" : rowStatus(r) === "error";
+      if (!failed) return;
+      const message = outcome?.detail || rowDetail(r);
+      for (const src of r.sourceRows) out.push([...keep.map(({ h }) => src[h] ?? ""), message]);
+    });
+    const base = fileName.replace(/\.csv$/i, "") || type;
+    downloadBlob(toCsvTable(headers, out), `${base}-failed-rows.csv`);
+  }
+
+  const statuses = rows?.map(rowStatus) ?? [];
+  const readyCount = statuses.filter((s) => s === "ready").length;
+  const duplicateCount = statuses.filter((s) => s === "duplicate").length;
+  const errorCount = statuses.filter((s) => s === "error").length;
+  const hasOutcomes = phase === "saving" || phase === "done";
+  const count = (kind: Outcome["kind"]) => outcomes.filter((o) => o?.kind === kind).length;
+  const createdCount = count("created") + count("updated");
+  const failedCount = count("failed");
+  const skippedCount = count("skipped");
+  const invalidCount = count("invalid");
+  const downloadableCount = hasOutcomes ? failedCount + invalidCount : errorCount;
+  const sourceRowCount = csv?.rows.length ?? 0;
+
+  let importLabel = `Import ${readyCount} ${LABELS[type]}`;
+  if (saving) importLabel = `Saving ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`;
+  else if (phase === "done") importLabel = "Import finished";
 
   return (
     <div className="page">
@@ -206,6 +365,7 @@ export default function Import() {
             type="button"
             className={`decision-btn ${type === t ? "selected" : ""}`}
             onClick={() => switchType(t)}
+            disabled={saving}
           >
             {LABELS[t]}
           </button>
@@ -218,14 +378,15 @@ export default function Import() {
             <h3>Expected columns</h3>
             <p className="muted">
               Header names are matched loosely (case and spacing don't matter) and extra columns are
-              ignored.
+              ignored. Amounts like $1,234.50 are fine; dates can be YYYY-MM-DD or M/D/YYYY.
             </p>
             <p className="import-columns">{TEMPLATES[type].headers.join(" · ")}</p>
             {type === "orders" && (
               <p className="muted">
                 Each row is one line item. Rows that share the same PO Number are combined into a single
                 multi-line sales order. A matching Customer Name pulls that customer's address and terms
-                automatically. S.O. numbers are always assigned by the system, same as Order Entry.
+                automatically. S.O. numbers are always assigned by the system, same as Order Entry. An
+                order whose PO Number is already on file for that customer is skipped.
               </p>
             )}
             {type === "inventory" && (
@@ -235,69 +396,156 @@ export default function Import() {
                 leave that value unchanged.
               </p>
             )}
+            {(type === "customers" || type === "items") && (
+              <p className="muted">
+                {type === "customers"
+                  ? "Customers whose name or account number is already on file are skipped, so a file can safely be re-imported."
+                  : "Items whose Item Number is already in the catalog are skipped, so a file can safely be re-imported."}
+              </p>
+            )}
           </div>
           <button type="button" className="secondary-btn" onClick={downloadTemplate}>
             Download CSV Template
           </button>
         </div>
 
+        {!canEdit && (
+          <div className="decision-outcome outcome-warning import-banner">
+            <div className="decision-outcome-label">View-only access</div>
+            <div className="decision-outcome-detail">
+              You can download templates and preview a file, but importing needs edit access to this page.
+            </div>
+          </div>
+        )}
+
         <div className="toolbar">
-          <input ref={fileInputRef} type="file" accept=".csv,text/csv" onChange={handleFile} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleFile}
+            disabled={saving}
+          />
           {fileName && <span className="muted">{fileName}</span>}
         </div>
 
+        {phase === "parsing" && <p className="muted">Checking {fileName} against existing records…</p>}
+
+        {loadError && (
+          <div className="decision-outcome outcome-hold import-banner">
+            <div className="decision-outcome-label">Couldn't check this file</div>
+            <div className="decision-outcome-detail">{loadError}</div>
+          </div>
+        )}
+
         {rows && (
           <>
-            <p className="muted">
-              {type === "orders"
-                ? `${rows.length} order${rows.length === 1 ? "" : "s"} parsed from ${orderSourceRowCount} spreadsheet row${orderSourceRowCount === 1 ? "" : "s"}`
-                : `${rows.length} row${rows.length === 1 ? "" : "s"} parsed`}{" "}
-              — {validCount} ready to import
-              {errorRows.length > 0 ? `, ${errorRows.length} with errors` : ""}.
-            </p>
+            {orderCheckWarning && (
+              <div className="decision-outcome outcome-warning import-banner">
+                <div className="decision-outcome-label">Couldn't check for duplicate orders</div>
+                <div className="decision-outcome-detail">{orderCheckWarning}</div>
+              </div>
+            )}
 
-            {errorRows.length > 0 && (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Row</th>
-                    <th>Errors</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {errorRows.map((r) => (
-                    <tr key={r.rowNumber}>
-                      <td>{r.rowNumber}</td>
-                      <td>{r.errors.join("; ")}</td>
+            {!hasOutcomes && (
+              <p className="muted">
+                {type === "orders"
+                  ? `${plural(rows.length, "order")} parsed from ${plural(sourceRowCount, "spreadsheet row")}`
+                  : `${plural(rows.length, "row")} parsed`}{" "}
+                — {readyCount} ready to import
+                {duplicateCount > 0 ? `, ${duplicateCount} already exist (will be skipped)` : ""}
+                {errorCount > 0 ? `, ${errorCount} with errors (won't be imported)` : ""}.
+              </p>
+            )}
+
+            {hasOutcomes && (
+              <div
+                className={`decision-outcome import-banner ${
+                  saving ? "" : failedCount > 0 ? "outcome-hold" : "outcome-success"
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="decision-outcome-label">
+                  {saving
+                    ? `Saving ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+                    : failedCount > 0
+                      ? "Import finished with failures"
+                      : "Import complete"}
+                </div>
+                <div className="decision-outcome-detail">
+                  {type === "inventory" ? "Updated" : "Created"} {createdCount} · Skipped (already exist){" "}
+                  {skippedCount} · Failed {failedCount}
+                  {invalidCount > 0 ? ` · Not imported (row errors) ${invalidCount}` : ""}
+                  {!saving && downloadableCount > 0
+                    ? ". Download the failed rows, fix them, and import that file - rows already created will be skipped."
+                    : ""}
+                </div>
+              </div>
+            )}
+
+            {rows.length > 0 && (
+              <div className="import-results-scroll">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Row</th>
+                      <th>Record</th>
+                      <th>Status</th>
+                      <th>Details</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, idx) => {
+                      const outcome = outcomes[idx];
+                      const pending = hasOutcomes && !outcome;
+                      const status = outcome
+                        ? OUTCOME_STATUS[outcome.kind]
+                        : pending
+                          ? { text: "Waiting", cls: "import-status-ready" }
+                          : PREVIEW_STATUS[statuses[idx]];
+                      const detail = outcome ? outcome.detail : rowDetail(r);
+                      return (
+                        <tr key={r.rowNumber}>
+                          <td>
+                            {r.rowNumbers.length > 4
+                              ? `${r.rowNumbers.slice(0, 3).join(", ")}, … (${r.rowNumbers.length} rows)`
+                              : r.rowNumbers.join(", ")}
+                          </td>
+                          <td>{r.label}</td>
+                          <td>
+                            <span className={`import-status ${status.cls}`}>{status.text}</span>
+                          </td>
+                          <td>{detail}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             <div className="button-row">
-              <button
-                type="button"
-                className="primary-btn"
-                disabled={validCount === 0}
-                onClick={commitImport}
-              >
-                Import {validCount} {LABELS[type]}
-              </button>
-              <button type="button" className="secondary-btn" onClick={reset}>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="primary-btn"
+                  disabled={phase !== "ready" || readyCount === 0}
+                  onClick={commitImport}
+                >
+                  {importLabel}
+                </button>
+              )}
+              {downloadableCount > 0 && !saving && (
+                <button type="button" className="secondary-btn" onClick={downloadFailedRows}>
+                  {hasOutcomes ? "Download failed rows as CSV" : "Download rows with errors as CSV"}
+                </button>
+              )}
+              <button type="button" className="secondary-btn" onClick={reset} disabled={saving}>
                 Clear
               </button>
             </div>
           </>
-        )}
-
-        {imported !== null && (
-          <div className="decision-outcome outcome-success">
-            <div className="decision-outcome-label">Import complete</div>
-            <div className="decision-outcome-detail">
-              Imported {imported} {LABELS[type].toLowerCase()}.
-            </div>
-          </div>
         )}
       </div>
     </div>

@@ -5,7 +5,7 @@ import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { estimateBackorderShipDate } from "../lib/backorderForecast";
 import { listItems } from "../lib/itemStore";
-import { listOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, updateOrder } from "../lib/orderStore";
 import { listVendorPos } from "../lib/vendorPoStore";
 import type { Item, PurchaseOrder, VendorPurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
@@ -20,7 +20,7 @@ export default function BackOrderQueue() {
   const [applyingFor, setApplyingFor] = useState<string | null>(null);
 
   useEffect(() => {
-    listOrders().then(setAllOrders);
+    listOpenOrders().then(setAllOrders);
     listItems().then(setItems);
     listVendorPos().then(setVendorPos);
   }, []);
@@ -40,11 +40,11 @@ export default function BackOrderQueue() {
     setApplyingFor(order.soNumber);
     try {
       await updateOrder({ ...order, estimatedShipDate: date });
-      setAllOrders(await listOrders());
+      setAllOrders(await listOpenOrders());
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
-        setAllOrders(await listOrders());
+        setAllOrders(await listOpenOrders());
         return;
       }
       throw err;

@@ -1,0 +1,61 @@
+{
+ "mode": "baseline",
+ "api": "http://localhost:4001",
+ "single": {
+  "allOrders": {
+   "ms": 18020,
+   "mb": 145,
+   "count": 37800
+  }
+ },
+ "pages": {
+  "Dashboard": {
+   "wallMs": 63828,
+   "healthMaxMs": 17726,
+   "mbTransferred": 1324.5,
+   "slowestCallMs": 62636,
+   "failedCalls": 19,
+   "rounds": [
+    60909,
+    63828,
+    85249
+   ]
+  },
+  "Allocation decision": {
+   "wallMs": 64623,
+   "healthMaxMs": 15445,
+   "mbTransferred": 1306.3,
+   "slowestCallMs": 63410,
+   "failedCalls": 20,
+   "rounds": [
+    63209,
+    64623,
+    67353
+   ]
+  },
+  "Pick & Pack list": {
+   "wallMs": 60995,
+   "healthMaxMs": 19428,
+   "mbTransferred": 1305.6,
+   "slowestCallMs": 59906,
+   "failedCalls": 31,
+   "rounds": [
+    59365,
+    60995,
+    65569
+   ]
+  },
+  "Order Entry": {
+   "wallMs": 944,
+   "healthMaxMs": 343,
+   "mbTransferred": 36.8,
+   "slowestCallMs": 908,
+   "failedCalls": 0,
+   "rounds": [
+    867,
+    944,
+    1443
+   ]
+  }
+ }
+}

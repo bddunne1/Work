@@ -6,8 +6,8 @@ import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { getOrder, undoShipment, updateOrder } from "../lib/orderStore";
-import { canView } from "../lib/permissions";
+import { cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
+import { canView, canEdit as canEditPath } from "../lib/permissions";
 import type { PurchaseOrder } from "../types";
 import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
 
@@ -73,7 +73,16 @@ function OrderDetailInner() {
 
   const nextStage = nextStageFor(order);
   const showStageButton = nextStage && account && canView(nextStage.to, account);
-  const canUndoShipment = canEdit && (order.shipmentHistory?.length ?? 0) > 0;
+  // Undo is logistics' call (Open Picks / Shipment History), same as the server.
+  const canUndoShipment =
+    Boolean(account && (canEditPath("/open-picks", account) || canEditPath("/shipment-history", account))) &&
+    order.status !== "Cancelled" &&
+    (order.shipmentHistory?.length ?? 0) > 0;
+  // Customer service (Sales Order View edit) or the analysts who own allocation.
+  const canCancel =
+    Boolean(account && (canEdit || canEditPath("/allocation", account))) &&
+    order.status !== "Shipped" &&
+    order.status !== "Cancelled";
   // The order's own writer can fix a mistake later even without general
   // edit access to Sales Order View - a narrower carve-out than full canEdit.
   const isWriter = Boolean(account && order.writtenById && order.writtenById === account.id);
@@ -98,8 +107,7 @@ function OrderDetailInner() {
   async function saveEdit() {
     if (!draft) return;
     try {
-      await updateOrder(draft);
-      setOrder(draft);
+      setOrder(await updateOrder(draft));
       setDraft(undefined);
       setEditing(false);
     } catch (err) {
@@ -108,6 +116,30 @@ function OrderDetailInner() {
         setOrder(await getOrder(draft.soNumber));
         setDraft(undefined);
         setEditing(false);
+        return;
+      }
+      throw err;
+    }
+  }
+
+  async function handleCancel() {
+    if (!order) return;
+    const reason = prompt(
+      `Cancel S.O. #${order.soNumber}? Any allocated or packed stock is released and the order leaves every queue.${
+        (order.shipmentHistory?.length ?? 0) > 0 ? " Units already shipped stay shipped." : ""
+      }\n\nReason (required):`
+    );
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert("A reason is required to cancel an order.");
+      return;
+    }
+    try {
+      setOrder(await cancelOrder(order, reason.trim()));
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
         return;
       }
       throw err;
@@ -424,6 +456,22 @@ function OrderDetailInner() {
         <div className="button-row no-print stage-nav-row">
           <button type="button" className="primary-btn" onClick={() => navigate(nextStage.to)}>
             {nextStage.label}
+          </button>
+        </div>
+      )}
+
+      {order.status === "Cancelled" && (
+        <p className="stale-status-notice no-print">
+          Cancelled{order.cancelledBy ? ` by ${order.cancelledBy}` : ""}
+          {order.cancelledAt ? ` on ${new Date(order.cancelledAt).toLocaleDateString()}` : ""}
+          {order.cancelReason ? ` - ${order.cancelReason}` : ""}
+        </p>
+      )}
+
+      {!editing && canCancel && (
+        <div className="button-row no-print stage-nav-row">
+          <button type="button" className="secondary-btn danger-btn" onClick={handleCancel}>
+            Cancel Order
           </button>
         </div>
       )}

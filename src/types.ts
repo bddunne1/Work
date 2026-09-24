@@ -1,3 +1,5 @@
+import { localIsoDate } from "./lib/dateUtils";
+
 export interface Address {
   name: string;
   addressLine1: string;
@@ -10,6 +12,8 @@ export interface Address {
 
 export interface LineItem {
   id: string;
+  // Catalog link, resolved by the server on save (read-only on the client).
+  itemId?: string | null;
   item: string;
   description: string;
   um: string;
@@ -27,7 +31,13 @@ export type OrderStatus =
   | "Allocated"
   | "Backordered"
   | "Pick & Packed"
-  | "Shipped";
+  | "Shipped"
+  | "Cancelled";
+
+// Statuses that are finished - nothing left to pick, ship or hold stock for.
+export function isClosedStatus(status: OrderStatus): boolean {
+  return status === "Shipped" || status === "Cancelled";
+}
 
 export interface AllocationLine {
   lineItemId: string;
@@ -110,6 +120,10 @@ export interface PurchaseOrder {
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";
   bol?: BolDetails;
+  // Set by Cancel Order (see cancelOrder in orderStore).
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
+  cancelReason?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -330,11 +344,12 @@ export function remainingToShip(order: Pick<PurchaseOrder, "shipmentHistory">, l
 // need to filter by status - closed orders drop out on their own.
 export function qtyOnOpenSalesOrders(
   itemNumber: string,
-  orders: Pick<PurchaseOrder, "lineItems" | "shipmentHistory">[]
+  orders: Pick<PurchaseOrder, "lineItems" | "shipmentHistory" | "status">[]
 ): number {
   const q = itemNumber.trim().toLowerCase();
   return orders.reduce(
     (sum, o) =>
+      o.status === "Cancelled" ? sum :
       sum +
       o.lineItems
         .filter((li) => li.item.trim().toLowerCase() === q)
@@ -368,49 +383,6 @@ export function qtyAllocatedOnOrders(
         .reduce((lineSum, li) => lineSum + reservedQtyFor(o, li.id), 0),
     0
   );
-}
-
-// Confirms a shipment of `lines` (typically the order's pendingShipment) and
-// returns the updated order: Shipped once every line's cumulative shipped
-// quantity meets what was ordered, otherwise Backordered so any gap surfaces
-// in the Back Order Queue for reallocation.
-export function confirmShipment(order: PurchaseOrder, lines: ShipmentLine[]): PurchaseOrder {
-  const shippedLines = lines.filter((l) => l.qty > 0);
-  const shipmentHistory: ShipmentRecord[] = [
-    ...(order.shipmentHistory ?? []),
-    ...(shippedLines.length > 0
-      ? [{ id: crypto.randomUUID(), shippedAt: new Date().toISOString(), lines: shippedLines }]
-      : []),
-  ];
-  const shippedFor = (lineItemId: string) =>
-    shipmentHistory.reduce((sum, rec) => {
-      const line = rec.lines.find((l) => l.lineItemId === lineItemId);
-      return sum + (line?.qty ?? 0);
-    }, 0);
-  const fullyShipped = order.lineItems.every((li) => shippedFor(li.id) >= li.ordered);
-  return {
-    ...order,
-    status: fullyShipped ? "Shipped" : "Backordered",
-    shipmentHistory,
-    pendingShipment: [],
-  };
-}
-
-// Reverses the single most recent shipment record: restores those lines to
-// pendingShipment so the order lands back in Open Picks to be re-confirmed,
-// and puts it back to Pick & Packed. A no-op (returns `order` unchanged) if
-// there's no shipment to undo. Does not touch inventory - the caller is
-// responsible for adding the undone quantities back to qtyOnHand.
-export function undoLastShipment(order: PurchaseOrder): PurchaseOrder {
-  const history = order.shipmentHistory ?? [];
-  if (history.length === 0) return order;
-  const last = history[history.length - 1];
-  return {
-    ...order,
-    status: "Pick & Packed",
-    shipmentHistory: history.slice(0, -1),
-    pendingShipment: last.lines,
-  };
 }
 
 // Whether an order's allocation/pack can be released back to Checked without
@@ -594,31 +566,6 @@ export function vendorPoCostTotal(po: Pick<VendorPurchaseOrder, "lines">): numbe
   return po.lines.reduce((sum, l) => sum + l.orderedQty * l.cost, 0);
 }
 
-// Applies a receipt of `lines` (lineId -> qty received this session) to a
-// vendor PO: bumps each line's receivedQty and rolls the PO status up to
-// Received once every line is fully received, Partially Received if some
-// but not all progress was made, or leaves it Open/unchanged otherwise.
-export function receiveVendorPo(po: VendorPurchaseOrder, lines: VendorReceivingLine[]): VendorPurchaseOrder {
-  const receivedLines = lines.filter((l) => l.qty > 0);
-  if (receivedLines.length === 0) return po;
-  const updatedLines = po.lines.map((line) => {
-    const receipt = receivedLines.find((l) => l.lineId === line.id);
-    return receipt ? { ...line, receivedQty: line.receivedQty + receipt.qty } : line;
-  });
-  const fullyReceived = updatedLines.every((l) => l.receivedQty >= l.orderedQty);
-  const anyReceived = updatedLines.some((l) => l.receivedQty > 0);
-  const receivingHistory: VendorReceivingRecord[] = [
-    ...(po.receivingHistory ?? []),
-    { id: crypto.randomUUID(), receivedAt: new Date().toISOString(), lines: receivedLines },
-  ];
-  return {
-    ...po,
-    lines: updatedLines,
-    status: fullyReceived ? "Received" : anyReceived ? "Partially Received" : po.status,
-    receivingHistory,
-  };
-}
-
 // Shared search-box matcher for vendor POs: PO #, vendor name.
 export function matchesVendorPoQuery(po: Pick<VendorPurchaseOrder, "poNumber" | "vendorName">, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -642,10 +589,13 @@ export interface ReturnLine {
   qty: number;
   rate: number;
   reason: string;
+  // Whether units go back on the shelf when the return is received
+  // (false = damaged / scrap).
+  restock?: boolean;
 }
 
 export function emptyReturnLine(): ReturnLine {
-  return { id: crypto.randomUUID(), itemNumber: "", description: "", um: "EA", qty: 1, rate: 0, reason: "" };
+  return { id: crypto.randomUUID(), itemNumber: "", description: "", um: "EA", qty: 1, rate: 0, reason: "", restock: true };
 }
 
 export interface ReturnAuthorization {
@@ -665,6 +615,9 @@ export interface ReturnAuthorization {
   writtenBy?: string;
   writtenById?: string;
   writtenByColor?: string;
+  // Set when the goods were received back (see receiveReturn).
+  receivedAt?: string | null;
+  receivedBy?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -674,7 +627,7 @@ export function emptyReturn(raNumber: string): ReturnAuthorization {
   return {
     raNumber,
     billTo: emptyAddress(),
-    requestDate: new Date().toISOString().slice(0, 10),
+    requestDate: localIsoDate(),
     reason: "",
     lines: [emptyReturnLine()],
     status: "Issued",

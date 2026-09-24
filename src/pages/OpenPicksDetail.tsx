@@ -86,12 +86,16 @@ function OpenPicksDetailInner() {
     // reprints a pick list the warehouse can actually fulfill.
     const now = new Date().toISOString();
     try {
-      await updateOrder({
-        ...order,
-        pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
-        pickListPrintedAt: includePick ? now : order.pickListPrintedAt,
-        packingSlipPrintedAt: includeSlip ? now : order.packingSlipPrintedAt,
-      });
+      // Keep the server's copy (new version) - otherwise Mark Shipped right
+      // after a reprint is a guaranteed "changed by someone else" 409.
+      setOrder(
+        await updateOrder({
+          ...order,
+          pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
+          pickListPrintedAt: includePick ? now : order.pickListPrintedAt,
+          packingSlipPrintedAt: includeSlip ? now : order.packingSlipPrintedAt,
+        })
+      );
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
