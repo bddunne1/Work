@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { getVendorPo, receivePo } from "../lib/vendorPoStore";
 import type { VendorPurchaseOrder, VendorReceivingLine } from "../types";
@@ -50,8 +51,18 @@ function PurchaseOrderDetailInner() {
       .map((l) => ({ lineId: l.id, qty: qtys[l.id] ?? 0 }))
       .filter((l) => l.qty > 0);
     if (lines.length === 0) return;
-    setPo(await receivePo(po, lines));
-    setQtys({});
+    try {
+      setPo(await receivePo(po, lines));
+      setQtys({});
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setPo(await getVendorPo(po.poNumber));
+        setQtys({});
+        return;
+      }
+      throw err;
+    }
   }
 
   const anyOutstanding = po.lines.some((l) => vendorPoLineOutstanding(l) > 0);

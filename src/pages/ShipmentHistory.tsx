@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, undoShipment } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -45,7 +46,16 @@ export default function ShipmentHistory() {
     ) {
       return;
     }
-    await undoShipment(order);
+    try {
+      await undoShipment(order);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        listOrders().then((os) => setOrders(shippedOrders(os)));
+        return;
+      }
+      throw err;
+    }
     setOrders((os) => os.filter((o) => o.soNumber !== order.soNumber));
   }
 

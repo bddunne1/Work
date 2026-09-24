@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { isConflictError } from "../lib/apiClient";
 import { parseCsvWithHeaders, toCsv } from "../lib/csv";
 import { saveCustomer } from "../lib/customerStore";
 import type { RowResult } from "../lib/importParsers";
@@ -157,7 +158,22 @@ export default function Import() {
       setImported(valid.length);
     } else if (type === "inventory" && inventoryRows) {
       const valid = inventoryRows.filter((r) => r.data).map((r) => r.data!);
-      for (const it of valid) await updateItem(it);
+      let count = 0;
+      try {
+        for (const it of valid) {
+          await updateItem(it);
+          count++;
+        }
+      } catch (err) {
+        if (isConflictError(err)) {
+          alert(
+            `${err.message} Imported ${count} of ${valid.length} rows before that item was changed elsewhere - re-run the import to pick up the rest.`
+          );
+          setImported(count);
+          return;
+        }
+        throw err;
+      }
       setImported(valid.length);
     }
   }

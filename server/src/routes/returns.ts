@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -49,6 +50,7 @@ const createSchema = z.object({
 
 const updateSchema = createSchema.extend({
   status: z.enum(["Issued", "Received", "Closed"]),
+  version: z.number().int(),
 });
 
 const include = { lines: true };
@@ -134,31 +136,41 @@ router.put("/:raNumber", requirePermission("returns", "edit"), async (req, res) 
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.returnAuthorization.update({
-      where: { raNumber },
-      data: {
-        customerId: data.customerId,
-        soNumber: data.soNumber,
-        billTo: data.billTo,
-        requestDate: new Date(data.requestDate),
-        reason: data.reason,
-        status: STATUS_IN[data.status],
-        notes: data.notes,
-        writtenBy: data.writtenBy,
-        writtenById: data.writtenById,
-        writtenByColor: data.writtenByColor,
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.returnAuthorization.updateMany({
+        where: { raNumber, version: data.version },
+        data: {
+          customerId: data.customerId,
+          soNumber: data.soNumber,
+          billTo: data.billTo,
+          requestDate: new Date(data.requestDate),
+          reason: data.reason,
+          status: STATUS_IN[data.status],
+          notes: data.notes,
+          writtenBy: data.writtenBy,
+          writtenById: data.writtenById,
+          writtenByColor: data.writtenByColor,
+          version: { increment: 1 },
+        },
+      });
+      if (result.count === 0) throw new ConflictError();
+      await syncChildren(tx.returnLine, raNumber, "raNumber", data.lines, (l) => ({
+        itemNumber: l.itemNumber,
+        description: l.description,
+        um: l.um,
+        qty: l.qty,
+        rate: l.rate,
+        reason: l.reason,
+      }));
     });
-    await syncChildren(tx.returnLine, raNumber, "raNumber", data.lines, (l) => ({
-      itemNumber: l.itemNumber,
-      description: l.description,
-      um: l.um,
-      qty: l.qty,
-      rate: l.rate,
-      reason: l.reason,
-    }));
-  });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
 
   const updated = await prisma.returnAuthorization.findUnique({ where: { raNumber }, include });
   res.json(mapOut(updated!));

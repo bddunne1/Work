@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import type { OrderStatus, PurchaseOrder } from "../types";
@@ -60,8 +61,17 @@ export default function ScheduleShipments() {
     const order = orders.find((o) => o.soNumber === soNumber);
     if (!order) return;
     const updated = { ...order, estimatedShipDate: value || undefined };
-    await updateOrder(updated);
-    setOrders((os) => os.map((o) => (o.soNumber === soNumber ? updated : o)));
+    try {
+      await updateOrder(updated);
+      setOrders((os) => os.map((o) => (o.soNumber === soNumber ? updated : o)));
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrders(await listOrders());
+        return;
+      }
+      throw err;
+    }
   }
 
   const calendarCells = useMemo<CalendarCell[]>(() => {

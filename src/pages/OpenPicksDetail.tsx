@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
+import { isConflictError } from "../lib/apiClient";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getOrder, shipOrder, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -65,7 +66,16 @@ function OpenPicksDetailInner() {
   async function markShipped() {
     if (!order) return;
     const lines = pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 }));
-    await shipOrder(order, lines);
+    try {
+      await shipOrder(order, lines);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
     navigate(`/storage/${order.soNumber}`);
   }
 
@@ -75,12 +85,21 @@ function OpenPicksDetailInner() {
     // documents (and persist them) so a stock shortfall discovered here
     // reprints a pick list the warehouse can actually fulfill.
     const now = new Date().toISOString();
-    await updateOrder({
-      ...order,
-      pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
-      pickListPrintedAt: includePick ? now : order.pickListPrintedAt,
-      packingSlipPrintedAt: includeSlip ? now : order.packingSlipPrintedAt,
-    });
+    try {
+      await updateOrder({
+        ...order,
+        pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
+        pickListPrintedAt: includePick ? now : order.pickListPrintedAt,
+        packingSlipPrintedAt: includeSlip ? now : order.packingSlipPrintedAt,
+      });
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
     setPrinting(true);
     setTimeout(() => {
       window.print();

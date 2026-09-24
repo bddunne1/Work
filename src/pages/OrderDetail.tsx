@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
+import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getOrder, undoShipment, updateOrder } from "../lib/orderStore";
@@ -96,10 +97,21 @@ function OrderDetailInner() {
 
   async function saveEdit() {
     if (!draft) return;
-    await updateOrder(draft);
-    setOrder(draft);
-    setDraft(undefined);
-    setEditing(false);
+    try {
+      await updateOrder(draft);
+      setOrder(draft);
+      setDraft(undefined);
+      setEditing(false);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(draft.soNumber));
+        setDraft(undefined);
+        setEditing(false);
+        return;
+      }
+      throw err;
+    }
   }
 
   async function handleUndoShipment() {
@@ -114,7 +126,16 @@ function OrderDetailInner() {
     ) {
       return;
     }
-    setOrder(await undoShipment(order));
+    try {
+      setOrder(await undoShipment(order));
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
   }
 
   return (

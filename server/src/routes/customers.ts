@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -70,6 +71,9 @@ const customerSchema = z.object({
   partNumberMap: z.array(partMappingSchema).default([]),
   priceOverrides: z.array(priceOverrideSchema).default([]),
 });
+
+// Required on PUT (every fetched record has one), absent on POST.
+const updateSchema = customerSchema.extend({ version: z.number().int() });
 
 const include = {
   shipToLocations: true,
@@ -143,7 +147,7 @@ router.post("/", requirePermission("customers", "edit"), async (req, res) => {
 });
 
 router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
-  const parsed = customerSchema.safeParse(req.body);
+  const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
@@ -157,37 +161,47 @@ router.put("/:id", requirePermission("customers", "edit"), async (req, res) => {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.customer.update({
-      where: { id },
-      data: {
-        name: data.name,
-        accountNumber: data.accountNumber,
-        billTo: data.billTo,
-        terms: data.terms,
-        shipVia: data.shipVia,
-        fob: data.fob,
-        rep: data.rep,
-        shipCompleteOnly: data.shipCompleteOnly,
-        privateLabelName: data.privateLabelName,
-        routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.customer.updateMany({
+        where: { id, version: data.version },
+        data: {
+          name: data.name,
+          accountNumber: data.accountNumber,
+          billTo: data.billTo,
+          terms: data.terms,
+          shipVia: data.shipVia,
+          fob: data.fob,
+          rep: data.rep,
+          shipCompleteOnly: data.shipCompleteOnly,
+          privateLabelName: data.privateLabelName,
+          routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
+          version: { increment: 1 },
+        },
+      });
+      if (result.count === 0) throw new ConflictError();
 
-    await syncChildren(tx.shippingLocation, id, "customerId", data.shipToLocations, (l) => ({
-      label: l.label,
-      address: l.address,
-    }));
-    await syncChildren(tx.customerNote, id, "customerId", data.notes, (n) => ({ text: n.text }));
-    await syncChildren(tx.customerPartMapping, id, "customerId", data.partNumberMap, (m) => ({
-      itemNumber: m.itemNumber,
-      customerPartNumber: m.customerPartNumber,
-    }));
-    await syncChildren(tx.customerPriceOverride, id, "customerId", data.priceOverrides, (p) => ({
-      itemNumber: p.itemNumber,
-      price: p.price,
-    }));
-  });
+      await syncChildren(tx.shippingLocation, id, "customerId", data.shipToLocations, (l) => ({
+        label: l.label,
+        address: l.address,
+      }));
+      await syncChildren(tx.customerNote, id, "customerId", data.notes, (n) => ({ text: n.text }));
+      await syncChildren(tx.customerPartMapping, id, "customerId", data.partNumberMap, (m) => ({
+        itemNumber: m.itemNumber,
+        customerPartNumber: m.customerPartNumber,
+      }));
+      await syncChildren(tx.customerPriceOverride, id, "customerId", data.priceOverrides, (p) => ({
+        itemNumber: p.itemNumber,
+        price: p.price,
+      }));
+    });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
 
   const updated = await prisma.customer.findUnique({ where: { id }, include });
   res.json(updated);

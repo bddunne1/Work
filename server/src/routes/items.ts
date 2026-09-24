@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -36,6 +37,10 @@ const itemSchema = z.object({
   components: z.array(componentSchema).default([]),
   links: z.array(linkSchema).default([]),
 });
+
+// Required on PUT (every fetched record has one), absent on POST (a new
+// item has no prior version to check against).
+const updateSchema = itemSchema.extend({ version: z.number().int() });
 
 const adjustQtySchema = z.object({
   qtyOnHandDelta: z.number().int().optional(),
@@ -105,7 +110,7 @@ router.post("/", requirePermission("catalog", "edit"), async (req, res) => {
 });
 
 router.put("/:id", requirePermission("catalog", "edit"), async (req, res) => {
-  const parsed = itemSchema.safeParse(req.body);
+  const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
@@ -119,31 +124,41 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req, res) => {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.item.update({
-      where: { id },
-      data: {
-        itemNumber: data.itemNumber,
-        description: data.description,
-        um: data.um,
-        rate: data.rate,
-        qtyOnHand: data.qtyOnHand,
-        reorderPoint: data.reorderPoint,
-        countryOfOrigin: data.countryOfOrigin,
-        weight: data.weight,
-        notes: data.notes,
-        preferredVendorId: data.preferredVendorId,
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.item.updateMany({
+        where: { id, version: data.version },
+        data: {
+          itemNumber: data.itemNumber,
+          description: data.description,
+          um: data.um,
+          rate: data.rate,
+          qtyOnHand: data.qtyOnHand,
+          reorderPoint: data.reorderPoint,
+          countryOfOrigin: data.countryOfOrigin,
+          weight: data.weight,
+          notes: data.notes,
+          preferredVendorId: data.preferredVendorId,
+          version: { increment: 1 },
+        },
+      });
+      if (result.count === 0) throw new ConflictError();
+      await syncChildren(tx.itemComponent, id, "itemId", data.components, (c) => ({
+        partNumber: c.partNumber,
+        description: c.description,
+      }));
+      await syncChildren(tx.itemLink, id, "itemId", data.links, (l) => ({
+        label: l.label,
+        url: l.url,
+      }));
     });
-    await syncChildren(tx.itemComponent, id, "itemId", data.components, (c) => ({
-      partNumber: c.partNumber,
-      description: c.description,
-    }));
-    await syncChildren(tx.itemLink, id, "itemId", data.links, (l) => ({
-      label: l.label,
-      url: l.url,
-    }));
-  });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
 
   const updated = await prisma.item.findUnique({ where: { id }, include });
   res.json(updated);
@@ -154,7 +169,10 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req, res) => {
 // shipped/received would otherwise race on a read-modify-write of the whole
 // record. qtyOnHand moves by a signed delta; qtyOnPurchaseOrder is always
 // set outright since it's a recomputed total (see vendorPurchaseOrders.ts),
-// not something anyone increments by hand.
+// not something anyone increments by hand. Still bumps `version`: without
+// that, a concurrent whole-object PUT that fetched the item just before
+// this ran would pass its (now-stale) version check and silently overwrite
+// the quantity this just set.
 router.patch("/by-number/:itemNumber/qty", requirePermission("catalog", "edit"), async (req, res) => {
   const parsed = adjustQtySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -168,6 +186,7 @@ router.patch("/by-number/:itemNumber/qty", requirePermission("catalog", "edit"),
       data: {
         qtyOnHand: qtyOnHandDelta ? { increment: qtyOnHandDelta } : undefined,
         qtyOnPurchaseOrder: qtyOnPurchaseOrder !== undefined ? qtyOnPurchaseOrder : undefined,
+        version: { increment: 1 },
       },
       include,
     })

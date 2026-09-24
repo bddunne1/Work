@@ -113,6 +113,8 @@ model Customer {
   privateLabelName String?
   routingGuide     Json?
   createdAt        DateTime @default(now())
+  // Optimistic concurrency - see Item.version.
+  version          Int      @default(1)
 
   shipToLocations ShippingLocation[]
   notes           CustomerNote[]
@@ -174,6 +176,8 @@ model Vendor {
   email       String?
   address     Json?
   createdAt   DateTime @default(now())
+  // Optimistic concurrency - see Item.version.
+  version     Int      @default(1)
 
   itemsPreferring      Item[]
   vendorPurchaseOrders VendorPurchaseOrder[]
@@ -198,6 +202,12 @@ model Item {
   preferredVendorId  String?
   preferredVendor    Vendor?  @relation(fields: [preferredVendorId], references: [id])
   createdAt          DateTime @default(now())
+  // Optimistic concurrency: bumped on every whole-object PUT. A save whose
+  // client-supplied version doesn't match the current row means someone
+  // else changed it first - rejected with 409 rather than silently
+  // overwritten. Not touched by the atomic qty PATCH endpoint, which is
+  // deliberately outside this whole-object path.
+  version            Int      @default(1)
 
   components ItemComponent[]
   links      ItemLink[]
@@ -265,6 +275,8 @@ model SalesOrder {
   pickPackStatus       PickPackStatus?
   bol                  Json?
   createdAt            DateTime        @default(now())
+  // Optimistic concurrency - see Item.version.
+  version              Int             @default(1)
 
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]
@@ -310,6 +322,8 @@ model VendorPurchaseOrder {
   status       VendorPoStatus @default(OPEN)
   notes        String         @default("")
   createdAt    DateTime       @default(now())
+  // Optimistic concurrency - see Item.version.
+  version      Int            @default(1)
 
   lines            VendorPoLine[]
   receivingHistory VendorReceivingRecord[]
@@ -349,8 +363,7 @@ model ReturnAuthorization {
   customerId     String?
   customer       Customer?    @relation(fields: [customerId], references: [id])
   // Free-text reference to the original sales order, not a real FK - a
-  // customer can return goods without one on hand, and sales orders don't
-  // live in Postgres yet (see SalesOrder's own migration note).
+  // customer can return goods without one on hand.
   soNumber       String?
   billTo         Json
   requestDate    DateTime     @db.Date
@@ -361,6 +374,8 @@ model ReturnAuthorization {
   writtenById    String?
   writtenByColor String?
   createdAt      DateTime     @default(now())
+  // Optimistic concurrency - see Item.version.
+  version        Int          @default(1)
 
   lines ReturnLine[]
 

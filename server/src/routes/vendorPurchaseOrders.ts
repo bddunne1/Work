@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -52,6 +53,7 @@ const createSchema = z.object({
 const updateSchema = createSchema.extend({
   status: z.enum(["Open", "Partially Received", "Received", "Closed"]),
   receivingHistory: z.array(receivingRecordSchema).default([]),
+  version: z.number().int(),
 });
 
 const include = {
@@ -135,30 +137,40 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.vendorPurchaseOrder.update({
-      where: { poNumber },
-      data: {
-        vendorId: data.vendorId,
-        vendorName: data.vendorName,
-        orderDate: new Date(data.orderDate),
-        expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
-        status: STATUS_IN[data.status],
-        notes: data.notes,
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.vendorPurchaseOrder.updateMany({
+        where: { poNumber, version: data.version },
+        data: {
+          vendorId: data.vendorId,
+          vendorName: data.vendorName,
+          orderDate: new Date(data.orderDate),
+          expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
+          status: STATUS_IN[data.status],
+          notes: data.notes,
+          version: { increment: 1 },
+        },
+      });
+      if (result.count === 0) throw new ConflictError();
+      await syncChildren(tx.vendorPoLine, poNumber, "poNumber", data.lines, (l) => ({
+        itemNumber: l.itemNumber,
+        description: l.description,
+        orderedQty: l.orderedQty,
+        receivedQty: l.receivedQty,
+        cost: l.cost,
+      }));
+      await syncChildren(tx.vendorReceivingRecord, poNumber, "poNumber", data.receivingHistory, (r) => ({
+        receivedAt: new Date(r.receivedAt),
+        lines: r.lines,
+      }));
     });
-    await syncChildren(tx.vendorPoLine, poNumber, "poNumber", data.lines, (l) => ({
-      itemNumber: l.itemNumber,
-      description: l.description,
-      orderedQty: l.orderedQty,
-      receivedQty: l.receivedQty,
-      cost: l.cost,
-    }));
-    await syncChildren(tx.vendorReceivingRecord, poNumber, "poNumber", data.receivingHistory, (r) => ({
-      receivedAt: new Date(r.receivedAt),
-      lines: r.lines,
-    }));
-  });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
 
   const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });
   res.json(mapOut(updated!));

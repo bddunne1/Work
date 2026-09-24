@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../middleware/auth.js";
+import { ConflictError } from "../lib/conflictError.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -48,20 +49,34 @@ router.post("/", requirePermission("vendors", "edit"), async (req, res) => {
   res.status(201).json(vendor);
 });
 
+// version required even though every other field stays optional (this
+// endpoint is technically partial-update, though the frontend always sends
+// the whole fetched record) - there's no prior version to compare a field
+// that's genuinely absent against, so the check would be meaningless there.
 router.put("/:id", requirePermission("vendors", "edit"), async (req, res) => {
-  const parsed = vendorSchema.partial().safeParse(req.body);
+  const parsed = vendorSchema.partial().extend({ version: z.number().int() }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { address, ...rest } = parsed.data;
-  const vendor = await prisma.vendor
-    .update({ where: { id: req.params.id }, data: { ...rest, address: address === undefined ? undefined : (address ?? Prisma.JsonNull) } })
-    .catch(() => null);
-  if (!vendor) {
+  const { address, version, ...rest } = parsed.data;
+
+  const existing = await prisma.vendor.findUnique({ where: { id: req.params.id } });
+  if (!existing) {
     res.status(404).json({ error: "Vendor not found" });
     return;
   }
+
+  const result = await prisma.vendor.updateMany({
+    where: { id: req.params.id, version },
+    data: { ...rest, address: address === undefined ? undefined : (address ?? Prisma.JsonNull), version: { increment: 1 } },
+  });
+  if (result.count === 0) {
+    res.status(409).json({ error: new ConflictError().message, conflict: true });
+    return;
+  }
+
+  const vendor = await prisma.vendor.findUnique({ where: { id: req.params.id } });
   res.json(vendor);
 });
 

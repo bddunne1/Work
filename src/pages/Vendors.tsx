@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { deleteVendor, listVendors, saveVendor, updateVendor } from "../lib/vendorStore";
 import type { Vendor } from "../types";
@@ -35,7 +36,17 @@ export default function Vendors() {
   async function updateField(v: Vendor, patch: Partial<Vendor>) {
     const updated = { ...v, ...patch };
     setVendors((vs) => vs.map((x) => (x.id === v.id ? updated : x)));
-    await updateVendor(updated);
+    try {
+      const saved = await updateVendor(updated);
+      setVendors((vs) => vs.map((x) => (x.id === v.id ? saved : x)));
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        refresh();
+        return;
+      }
+      throw err;
+    }
   }
 
   async function handleDelete(v: Vendor) {

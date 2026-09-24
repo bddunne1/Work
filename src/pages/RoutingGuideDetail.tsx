@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { getCustomer, updateCustomer } from "../lib/customerStore";
 import type { Customer, RoutingGuide as RoutingGuideData } from "../types";
@@ -78,10 +79,21 @@ function RoutingGuideDetailInner() {
 
   async function saveEdit() {
     if (!draft) return;
-    const saved = await updateCustomer(draft);
-    setCustomer(saved);
-    setDraft(undefined);
-    setEditing(false);
+    try {
+      const saved = await updateCustomer(draft);
+      setCustomer(saved);
+      setDraft(undefined);
+      setEditing(false);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setCustomer(await getCustomer(draft.id));
+        setDraft(undefined);
+        setEditing(false);
+        return;
+      }
+      throw err;
+    }
   }
 
   return (

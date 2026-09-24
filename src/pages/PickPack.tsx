@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import StatusPill from "../components/StatusPill";
 import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listOrders, updateOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -54,7 +55,19 @@ export default function PickPack() {
     ) {
       return;
     }
-    await updateOrder(unallocateOrder(order));
+    try {
+      await updateOrder(unallocateOrder(order));
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        listOrders().then((orders) => {
+          setPickable(readyToPick(orders));
+          setQueue(releasedPicks(orders));
+        });
+        return;
+      }
+      throw err;
+    }
     setPickable((os) => os.filter((o) => o.soNumber !== order.soNumber));
     setQueue((os) => os.filter((o) => o.soNumber !== order.soNumber));
   }
@@ -101,12 +114,24 @@ export default function PickPack() {
       if (!confirmed) return;
       const now = new Date().toISOString();
       const printedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
-      for (const o of selectedOrders) {
-        await updateOrder({
-          ...o,
-          pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
-          packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
-        });
+      try {
+        for (const o of selectedOrders) {
+          await updateOrder({
+            ...o,
+            pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
+            packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
+          });
+        }
+      } catch (err) {
+        if (isConflictError(err)) {
+          alert(`${err.message} Some orders in this batch may not have been marked printed - review and retry.`);
+          listOrders().then((orders) => {
+            setPickable(readyToPick(orders));
+            setQueue(releasedPicks(orders));
+          });
+          return;
+        }
+        throw err;
       }
       setQueue((os) =>
         os

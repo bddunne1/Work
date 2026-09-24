@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { listItems } from "../lib/itemStore";
 import { listOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -49,8 +50,17 @@ export default function OpenPicks() {
   async function confirmSelected() {
     if (selectedOrders.length === 0) return;
     const confirmedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
-    for (const o of selectedOrders) {
-      await shipOrder(o, o.pendingShipment ?? []);
+    try {
+      for (const o of selectedOrders) {
+        await shipOrder(o, o.pendingShipment ?? []);
+      }
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(`${err.message} Some selected orders may not have shipped - review and retry.`);
+        listOrders().then((os) => setOrders(openPickOrders(os)));
+        return;
+      }
+      throw err;
     }
     setOrders((os) => os.filter((o) => !confirmedSoNumbers.has(o.soNumber)));
     setSelected({});

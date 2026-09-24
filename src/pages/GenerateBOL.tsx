@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listOrders, updateOrder } from "../lib/orderStore";
@@ -71,8 +72,17 @@ export default function GenerateBOL() {
   async function handleGenerate() {
     if (!canGenerate) return;
     const generatedAt = new Date().toISOString();
-    for (const o of selectedOrders) {
-      await updateOrder({ ...o, bol: { ...details[o.soNumber], generatedAt } });
+    try {
+      for (const o of selectedOrders) {
+        await updateOrder({ ...o, bol: { ...details[o.soNumber], generatedAt } });
+      }
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(`${err.message} No BOL was generated for the remaining selected orders - review and try again.`);
+        setOrders(await listOrders());
+        return;
+      }
+      throw err;
     }
     setOrders(await listOrders());
     setGenerated(true);

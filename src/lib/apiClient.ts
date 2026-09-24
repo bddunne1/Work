@@ -29,6 +29,14 @@ export class ApiError extends Error {
   }
 }
 
+// A whole-object save (item/customer/vendor/vendor PO/return/order) was
+// rejected because the record's `version` had already moved past what the
+// caller fetched - someone else saved a change first. The server's message
+// is already user-facing ("This record was changed by someone else...").
+export function isConflictError(err: unknown): err is ApiError {
+  return err instanceof ApiError && err.status === 409;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers = new Headers(options.headers);

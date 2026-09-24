@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
@@ -93,9 +94,18 @@ function PickPackDetailInner() {
         decidedAt: new Date().toISOString(),
       },
     };
-    await updateOrder(updated);
-    setOrder(updated);
-    setSaved(true);
+    try {
+      await updateOrder(updated);
+      setOrder(updated);
+      setSaved(true);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
   }
 
   async function releasePick() {
@@ -114,16 +124,25 @@ function PickPackDetailInner() {
       ? "Complete"
       : "Partial";
 
-    await updateOrder({
-      ...order,
-      status: "Pick & Packed",
-      pickPackStatus,
-      pickedAt: new Date().toISOString(),
-      pendingShipment,
-      pickListPrintedAt: undefined,
-      packingSlipPrintedAt: undefined,
-      allocation: order.allocation ? { ...order.allocation, lines: newAllocationLines } : order.allocation,
-    });
+    try {
+      await updateOrder({
+        ...order,
+        status: "Pick & Packed",
+        pickPackStatus,
+        pickedAt: new Date().toISOString(),
+        pendingShipment,
+        pickListPrintedAt: undefined,
+        packingSlipPrintedAt: undefined,
+        allocation: order.allocation ? { ...order.allocation, lines: newAllocationLines } : order.allocation,
+      });
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
     goNext();
   }
 
@@ -136,7 +155,16 @@ function PickPackDetailInner() {
     ) {
       return;
     }
-    await updateOrder(unallocateOrder(order));
+    try {
+      await updateOrder(unallocateOrder(order));
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
     goNext();
   }
 

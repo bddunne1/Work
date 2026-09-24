@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CustomerEditor from "../components/CustomerEditor";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { deleteCustomer, listCustomers, updateCustomer } from "../lib/customerStore";
+import { deleteCustomer, getCustomer, listCustomers, updateCustomer } from "../lib/customerStore";
 import type { Customer, CustomerNote } from "../types";
 
 export default function Customers() {
@@ -50,10 +51,20 @@ function CustomersInner() {
 
   async function handleSave() {
     if (!draft) return;
-    setDraft(await updateCustomer(draft));
-    await refresh();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      setDraft(await updateCustomer(draft));
+      await refresh();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setDraft(await getCustomer(draft.id));
+        await refresh();
+        return;
+      }
+      throw err;
+    }
   }
 
   async function handleDelete() {
@@ -71,16 +82,36 @@ function CustomersInner() {
       createdAt: new Date().toISOString(),
     };
     const updated = { ...draft, notes: [note, ...draft.notes] };
-    setDraft(await updateCustomer(updated));
-    await refresh();
-    setNoteText("");
+    try {
+      setDraft(await updateCustomer(updated));
+      await refresh();
+      setNoteText("");
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(`${err.message} Your note wasn't added - try again.`);
+        setDraft(await getCustomer(draft.id));
+        await refresh();
+        return;
+      }
+      throw err;
+    }
   }
 
   async function deleteNote(noteId: string) {
     if (!draft) return;
     const updated = { ...draft, notes: draft.notes.filter((n) => n.id !== noteId) };
-    setDraft(await updateCustomer(updated));
-    await refresh();
+    try {
+      setDraft(await updateCustomer(updated));
+      await refresh();
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setDraft(await getCustomer(draft.id));
+        await refresh();
+        return;
+      }
+      throw err;
+    }
   }
 
   if (loading) {

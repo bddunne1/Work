@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
+import { isConflictError } from "../lib/apiClient";
 import { useAuth } from "../lib/authContext";
 import { getOrder, updateOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
@@ -47,13 +48,22 @@ function ValidationDecisionInner() {
 
   async function markChecked() {
     if (!order) return;
-    await updateOrder({
-      ...order,
-      status: "Checked",
-      checkedAt: new Date().toISOString(),
-      checkedBy: account?.initials,
-      checkedByColor: account?.color,
-    });
+    try {
+      await updateOrder({
+        ...order,
+        status: "Checked",
+        checkedAt: new Date().toISOString(),
+        checkedBy: account?.initials,
+        checkedByColor: account?.color,
+      });
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
     const next = nextQueueSoNumber(queueState);
     if (next) {
       navigate(`/validation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });

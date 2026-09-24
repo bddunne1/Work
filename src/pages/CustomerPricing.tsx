@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { listCustomers, updateCustomer } from "../lib/customerStore";
+import { getCustomer, listCustomers, updateCustomer } from "../lib/customerStore";
 import type { Customer, CustomerPriceOverride } from "../types";
 
 export default function CustomerPricing() {
@@ -45,9 +46,18 @@ export default function CustomerPricing() {
 
   async function handleSave() {
     if (!draft) return;
-    setDraft(await updateCustomer(draft));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      setDraft(await updateCustomer(draft));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setDraft(await getCustomer(draft.id));
+        return;
+      }
+      throw err;
+    }
   }
 
   return (

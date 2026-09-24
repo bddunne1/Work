@@ -102,6 +102,8 @@ export interface PurchaseOrder {
   pickPackStatus?: "Partial" | "Complete";
   bol?: BolDetails;
   createdAt: string;
+  // Optimistic concurrency - see Customer.version.
+  version?: number;
 }
 
 export interface ShippingLocation {
@@ -163,6 +165,11 @@ export interface Customer {
   priceOverrides?: CustomerPriceOverride[];
   routingGuide?: RoutingGuide;
   createdAt: string;
+  // Optimistic concurrency: present on anything fetched from the server,
+  // required on save - a save whose version doesn't match the row's
+  // current one means someone else saved a change first (see apiClient's
+  // ConflictError / isConflictError).
+  version?: number;
 }
 
 // A part number used to make/build this item - e.g. a raw material or
@@ -205,6 +212,8 @@ export interface Item {
   links?: ItemLink[];
   notes?: string;
   createdAt: string;
+  // Optimistic concurrency - see Customer.version.
+  version?: number;
 }
 
 export function emptyAddress(): Address {
@@ -502,6 +511,8 @@ export interface Vendor {
   email?: string;
   address?: Address;
   createdAt: string;
+  // Optimistic concurrency - see Customer.version.
+  version?: number;
 }
 
 export function emptyVendor(): Vendor {
@@ -553,6 +564,8 @@ export interface VendorPurchaseOrder {
   notes: string;
   receivingHistory?: VendorReceivingRecord[];
   createdAt: string;
+  // Optimistic concurrency - see Customer.version.
+  version?: number;
 }
 
 export function vendorPoLineOutstanding(line: Pick<VendorPoLine, "orderedQty" | "receivedQty">): number {
@@ -639,6 +652,8 @@ export interface ReturnAuthorization {
   writtenById?: string;
   writtenByColor?: string;
   createdAt: string;
+  // Optimistic concurrency - see Customer.version.
+  version?: number;
 }
 
 export function emptyReturn(raNumber: string): ReturnAuthorization {

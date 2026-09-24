@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { getOrder, listOrders, updateOrder } from "../lib/orderStore";
@@ -137,16 +138,25 @@ function AllocationDecisionInner() {
       lineItemId: li.id,
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
     }));
-    await updateOrder({
-      ...order,
-      status: finalStatus,
-      allocation: {
-        lines,
-        fullyAllocated,
-        shipCompleteOnly: fullyAllocated ? undefined : (shipCompleteOnly as boolean),
-        decidedAt: new Date().toISOString(),
-      },
-    });
+    try {
+      await updateOrder({
+        ...order,
+        status: finalStatus,
+        allocation: {
+          lines,
+          fullyAllocated,
+          shipCompleteOnly: fullyAllocated ? undefined : (shipCompleteOnly as boolean),
+          decidedAt: new Date().toISOString(),
+        },
+      });
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
+      throw err;
+    }
     const next = nextQueueSoNumber(queueState);
     if (next) {
       navigate(`/allocation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });

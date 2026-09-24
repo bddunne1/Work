@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
+import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listItems } from "../lib/itemStore";
@@ -85,10 +86,21 @@ function ReturnDetailInner() {
 
   async function saveEdit() {
     if (!draft) return;
-    await updateReturn(draft);
-    setRa(draft);
-    setDraft(undefined);
-    setEditing(false);
+    try {
+      await updateReturn(draft);
+      setRa(draft);
+      setDraft(undefined);
+      setEditing(false);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setRa(await getReturn(draft.raNumber));
+        setDraft(undefined);
+        setEditing(false);
+        return;
+      }
+      throw err;
+    }
   }
 
   return (

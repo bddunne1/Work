@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
+import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { deleteItem, getItem, updateItem } from "../lib/itemStore";
 import { listOrders } from "../lib/orderStore";
@@ -79,10 +80,21 @@ function ItemProfileInner() {
 
   async function saveEdit() {
     if (!draft) return;
-    const saved = await updateItem(draft);
-    setItem(saved);
-    setDraft(undefined);
-    setEditing(false);
+    try {
+      const saved = await updateItem(draft);
+      setItem(saved);
+      setDraft(undefined);
+      setEditing(false);
+    } catch (err) {
+      if (isConflictError(err)) {
+        alert(err.message);
+        setItem(await getItem(draft.id));
+        setDraft(undefined);
+        setEditing(false);
+        return;
+      }
+      throw err;
+    }
   }
 
   async function handleDelete() {

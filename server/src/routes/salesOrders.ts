@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
+import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -112,6 +113,7 @@ const updateSchema = createSchema.extend({
   estimatedShipDate: z.string().nullish(),
   pickPackStatus: z.enum(["Partial", "Complete"]).nullish(),
   bol: bolSchema,
+  version: z.number().int(),
 });
 
 const include = {
@@ -230,57 +232,67 @@ router.put("/:soNumber", async (req, res) => {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.salesOrder.update({
-      where: { soNumber },
-      data: {
-        poNumber: data.poNumber,
-        orderDate: new Date(data.orderDate),
-        dueDate: new Date(data.dueDate),
-        customerId: data.customerId,
-        shipToLocationId: data.shipToLocationId,
-        billTo: data.billTo,
-        shipTo: data.shipTo,
-        fob: data.fob,
-        shipVia: data.shipVia,
-        terms: data.terms,
-        rep: data.rep,
-        taxRate: data.taxRate,
-        notes: data.notes,
-        status: STATUS_IN[data.status],
-        writtenBy: data.writtenBy,
-        writtenById: data.writtenById,
-        writtenByColor: data.writtenByColor,
-        checkedAt: data.checkedAt ? new Date(data.checkedAt) : data.checkedAt,
-        checkedBy: data.checkedBy,
-        checkedByColor: data.checkedByColor,
-        allocation: data.allocation === undefined ? undefined : (data.allocation ?? Prisma.JsonNull),
-        labelPrintedAt: data.labelPrintedAt ? new Date(data.labelPrintedAt) : data.labelPrintedAt,
-        pickedAt: data.pickedAt ? new Date(data.pickedAt) : data.pickedAt,
-        pendingShipment:
-          data.pendingShipment === undefined ? undefined : (data.pendingShipment ?? Prisma.JsonNull),
-        pickListPrintedAt: data.pickListPrintedAt ? new Date(data.pickListPrintedAt) : data.pickListPrintedAt,
-        packingSlipPrintedAt: data.packingSlipPrintedAt
-          ? new Date(data.packingSlipPrintedAt)
-          : data.packingSlipPrintedAt,
-        estimatedShipDate: data.estimatedShipDate ? new Date(data.estimatedShipDate) : data.estimatedShipDate,
-        pickPackStatus: data.pickPackStatus ? PICK_PACK_STATUS_IN[data.pickPackStatus] : data.pickPackStatus,
-        bol: data.bol === undefined ? undefined : (data.bol ?? Prisma.JsonNull),
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.salesOrder.updateMany({
+        where: { soNumber, version: data.version },
+        data: {
+          poNumber: data.poNumber,
+          orderDate: new Date(data.orderDate),
+          dueDate: new Date(data.dueDate),
+          customerId: data.customerId,
+          shipToLocationId: data.shipToLocationId,
+          billTo: data.billTo,
+          shipTo: data.shipTo,
+          fob: data.fob,
+          shipVia: data.shipVia,
+          terms: data.terms,
+          rep: data.rep,
+          taxRate: data.taxRate,
+          notes: data.notes,
+          status: STATUS_IN[data.status],
+          writtenBy: data.writtenBy,
+          writtenById: data.writtenById,
+          writtenByColor: data.writtenByColor,
+          checkedAt: data.checkedAt ? new Date(data.checkedAt) : data.checkedAt,
+          checkedBy: data.checkedBy,
+          checkedByColor: data.checkedByColor,
+          allocation: data.allocation === undefined ? undefined : (data.allocation ?? Prisma.JsonNull),
+          labelPrintedAt: data.labelPrintedAt ? new Date(data.labelPrintedAt) : data.labelPrintedAt,
+          pickedAt: data.pickedAt ? new Date(data.pickedAt) : data.pickedAt,
+          pendingShipment:
+            data.pendingShipment === undefined ? undefined : (data.pendingShipment ?? Prisma.JsonNull),
+          pickListPrintedAt: data.pickListPrintedAt ? new Date(data.pickListPrintedAt) : data.pickListPrintedAt,
+          packingSlipPrintedAt: data.packingSlipPrintedAt
+            ? new Date(data.packingSlipPrintedAt)
+            : data.packingSlipPrintedAt,
+          estimatedShipDate: data.estimatedShipDate ? new Date(data.estimatedShipDate) : data.estimatedShipDate,
+          pickPackStatus: data.pickPackStatus ? PICK_PACK_STATUS_IN[data.pickPackStatus] : data.pickPackStatus,
+          bol: data.bol === undefined ? undefined : (data.bol ?? Prisma.JsonNull),
+          version: { increment: 1 },
+        },
+      });
+      if (result.count === 0) throw new ConflictError();
+      await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
+        item: l.item,
+        description: l.description,
+        um: l.um,
+        ordered: l.ordered,
+        rate: l.rate,
+        customerPartNumber: l.customerPartNumber,
+      }));
+      await syncChildren(tx.shipmentRecord, soNumber, "soNumber", data.shipmentHistory, (r) => ({
+        shippedAt: new Date(r.shippedAt),
+        lines: r.lines,
+      }));
     });
-    await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
-      item: l.item,
-      description: l.description,
-      um: l.um,
-      ordered: l.ordered,
-      rate: l.rate,
-      customerPartNumber: l.customerPartNumber,
-    }));
-    await syncChildren(tx.shipmentRecord, soNumber, "soNumber", data.shipmentHistory, (r) => ({
-      shippedAt: new Date(r.shippedAt),
-      lines: r.lines,
-    }));
-  });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
 
   const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
   res.json(mapOut(updated!));
