@@ -42,6 +42,12 @@ export async function listReturns(): Promise<ReturnAuthorization[]> {
   return returns.map(mapReturn);
 }
 
+// Only RAs issued and not yet received back.
+export async function listOpenReturns(): Promise<ReturnAuthorization[]> {
+  const ras = await api.get<ReturnAuthorization[]>("/api/returns?open=1");
+  return ras.map(mapReturn);
+}
+
 export async function getReturn(raNumber: string): Promise<ReturnAuthorization | undefined> {
   try {
     const ra = await api.get<ReturnAuthorization>(`/api/returns/${encodeURIComponent(raNumber)}`);

@@ -120,6 +120,13 @@ export async function listCapacityOrders(days: number): Promise<PurchaseOrder[]>
   return orders.map(mapOrder);
 }
 
+// Open orders plus any order with a shipment on or after `since` - e.g. the
+// Dashboard's "shipped today" alongside its queues, in one request.
+export async function listOpenOrdersShippedSince(since: Date): Promise<PurchaseOrder[]> {
+  const orders = await api.get<PurchaseOrder[]>(`/api/sales-orders?open=1&shippedSince=${encodeURIComponent(since.toISOString())}`);
+  return orders.map(mapOrder);
+}
+
 // The `limit` most recently entered orders, any status.
 export async function listRecentOrders(limit: number): Promise<PurchaseOrder[]> {
   const orders = await api.get<PurchaseOrder[]>(`/api/sales-orders?limit=${limit}`);

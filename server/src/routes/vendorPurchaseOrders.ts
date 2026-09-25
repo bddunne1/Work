@@ -81,8 +81,16 @@ function mapOut<T extends { status: string }>(po: T) {
 
 router.use(requireAuth);
 
-router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (_req, res) => {
-  const pos = await prisma.vendorPurchaseOrder.findMany({ orderBy: { createdAt: "desc" }, include });
+// `?open=1` returns only POs still waiting on stock (Open / Partially
+// Received) - what the Dashboard's receiving numbers need - instead of every
+// PO ever written.
+router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req, res) => {
+  const openOnly = req.query.open === "1" || req.query.open === "true";
+  const pos = await prisma.vendorPurchaseOrder.findMany({
+    where: openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : undefined,
+    orderBy: { createdAt: "desc" },
+    include,
+  });
   res.json(pos.map(mapOut));
 });
 
