@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { isConflictError } from "../lib/apiClient";
 import { parseCsvWithHeaders, toCsv } from "../lib/csv";
 import { saveCustomer } from "../lib/customerStore";
 import type { RowResult } from "../lib/importParsers";
@@ -95,6 +94,9 @@ export default function Import() {
   const [orderSourceRowCount, setOrderSourceRowCount] = useState(0);
   const [inventoryRows, setInventoryRows] = useState<RowResult<Item>[] | null>(null);
   const [imported, setImported] = useState<number | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function reset() {
@@ -104,6 +106,8 @@ export default function Import() {
     setOrderSourceRowCount(0);
     setInventoryRows(null);
     setImported(null);
+    setImportError(null);
+    setImportProgress(0);
     setFileName("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -143,38 +147,42 @@ export default function Import() {
     URL.revokeObjectURL(url);
   }
 
+  // Saves rows one at a time (each is its own request) and reports live
+  // progress - a large batch (hundreds to thousands of rows) can take a
+  // while, and stopping partway through a bad row used to fail silently
+  // with no feedback and no way to tell how much had actually gone through.
+  async function runSequential<T>(items: T[], save: (item: T) => Promise<unknown>) {
+    setImporting(true);
+    setImportProgress(0);
+    setImportError(null);
+    let count = 0;
+    try {
+      for (const item of items) {
+        await save(item);
+        count++;
+        setImportProgress(count);
+      }
+      setImported(items.length);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Unknown error";
+      setImportError(
+        `${detail} Imported ${count} of ${items.length} rows before this failed - fix the issue and re-run the import to pick up the rest.`
+      );
+      setImported(count);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function commitImport() {
     if (type === "customers" && customerRows) {
-      const valid = customerRows.filter((r) => r.data).map((r) => r.data!);
-      for (const c of valid) await saveCustomer(c);
-      setImported(valid.length);
+      await runSequential(customerRows.filter((r) => r.data).map((r) => r.data!), saveCustomer);
     } else if (type === "items" && itemRows) {
-      const valid = itemRows.filter((r) => r.data).map((r) => r.data!);
-      for (const it of valid) await saveItem(it);
-      setImported(valid.length);
+      await runSequential(itemRows.filter((r) => r.data).map((r) => r.data!), saveItem);
     } else if (type === "orders" && orderRows) {
-      const valid = orderRows.filter((r) => r.data).map((r) => r.data!);
-      for (const o of valid) await saveOrder(o);
-      setImported(valid.length);
+      await runSequential(orderRows.filter((r) => r.data).map((r) => r.data!), saveOrder);
     } else if (type === "inventory" && inventoryRows) {
-      const valid = inventoryRows.filter((r) => r.data).map((r) => r.data!);
-      let count = 0;
-      try {
-        for (const it of valid) {
-          await updateItem(it);
-          count++;
-        }
-      } catch (err) {
-        if (isConflictError(err)) {
-          alert(
-            `${err.message} Imported ${count} of ${valid.length} rows before that item was changed elsewhere - re-run the import to pick up the rest.`
-          );
-          setImported(count);
-          return;
-        }
-        throw err;
-      }
-      setImported(valid.length);
+      await runSequential(inventoryRows.filter((r) => r.data).map((r) => r.data!), updateItem);
     }
   }
 
@@ -279,12 +287,12 @@ export default function Import() {
               <button
                 type="button"
                 className="primary-btn"
-                disabled={validCount === 0}
+                disabled={validCount === 0 || importing}
                 onClick={commitImport}
               >
-                Import {validCount} {LABELS[type]}
+                {importing ? `Importing... (${importProgress}/${validCount})` : `Import ${validCount} ${LABELS[type]}`}
               </button>
-              <button type="button" className="secondary-btn" onClick={reset}>
+              <button type="button" className="secondary-btn" onClick={reset} disabled={importing}>
                 Clear
               </button>
             </div>
@@ -292,10 +300,10 @@ export default function Import() {
         )}
 
         {imported !== null && (
-          <div className="decision-outcome outcome-success">
-            <div className="decision-outcome-label">Import complete</div>
+          <div className={`decision-outcome ${importError ? "outcome-warning" : "outcome-success"}`}>
+            <div className="decision-outcome-label">{importError ? "Import incomplete" : "Import complete"}</div>
             <div className="decision-outcome-detail">
-              Imported {imported} {LABELS[type].toLowerCase()}.
+              {importError ?? `Imported ${imported} ${LABELS[type].toLowerCase()}.`}
             </div>
           </div>
         )}
