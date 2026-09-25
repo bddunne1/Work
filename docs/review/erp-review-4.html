@@ -1,0 +1,1097 @@
+<title>Aamstrand ERP Round 4</title>
+<meta name="description" content="Round 4: a fresh review of the whole codebase for bugs, vulnerabilities and inefficiencies, and an analysis of the order flow with what to condense, redesign and automate.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a;
+    --high: #b9620f;
+    --med: #7d6c0c;
+    --low: #5d6772;
+    --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08);
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62;
+      --high: #f0a24e;
+      --med: #d6c35c;
+      --low: #97a1ab;
+      --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12);
+      --ok-bg: rgba(95, 196, 141, 0.12);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62;
+    --high: #f0a24e;
+    --med: #d6c35c;
+    --low: #97a1ab;
+    --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12);
+    --ok-bg: rgba(95, 196, 141, 0.12);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Document header, laid out like the app's own printed forms */
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 70ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+
+  /* Verdict */
+  .verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); }
+  .verdict .big.good { color: var(--ok); }
+  @media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.bad { color: var(--crit); font-weight: 600; }
+  td.good { color: var(--ok); font-weight: 600; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  /* Bar charts */
+  .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.86rem; color: var(--ink-2); }
+  .metric { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 6px 16px; align-items: start; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .metric:first-of-type { border-top: 0; padding-top: 0; }
+  .metric-name { font-weight: 600; font-size: 0.93rem; }
+  .metric-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .bars { display: flex; flex-direction: column; gap: 3px; }
+  .bar-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; align-items: center; position: relative; }
+  .track { height: 14px; position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .fill.zero { width: 2px !important; border-radius: 0; opacity: 0.8; }
+  .bar-val { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .bar-row:hover .track { background: var(--accent-soft); }
+  .bar-row[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 2;
+    background: var(--ink); color: var(--paper); font-size: 0.78rem; padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  }
+  @media (max-width: 620px) { .metric { grid-template-columns: 1fr; } }
+
+  /* Findings */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  details.finding { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev); border-radius: 6px; }
+  details.finding[data-sev="critical"] { --sev: var(--crit); }
+  details.finding[data-sev="high"] { --sev: var(--high); }
+  details.finding[data-sev="medium"] { --sev: var(--med); }
+  details.finding[data-sev="low"] { --sev: var(--low); }
+  details.finding summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: baseline; }
+  details.finding summary::-webkit-details-marker { display: none; }
+  .fid { font-family: var(--mono); font-size: 0.8rem; color: var(--sev); font-weight: 600; }
+  .ftitle { font-weight: 600; }
+  .ftitle small { display: block; font-weight: 400; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+  .stamp { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; transform: rotate(-3deg); white-space: nowrap; }
+  .stamp.fixed { color: var(--ok); }
+  .stamp.partial { color: var(--high); }
+  .stamp.open { color: var(--muted); }
+  .fbody { padding: 0 14px 14px 84px; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
+  .fbody dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; }
+  .fbody dt { color: var(--muted); font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .fbody dd { margin: 0; }
+  @media (max-width: 620px) {
+    details.finding summary { grid-template-columns: 1fr auto; }
+    .fid { grid-column: 1 / -1; }
+    .fbody { padding-left: 14px; }
+    .fbody dl { grid-template-columns: 1fr; }
+  }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; }
+
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .panel ul, .prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+  pre { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.6; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<style>
+  .sevtag { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; white-space: nowrap; }
+  .sevtag.sev-high { color: var(--crit); }
+  .sevtag.sev-medium { color: var(--high); }
+  .sevtag.sev-low { color: var(--low); }
+  details.finding[data-sev="high"] { --sev: var(--crit); }
+  details.finding[data-sev="medium"] { --sev: var(--high); }
+  .count-row { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.9rem; color: var(--ink-2); }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc a { font-family: var(--display); font-weight: 600; font-size: 0.92rem; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+  .rec-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .rec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+  .rec-head h4 { margin: 0; font-family: var(--display); font-size: 1.08rem; font-weight: 600; color: var(--ink); flex: 1 1 200px; }
+  .rid { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+  .eff { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+  .rec-card p { font-size: 0.95rem; }
+  .kv { display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; margin: 0; font-size: 0.9rem; }
+  .kv dt { color: var(--muted); font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 2px; }
+  .kv dd { margin: 0; }
+  .load { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; }
+  .load-row { display: grid; grid-template-columns: minmax(150px, 230px) 1fr 64px; gap: 10px; align-items: center; font-size: 0.92rem; }
+  .load-track { position: relative; height: 16px; background: var(--paper); border-radius: 3px; }
+  .load-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .load-cap { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+  .load-val { font-family: var(--mono); font-size: 0.84rem; text-align: right; font-variant-numeric: tabular-nums; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; counter-reset: step; margin: 0; padding: 0; list-style: none; }
+  .flow li { background: var(--surface); border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 6px; padding: 10px 12px; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; }
+  .flow li b { font-family: var(--display); font-size: 1rem; color: var(--ink); }
+  .flow li::before { counter-increment: step; content: counter(step); font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+  .flow.today li { border-top-color: var(--rule-strong); }
+  .phase { display: flex; flex-direction: column; gap: 8px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; }
+  .phase h3 { font-size: 1.1rem; }
+  .phase ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 5px; font-size: 0.94rem; }
+  .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+  .top10 { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 8px; max-width: 80ch; }
+  .findings[hidden] { display: none; }
+  .empty-note { font-size: 0.9rem; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="eyebrow">Aamstrand ERP · review round 4</div>
+      <h1>Code review and order-flow analysis</h1>
+      <p class="lede">A fresh read of the whole codebase (about 21,000 lines, as merged to main in PR #2) for bugs, vulnerabilities and inefficiencies. Then a walk through every step an order takes, from customer PO to truck, with what to condense, automate, redesign and lay out differently. No code was changed in this round.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Date</dt><dd>2026-09-25</dd>
+      <dt>Commit</dt><dd>ac49897 (main)</dd>
+      <dt>Scope</dt><dd>server + frontend</dd>
+      <dt>Method</dt><dd>5 review passes</dd>
+    </dl>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div><span class="eyebrow">Bugs &amp; vulnerabilities</span><span class="big bad">6 high</span><span class="muted">17 medium and 16 low, all new since the round-2 bug log. Most of the high ones come from one pattern: an ordinary order save can change fields that should only change through a specific workflow step.</span></div>
+      <div><span class="eyebrow">Inefficiencies</span><span class="big">14</span><span class="muted">1 high, 7 medium. Nothing is slow at today's size. These are what will slow down as order history builds up, plus one report that can download the entire order history by accident.</span></div>
+      <div><span class="eyebrow">Analyst load</span><span class="big good">133% → ~38%</span><span class="muted">What 150 orders a day asks of two analysts today, and after automating the mechanical validation and allocation decisions. Based on the day-simulation's time model.</span></div>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#first">Do these first</a><a href="#bugs">Bugs &amp; vulnerabilities</a><a href="#perf">Inefficiencies</a>
+      <a href="#flow">How an order flows</a><a href="#waste">Where time goes</a><a href="#condense">Condense &amp; automate</a>
+      <a href="#redesign">Redesign</a><a href="#pages">Page changes</a><a href="#roles">Roles</a><a href="#future">Future flow</a><a href="#roadmap">Roadmap</a><a href="#method">Method</a>
+    </nav>
+  </section>
+
+  <section id="first">
+    <div class="section-head"><span class="eyebrow">01</span><h2>Do these first</h2></div>
+    
+<ol class="top10">
+  <li><b>Close the order-save loopholes.</b> Stop the save from rewriting shipment history (R4-01), and take Import and Labels off the order-edit list (R4-07). Both are small changes that close most of the risk behind R4-02 and R4-03. Follow up by deciding on the server who may change each field.</li>
+  <li><b>Cap Confirm Shipped at what was packed</b> (R4-04). Today it can hand stock reserved for other orders to this one and take on-hand negative.</li>
+  <li><b>Stop the double-return</b> (R4-05) and <b>block deleting customers who have orders</b> (R4-06). Both are small fixes that prevent permanent damage.</li>
+  <li><b>Make the review queues oldest-first, add Skip, and split analyst duties</b> (R4-19, P-B2 stop-gap, P-D4). No database change, and it removes most analyst collisions today.</li>
+  <li><b>Let analysts print what they release, and collate printing</b> (P-A3, P-D1). One permission and a few lines of code remove a whole handoff.</li>
+  <li><b>Fix the entry forms</b>: blank lines, Enter saving early, duplicate POs/RAs from double-clicks, whole-number quantities (R4-14 to R4-16, R4-35).</li>
+  <li><b>Build the end-of-day shipped report</b> and include partial shipments (R4-20, P-A7).</li>
+  <li><b>Fast performance wins</b>: open POs only on Receiving and Back Orders, an index the open-orders query can use, compression, a cap on the capacity lookback, and don't auto-run reports (PF-01, 03, 04, 07, 13).</li>
+  <li><b>Automate allocation for mechanical cases, then validate by exception</b> (P-A2, P-A1). By the simulation's model this cuts analyst load from 133% to about 38%. Time 20 real orders per step first to confirm.</li>
+  <li><b>Fill back orders automatically on receipt, and move the packing slip to confirm time</b> (P-A5, P-A4). Then the dock tablet (P-B3).</li>
+</ol>
+
+  </section>
+
+  <section id="bugs">
+    <div class="section-head"><span class="eyebrow">02</span><h2>Bugs and vulnerabilities</h2>
+      <p class="muted">Each item was found by one review pass and checked against the code before it went in. Where two passes found the same problem, it's listed once and 'Found by' shows both. Known items from the bug log (H-07, M-10 … N-06) are only mentioned where this round found something new about them. Severity is for this setup: an internal network with about 15 users.</p></div>
+    <div class="callout"><b>The common thread:</b> the round-2 report said a role can't do more through the API than its screens allow. That holds for status changes, but not for the ordinary order save. A save that keeps the same status can still rewrite shipment records, allocation, the staged pick, prices and the 'checked by' stamp, and one Purchasing permission (Import) grants that save. The long-term fix is the one ship, cancel and release already got: each workflow step gets its own endpoint, and the general save only edits header fields.</div>
+    <div class="filters" role="group" aria-label="Filter findings">
+      <button type="button" class="chip" data-filter="all" aria-pressed="true">All (39)</button>
+      <button type="button" class="chip" data-filter="sev:high" aria-pressed="false">High (6)</button>
+      <button type="button" class="chip" data-filter="sev:medium" aria-pressed="false">Medium (17)</button>
+      <button type="button" class="chip" data-filter="sev:low" aria-pressed="false">Low (16)</button>
+      <button type="button" class="chip" data-filter="area:security" aria-pressed="false">Security</button>
+      <button type="button" class="chip" data-filter="area:data" aria-pressed="false">Data integrity</button>
+      <button type="button" class="chip" data-filter="area:ui" aria-pressed="false">Screens</button>
+    </div>
+    <div class="findings" id="bug-list">
+<details class="finding" data-sev="high" data-area="security">
+  <summary><span class="fid">R4-01</span><span class="ftitle">Any order-page editor can delete or invent shipment records with an ordinary order save<small>Security · effort S</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:125, :446-449</code></dd>
+    <dt>What happens</dt><dd>The order save (PUT) accepts <code>shipmentHistory</code> from the browser and syncs it: rows left out are deleted, new rows are created, and no stock moves. A partly shipped order saved with <code>shipmentHistory: []</code> loses its shipment records while the stock stays taken. It then gets allocated and shipped again, which takes the stock a second time. Its RAs are refused, Undo says there's nothing to undo, and it drops out of every shipped report. Adding a made-up record works the other way and closes an order without moving stock. The current screens always send the full history back, so today this needs a hand-made request or a client bug.</dd>
+    <dt>Fix</dt><dd>Ignore <code>shipmentHistory</code> on PUT. Only <code>/ship</code> and <code>/undo-shipment</code> should write shipment records.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-01, DATA-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="high" data-area="security">
+  <summary><span class="fid">R4-02</span><span class="ftitle">A save that keeps the same status skips the step permissions for allocation, release and the 'checked by' stamp<small>Security · effort M</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:176-213, :404-419</code></dd>
+    <dt>What happens</dt><dd>The per-step permission check only runs when the status changes (<code>if (from === to) return</code>). On any other save the browser's <code>allocation</code>, <code>pendingShipment</code>, <code>checkedBy</code>/<code>checkedAt</code> and <code>writtenById</code> are written as sent. Anyone with edit on any order page can do all of this:<ul><li>Order Entry, Logistics or Purchasing (through Import, R4-07) can raise an Allocated order's allocation to the full quantity.</li><li>They can raise a released order's staged pick above what was allocated.</li><li>They can stamp any name as the validator.</li><li>They can re-point who wrote the order.</li></ul></dd>
+    <dt>Fix</dt><dd>Decide on the server who owns each field. Only allocation, back-orders or release editors may change <code>allocation</code>. Only release editors may change <code>pendingShipment</code>, capped at what's allocated. <code>checkedBy</code>/<code>checkedAt</code> and <code>writtenBy</code> should come from the signed-in account, never from the browser. Longer term, give each step its own endpoint, as ship, cancel and release already have.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-02</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="high" data-area="security">
+  <summary><span class="fid">R4-03</span><span class="ftitle">Prices, tax and customer can be changed on any order, even after it ships, and the audit log can't tell<small>Security · effort M</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:370-375, :465</code></dd>
+    <dt>What happens</dt><dd>The lock on lines only compares item and quantity, so <code>rate</code>, <code>taxRate</code>, <code>customerId</code>, <code>billTo</code> and <code>terms</code> stay editable at every status. A Logistics user or an analyst (neither has a pricing screen) can change a shipped line from $12.50 to $1.25. The audit entry reads only <code>ORDER_UPDATED status: Shipped</code>.</dd>
+    <dt>Fix</dt><dd>Require order-entry or order-detail edit to change commercial fields. Lock prices once an order is released or has shipped anything. Log old and new values for price, tax and customer changes.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-03, DATA-15</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="high" data-area="data">
+  <summary><span class="fid">R4-04</span><span class="ftitle">Confirm Shipped takes any quantity and can use stock reserved for other orders<small>Data integrity · effort S</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:518-529; src/pages/OpenPicksDetail.tsx:225-228, :258</code></dd>
+    <dt>What happens</dt><dd>The <code>/ship</code> endpoint only checks that the line belongs to the order. It never compares the quantity with what was packed (<code>pendingShipment</code>) or with free stock. On screen, Actual Shipped is capped at 'remaining to ship', not at what was packed. Example: packed 4 of 10 with 4 on hand, Logistics types 10, and on-hand goes to −6. Other orders that still show as Allocated have lost their stock. A hand-made request can also 'ship' a line that was never released, or 5,000 units of a 50-unit line.</dd>
+    <dt>Fix</dt><dd>Refuse any line above its packed quantity or ordered minus shipped, and refuse lines that aren't in the staged pick. Cap the input at the packed quantity; to send more, re-release.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-01, SEC-08, UI-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="high" data-area="data">
+  <summary><span class="fid">R4-05</span><span class="ftitle">Closing a received return frees its quantity again, so the same shipped units can be returned and restocked twice<small>Data integrity · effort S</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/returns.ts:97-99</code></dd>
+    <dt>What happens</dt><dd>The 'already returned' total leaves out every Closed RA, but the normal lifecycle is Issued → Received → Closed. Example: S.O. 10050 ships 20. RA-3001 for 20 is received (+20) and closed. A second RA for 20 then passes the check and restocks another 20 that never came back. The customer is credited twice.</dd>
+    <dt>Fix</dt><dd>Count every RA that was received (<code>receivedAt</code> set). Leave out only RAs closed without being received.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-02</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="high" data-area="data">
+  <summary><span class="fid">R4-06</span><span class="ftitle">Deleting a customer detaches its orders and returns and wipes its price sheet<small>Data integrity · effort S</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/customers.ts:250-257; migrations: SalesOrder/ReturnAuthorization customerId ON DELETE SET NULL, price overrides ON DELETE CASCADE</code></dd>
+    <dt>What happens</dt><dd>The code comment expects the delete to fail while orders exist, but the database constraints set the orders' customer to empty and delete the price overrides, part-number map, notes and ship-to locations. One confirm from anyone with customers edit (sales managers, Customer Service) wipes a key account's history from analytics and search, and its contract prices are gone.</dd>
+    <dt>Fix</dt><dd>Refuse the delete when the customer has any orders or RAs, as items already do. Add an 'inactive' flag for retiring customers, and change the constraints to RESTRICT.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security">
+  <summary><span class="fid">R4-07</span><span class="ftitle">The Import and Labels permissions grant full sales-order edit<small>Security · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:176-189 (ORDER_WRITE_PAGES); src/lib/permissions.ts:171</code></dd>
+    <dt>What happens</dt><dd>Neither page ever saves an existing order, but both keys are on the order-edit list. The Purchasing preset has Import edit, so both buyers can do everything in R4-01 to R4-03 on any sales order.</dd>
+    <dt>Fix</dt><dd>Remove <code>import</code> and <code>labels</code> from ORDER_WRITE_PAGES. Import stays on the create-only list.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security">
+  <summary><span class="fid">R4-08</span><span class="ftitle">Customer price sheets and routing guides are protected only by 'Customers' edit, and price changes aren't logged row by row<small>Security · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/customers.ts:180-246</code></dd>
+    <dt>What happens</dt><dd>PUT /customers rewrites <code>priceOverrides</code> and <code>routingGuide</code> under the <code>customers</code> permission alone. The Customer Pricing and Routing Guide permissions are never checked. All four Customer Service users (customers edit, pricing view only) can change contract prices with one request, and the audit shows only a row count. An account given pricing edit alone gets a 403 when saving.</dd>
+    <dt>Fix</dt><dd>Require customer-pricing edit to change prices or part numbers, and routing-guide edit to change the routing guide, ideally through separate endpoints. Log each price change with item, old and new price.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="data">
+  <summary><span class="fid">R4-09</span><span class="ftitle">An RA can be marked Received without restocking, and a received RA's lines can still be edited<small>Data integrity · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/returns.ts:207-246; src/pages/ReturnDetail.tsx:59-60, :201</code></dd>
+    <dt>What happens</dt><dd>The server only blocks Issued → Received. Closed → Received is allowed, and the dropdown offers it, so the RA shows Received with no stock added and no receiver recorded. After receipt, lines (qty, item, rate, restock) stay editable and the shipped-quantity check is skipped. Changing 5 restocked to 50 makes the credit disagree with the stock ledger.</dd>
+    <dt>Fix</dt><dd>Allow Received only through Receive Return. Lock lines once the RA isn't Issued, and remove Received from the dropdown.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-06, DATA-07, UI-11</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="data">
+  <summary><span class="fid">R4-10</span><span class="ftitle">Saving a vendor PO trusts the browser's received quantities, receiving history and status; receiving has no upper limit<small>Data integrity · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/vendorPurchaseOrders.ts:37, :58, :138, :176-195, :232-247</code></dd>
+    <dt>What happens</dt><dd>A save with a line's <code>receivedQty</code> equal to the ordered quantity and status 'Received' makes On PO drop to 0 with no stock arriving and no ledger entry. Deleting a partly received line erases its receipt history. POST /receive accepts 1,000 against a 100-unit line. Only the screen caps it. No page currently saves an existing PO, so today this needs a hand-made request.</dd>
+    <dt>Fix</dt><dd>On save, keep the stored received quantities and history, refuse to remove lines that have receipts, and set the status on the server. Cap receive at the outstanding quantity unless an explicit over-receipt is chosen.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-07, DATA-11</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="data">
+  <summary><span class="fid">R4-11</span><span class="ftitle">A line that has already shipped can be changed to another item or deleted, and Undo then restocks the wrong item<small>Data integrity · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:370-383, :570-582</code></dd>
+    <dt>What happens</dt><dd>A partly shipped order can go Backordered → Allocated → Checked → Entered, at which point its lines unlock. Shipment records store only the line id. After a retype, the shipment history shows the new item and Undo adds stock to it. After a delete, Undo silently skips the restock but still deletes the shipment record.</dd>
+    <dt>Fix</dt><dd>Refuse changes to item, deletion, or a quantity below shipped on any line with shipments. Save the item on each shipment line and use that record for undo and returns.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="data">
+  <summary><span class="fid">R4-12</span><span class="ftitle">Undo Last Shipment ignores returns, so goods already returned are restocked again<small>Data integrity · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:553-594</code></dd>
+    <dt>What happens</dt><dd>Ship 10, receive an RA for all 10 (+10), then Undo Last Shipment adds another +10 and sends the order back to Open Picks. Stock is now 10 too high.</dd>
+    <dt>Fix</dt><dd>Refuse undo (or limit it per item) when received RAs exist against the order. Also refuse undo on a Cancelled order (see R4-30).</dd>
+    <dt>Found by</dt><dd class="muted">DATA-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="data">
+  <summary><span class="fid">R4-13</span><span class="ftitle">Item numbers that differ only by case can both exist, and stock lands on either one<small>Data integrity · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/items.ts:98-102, :144; server/src/lib/inventory.ts:10-14, :72-80</code></dd>
+    <dt>What happens</dt><dd>Creating and renaming items check for an exact match only, but order lines match item numbers ignoring case, and whichever row comes back last wins. With 'br-1001' next to 'BR-1001', shipping reduces one copy and the allocation check reads the other, so the two drift apart for good.</dd>
+    <dt>Fix</dt><dd>Add a unique index on the lower-cased, trimmed item number, compare ignoring case on create and rename, and trim on save.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-14</span><span class="ftitle">A blank line gets saved on the order, and that order later can't ship<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OrderEntry.tsx:119-136; src/components/LineItemsTable.tsx:46-48; src/pages/AllocationDecision.tsx:54-57</code></dd>
+    <dt>What happens</dt><dd>An empty row added with '+ Add Line Item' goes out as <code>{item:'', ordered:1}</code>. The server skips blank items when linking to the catalog, and allocation treats an unknown item as unlimited stock. Confirm Shipment then fails ('Item "" is not in the catalog') after the order is printed and its lines are locked. The only way out is to ship 0 on that line and later cancel.</dd>
+    <dt>Fix</dt><dd>Drop blank rows before saving. The server should refuse an empty item. Allocation should stop treating unknown items as unlimited.</dd>
+    <dt>Found by</dt><dd class="muted">UI-01</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-15</span><span class="ftitle">Pressing Enter anywhere on Order Entry saves the order, and no customer is required<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OrderEntry.tsx:178, :294-298; src/components/SearchSelect.tsx:46-56</code></dd>
+    <dt>What happens</dt><dd>Every field sits inside one form. Pressing Enter to pick a customer from the search, or after typing a quantity, saves right away: an order with no bill-to, or 4 of 12 lines. Purchase Order and Return forms behave the same way.</dd>
+    <dt>Fix</dt><dd>Enter should pick the highlighted option in the customer search and move to the next cell in the line grid. Require a customer and at least one complete line before saving.</dd>
+    <dt>Found by</dt><dd class="muted">UI-02</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-16</span><span class="ftitle">A double-click creates duplicate vendor POs and duplicate RAs<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/PurchaseOrderForm.tsx:64-79; src/pages/ReturnForm.tsx:66-81</code></dd>
+    <dt>What happens</dt><dd>Unlike Order Entry, these forms have no 'saving' lock, and the server numbers each request separately. A duplicate PO doubles On PO and misleads the back-order forecast. Two duplicate RAs sent at the same moment can both pass the shipped-quantity check, then both restock.</dd>
+    <dt>Fix</dt><dd>Add the same saving guard Order Entry uses. Longer term, send a request key the server can use to reject repeats.</dd>
+    <dt>Found by</dt><dd class="muted">UI-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-17</span><span class="ftitle">A BOL for orders going to different addresses prints no delivery address at all<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/GenerateBOL.tsx:52-61, :708, :812-823</code></dd>
+    <dt>What happens</dt><dd>When the ship-tos differ (even 'Suite 100' vs 'Ste 100'), the Ship To box says 'Multiple destinations - see below', but the rows below show only P.O., weight and S.O. The carrier gets a BOL with no consignee address.</dd>
+    <dt>Fix</dt><dd>Print each order's ship-to in the order rows, and compare addresses ignoring case and spacing.</dd>
+    <dt>Found by</dt><dd class="muted">UI-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-18</span><span class="ftitle">Order Detail lets you edit lines the server will refuse, a refusal throws away the whole draft, and back-ordered quantities can't be revised at all<small>Screens · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OrderDetail.tsx:89, :107-123, :180-184; server/src/routes/salesOrders.ts:204-210, :369-383</code></dd>
+    <dt>What happens</dt><dd>Lines look editable at every status. After Checked the server refuses the save, and the page treats every refusal as 'someone else changed it', dropping all edits. There's no way from Backordered back to Checked, so a customer asking to reduce a back-ordered quantity has only one option: cancel.</dd>
+    <dt>Fix</dt><dd>Make lines read-only after Checked and keep the draft when a save is refused. Add a 'revise back-ordered quantity' action for analysts.</dd>
+    <dt>Found by</dt><dd class="muted">UI-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-19</span><span class="ftitle">Review Queues take the newest order first, the Allocation queue ignores the chosen sort, and there's no Skip<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Validation.tsx:16-22; src/pages/Allocation.tsx:47-51; server/src/routes/salesOrders.ts:241</code></dd>
+    <dt>What happens</dt><dd>Both queues are built from the server's newest-first list. Yesterday's backlog waits until new orders stop coming in, and the newest order takes scarce stock before older, already-late orders. Two analysts who start the queue collide on the same first order (60–150 collisions/day in the sim), and a stale page has no Skip button.</dd>
+    <dt>Fix</dt><dd>Build the queue oldest-first (by due date, then order date) from the list as shown, and add Skip. Replace it with a claim-based 'next order' (P-B2) later.</dd>
+    <dt>Found by</dt><dd class="muted">UI-07, process W-2</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-20</span><span class="ftitle">Shipment History leaves out partial shipments, and there's no end-of-day shipped report<small>Screens · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ShipmentHistory.tsx:35-42; src/pages/Dashboard.tsx:408-416</code></dd>
+    <dt>What happens</dt><dd>History only lists orders whose status is Shipped. The Dashboard's 'Shipped today' counts partials and links there, so the numbers disagree. Logistics has no screen for 'what shipped today', even though the API already supports filtering by ship date.</dd>
+    <dt>Fix</dt><dd>Filter by ship date (default today), show one row per shipment with totals and export, and offer Undo on each row.</dd>
+    <dt>Found by</dt><dd class="muted">UI-08, process W-11</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-21</span><span class="ftitle">Schedule Shipments saves every time the date changes, including while you type the year<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ScheduleShipments.tsx:59-74, :187-192</code></dd>
+    <dt>What happens</dt><dd>Typing a year fires saves for 0002, 0020, 0202 and 2026, all with the same version. The first save wins, the rest get 'changed by someone else' alerts, and sometimes a year like 0002 is what gets saved, which then shows as late.</dd>
+    <dt>Fix</dt><dd>Save on blur or Enter, only for a complete, plausible date.</dd>
+    <dt>Found by</dt><dd class="muted">UI-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-22</span><span class="ftitle">A Checked order can be edited without being checked again<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:370; src/pages/OrderDetail.tsx:107-110</code></dd>
+    <dt>What happens</dt><dd>After an analyst checks an order, Customer Service can change a quantity from 10 to 100 on a phone call. The order stays Checked, keeps the analyst's stamp, and goes to allocation unreviewed. Lines added in Order Detail also skip customer price overrides and price at $0.</dd>
+    <dt>Fix</dt><dd>Send the order back to Entered when a line or price changes after Checked, or re-run the validation rules (P-A1). Use the same price lookup as Order Entry.</dd>
+    <dt>Found by</dt><dd class="muted">process W-9</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ui">
+  <summary><span class="fid">R4-23</span><span class="ftitle">Cancelling a released order makes it vanish from Open Picks while the printed pick is still being worked<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:620-631; src/pages/OpenPicks.tsx:9-16</code></dd>
+    <dt>What happens</dt><dd>Cancel clears the staged pick, so the order disappears from the floor lists. The paper pick list is still on the floor. The warehouse packs it, and logistics ends up with a pallet that has no record on screen.</dd>
+    <dt>Fix</dt><dd>Keep a 'pull from floor' list in Open Picks until logistics acknowledges it, and warn Customer Service when cancelling an order that has been printed.</dd>
+    <dt>Found by</dt><dd class="muted">process W-10</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="security">
+  <summary><span class="fid">R4-24</span><span class="ftitle">An unused counter endpoint lets any signed-in user use up or seed document numbers<small>Security · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/counters.ts:45-58, :64-88</code></dd>
+    <dt>What happens</dt><dd>POST /api/counters/:key/next needs only a sign-in and seeds a missing counter at any value (for example 2,147,483,647, after which every RA save fails). No page calls it anymore. The Settings override has no range check.</dd>
+    <dt>Fix</dt><dd>Delete the route. Keep overrides between the highest issued number and a safe maximum, and log them in the audit.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-09, DATA-13</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="security">
+  <summary><span class="fid">R4-25</span><span class="ftitle">Settings and document-number changes aren't audited, and settings accept any key and any value<small>Security · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/settings.ts:121-139; server/src/routes/counters.ts:64-88</code></dd>
+    <dt>What happens</dt><dd>Changes to lead time, company remit-to details (printed on documents) and next S.O. number leave no trace in the Activity Log.</dd>
+    <dt>Fix</dt><dd>Allow only known setting keys, check each value, and log every change with its old and new value.</dd>
+    <dt>Found by</dt><dd class="muted">SEC-10</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="data">
+  <summary><span class="fid">R4-26</span><span class="ftitle">Opening stock on a new or imported item isn't in the stock ledger<small>Data integrity · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/items.ts:103-120</code></dd>
+    <dt>What happens</dt><dd>Creating an item with 500 on hand writes no stock movement, so the ledger never adds up to the on-hand figure.</dd>
+    <dt>Fix</dt><dd>Write an 'opening' movement when an item is created with stock.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-12</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="data">
+  <summary><span class="fid">R4-27</span><span class="ftitle">The cached On PO figure can drift (it matches item numbers by exact spelling, without a lock)<small>Data integrity · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/inventory.ts:95-111; server/src/routes/vendorPurchaseOrders.ts:133-137</code></dd>
+    <dt>What happens</dt><dd>A PO saved with 'br-1001' and another with 'BR-1001' are totalled separately, and a receive and a save running together can overwrite each other.</dd>
+    <dt>Fix</dt><dd>Save the catalog's spelling of the item number, total by item id, and lock the item row while totalling.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-10</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="data">
+  <summary><span class="fid">R4-28</span><span class="ftitle">A database error part-way through a bulk release returns a bare error, though earlier orders have already been released<small>Data integrity · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:709</code></dd>
+    <dt>What happens</dt><dd>Only expected errors are recorded per order. A timeout on order 12 of 40 aborts the loop, and the user can't tell which orders went out.</dd>
+    <dt>Fix</dt><dd>Catch every error per order, add it to the results, and keep going.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-16</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="data">
+  <summary><span class="fid">R4-29</span><span class="ftitle">Analytics drops the shipped value of orders cancelled after a partial shipment (more detail on L-02)<small>Data integrity · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/analytics.ts:61-62, :181-188</code></dd>
+    <dt>What happens</dt><dd>Revenue excludes cancelled orders entirely, while the customer's 'items purchased' counts them in full.</dd>
+    <dt>Fix</dt><dd>Base revenue and quantities on what shipped.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-14</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="data">
+  <summary><span class="fid">R4-30</span><span class="ftitle">Undo Shipment works on a cancelled order and puts it back on the floor<small>Data integrity · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:560-587</code></dd>
+    <dt>What happens</dt><dd>The screen hides the button, but the endpoint doesn't check for Cancelled.</dd>
+    <dt>Fix</dt><dd>Refuse undo on Cancelled orders.</dd>
+    <dt>Found by</dt><dd class="muted">DATA-08</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-31</span><span class="ftitle">Confirming several picks stops at the first error, doesn't refresh, and can be clicked twice<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OpenPicks.tsx:50-67, :150-157</code></dd>
+    <dt>What happens</dt><dd>Orders 1–5 ship, 6 fails, and 7–20 are never tried, while the list still shows all 20 selected.</dd>
+    <dt>Fix</dt><dd>Collect a result for each order (as Release Orders does), lock the button while it runs, and always reload.</dd>
+    <dt>Found by</dt><dd class="muted">UI-10</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-32</span><span class="ftitle">Reports stay on 'Running…' forever when the server refuses the data source<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ReportRunner.tsx:63-70</code></dd>
+    <dt>What happens</dt><dd>There's no error handling on report runs. Returns and Vendors sources are refused for several roles, and Memorize and Delete are shown to view-only users.</dd>
+    <dt>Fix</dt><dd>Reset the loading state and show the error. Hide sources and actions the role can't use.</dd>
+    <dt>Found by</dt><dd class="muted">UI-12</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-33</span><span class="ftitle">Order import shows unknown items as 'Ready', then hides the reason they fail<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/importParsers.ts:335-347; src/pages/Import.tsx:122-126</code></dd>
+    <dt>What happens</dt><dd>A typo like BR-100O previews as Ready, then fails with a generic '400 - check its values' (part of N-02). Import types the role can't save are still offered.</dd>
+    <dt>Fix</dt><dd>Flag unknown items in the preview, pass the server's message through, and hide import types the role can't use.</dd>
+    <dt>Found by</dt><dd class="muted">UI-13</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-34</span><span class="ftitle">Some links lead to Access Denied, and 'Returns to receive' goes to the wrong role<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Dashboard.tsx:151, :451-467; src/components/Layout.tsx:56-67; src/pages/OrdersList.tsx:58</code></dd>
+    <dt>What happens</dt><dd>The Dashboard's Today cards, the sidebar's Inventory/Catalog/Analytics and '+ New Order' show for roles that can't open them. Purchasing receives returned goods but doesn't get the returns queue.</dd>
+    <dt>Fix</dt><dd>Show links only when the role has access. Base the returns queue on Receiving edit.</dd>
+    <dt>Found by</dt><dd class="muted">UI-14</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-35</span><span class="ftitle">Quantity fields accept decimals and negatives, and the due date can be cleared, which the server then refuses with a generic error<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/AllocationDecision.tsx:96-99; src/pages/PurchaseOrderDetail.tsx:49-51; src/components/LineItemsTable.tsx:129-135; src/pages/OrderEntry.tsx:243-247</code></dd>
+    <dt>What happens</dt><dd>Typing 2.5 in Allocate or Receive Now gives 'Request failed (400)'. A blank due date gives 'Internal server error'.</dd>
+    <dt>Fix</dt><dd>Round to whole numbers, require quantity ≥ 1 and a due date, and check dates on the server.</dd>
+    <dt>Found by</dt><dd class="muted">UI-15, DATA-15</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-36</span><span class="ftitle">Pressing Enter in the Dashboard's Find an Order can open the previous search's result<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Dashboard.tsx:217-228</code></dd>
+    <dt>What happens</dt><dd>The results still belong to the previous search while the new one is loading.</dd>
+    <dt>Fix</dt><dd>Only open a result once it belongs to the text currently typed.</dd>
+    <dt>Found by</dt><dd class="muted">UI-16</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-37</span><span class="ftitle">Analytics 'this month' and the capacity chart group by UTC date<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Analytics.tsx:97-100; src/lib/warehouseCapacity.ts:39-41, :80-92</code></dd>
+    <dt>What happens</dt><dd>In a US time zone, from about 7–8 pm on the last day of a month, the page already counts the new month. Evening shipments land on the next day's bar.</dd>
+    <dt>Fix</dt><dd>Group by local date.</dd>
+    <dt>Found by</dt><dd class="muted">UI-17</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ui">
+  <summary><span class="fid">R4-38</span><span class="ftitle">Item Profile shows no preferred vendor to roles that can't view the vendor list<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ItemProfile.tsx:45-47, :279</code></dd>
+    <dt>What happens</dt><dd>Analysts and Customer Service see 'Preferred Vendor: —' even when a vendor is set.</dd>
+    <dt>Fix</dt><dd>Return the vendor name with the item.</dd>
+    <dt>Found by</dt><dd class="muted">UI-18</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="security">
+  <summary><span class="fid">R4-39</span><span class="ftitle">Small hardening items<small>Security · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>various</code></dd>
+    <dt>What happens</dt><dd><ul><li>Saved reports have no owner, so any reports editor can delete anyone's report.</li><li>An unreadable date on the audit-log or stock-movement filters gives a 500 instead of a 400.</li><li>Order lines and price arrays have no maximum length (5 MB body limit).</li><li>There are no security headers (helmet).</li><li>The sign-in throttle's memory grows under a flood of random usernames.</li><li>Unknown usernames skip the password-hash step, so sign-in timing reveals which usernames exist.</li></ul></dd>
+    <dt>Fix</dt><dd>Fix each in passing. None matters much on a 15-person internal network.</dd>
+    <dt>Found by</dt><dd class="muted">SEC notes</dd>
+  </dl></div>
+</details>
+    </div>
+    <details class="finding" data-sev="low"><summary><span class="fid">OK</span><span class="ftitle">Checked and found sound<small>What the passes looked at and didn't flag</small></span><span></span></summary>
+      <div class="fbody"><ul>
+        <li><b>Sign-in:</b> tokens need a real secret with no fallback. Signing someone out, resetting a password or deactivating an account takes effect on their very next request, and permissions are re-read each time. Passwords are hashed with bcrypt and sign-in attempts are throttled. Only admins can change accounts, and the last admin is protected.</li>
+        <li><b>Database queries:</b> no SQL injection. All raw SQL is parameterized and search sorting comes from a fixed list.</li>
+        <li><b>Stock-moving actions:</b> ship, undo, cancel, bulk release, PO receive and RA receive each run as one locked transaction with a version check, and always write a stock-ledger row.</li>
+        <li><b>Browser:</b> no <code>dangerouslySetInnerHTML</code>, <code>innerHTML</code> or <code>eval</code> anywhere. CSV exports neutralize formula cells. Errors never send stack traces.</li>
+        <li><b>Release Orders and Dashboard (rebuilt in round 3):</b> they keep the server's copy after saves, lock buttons while busy, use local dates, and hide actions the server would refuse.</li>
+        <li><b>Other pages:</b> every link goes to a real route. Every confirm dialog stops on Cancel.</li>
+      </ul></div>
+    </details>
+  </section>
+
+  <section id="perf">
+    <div class="section-head"><span class="eyebrow">03</span><h2>Inefficiencies</h2>
+      <p class="muted">Growth figures come from the round-2 one-year scale test (37,800 orders; loading every order took 163 MB and 14 s) and from live measurements on the test database: 4.9 KB per open order, 2.6 KB per PO, and gzip shrinking data 5.7–6.8×. The test database is small (93 orders), so today's timings are fast. These items are about what grows.</p></div>
+    <div class="findings">
+<details class="finding" data-sev="high" data-area="perf">
+  <summary><span class="fid">PF-01</span><span class="ftitle">A report with an item filter that matches nothing downloads the entire order history<small>Performance · effort M</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/reports/dataSources.ts:97-101, :54-78; src/pages/ReportRunner.tsx:63-75</code></dd>
+    <dt>What happens</dt><dd>With no catalog match, the item filter is dropped and the report fetches every order in 500-order pages: about 163 MB after one year and about 490 MB after three, only to show nothing. Choosing 'Sales Orders' also runs straight away with no filters and downloads about 21 MB (5,000 full orders).</dd>
+    <dt>Fix</dt><dd>Return 'no rows' when the item matches nothing. Don't auto-run, and require a date range for order sources. Longer term, have the server return report rows directly.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-01</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-02</span><span class="ftitle">Inventory recalculates each item against every open-order line on every keystroke<small>Performance · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Inventory.tsx:83-86; src/lib/backorderForecast.ts; src/pages/BackOrderQueue.tsx:31-37</code></dd>
+    <dt>What happens</dt><dd>Measured: 62 ms per render with 300 open orders, 114 ms at 600 and 270 ms at 1,000, which is slower still on warehouse PCs. The Back Order Queue and the stock-status report use the same pattern.</dd>
+    <dt>Fix</dt><dd>Build a per-item total once per data load, or add an <code>/api/items/stock-status</code> summary.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-02</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-03</span><span class="ftitle">Receiving, the Back Order Queue and the PO reports download every vendor PO ever written<small>Performance · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Receiving.tsx:13; src/pages/BackOrderQueue.tsx:25; server/src/routes/vendorPurchaseOrders.ts:87-95</code></dd>
+    <dt>What happens</dt><dd>About 2.6 KB per PO, growing forever, while only a handful are open. The open-only list (<code>?open=1</code>) exists, but only the Dashboard uses it. The PO and Returns lists have no paging.</dd>
+    <dt>Fix</dt><dd>Switch Receiving and Back Orders to the open-only list, and add paging and search to the PO and RA lists.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-04</span><span class="ftitle">The most-used query ('open orders') and the allocation check scan the whole order history<small>Performance · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:235-244; server/src/lib/inventory.ts:160-163</code></dd>
+    <dt>What happens</dt><dd>The <code>status NOT IN (…)</code> filter can't use the status index. The live query plan confirmed a full table scan. About 17 pages call it, including every Dashboard load, and allocation runs it while holding the lock every allocation waits on. There is no index on shipment date or on order created-date.</dd>
+    <dt>Fix</dt><dd>Filter with <code>status IN (open statuses)</code> or add a partial index. Index shipment date, and sort recent orders by S.O. #.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-05</span><span class="ftitle">Order search by item, by free text, or sorted by ship date scans full history on every page<small>Performance · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrderSearch.ts:129-155, :186-201</code></dd>
+    <dt>What happens</dt><dd>The item filter uses a lower-cased expression with no index, text search is a leading-wildcard match on JSON, and sorting by ship date aggregates every shipment. In the 1-year simulation the slowest Shipment History page took 395 ms, against 115 ms for Closed Orders.</dd>
+    <dt>Fix</dt><dd>Filter by item id, keep a 'last shipped' column, and add a trigram index for customer name and P.O.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-06</span><span class="ftitle">The stock ledger's item filter searches on every keystroke, and each search scans the whole ledger<small>Performance · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/AuditLog.tsx:184, :202; server/src/routes/stockMovements.ts:18-28</code></dd>
+    <dt>What happens</dt><dd>Typing 'BR-1001' sends 7 requests, each a full scan of a table that grows by about 275,000 rows a year.</dd>
+    <dt>Fix</dt><dd>Wait until typing pauses (the helper already exists), and filter by item id, which is indexed.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-07</span><span class="ftitle">The capacity lookback has no upper limit, so one Settings typo can make every Release Orders view download a year of orders<small>Performance · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Settings.tsx:48-52; src/lib/settingsStore.ts:22-23; server/src/routes/salesOrders.ts:230-244</code></dd>
+    <dt>What happens</dt><dd>The setting saves on every keystroke with no maximum. At 365 days, every Release Orders open pulls about 160 MB and takes about 14 s. At about three years the server risks running out of memory. The unfiltered 'all orders' request is also still open to every signed-in user.</dd>
+    <dt>Fix</dt><dd>Cap the lookback at 90 days, save on blur, and cap the server query. Remove the unused all-orders call. The real fix is still N-05: compute capacity on the server.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-07</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="perf">
+  <summary><span class="fid">PF-08</span><span class="ftitle">Item Quick Report and Product Labels download thousands of orders to build small lists<small>Performance · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/reports/dataSources.ts:465-477; src/pages/ProductLabels.tsx:55-60</code></dd>
+    <dt>What happens</dt><dd>The quick report for a popular item pulls up to 5,000 orders (about 21 MB) plus the full PO history and catalog. Product Labels pulls 2,000 orders to list a customer's roughly 40 items.</dd>
+    <dt>Fix</dt><dd>Add small server endpoints for item order lines and a customer's purchased items.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-08</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="perf">
+  <summary><span class="fid">PF-09</span><span class="ftitle">Workflow pages download every open order to show one queue, and Release Orders loads the catalog and open orders twice<small>Performance · effort M</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Validation.tsx:12-16; src/pages/PickPack.tsx:120-130 + WarehouseCapacityBanner.tsx:14; src/pages/GenerateBOL.tsx:157-170</code></dd>
+    <dt>What happens</dt><dd>Live: 4.9 KB per open order, so about 1.5 MB at 300 open orders and 2.9 MB at 600. A BOL for 8 orders makes 8 full order saves, then downloads everything again.</dd>
+    <dt>Fix</dt><dd>Add a status filter and a slim list format, a counts endpoint for the Dashboard, shared page data, and small save endpoints for single fields (BOL, ship date).</dd>
+    <dt>Found by</dt><dd class="muted">PERF-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="perf">
+  <summary><span class="fid">PF-10</span><span class="ftitle">A slow old response can overwrite a newer one on Reports and Warehouse Capacity<small>Performance · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ReportRunner.tsx:63-75; src/pages/WarehouseCapacity.tsx:36-38</code></dd>
+    <dt>What happens</dt><dd>Pick 'Sales Orders' and then 'Vendors' quickly: the sales-order rows land later and replace the vendor rows.</dd>
+    <dt>Fix</dt><dd>Tag each request and ignore stale answers, as the paged lists already do.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-10</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="perf">
+  <summary><span class="fid">PF-11</span><span class="ftitle">Stock updates run one query at a time inside the transaction, and the allocation check always uses the slow case-insensitive lookup<small>Performance · effort M</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/inventory.ts:43-62, :106-111, :170-171</code></dd>
+    <dt>What happens</dt><dd>Shipping a 20-line order takes about 60 separate database round-trips. Allocating 20 lines takes about 42, under the lock every allocation waits on.</dd>
+    <dt>Fix</dt><dd>Look items up in one query, apply stock changes as one statement, and key reservations by item id.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-11</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="perf">
+  <summary><span class="fid">PF-12</span><span class="ftitle">Duplicate and unusable indexes; missing ones on columns that are filtered or sorted<small>Performance · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/prisma/schema.prisma</code></dd>
+    <dt>What happens</dt><dd>Item has a duplicate item-number index, and the order-line item index can't be used. There's no index on order date, order created-date, shipment date, PO/RA created-date or RA S.O. #.</dd>
+    <dt>Fix</dt><dd>Drop the two useless indexes and add the missing ones.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-12</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="perf">
+  <summary><span class="fid">PF-13</span><span class="ftitle">Responses aren't compressed, and the frontend loads as one bundle<small>Performance · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/index.ts:27-33; src/App.tsx</code></dd>
+    <dt>What happens</dt><dd>Gzip shrinks order, item and PO data 5.7–6.8× in live tests. The bundle is 597 KB (156 KB gzipped) with all 48 pages loaded up front, and the README runs the development server.</dd>
+    <dt>Fix</dt><dd>Add compression, lazy-load the rarely used pages, and serve the built files.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-13</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="perf">
+  <summary><span class="fid">PF-14</span><span class="ftitle">The analytics summary reads all order lines three times per recalculation, and its cache never forgets entries<small>Performance · effort M</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/analytics.ts:276-346</code></dd>
+    <dt>What happens</dt><dd>It's fine at one year (111–686 ms), but it grows with total order history, and one user a minute waits for the full recalculation.</dd>
+    <dt>Fix</dt><dd>Compute order totals once, keep a monthly roll-up, serve the cached value while refreshing, and limit the cache size.</dd>
+    <dt>Found by</dt><dd class="muted">PERF-14</dd>
+  </dl></div>
+</details>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Page</th><th>Loads</th><th>Grows with</th></tr></thead>
+      <tbody>
+        <tr><td>Dashboard (every user's home)</td><td>Open orders + today's shipped, the item catalog, open POs, open RAs</td><td>Open orders (~4.9 KB each)</td></tr>
+        <tr><td>Validation / Allocation lists</td><td>Every open order, filtered in the browser</td><td>Open orders</td></tr>
+        <tr><td>Allocation decision</td><td>The order (fetched twice), the catalog, every open order, and the customer's full price sheet</td><td>Open orders + price sheet</td></tr>
+        <tr><td>Release Orders</td><td>Open orders + catalog; the capacity banner loads the catalog again plus 30 days of shipped orders</td><td>Open orders ×2 + shipments (N-05)</td></tr>
+        <tr><td>Receiving, Purchase Orders, Back Orders</td><td>Every vendor PO ever written</td><td>All history (PF-03)</td></tr>
+        <tr><td>Returns</td><td>Every RA ever issued</td><td>All history</td></tr>
+        <tr><td>Reports (order sources)</td><td>Up to 5,000 full orders in 500-order pages, or all history (PF-01)</td><td>All history</td></tr>
+        <tr><td>Order lists, Shipment History, Item Profile</td><td>Paged from the server</td><td>Fine (sort cost in PF-05)</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section id="flow">
+    <div class="section-head"><span class="eyebrow">04</span><h2>How an order flows today</h2>
+      <p class="muted">Traced through the actual pages and server code. A 'touch' is one click, typed field or dialog answer. Minutes come from the day simulation's time model (<code>sim/day.mjs</code>). They are assumptions, not measurements.</p></div>
+    <ol class="flow today">
+      <li><b>Enter</b><span>Order Entry / CS</span></li><li><b>Validate</b><span>Analyst</span></li><li><b>Allocate</b><span>Analyst</span></li>
+      <li><b>Release</b><span>Analyst</span></li><li><b>Print</b><span>Order Entry</span></li><li><b>Pick &amp; pack</b><span>Floor (paper)</span></li>
+      <li><b>Schedule / BOL</b><span>Logistics</span></li><li><b>Confirm shipped</b><span>Logistics (re-keys paper)</span></li>
+    </ol>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Step · who · page</th><th class="num">10-line order</th><th class="num">25-line order</th><th>Ends in</th><th>What gets in the way</th></tr></thead>
+      <tbody><tr><td class='num'>1</td><td style='min-width:170px'><b>Enter order</b><br><span class='muted'>Order Entry / Customer Service</span><br><code>/order-entry</code></td><td class='num'>44 touches<br>8.0 min</td><td class='num'>104 touches<br>17.0 min</td><td>Entered</td><td style='min-width:260px'>Every extra line needs a mouse click on '+ Add Line'. Lookup works by our item # only (customer part #s don't resolve). No availability shown. Due date defaults to today. $0 when there's no override price (M-15). No duplicate P.O. check.</td></tr>
+<tr><td class='num'>2</td><td style='min-width:170px'><b>Validate</b><br><span class='muted'>Analyst</span><br><code>/validation → /validation/:so</code></td><td class='num'>2 touches<br>2.5 min</td><td class='num'>2 touches<br>4.75 min</td><td>Checked</td><td style='min-width:260px'>An eye-check of ~30 values (10 lines) or ~75 (25 lines) against the PO. No flags ($0, price ≠ override, duplicate P.O., odd qty). No 'send back' or Skip. Fixing a mistake means leaving the queue for Order Detail and starting over.</td></tr>
+<tr><td class='num'>3</td><td style='min-width:170px'><b>Allocate</b><br><span class='muted'>Analyst</span><br><code>/allocation → /allocation/:so</code></td><td class='num'>2 touches<br>3.5 min</td><td class='num'>2 touches<br>7.25 min</td><td>Allocated / Backordered</td><td style='min-width:260px'>About 77% of decisions are mechanical (58% fully in stock, 19% held by the ship-complete flag or zero stock). The queue takes the newest order first and ignores the sort on screen.</td></tr>
+<tr><td class='num'>4</td><td style='min-width:170px'><b>Release</b><br><span class='muted'>Analyst</span><br><code>/pick-pack (Ready tab)</code></td><td class='num'>~2 touches<br>2.0 min</td><td class='num'>~2 touches<br>3.5 min</td><td>Pick &amp; Packed</td><td style='min-width:260px'>Bulk release exists (round 3). Using it cuts this to a checkbox per order.</td></tr>
+<tr><td class='num'>5</td><td style='min-width:170px'><b>Print pick list + packing slip</b><br><span class='muted'>Order Entry</span><br><code>/pick-pack (Released tab)</code></td><td class='num'>~1 touches<br>0.3 min per order</td><td class='num'>~1 touches<br>0.3 min per order</td><td>On the floor</td><td style='min-width:260px'>Analysts release but can't print (they have view only), so every order waits for Order Entry. It prints all pick lists and then all slips, and someone collates by hand. The slip is printed before picking, so any short makes it wrong.</td></tr>
+<tr><td class='num'>6</td><td style='min-width:170px'><b>Pick and pack</b><br><span class='muted'>Warehouse (paper)</span><br><code>—</code></td><td class='num'>10 min + 1.5 per line</td><td class='num'>10 min + 1.5 per line</td><td>—</td><td style='min-width:260px'>Shorts are written on paper and re-keyed later.</td></tr>
+<tr><td class='num'>7</td><td style='min-width:170px'><b>Schedule pickup</b><br><span class='muted'>Logistics</span><br><code>/schedule</code></td><td class='num'>3 touches<br>3 min + 1 per order</td><td class='num'>3 touches<br>3 min + 1 per order</td><td>—</td><td style='min-width:260px'>No carrier, destination, weight or floor status on the page, so it's planned with Release Orders open alongside. Each date change saves immediately (R4-21).</td></tr>
+<tr><td class='num'>8</td><td style='min-width:170px'><b>BOL / label</b><br><span class='muted'>Logistics</span><br><code>/bol, /labels/shipping</code></td><td class='num'>—</td><td class='num'>16 touches<br>4.0 min</td><td>—</td><td style='min-width:260px'>Weight and handling units are typed although item weights exist. Carrier, SCAC and PRO are typed every time and never saved on the order. The routing guide is ignored. The label re-keys S.O., P.O. and address.</td></tr>
+<tr><td class='num'>9</td><td style='min-width:170px'><b>Confirm shipped</b><br><span class='muted'>Logistics</span><br><code>/open-picks (+ detail for shorts)</code></td><td class='num'>2 touches<br>3.0 min</td><td class='num'>~6 touches<br>5.25 min</td><td>Shipped / Backordered</td><td style='min-width:260px'>An exact pick takes 2 clicks. Any short means opening the order, typing the actual quantities and reprinting the slip. A 10-line order has a 40% chance of a short; a 25-line order, 72%.</td></tr>
+<tr><td class='num'>10</td><td style='min-width:170px'><b>End-of-day report</b><br><span class='muted'>Logistics</span><br><code>none</code></td><td class='num'>10 min</td><td class='num'>10 min</td><td>—</td><td style='min-width:260px'>There's no screen for it. Shipment History leaves out partial shipments and has no date filter.</td></tr></tbody></table></div>
+    <div class="two-col">
+      <div class="panel"><h3>Side paths</h3><ul>
+        <li><b>Back order:</b> the queue shows projected dates but not 'can fill now'. Each order is opened to find out, then steps 3–9 run again. Nothing happens when a PO is received.</li>
+        <li><b>Partial ship:</b> steps 3–9 repeat for each shipment.</li>
+        <li><b>Cancel:</b> Customer Service or an analyst can cancel from any status except Shipped. A printed pick vanishes from the screens but stays on the floor (R4-23).</li>
+        <li><b>Customer change after allocation:</b> lines are locked. Customer Service can't unallocate, so it becomes Customer Service → analyst → Customer Service → analyst. A back-ordered quantity can't be revised at all (R4-18).</li>
+        <li><b>Returns:</b> the RA is re-keyed line by line from free text. The dock receives it and restocks. No credit memo follows.</li>
+      </ul></div>
+      <div class="panel"><h3>Supporting flows</h3><ul>
+        <li><b>Buying:</b> no page lists items below their reorder point or short against demand. The buyer works it out by hand (15 min per PO run in the simulation).</li>
+        <li><b>Receiving:</b> every 'Receive Now' starts at 0, so a full receipt means typing every line. Nothing prompts 'these back orders can now ship'.</li>
+        <li><b>Price and availability quotes (Customer Service):</b> Customer Pricing and Inventory are two separate pages. 'Available' ignores orders that aren't allocated yet, and about 100 orders sat unvalidated all day in the simulation.</li>
+        <li><b>End of day (Logistics):</b> there's no screen for it (R4-20).</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section id="waste">
+    <div class="section-head"><span class="eyebrow">05</span><h2>Where the time goes</h2></div>
+    <div class="load">
+      <div class="load-row"><span>Analyst time needed today</span><div class="load-track"><div class="load-fill" style="width:88.7%;background:var(--crit)"></div><div class="load-cap" style="left:66.7%"></div></div><span class="load-val">133%</span></div>
+      <div class="load-row"><span>After P-A1 + P-A2 + P-A3 (40% pass rate)</span><div class="load-track"><div class="load-fill" style="width:32.5%;background:var(--high)"></div><div class="load-cap" style="left:66.7%"></div></div><span class="load-val">~49%</span></div>
+      <div class="load-row"><span>After P-A1 + P-A2 + P-A3 (70% pass rate)</span><div class="load-track"><div class="load-fill" style="width:25.3%;background:var(--ok)"></div><div class="load-cap" style="left:66.7%"></div></div><span class="load-val">~38%</span></div>
+      <p class="muted" style="font-size:0.86rem">Share of two analysts' 960 minutes a day that 150 orders need (the black mark is 100%). Today: 8.54 min per order = 1,281 min. After: about 1.9 min per order plus about 80 min/day of back-order work. Sources: the simulation's step times and its order mix (58% fully in stock, 19% held, 24% partial).</p>
+    </div>
+    <ul class="top10" style="list-style:none;padding-left:0"><li><b>W-1 · Analysts are the bottleneck, and most of their work is mechanical.</b> Each order needs 8.5 analyst-minutes (validate 2.4, allocate 3.3, release 1.9, plus 0.9 switching between orders). At 150 orders/day that's 1,281 min against 960 available, 133%. In the simulation only 33 of 144 orders entered that day were validated, and 91 that came in before 3 pm were still unvalidated at close. After validation things move fast (checked→allocated median 7 min, allocated→released 4 min). All the waiting is in front of validation.</li>
+<li><b>W-2 · Queues take the newest order first, have no claim, and have no Skip.</b> The backlog starves while new orders keep arriving. Two analysts collide on the same first order: 60 refusals/day with 2 analysts, 150 with 3. A stale page is a dead end.</li>
+<li><b>W-3 · A handoff exists only to print.</b> The person who releases can't print, so every order waits in a second queue for Order Entry, which is already 78–89% busy.</li>
+<li><b>W-4 · The packing slip is printed before the pick.</b> Every short leaves the slip in the box wrong unless logistics reprints it.</li>
+<li><b>W-5 · Paper to screen re-keying at ship confirm.</b> Pickers write down shorts and the one logistics user types them in (71–83% busy).</li>
+<li><b>W-6 · Re-keying on shipping and receiving documents.</b> BOL weight, carrier and PRO; label addresses; RA lines; every PO receipt line; customer part numbers at entry.</li>
+<li><b>W-7 · Back orders wait until someone looks.</b> A PO receipt doesn't bring up the back orders it could fill, and the Back Order Queue can't show 'fillable now'. There were 36–50 back orders at close in the simulation.</li>
+<li><b>W-8 · Switching between pages.</b> Customer Service needs two pages for a price-and-availability quote. Truck planning needs five pages. A validation fix means three page changes and losing your place in the queue.</li>
+<li><b>W-9 · A checked order can change without being checked again.</b> See R4-22.</li>
+<li><b>W-10 · A cancelled pick stays on the floor unseen.</b> See R4-23.</li>
+<li><b>W-11 · No end-of-day shipped report.</b> A daily 10-minute workaround, or it doesn't get done (R4-20).</li>
+<li><b>W-12 · Checking the same fact twice.</b> Ship-complete is asked again on every short order although it's a customer setting. The header copied from the customer record is re-read at validation. 'Released' and 'printed' are two queues for one physical event.</li></ul>
+  </section>
+
+  <section id="condense">
+    <div class="section-head"><span class="eyebrow">06</span><h2>Steps to condense or automate</h2></div>
+    <div class="rec-grid"><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A1</span><h4>Validate by exception with server rules</h4><span class="eff">Effort M–L</span></div>
+  <p>When an order is saved, the server runs these checks: customer linked; ship-to is a saved location; every price matches the override or catalog price and is above $0; quantity within a normal range for that customer; P.O. # not already on file; total under a limit; not a new customer or a first-time item; no free-text notes. Orders that pass move to Checked, stamped 'AUTO' with the results logged. The rest go to the analyst with the reasons listed. The checks run again on any later edit, which also fixes R4-22.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts</dd>
+    <dt>Saves</dt><dd>~280 min/day at a 70% pass rate</dd>
+    <dt>Keep control</dt><dd>Every auto-check is logged with its results. Limits are set in Settings. A random 5% sample is reviewed daily. Keep the human eye-check for new customers, first-time items and free-form emailed POs.</dd>
+    <dt>Files</dt><dd><code>salesOrders.ts, new lib/orderRules.ts, schema (validation flags), Settings, Validation pages</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A2</span><h4>Allocate automatically when the decision is mechanical</h4><span class="eff">Effort M</span></div>
+  <p>When an order is checked, the server allocates it using the same free-stock math as the screen: full stock → Allocated; short and ship-complete, or nothing available → Backordered; partial for other customers → the analyst (or automatic if the customer allows partials). A batch runs about every 10 minutes, oldest or most urgent first, so stock goes by due date instead of by who clicked first.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts</dd>
+    <dt>Saves</dt><dd>~420 min/day (77% of decisions are mechanical)</dd>
+    <dt>Keep control</dt><dd>Priority is set by rule. Unallocate stays. The Dashboard lists what was auto-allocated today. Key accounts can optionally have stock reserved.</dd>
+    <dt>Files</dt><dd><code>salesOrders.ts, lib/inventory.ts, Allocation.tsx</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A3</span><h4>Release and print in one step</h4><span class="eff">Effort S (permission + collate) / M (auto-release)</span></div>
+  <p>Short term: let analysts print (<code>pick-pack</code> edit) and print each order's pick list and slip together. Medium term: automatically release fully allocated orders due today or tomorrow, within the warehouse capacity limit, and send them to the warehouse printer.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts, Order Entry, floor</dd>
+    <dt>Saves</dt><dd>~200 min/day (release) + 40–60 min (Order Entry printing) + ~30 min collating</dd>
+    <dt>Keep control</dt><dd>Keep the printed timestamps, a Reprint button, a one-click 'didn't print' undo, and the capacity limit.</dd>
+    <dt>Files</dt><dd><code>permissions.ts:228, BatchPrintDocs.tsx:137-138, PickPack.tsx, /release</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A4</span><h4>Print the packing slip when the order is confirmed shipped</h4><span class="eff">Effort S–M</span></div>
+  <p>Print the pick list at release, and the packing slip at confirm using the quantities that actually shipped.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Logistics, customers</dd>
+    <dt>Saves</dt><dd>~45 min/day of reprints, and slips in the box are always right</dd>
+    <dt>Keep control</dt><dd>The pick list still carries the picking quantities.</dd>
+    <dt>Files</dt><dd><code>OpenPicks.tsx, OpenPicksDetail.tsx, BatchPrintDocs.tsx</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A5</span><h4>Fill back orders automatically when a PO is received</h4><span class="eff">Effort M</span></div>
+  <p>After a receipt, run the P-A2 allocator over back orders for the received items, by due date, and show 'N back orders filled by this receipt'.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts, customers</dd>
+    <dt>Saves</dt><dd>~80 min/day, and orders ship the day stock arrives</dd>
+    <dt>Keep control</dt><dd>Same priority rule. Ship-complete customers are only filled when every line can be.</dd>
+    <dt>Files</dt><dd><code>vendorPurchaseOrders.ts, lib/inventory.ts, BackOrderQueue.tsx, PurchaseOrderDetail.tsx</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A6</span><h4>Build the BOL and shipping label from the order</h4><span class="eff">Effort M</span></div>
+  <p>Prefill weight from item weights, estimate handling units, take the carrier and account from the routing guide, and add freight class to items. Save BOL #, carrier, SCAC, PRO and pickup date on the order so Customer Service can quote them. Offer only released orders on the BOL. Add a 'Print label' action on the order.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Logistics, Customer Service</dd>
+    <dt>Saves</dt><dd>BOL 4 → ~1.5 min; labels ~6 fields → 1 click; Customer Service can quote the PRO</dd>
+    <dt>Keep control</dt><dd>Everything prefilled stays editable. Lines with no weight are flagged.</dd>
+    <dt>Files</dt><dd><code>GenerateBOL.tsx, schema, ShippingLabelCreate.tsx, OrderDetail.tsx</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A7</span><h4>End-of-day shipped report</h4><span class="eff">Effort S</span></div>
+  <p>Shipment History gets a ship-date filter (default today), includes partial shipments, and shows totals for orders, lines, units and pounds with export and print.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Logistics, Director</dd>
+    <dt>Saves</dt><dd>10 → ~1 min/day</dd>
+    <dt>Keep control</dt><dd>Nothing is lost.</dd>
+    <dt>Files</dt><dd><code>ShipmentHistory.tsx, usePagedOrders.ts</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-A8</span><h4>'Receive all outstanding' on a PO</h4><span class="eff">Effort S</span></div>
+  <p>One button fills every line with its outstanding quantity; the receiver then corrects the exceptions.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Purchasing / dock</dd>
+    <dt>Saves</dt><dd>~15 min/day</dd>
+    <dt>Keep control</dt><dd>Keep a confirm step, and use a blind count for high-value items.</dd>
+    <dt>Files</dt><dd><code>PurchaseOrderDetail.tsx</code></dd>
+  </dl>
+</div></div>
+  </section>
+
+  <section id="redesign">
+    <div class="section-head"><span class="eyebrow">07</span><h2>Steps to redesign</h2></div>
+    <div class="rec-grid"><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-B1</span><h4>One 'Order Review' exception screen in place of separate Validation and Allocation</h4><span class="eff">Effort L</span></div>
+  <p>Orders that fail P-A1 or P-A2 open on one screen with the rule flags, lines with price source and availability, the allocation proposal and the ship-complete flag. Actions: Approve &amp; allocate, fix inline, send back to entry with a note, or hold.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts</dd>
+    <dt>Saves</dt><dd>~2 min per exception order, ~90 min/day on top of P-A1 and P-A2</dd>
+    <dt>Keep control</dt><dd>Keep maker ≠ checker (P-D2).</dd>
+    <dt>Files</dt><dd><code>new page replacing ValidationDecision + AllocationDecision</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-B2</span><h4>'Next order' claim instead of snapshot queues</h4><span class="eff">Effort M (stop-gap S)</span></div>
+  <p>A server endpoint claims the oldest order (by due date, then order date) for 10 minutes. Decision pages get Skip and Release. Stop-gap now: sort the queues oldest-first, add Skip, and split duties between the two analysts.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts</dd>
+    <dt>Saves</dt><dd>Removes 60–150 collisions/day (30–75 min) and fixes the backlog starving</dd>
+    <dt>Keep control</dt><dd>—</dd>
+    <dt>Files</dt><dd><code>salesOrders.ts, schema, reviewQueue.ts, queue pages</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-B3</span><h4>Confirm picks at the dock</h4><span class="eff">Effort M</span></div>
+  <p>A tablet view of Open Picks. Each line defaults to what was packed; the picker taps the short lines and confirms. That posts the shipment and prints the slip and label.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Logistics, warehouse</dd>
+    <dt>Saves</dt><dd>~100 min/day of re-keying, and takes the single logistics user off the critical path</dd>
+    <dt>Keep control</dt><dd>Large shorts (for example over 20%) need logistics approval. Everything is still in the audit and stock ledgers.</dd>
+    <dt>Files</dt><dd><code>OpenPicks.tsx, OpenPicksDetail.tsx, new Warehouse preset</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-B4</span><h4>Change control after checking</h4><span class="eff">Effort S / M</span></div>
+  <p>A line, quantity or price edit on a Checked order sends it back to Entered, or re-runs P-A1. A Customer Service change on an Allocated order becomes one analyst action: 'Unallocate, edit, re-allocate'.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts, Customer Service</dd>
+    <dt>Saves</dt><dd>Closes a control gap</dd>
+    <dt>Keep control</dt><dd>—</dd>
+    <dt>Files</dt><dd><code>salesOrders.ts, OrderDetail.tsx</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-B5</span><h4>Cancelling an order that's already on the floor</h4><span class="eff">Effort S–M</span></div>
+  <p>A cancelled released order goes on a 'Pull from floor' list in Open Picks until logistics acknowledges it. Customer Service is warned before cancelling.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Logistics</dd>
+    <dt>Saves</dt><dd>Prevents shipping cancelled orders</dd>
+    <dt>Keep control</dt><dd>—</dd>
+    <dt>Files</dt><dd><code>salesOrders.ts, OpenPicks.tsx, OrderDetail.tsx</code></dd>
+  </dl>
+</div><div class="rec-card">
+  <div class="rec-head"><span class="rid">P-B6</span><h4>Back-order lifecycle and a shortage list for Purchasing</h4><span class="eff">Effort M</span></div>
+  <p>The Back Order Queue splits into 'Fillable now' (bulk allocate), 'Covered by an open PO' (with ETA) and 'No PO covers it'. The last feeds a Purchasing shortage list: items where on hand + on PO − open demand is below the reorder point, with a suggested quantity and 'Create PO from selection'.</p>
+  <dl class="kv">
+    <dt>Helps</dt><dd>Analysts, Purchasing</dd>
+    <dt>Saves</dt><dd>The buyer's PO run drops from 15 to ~5 min, ~60 min/day</dd>
+    <dt>Keep control</dt><dd>—</dd>
+    <dt>Files</dt><dd><code>BackOrderQueue.tsx, backorderForecast.ts, new Shortages page, PurchaseOrderForm.tsx</code></dd>
+  </dl>
+</div></div>
+  </section>
+
+  <section id="pages">
+    <div class="section-head"><span class="eyebrow">08</span><h2>Pages that should look or work differently</h2></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Page</th><th>Change</th><th>Gain</th><th class="num">Effort</th></tr></thead>
+      <tbody><tr><td><b>Order Entry</b></td><td><ul><li>Enter in the last cell adds a row and focuses it.</li><li>Customer part numbers resolve to our items.</li><li>Pasting item/qty lines from email or Excel creates rows.</li><li>Each line shows 'Available now', where the price came from, and warnings ($0, unusually high qty).</li><li>A duplicate-P.O. warning shows as soon as the P.O. is typed.</li><li>Due date defaults to the estimated ship date.</li><li>A side panel shows ship-complete, routing-guide notes and customer notes.</li><li>Import applies override prices and part-number mapping.</li></ul></td><td>~200 min/day across Order Entry and Customer Service (0.6 → 0.45 min per line); touches per line 4 → 2</td><td class='num'>M</td></tr>
+<tr><td><b>Validation / Allocation lists</b></td><td><ul><li>Oldest first, with age, line count, number of flags, entered-by and due date.</li><li>Allocation adds 'fill %' and 'Allocate all fully available'.</li><li>Decision pages get a Skip button and keyboard shortcuts (Enter approves, S skips).</li></ul></td><td>Part of P-B2</td><td class='num'>S–M</td></tr>
+<tr><td><b>Release Orders</b></td><td><ul><li>Default filter 'Late &amp; today'.</li><li>One 'Release &amp; print' for analysts.</li><li>Pick list and slip printed together per order.</li><li>The print tab is kept for reprints.</li></ul></td><td>Part of P-A3</td><td class='num'>S</td></tr>
+<tr><td><b>Open Picks</b></td><td><ul><li>Enter shorts in the row itself.</li><li>Show carrier, ship-to and minutes on the floor.</li><li>A bulk confirm reports results per order (R4-31).</li></ul></td><td>~1 page change per short</td><td class='num'>S</td></tr>
+<tr><td><b>Schedule Shipments</b></td><td><ul><li>Columns for carrier, destination, weight, on floor/ready, and appointment needed.</li><li>Group by carrier and day.</li><li>Set a pickup date for many orders at once.</li><li>Save on blur (R4-21).</li></ul></td><td>Truck planning on one page instead of five</td><td class='num'>S–M</td></tr>
+<tr><td><b>Back Order Queue</b></td><td>See P-B6.</td><td></td><td class='num'>M</td></tr>
+<tr><td><b>Receiving / PO detail</b></td><td><ul><li>'Receive all outstanding' (P-A8).</li><li>A panel shows the back orders this receipt filled (P-A5).</li></ul></td><td></td><td class='num'>S–M</td></tr>
+<tr><td><b>Returns</b></td><td><ul><li>Pick the S.O. from a search.</li><li>Lines come from what shipped, capped at the shipped quantity.</li><li>Credit at the price on the order line (M-15).</li></ul></td><td>No re-keying of lines</td><td class='num'>S–M</td></tr>
+<tr><td><b>Dashboard</b></td><td><ul><li>Age alerts on queues, for example orders Entered more than 2 hours ago, or back orders that can now be filled.</li></ul></td><td></td><td class='num'>S</td></tr></tbody></table></div>
+  </section>
+
+  <section id="roles">
+    <div class="section-head"><span class="eyebrow">09</span><h2>Roles and permissions</h2></div>
+    <ul class="top10" style="list-style:none;padding-left:0"><li><b>P-D1.</b> Analysts get <code>pick-pack</code> edit so whoever releases can print. This removes the handoff in W-3. <span class='muted'>Effort S.</span></li>
+<li><b>P-D2.</b> Customer Service validates its own phone orders only with a server-enforced maker ≠ checker rule. First, set <code>writtenById</code> from the signed-in account and lock it (R4-02). Customer Service runs 53–58% busy, so they have the time. <span class='muted'>Effort S–M.</span></li>
+<li><b>P-D3.</b> A new Warehouse/Dock preset: confirm picks (P-B3), receiving and return receipt, with no pricing or customer access. <span class='muted'>Effort S + M.</span></li>
+<li><b>P-D4.</b> Until P-B2 exists, split analyst duties: one analyst validates and handles exceptions, the other allocates, releases and handles back orders. No code needed, and it removes most collisions. <span class='muted'>Effort none.</span></li>
+<li><b>P-D5.</b> Customer Service gets a narrow 'request change' on allocated orders (P-B4) rather than allocation rights. <span class='muted'>Effort M.</span></li></ul>
+  </section>
+
+  <section id="future">
+    <div class="section-head"><span class="eyebrow">10</span><h2>Proposed future flow</h2></div>
+    <ol class="flow">
+      <li><b>Enter or import</b><span>Keyboard grid, customer part #s, override prices, duplicate/$0/stock warnings</span></li>
+      <li><b>Rules check</b><span>60–70% auto-Checked; the rest go to Order Review with reasons</span></li>
+      <li><b>Auto-allocate</b><span>Every 10 min, oldest/most urgent first; mechanical cases only</span></li>
+      <li><b>Order Review</b><span>One screen for exceptions; claim + Skip, no collisions</span></li>
+      <li><b>Release &amp; print</b><span>Bulk or automatic within capacity; pick list only</span></li>
+      <li><b>Dock confirm</b><span>Tablet, defaults to packed; slip + label printed from actuals</span></li>
+      <li><b>Logistics</b><span>Carrier-grouped schedule, prefilled BOL, PRO saved, end-of-day report</span></li>
+      <li><b>Remainders</b><span>Filled automatically when the PO is received</span></li>
+    </ol>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Order</th><th class="num">Touches today</th><th class="num">Touches after</th><th class="num">Analyst min today</th><th class="num">Analyst min after</th><th>Handoffs today → after</th></tr></thead>
+      <tbody>
+        <tr><td>10 lines, no BOL, no shorts</td><td class="num">~56 (6 pages)</td><td class="num">~28 (2 pages)</td><td class="num">8.9</td><td class="num">~2.0</td><td>Today: Order Entry → Analyst → Order Entry → floor → Logistics, 5 waiting queues. After: entry → floor → dock, 2 queues.</td></tr>
+        <tr><td>25 lines, BOL, one short</td><td class="num">~136 (9 pages)</td><td class="num">~66</td><td class="num">16.4</td><td class="num">~3</td><td>Logistics time about 12 → 3 min</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section id="roadmap">
+    <div class="section-head"><span class="eyebrow">11</span><h2>Suggested roadmap</h2></div>
+    <div class="phases">
+      <div class="phase"><h3>Now (small fixes, about 1 week)</h3><ul>
+        <li>R4-01, 04, 05, 06, 07, 09, 10 (small fixes that close stock and money holes)</li>
+        <li>R4-14, 15, 16, 19, 21, 23, 24, 30, 35</li>
+        <li>P-A3 short term, P-D1, P-D4, P-A7, P-A8</li>
+        <li>PF-01, 03, 04, 06, 07, 12, 13</li>
+      </ul></div>
+      <div class="phase"><h3>Next (2–4 weeks)</h3><ul>
+        <li>R4-02, 03, 08 (who may change which field; per-field audit)</li>
+        <li>R4-11, 12, 13, 17, 18, 20, 22</li>
+        <li>P-A2 auto-allocate, P-B2 claim queue, P-A4 slip at confirm, Order Entry grid</li>
+        <li>PF-02, 05, 08, 09</li>
+      </ul></div>
+      <div class="phase"><h3>Later (after measuring real step times)</h3><ul>
+        <li>P-A1 rules-based validation + P-B1 Order Review</li>
+        <li>P-B3 dock confirm + P-D3 Warehouse preset</li>
+        <li>P-A5 auto-fill back orders, P-B6 shortage list</li>
+        <li>P-A6 BOL/label from the order, P-B5 pull-from-floor</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-head"><span class="eyebrow">12</span><h2>Method and caveats</h2></div>
+    <div class="prose">
+      <ul>
+        <li><b>The five passes:</b> server security and permissions; server correctness and data integrity; performance (server and browser); screen bugs; order-flow and process analysis. Each pass read the code directly and had to cite a file and line and give a concrete failure case for every finding.</li>
+        <li><b>My checks:</b> I checked the high findings and a sample of the rest against the code myself. Examples: the order save's shipment-record sync and the missing check when the status doesn't change; the delete rules on customer orders; the closed-RA exclusion; the missing quantity check in the ship endpoint; the database plan for the open-orders query (a full table scan); newest-first queues; analysts' view-only print access; uncollated printing.</li>
+        <li><b>What wasn't tested:</b> no code was changed and nothing was sent to the API except read-only requests. The API and loophole findings were confirmed by reading the code, not by exploiting them.</li>
+        <li><b>How reliable the time savings are:</b> they come from the day simulation's time model (per step and per line) and its order mix. Before sizing staff or committing to the bigger automation, time about 20 real orders at each step and measure how many orders would pass the rules.</li>
+        <li><b>Where things are:</b> known items are in <code>docs/review/open-bugs.md</code>, which now also lists this round's findings. The shared to-do list has the process recommendations.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Aamstrand ERP · review round 4 · 2026-09-25 · generated with Claude Code. File references point at commit ac49897.</footer>
+</div>
+<script>
+(function () {
+  var chips = document.querySelectorAll('#bugs .chip');
+  var items = document.querySelectorAll('#bug-list details.finding');
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (c) { c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });
+      var f = chip.getAttribute('data-filter');
+      items.forEach(function (el) {
+        var show = f === 'all' || (f.indexOf('sev:') === 0 ? el.dataset.sev === f.slice(4) : el.dataset.area === f.slice(5));
+        el.hidden = !show;
+      });
+    });
+  });
+})();
+</script>
