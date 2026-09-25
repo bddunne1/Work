@@ -1651,6 +1651,11 @@ a.dash-lookup-row:focus-visible {
   border-color: var(--queue-color, var(--accent));
 }
 
+.dash-queue.is-static:hover {
+  border-color: var(--border);
+  border-left-color: var(--queue-color, var(--accent));
+}
+
 .dash-queue.is-empty {
   opacity: 0.7;
 }

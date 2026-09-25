@@ -151,6 +151,9 @@ const QUEUES: QueueDef[] = [
   { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/returns", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
 ];
 
+// The queues an order passes through (the rest are stock coming in).
+const ORDER_QUEUE_KEYS = ["validate", "allocate", "backorder", "release", "print", "ship"];
+
 function isoDay(d: Date): string {
   return d.toLocaleDateString("en-CA");
 }
@@ -334,7 +337,54 @@ export default function Dashboard() {
 
   const visibleQueues = QUEUES.filter((qd) => access(qd.viewPath) !== "none" && queueData[qd.key] !== null);
   const workQueues = visibleQueues.filter((qd) => access(qd.workPath) === "edit");
-  const queuesShown = workQueues.length > 0 ? workQueues : visibleQueues;
+  // Anyone who doesn't work an order queue themselves (customer service,
+  // sales) still gets the whole order pipeline, read-only - "where's my
+  // order?" is most of their day. Order counts are readable by every
+  // signed-in account; a card only links if they can open that page.
+  const pipelineQueues = QUEUES.filter((qd) => ORDER_QUEUE_KEYS.includes(qd.key));
+  const showPipeline = !workQueues.some((qd) => ORDER_QUEUE_KEYS.includes(qd.key));
+
+  function renderQueue(qd: QueueDef, linkable: boolean) {
+    const entries = queueData[qd.key];
+    const count = entries?.length ?? 0;
+    const lateCount = entries?.filter((e) => e.late).length ?? 0;
+    const oldest = entries
+      ?.map((e) => (e.since ? new Date(e.since).getTime() : NaN))
+      .filter((t) => Number.isFinite(t))
+      .sort((a, b) => a - b)[0];
+    const body = (
+      <>
+        <span className="dash-queue-label">{qd.label}</span>
+        <span className="dash-queue-count">{loading ? "…" : count}</span>
+        <span className="dash-queue-meta">
+          {loading || count === 0 ? (
+            count === 0 && !loading ? "All clear" : " "
+          ) : (
+            <>
+              {oldest !== undefined && <span>oldest {ageLabel(loadedAt - oldest)}</span>}
+              {oldest === undefined && lateCount === 0 && qd.note && <span>{qd.note}</span>}
+              {lateCount > 0 && qd.lateLabel && (
+                <span className="is-late">
+                  {lateCount} {qd.lateLabel}
+                </span>
+              )}
+            </>
+          )}
+        </span>
+      </>
+    );
+    const className = `dash-queue${count === 0 ? " is-empty" : ""}${linkable ? "" : " is-static"}`;
+    const style = { "--queue-color": qd.color } as CSSProperties;
+    return linkable ? (
+      <Link key={qd.key} to={qd.to} className={className} style={style}>
+        {body}
+      </Link>
+    ) : (
+      <div key={qd.key} className={className} style={style}>
+        {body}
+      </div>
+    );
+  }
 
   // Tile badges: how many are waiting in the queue(s) behind each tile.
   const tileCounts = new Map<string, { count: number; late: number }>();
@@ -432,45 +482,18 @@ export default function Dashboard() {
         )}
       </section>
 
-      {queuesShown.length > 0 && (
+      {workQueues.length > 0 && (
         <section className="dash-section">
-          <h2 className="dash-section-title">{workQueues.length > 0 ? "Your queues" : "Order pipeline"}</h2>
+          <h2 className="dash-section-title">Your queues</h2>
+          <div className="dash-queues">{workQueues.map((qd) => renderQueue(qd, true))}</div>
+        </section>
+      )}
+
+      {showPipeline && (
+        <section className="dash-section">
+          <h2 className="dash-section-title">Order pipeline · where open orders are right now</h2>
           <div className="dash-queues">
-            {queuesShown.map((qd) => {
-              const entries = queueData[qd.key];
-              const count = entries?.length ?? 0;
-              const lateCount = entries?.filter((e) => e.late).length ?? 0;
-              const oldest = entries
-                ?.map((e) => (e.since ? new Date(e.since).getTime() : NaN))
-                .filter((t) => Number.isFinite(t))
-                .sort((a, b) => a - b)[0];
-              return (
-                <Link
-                  key={qd.key}
-                  to={qd.to}
-                  className={`dash-queue${count === 0 ? " is-empty" : ""}`}
-                  style={{ "--queue-color": qd.color } as CSSProperties}
-                >
-                  <span className="dash-queue-label">{qd.label}</span>
-                  <span className="dash-queue-count">{loading ? "…" : count}</span>
-                  <span className="dash-queue-meta">
-                    {loading || count === 0 ? (
-                      count === 0 && !loading ? "All clear" : " "
-                    ) : (
-                      <>
-                        {oldest !== undefined && <span>oldest {ageLabel(loadedAt - oldest)}</span>}
-                        {oldest === undefined && lateCount === 0 && qd.note && <span>{qd.note}</span>}
-                        {lateCount > 0 && qd.lateLabel && (
-                          <span className="is-late">
-                            {lateCount} {qd.lateLabel}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </span>
-                </Link>
-              );
-            })}
+            {pipelineQueues.map((qd) => renderQueue(qd, access(qd.viewPath) !== "none"))}
           </div>
         </section>
       )}
