@@ -1,0 +1,530 @@
+<title>Aamstrand ERP Round 3</title>
+<meta name="description" content="Everything changed since the last merge to main: Release Orders rename and redesign, bulk release, scroll windows for long lists, and a role-aware Dashboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a;
+    --high: #b9620f;
+    --med: #7d6c0c;
+    --low: #5d6772;
+    --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08);
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62;
+      --high: #f0a24e;
+      --med: #d6c35c;
+      --low: #97a1ab;
+      --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12);
+      --ok-bg: rgba(95, 196, 141, 0.12);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62;
+    --high: #f0a24e;
+    --med: #d6c35c;
+    --low: #97a1ab;
+    --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12);
+    --ok-bg: rgba(95, 196, 141, 0.12);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Document header, laid out like the app's own printed forms */
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 70ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+
+  /* Verdict */
+  .verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); }
+  .verdict .big.good { color: var(--ok); }
+  @media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.bad { color: var(--crit); font-weight: 600; }
+  td.good { color: var(--ok); font-weight: 600; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  /* Bar charts */
+  .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.86rem; color: var(--ink-2); }
+  .metric { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 6px 16px; align-items: start; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .metric:first-of-type { border-top: 0; padding-top: 0; }
+  .metric-name { font-weight: 600; font-size: 0.93rem; }
+  .metric-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .bars { display: flex; flex-direction: column; gap: 3px; }
+  .bar-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; align-items: center; position: relative; }
+  .track { height: 14px; position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .fill.zero { width: 2px !important; border-radius: 0; opacity: 0.8; }
+  .bar-val { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .bar-row:hover .track { background: var(--accent-soft); }
+  .bar-row[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 2;
+    background: var(--ink); color: var(--paper); font-size: 0.78rem; padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  }
+  @media (max-width: 620px) { .metric { grid-template-columns: 1fr; } }
+
+  /* Findings */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  details.finding { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev); border-radius: 6px; }
+  details.finding[data-sev="critical"] { --sev: var(--crit); }
+  details.finding[data-sev="high"] { --sev: var(--high); }
+  details.finding[data-sev="medium"] { --sev: var(--med); }
+  details.finding[data-sev="low"] { --sev: var(--low); }
+  details.finding summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: baseline; }
+  details.finding summary::-webkit-details-marker { display: none; }
+  .fid { font-family: var(--mono); font-size: 0.8rem; color: var(--sev); font-weight: 600; }
+  .ftitle { font-weight: 600; }
+  .ftitle small { display: block; font-weight: 400; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+  .stamp { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; transform: rotate(-3deg); white-space: nowrap; }
+  .stamp.fixed { color: var(--ok); }
+  .stamp.partial { color: var(--high); }
+  .stamp.open { color: var(--muted); }
+  .fbody { padding: 0 14px 14px 84px; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
+  .fbody dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; }
+  .fbody dt { color: var(--muted); font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .fbody dd { margin: 0; }
+  @media (max-width: 620px) {
+    details.finding summary { grid-template-columns: 1fr auto; }
+    .fid { grid-column: 1 / -1; }
+    .fbody { padding-left: 14px; }
+    .fbody dl { grid-template-columns: 1fr; }
+  }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; }
+
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .panel ul, .prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+  pre { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.6; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+  .shot { display: block; border: 1px solid var(--rule-strong); border-radius: 6px; overflow: hidden; background: var(--surface); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot.crop { max-height: 520px; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  figcaption { font-size: 0.88rem; color: var(--muted); max-width: 72ch; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .tag { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; border: 1.5px solid currentColor; white-space: nowrap; }
+  .tag.new { color: var(--accent); }
+  .tag.fix { color: var(--ok); }
+  .tag.chg { color: var(--high); }
+  .changes { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .changes li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: baseline; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 10px 14px; font-size: 0.95rem; }
+  .changes li b { color: var(--ink); }
+  .steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; max-width: 76ch; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc a { font-family: var(--display); font-weight: 600; font-size: 0.92rem; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+  td.pass { color: var(--ok); font-weight: 600; white-space: nowrap; }
+  td.warn { color: var(--high); font-weight: 600; white-space: nowrap; }
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="eyebrow">Aamstrand ERP · change report · round 3</div>
+      <h1>Round 3: Release Orders and the Dashboard</h1>
+      <p class="lede">Everything that changed since the last merge to main (<code>4ed52f7</code>, PR #1). The pick-and-pack stage is renamed and rebuilt as Release Orders, long lists no longer push their Save and Generate buttons off screen, and the Dashboard now opens on each person's own work.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Date</dt><dd>2026-09-25</dd>
+      <dt>Branch</dt><dd>claude/practical-volta-02z5tg</dd>
+      <dt>From</dt><dd>4ed52f7 (main)</dd>
+      <dt>Commits</dt><dd>11</dd>
+      <dt>Files</dt><dd>46 changed</dd>
+    </dl>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div><span class="eyebrow">Regression checks</span><span class="big good">89 / 89</span><span class="muted">16 server behavior checks and 73 browser checks from rounds 1–2, re-run on this branch.</span></div>
+      <div><span class="eyebrow">New checks</span><span class="big good">25 / 26</span><span class="muted">Bulk release API (7) and Release Orders in the browser (19). The one miss is the app-wide phone-width top bar, which was already there.</span></div>
+      <div><span class="eyebrow">Dashboard height (admin)</span><span class="big good">2,796 → 1,212 px</span><span class="muted">The launcher went from 22 large cards to compact tiles, and the work now sits above them.</span></div>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#summary">Summary</a>
+      <a href="#rename">Rename</a>
+      <a href="#release">Release Orders</a>
+      <a href="#scroll">Scroll windows</a>
+      <a href="#dashboard">Dashboard</a>
+      <a href="#fixes">Fixes</a>
+      <a href="#testing">Testing</a>
+      <a href="#try">Try it tonight</a>
+      <a href="#open">Still open</a>
+      <a href="#commits">Commits and files</a>
+    </nav>
+  </section>
+
+  <section id="summary">
+    <div class="section-head"><span class="eyebrow">01</span><h2>Summary of changes</h2></div>
+    <ul class="changes">
+      <li><span class="tag chg">Rename</span><span><b>"Pick &amp; Pack" is now "Release Orders"</b> on the menu, page titles, buttons, back links, permission names and the Open Picks column. The per-order button is <b>Release Order</b>.</span></li>
+      <li><span class="tag new">New</span><span><b>Release Orders rebuilt (design Option A).</b> Three tabs, one per step. Ship-by date, carrier, size, weight and allocation on every row. Filters. Several orders release at once from a bar that stays on screen, and a line's quantity can be trimmed without leaving the list.</span></li>
+      <li><span class="tag new">New</span><span><b>Bulk release API</b> (<code>POST /api/sales-orders/release</code>). Each order goes in its own transaction, so one stale order doesn't block the rest.</span></li>
+      <li><span class="tag new">New</span><span><b>Scroll windows on 15 screens.</b> Long lists scroll inside their own box with a pinned header, so Save, Generate BOL, Release Order, Mark Shipped, Receive and similar buttons stay in reach.</span></li>
+      <li><span class="tag new">New</span><span><b>Dashboard redesign.</b> A "today" strip, each person's own queues with counts, age and lateness, an order lookup, and a compact launcher in workflow order. Roles that don't work order queues see the order pipeline read-only.</span></li>
+      <li><span class="tag fix">Fix</span><span><b>The capacity banner no longer shows nonsense like "22469342%".</b> It needs 5 shipping days and 20 shipments of history first, and is capped at "&gt;999%".</span></li>
+      <li><span class="tag fix">Fix</span><span><b>A missing <code>}</code> in the stylesheet</b> had switched off the Import page's results styles since round 2.</span></li>
+      <li><span class="tag fix">Fix</span><span><b>Page titles stay on one line</b>, and the header row wraps cleanly on narrow screens.</span></li>
+      <li><span class="tag new">Docs</span><span><b>Release Orders design options</b> (<code>docs/design/release-orders/</code>), this report, and new items on the shared to-do list.</span></li>
+    </ul>
+  </section>
+
+  <section id="rename">
+    <div class="section-head"><span class="eyebrow">02</span><h2>Rename: Pick &amp; Pack → Release Orders</h2></div>
+    <div class="prose">
+      <p>The stage turns allocated orders into physical pick lists and packing slips for the warehouse, and the name now says so.</p>
+      <ul>
+        <li><b>Dashboard tile</b> "Release Orders", with the description "Pick lists and packing slips for the floor".</li>
+        <li><b>Release Orders page:</b> the title and intro are new.</li>
+        <li><b>Per-order page:</b> the back links read "Back to Release Orders" and the primary button reads <b>Release Order</b> (it was "Release Pick").</li>
+        <li><b>Allocation:</b> the outcome reads "Allocate what's available · send to Release Orders".</li>
+        <li><b>Order Detail:</b> the next-stage buttons read "To Release Orders".</li>
+        <li><b>Open Picks:</b> the "Pick &amp; Pack" column is now "Release".</li>
+        <li><b>Permissions:</b> "Release Orders (print pick lists)" (page key <code>pick-pack</code>) and "Release Orders (release to warehouse)" (<code>pick-release</code>). The round-2 report's "Release Picks" permission is the second of these.</li>
+      </ul>
+      <p class="muted"><b>Unchanged on purpose:</b> the web address stays <code>/#/pick-pack</code>, so bookmarks keep working. The status after release is still "Pick &amp; Packed", and renaming it to "Released" is on the to-do list.</p>
+    </div>
+  </section>
+
+  <section id="release">
+    <div class="section-head"><span class="eyebrow">03</span><h2>Release Orders, rebuilt</h2></div>
+    <div class="pair">
+      <figure>
+        <a class="shot crop" href="round3/release-before.png" target="_blank" rel="noopener"><img src="round3/release-before.png" alt="Old Release Orders page: a Review list of allocated orders with a Review button each, and a Released Picks print list below." loading="lazy"></a>
+        <figcaption>Before: one list to review one order at a time, and a print list below it.</figcaption>
+      </figure>
+      <figure>
+        <a class="shot crop" href="round3/release-ready.png" target="_blank" rel="noopener"><img src="round3/release-ready.png" alt="New Release Orders page: tabs, filters, a table with ship-by chips, lines, units, weight and allocation, one order expanded with editable release quantities, and a bar reading 2 selected, 21 lines, 1,862 units, 4,113 lb with Release 2 orders." loading="lazy"></a>
+        <figcaption>After: two orders ticked, one expanded with a line trimmed from 139 to 129. The bar keeps totals and the Release button on screen.</figcaption>
+      </figure>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>What each tab is for</h3>
+        <ul>
+          <li><b>Ready to release (analysts):</b> allocated orders with ship-by, carrier, lines, units, weight, and a Full/Partial allocation tag. Tick orders and press <b>Release N orders</b>. <b>Lines</b> opens an order in place to lower a line's release quantity, or you can open the full review. "Review one by one" still steps through orders the old way.</li>
+          <li><b>Released · print documents (order entry):</b> released orders waiting for their pick list and packing slip. Nothing is ticked until you choose. Print from the bar at the bottom.</li>
+          <li><b>On the floor (everyone):</b> printed orders waiting to ship, with how long each has been out. This tab is read-only; confirm shipments on Open Picks.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Rules the release follows</h3>
+        <ul>
+          <li>A line can release at most what's allocated to it. To send more, open the full review and revise the allocation.</li>
+          <li>A released line's allocation is used up by the release. A line left at 0 keeps its allocation, the same as the single-order page (open bug M-12b).</li>
+          <li>Only accounts with <b>Release Orders (release to warehouse)</b> can release or unallocate. The server enforces this, and Order Entry gets a 403.</li>
+          <li>Each order is its own transaction. If someone changed an order in the meantime, only that order is refused, and the message names it and why.</li>
+          <li>Filters work on every tab: late &amp; today, tomorrow, later, carrier, and a search on S.O., P.O. or customer.</li>
+        </ul>
+      </div>
+    </div>
+    <figure>
+      <a class="shot crop" href="round3/release-print.png" target="_blank" rel="noopener"><img src="round3/release-print.png" alt="Released tab: released orders with Not printed status for pick list and packing slip, two ticked, and a bar with Pick list and Packing slip checkboxes and a Print button." loading="lazy"></a>
+      <figcaption>The Released tab, where Order Entry prints. Printed orders move to On the floor (and Open Picks).</figcaption>
+    </figure>
+    <p class="muted">The design options that led here (release list, waves, board) are in <code>docs/design/release-orders/</code>. Waves (Option B) are the next step, once items have bin locations and truck lines have pickup times.</p>
+  </section>
+
+  <section id="scroll">
+    <div class="section-head"><span class="eyebrow">04</span><h2>Long lists scroll in a window</h2></div>
+    <div class="prose"><p>On screens where a button sits under a list that can grow long, the list now scrolls inside its own box, at most 60% of the window tall, with its header pinned. Short lists look exactly as before. Printing is unaffected.</p></div>
+    <div class="pair">
+      <figure>
+        <a class="shot" href="round3/scroll-review.png" target="_blank" rel="noopener"><img src="round3/scroll-review.png" alt="Release review for S.O. 10084: a 24-line table in a scrolling box with Revise Allocation, Release Order and Unallocate visible right below." loading="lazy"></a>
+        <figcaption>A 24-line order: the Release Order button is visible without scrolling the page.</figcaption>
+      </figure>
+      <figure>
+        <a class="shot" href="round3/scroll-bol.png" target="_blank" rel="noopener"><img src="round3/scroll-bol.png" alt="Generate BOL: the open order list in a scrolling box with the header pinned." loading="lazy"></a>
+        <figcaption>Generate BOL: the order list scrolls in its box, and the shipment details and Generate BOL sit right below it.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Screen</th><th>List now in a window</th><th>Button kept in reach</th></tr></thead>
+        <tbody>
+          <tr><td>Order Entry, Order Detail, Validation decision, Open Picks detail</td><td>Line items (shared table)</td><td>Save / Submit Order, next-stage button, Mark Checked, Mark Shipped</td></tr>
+          <tr><td>Generate BOL</td><td>Open order list; shipment details</td><td>Generate BOL</td></tr>
+          <tr><td>Release Order (per-order review)</td><td>Allocated lines</td><td>Release Order, Revise Allocation, Unallocate</td></tr>
+          <tr><td>Allocation decision</td><td>Line items</td><td>Confirm &amp; Apply</td></tr>
+          <tr><td>Order Detail</td><td>Shipment history</td><td>Cancel Order, Undo Last Shipment</td></tr>
+          <tr><td>Open Picks</td><td>Staged orders</td><td>Confirm Shipment (Selected)</td></tr>
+          <tr><td>Purchase Order form / detail</td><td>PO lines</td><td>Save Purchase Order, Receive</td></tr>
+          <tr><td>Return form / detail</td><td>Return lines; restock table</td><td>Save Return Authorization, Receive Return</td></tr>
+          <tr><td>Customer Pricing</td><td>Pricing grid</td><td>Save Changes</td></tr>
+          <tr><td>New Customer / Customers</td><td>Customer catalog (part numbers)</td><td>Save Customer, Save Changes</td></tr>
+          <tr><td>Accounts</td><td>Permission grid (37 rows)</td><td>Add Account, Save Permissions</td></tr>
+          <tr><td>Release Orders (new page)</td><td>Lines of an expanded order</td><td>The release bar stays pinned at the bottom of the screen instead</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Skipped because the button is already above the list, or saves as you type: Validation and Allocation lists, Schedule Shipments, Receiving, Product Labels, Vendors, Back Order Queue, Item Profile, Routing Guide and Inventory Adjust. Import already had its own scroll box, which now works because of the stylesheet fix.</p>
+  </section>
+
+  <section id="dashboard">
+    <div class="section-head"><span class="eyebrow">05</span><h2>Dashboard: work first, menu second</h2></div>
+    <div class="pair">
+      <figure>
+        <a class="shot crop" href="round3/dashboard-before.png" target="_blank" rel="noopener"><img src="round3/dashboard-before.png" alt="Old Dashboard: greeting, lead time panel, six status counts, customer and item counts, then six lanes of large icon cards and a recent orders table." loading="lazy"></a>
+        <figcaption>Before: lead time and counts up top, 22 large cards, and the 5 most recent orders from anyone. 2,796 px tall.</figcaption>
+      </figure>
+      <figure>
+        <a class="shot crop" href="round3/dashboard-after.png" target="_blank" rel="noopener"><img src="round3/dashboard-after.png" alt="New Dashboard for admin: greeting with date and lead time, Find an order box, a today strip (ship by today 25, shipped today 64, on the floor 14, receiving today 0), eight queue cards with counts and ages, and compact tiles in workflow order with count badges." loading="lazy"></a>
+        <figcaption>After (admin): today strip, queues, and compact tiles in workflow order with badges. 1,212 px tall.</figcaption>
+      </figure>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>1 · Your queues first</h3>
+        <ul>
+          <li>These are the workflow queues the person can work: to validate, to allocate, back ordered, to release, to print, to confirm shipped, POs to receive, and returns to receive.</li>
+          <li>Each card shows the count, the age of the oldest item, and how many are past their ship date (or, for POs, their expected date).</li>
+          <li>The same counts appear as badges on the tiles. A badge turns red when something in it is late.</li>
+          <li>Roles that don't work an order queue get <b>Order pipeline</b>: the same cards, read-only, for answering "where's my order?".</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>2 · Compact launcher in workflow order</h3>
+        <ul>
+          <li>Order Prep → Fulfillment → Logistics → Purchasing → Data → Administration.</li>
+          <li>Small tiles with the icon inline and a short description.</li>
+          <li>Purchasing has its own blue; it used to be almost the same green as Order Prep.</li>
+          <li>Create Labels moved to Logistics, and Returns moved to Purchasing (stock coming back in).</li>
+          <li>Tiles still hide pages the account can't open.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>3 · A "today" strip</h3>
+        <ul>
+          <li><b>Ship by today:</b> open orders due today, and how many are already past their date.</li>
+          <li><b>Shipped today:</b> orders, units and pounds confirmed since midnight.</li>
+          <li><b>On the floor:</b> released orders and their weight (links to Warehouse Capacity).</li>
+          <li><b>Receiving today:</b> POs expected today and overdue (for roles that see POs).</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Find an order</h3>
+        <ul>
+          <li>The box in the header searches by S.O. #, P.O. # or customer name, as you type.</li>
+          <li>With nothing typed, it lists the last five orders entered, which replaces the old Recent Orders table.</li>
+          <li>Enter opens the top match.</li>
+          <li>Lead time is now a one-line note under the greeting. The Customers and Items counts are gone.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Role (sim account)</th><th>Your queues</th><th>Order pipeline (read-only)</th></tr></thead>
+        <tbody>
+          <tr><td>Director (dir.sam), Admin</td><td>All eight</td><td>—</td></tr>
+          <tr><td>Analyst (an.derek)</td><td>To validate, To allocate, Back ordered, To release</td><td>—</td></tr>
+          <tr><td>Order Entry (oe.tom)</td><td>To print</td><td>—</td></tr>
+          <tr><td>Logistics (log.marcus)</td><td>To confirm shipped</td><td>—</td></tr>
+          <tr><td>Purchasing (pur.dan)</td><td>POs to receive</td><td>Shown</td></tr>
+          <tr><td>Customer Service (cs.linda)</td><td>Returns to receive</td><td>Shown</td></tr>
+          <tr><td>Sales Manager (sm.helen)</td><td>—</td><td>Shown</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pair">
+      <figure>
+        <a class="shot crop" href="round3/dashboard-sales.png" target="_blank" rel="noopener"><img src="round3/dashboard-sales.png" alt="Sales manager Dashboard: today strip, read-only order pipeline cards, and the tiles they can open." loading="lazy"></a>
+        <figcaption>Sales manager: the pipeline read-only, plus only the tiles they can open.</figcaption>
+      </figure>
+      <figure>
+        <a class="shot" href="round3/dashboard-lookup.png" target="_blank" rel="noopener"><img src="round3/dashboard-lookup.png" alt="Find an order dropdown listing recently entered orders with customer, P.O., ship-by date and status." loading="lazy"></a>
+        <figcaption>Find an order, before typing: the last five orders entered.</figcaption>
+      </figure>
+    </div>
+    <p class="muted">Load: the Dashboard now makes one request for open orders plus anything shipped today, and loads only open POs and open returns. Both list endpoints gained an <code>?open=1</code> filter, so the page doesn't download PO or RA history. It no longer loads the customer list.</p>
+  </section>
+
+  <section id="fixes">
+    <div class="section-head"><span class="eyebrow">06</span><h2>Fixes</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Problem</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>The capacity banner read "Warehouse at 22469342% of estimated capacity"</td><td>Capacity is estimated from shipping history. With one or two shipping days, the estimate is close to zero.</td><td>A percentage is shown only after 5 shipping days and 20 shipments in the lookback, and is capped at "&gt;999%". Until then the banner says there isn't enough history yet.</td></tr>
+          <tr><td>Import results table and status pills were unstyled</td><td>A rule in <code>index.css</code> was missing its closing <code>}</code>, so everything after it was ignored</td><td>Added the brace. The Import page now looks as it was designed to.</td></tr>
+          <tr><td>"Release Orders" wrapped onto two lines</td><td>The header row let the title shrink</td><td>Titles stay on one line; the intro text wraps under them on narrow screens.</td></tr>
+          <tr><td>The Dashboard said "Ready to Pick" for orders that haven't been released</td><td>Old wording</td><td>It's now "To release", in the new queue cards.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="testing">
+    <div class="section-head"><span class="eyebrow">07</span><h2>Testing</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Check</th><th>What it covers</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>TypeScript and lint</td><td><code>tsc -b</code> (frontend) and <code>tsc --noEmit</code> (server); <code>oxlint</code></td><td class="pass">Clean (2 pre-existing warnings in authContext.tsx)</td></tr>
+          <tr><td>Server behavior checks (rounds 1–2)</td><td>Permissions per role, item links, stock ledger, cancel and return restock, optimistic locking</td><td class="pass">16 / 16</td></tr>
+          <tr><td>Browser checks (rounds 1–2)</td><td>Shipping, receiving, stale-page guard, cancel, Order Entry can't release, return restock, stock ledger, every page for every role without errors</td><td class="pass">73 / 73</td></tr>
+          <tr><td>Bulk release API</td><td>Full release; trimmed release (62 of 63 sent, and the untouched line kept its 143 allocated); stale version refused; more than allocated refused; the rest of the batch still released; Order Entry gets 403; audit entries written</td><td class="pass">7 / 7</td></tr>
+          <tr><td>Release Orders in the browser</td><td>Tabs and counts; editing a quantity ticks the order; the bar totals and stays on screen when scrolled; release message; orders move tabs; trimmed units carried through; print tab starts unticked; search and date filters; unallocate; Order Entry lands on print with no release controls</td><td class="warn">18 / 19 (the one miss is the phone-width top bar, which was already there)</td></tr>
+          <tr><td>Dashboard by role</td><td>Queues shown for 10 accounts across all 7 roles; lookup search and Enter-to-open; no overflow inside the page at 400 px</td><td class="pass">Checked with screenshots</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">The browser check for Order Entry was updated to the tabbed page (<code>sim/ui-check.mjs</code>). The day simulation wasn't re-run: the order workflow and stock rules are unchanged, and the bulk release goes through the same state change as the per-order page.</p>
+  </section>
+
+  <section id="try">
+    <div class="section-head"><span class="eyebrow">08</span><h2>What to try tonight</h2></div>
+    <ol class="steps">
+      <li>Sign in as an <b>analyst</b>. The Dashboard shows To validate / To allocate / Back ordered / To release with ages. Click <b>To release</b>.</li>
+      <li>On <b>Ready to release</b>, pick <b>Late &amp; today</b>, tick three orders, open one with <b>Lines</b> and lower a quantity. Watch the bar totals, then press <b>Release 3 orders</b>.</li>
+      <li>Sign in as <b>Order Entry</b>. Release Orders opens on the print tab. Tick the three orders and print. They move to <b>On the floor</b>.</li>
+      <li>Open a large order (20+ lines) in Order Detail, Allocation or Generate BOL. The list scrolls in its box and the button is right underneath.</li>
+      <li>Sign in as <b>Customer Service</b> or a <b>Sales Manager</b>. Use <b>Find an order</b> with part of a customer name, and look at the read-only pipeline.</li>
+    </ol>
+  </section>
+
+  <section id="open">
+    <div class="section-head"><span class="eyebrow">09</span><h2>Still open or worth knowing</h2></div>
+    <div class="panel">
+      <ul>
+        <li><b>Status name:</b> "Pick &amp; Packed" still appears as the status after release. Renaming it to "Released" is on the to-do list.</li>
+        <li><b>M-12b</b> (open bug): a line released at 0 keeps its allocation. Bulk release follows the same rule as the single-order page.</li>
+        <li>On the entry forms, when a list fills its window, a newly added line appears at the bottom of the window without scrolling into view.</li>
+        <li>The <b>Release Orders</b> tile badge adds the "to release" and "to print" counts together.</li>
+        <li><b>Phone width:</b> the top bar and some wide tables still make pages scroll sideways (not new).</li>
+        <li><b>Waves (Option B)</b> need bin locations on items and pickup times per truck line first.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="commits">
+    <div class="section-head"><span class="eyebrow">10</span><h2>Commits and files</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Commit</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">99ce172</td><td>Rename the Pick &amp; Pack stage to Release Orders</td></tr>
+          <tr><td class="mono">0be62a9</td><td>Keep page titles on one line; don't show a capacity percentage without enough shipping history</td></tr>
+          <tr><td class="mono">766c3dc</td><td>Add Release Orders design options (mockups, flows, recommendation)</td></tr>
+          <tr><td class="mono">b2dd4d9</td><td>Put long lists in scroll windows so action buttons stay in reach</td></tr>
+          <tr><td class="mono">b8fa1c4</td><td>Release Orders: tabs per step, bulk release, inline line quantities</td></tr>
+          <tr><td class="mono">588cc3d</td><td>Release Orders: take "now" from when the lists loaded, not during render</td></tr>
+          <tr><td class="mono">ffc5704</td><td>Merge the scroll-window work into the branch</td></tr>
+          <tr><td class="mono">955237d</td><td>Dashboard: your queues first, a today strip, and a compact launcher</td></tr>
+          <tr><td class="mono">5d7035b</td><td>ui-check: Order Entry check follows the tabbed Release Orders page</td></tr>
+          <tr><td class="mono">20dca57</td><td>Dashboard: read-only order pipeline for roles that don't work an order queue</td></tr>
+          <tr><td class="mono">(this)</td><td>Round 3 change report</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Files</th></tr></thead>
+        <tbody>
+          <tr><td>Server</td><td><code>routes/salesOrders.ts</code> (bulk release), <code>routes/vendorPurchaseOrders.ts</code> and <code>routes/returns.ts</code> (<code>?open=1</code>)</td></tr>
+          <tr><td>Rebuilt pages</td><td><code>PickPack.tsx</code> (Release Orders), <code>Dashboard.tsx</code></td></tr>
+          <tr><td>Scroll windows</td><td><code>LineItemsTable.tsx</code>, <code>CustomerEditor.tsx</code>, <code>GenerateBOL.tsx</code>, <code>PickPackDetail.tsx</code>, <code>AllocationDecision.tsx</code>, <code>OrderDetail.tsx</code>, <code>OpenPicks.tsx</code>, <code>OpenPicksDetail.tsx</code>, <code>PurchaseOrderForm.tsx</code>, <code>PurchaseOrderDetail.tsx</code>, <code>ReturnForm.tsx</code>, <code>ReturnDetail.tsx</code>, <code>CustomerPricing.tsx</code>, <code>Accounts.tsx</code></td></tr>
+          <tr><td>Rename and fixes</td><td><code>permissions.ts</code>, <code>warehouseCapacity.ts</code>, <code>WarehouseCapacityBanner.tsx</code>, <code>WarehouseCapacity.tsx</code>, <code>index.css</code></td></tr>
+          <tr><td>Data helpers</td><td><code>orderStore.ts</code> (<code>releaseOrders</code>, <code>listOpenOrdersShippedSince</code>), <code>vendorPoStore.ts</code>, <code>returnStore.ts</code></td></tr>
+          <tr><td>Tests and docs</td><td><code>sim/ui-check.mjs</code>, <code>docs/design/release-orders/</code>, <code>docs/review/erp-review-3.html</code> and <code>round3/</code> screenshots</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Aamstrand ERP · round 3 change report · generated 2026-09-25 with Claude Code. Screenshots come from the local test database used for the simulations, not live data.</footer>
+</div>
