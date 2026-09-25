@@ -165,11 +165,11 @@ export default function PickPack() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <h1>Pick &amp; Pack</h1>
+        <h1>Release Orders</h1>
         <p className="muted">
-          Review allocated orders, then release them and print pick lists and packing slips for
-          everything staged below. Releasing a pick moves that order out of Review and into Released
-          Picks.
+          Turn allocated orders into physical pick lists and packing slips for the warehouse. Review
+          and release each allocated order, then print the documents for everything released below.
+          Printed orders move on to Open Picks.
         </p>
       </div>
 

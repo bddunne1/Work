@@ -23,11 +23,11 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
     case "Backordered":
       return { label: "Re-check Stock", to: `/allocation/${order.soNumber}` };
     case "Allocated":
-      return { label: "To Review", to: `/pick-pack/${order.soNumber}` };
+      return { label: "To Release Orders", to: `/pick-pack/${order.soNumber}` };
     case "Pick & Packed":
       return order.pickListPrintedAt && order.packingSlipPrintedAt
         ? { label: "To Open Picks", to: `/open-picks/${order.soNumber}` }
-        : { label: "To Released Picks", to: "/pick-pack" };
+        : { label: "To Release Orders", to: "/pick-pack" };
     default:
       return null;
   }

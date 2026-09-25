@@ -52,12 +52,12 @@ export const PAGE_DEFS: PageDef[] = [
     rules: pageWithEditGatedSubpaths("/returns", ["/returns/new"]),
   },
 
-  // Pick & Pack is split in two: the list page (print released pick lists
+  // Release Orders (routes still /pick-pack) is split in two: the list page (print released pick lists
   // and packing slips) and the per-order review that releases a pick to the
   // floor (/pick-pack/<S.O. #>) - so order entry can print picks without
   // being able to release them.
-  { key: "pick-pack", label: "Pick & Pack (print picks)", group: "Fulfillment", rules: simplePage("/pick-pack") },
-  { key: "pick-release", label: "Release Picks", group: "Fulfillment", rules: simplePage("/pick-pack/") },
+  { key: "pick-pack", label: "Release Orders (print pick lists)", group: "Fulfillment", rules: simplePage("/pick-pack") },
+  { key: "pick-release", label: "Release Orders (release to warehouse)", group: "Fulfillment", rules: simplePage("/pick-pack/") },
   { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: simplePage("/open-picks") },
   {
     key: "warehouse-capacity",

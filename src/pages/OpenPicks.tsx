@@ -104,7 +104,7 @@ export default function OpenPicks() {
                 <th>Packed</th>
                 <th>Days in Warehouse</th>
                 <th>Weight</th>
-                <th>Pick &amp; Pack</th>
+                <th>Release</th>
               </tr>
             </thead>
             <tbody>

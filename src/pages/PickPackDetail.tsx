@@ -54,7 +54,7 @@ function PickPackDetailInner() {
     return (
       <div className="page">
         <p>Order not found.</p>
-        <Link to="/pick-pack">&larr; Back to Pick &amp; Pack</Link>
+        <Link to="/pick-pack">&larr; Back to Release Orders</Link>
       </div>
     );
   }
@@ -176,7 +176,7 @@ function PickPackDetailInner() {
     <div className="page">
       <div className="page-header">
         <Link to="/pick-pack" className="link-btn">
-          &larr; {queueState ? "Exit Queue" : "Back to Pick & Pack"}
+          &larr; {queueState ? "Exit Queue" : "Back to Release Orders"}
         </Link>
         <h1>Review S.O. #{order.soNumber}</h1>
         <div className="review-meta">
@@ -256,7 +256,7 @@ function PickPackDetailInner() {
             Revise Allocation
           </button>
           <button type="button" className="primary-btn" disabled={!readyToRelease} onClick={releasePick}>
-            Release Pick
+            Release Order
           </button>
           <button type="button" className="secondary-btn danger-btn" onClick={handleUnallocate}>
             Unallocate

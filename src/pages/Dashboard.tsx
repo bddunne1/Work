@@ -120,8 +120,8 @@ const LANES: Lane[] = [
     color: "#7c6ff2",
     modules: [
       {
-        name: "Pick & Pack",
-        description: "Pick allocated orders, then print pick lists and packing slips for the queue",
+        name: "Release Orders",
+        description: "Turn allocated orders into pick lists and packing slips for the warehouse",
         to: "/pick-pack",
         icon: PickPackIcon,
       },

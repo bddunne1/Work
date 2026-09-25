@@ -129,9 +129,9 @@ function AllocationDecisionInner() {
     outcomeClass = "outcome-hold";
   } else if (shipCompleteOnly === false) {
     outcomeStatus = "Allocated";
-    outcomeLabel = "Allocate what's available · release to Pick & Pack";
+    outcomeLabel = "Allocate what's available · send to Release Orders";
     outcomeDetail =
-      "Partial ship, now. Moves on to Pick & Pack for what's on hand; anything left unshipped lands in the Back Order Queue automatically once this partial ships.";
+      "Partial ship, now. Moves on to Release Orders for what's on hand; anything left unshipped lands in the Back Order Queue automatically once this partial ships.";
     outcomeClass = "outcome-warning";
   }
 
@@ -145,7 +145,7 @@ function AllocationDecisionInner() {
     if (!fullyAllocated && shipCompleteOnly === null) return;
     const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
     // Allocating zero units has nothing to pick, so it's really a hold -
-    // otherwise the order lands in Pick & Pack with no allocated lines and
+    // otherwise the order lands in Release Orders with no allocated lines and
     // can never be completed there, stalling the review queue.
     const hold = outcomeStatus === "Backordered" || totalAllocated === 0;
     const finalStatus = hold ? "Backordered" : outcomeStatus;
