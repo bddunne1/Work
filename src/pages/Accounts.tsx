@@ -38,40 +38,42 @@ function PermissionGrid({
   onChange: (pageKey: string, access: AccessLevel) => void;
 }) {
   return (
-    <table className="data-table permission-grid">
-      <thead>
-        <tr>
-          <th>Page</th>
-          <th>Access</th>
-        </tr>
-      </thead>
-      <tbody>
-        {pageGroups().map((group) => (
-          <Fragment key={group}>
-            <tr className="permission-group-row">
-              <td colSpan={2}>{group}</td>
-            </tr>
-            {PAGE_DEFS.filter((def) => def.group === group).map((def) => (
-              <tr key={def.key}>
-                <td>{def.label}</td>
-                <td>
-                  <select
-                    value={permissions[def.key] ?? "none"}
-                    onChange={(e) => onChange(def.key, e.target.value as AccessLevel)}
-                  >
-                    {ACCESS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
+    <div className="scroll-window">
+      <table className="data-table permission-grid">
+        <thead>
+          <tr>
+            <th>Page</th>
+            <th>Access</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pageGroups().map((group) => (
+            <Fragment key={group}>
+              <tr className="permission-group-row">
+                <td colSpan={2}>{group}</td>
               </tr>
-            ))}
-          </Fragment>
-        ))}
-      </tbody>
-    </table>
+              {PAGE_DEFS.filter((def) => def.group === group).map((def) => (
+                <tr key={def.key}>
+                  <td>{def.label}</td>
+                  <td>
+                    <select
+                      value={permissions[def.key] ?? "none"}
+                      onChange={(e) => onChange(def.key, e.target.value as AccessLevel)}
+                    >
+                      {ACCESS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

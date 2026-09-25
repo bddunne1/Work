@@ -235,47 +235,49 @@ function OpenPicksDetailInner() {
           {pending.length === 0 ? (
             <p className="muted">Nothing staged to confirm for this order.</p>
           ) : (
-            <table className="data-table line-item-table">
-              <thead>
-                <tr>
-                  <th className="col-item">Item</th>
-                  <th className="col-desc">Description</th>
-                  <th className="col-um">U/M</th>
-                  <th className="col-qty">Packed</th>
-                  <th className="col-qty">Actual Shipped</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pending.map((l) => {
-                  const li = lineFor(l.lineItemId);
-                  if (!li) return null;
-                  const qty = qtys[l.lineItemId] ?? 0;
-                  const short = qty < l.qty;
-                  // Cap against what's still open on the order, not what was
-                  // originally packed - a reprint after finding more stock
-                  // than first packed needs to raise the quantity back up.
-                  const maxQty = remainingToShip(order, li);
-                  return (
-                    <tr key={l.lineItemId}>
-                      <td>{li.item}</td>
-                      <td>{li.description}</td>
-                      <td>{li.um}</td>
-                      <td className="amount-cell">{l.qty}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className={`num-input allocate-qty-input ${short ? "short" : ""}`}
-                          min={0}
-                          max={maxQty}
-                          value={qty}
-                          onChange={(e) => setQty(l.lineItemId, Number(e.target.value), maxQty)}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="scroll-window">
+              <table className="data-table line-item-table">
+                <thead>
+                  <tr>
+                    <th className="col-item">Item</th>
+                    <th className="col-desc">Description</th>
+                    <th className="col-um">U/M</th>
+                    <th className="col-qty">Packed</th>
+                    <th className="col-qty">Actual Shipped</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pending.map((l) => {
+                    const li = lineFor(l.lineItemId);
+                    if (!li) return null;
+                    const qty = qtys[l.lineItemId] ?? 0;
+                    const short = qty < l.qty;
+                    // Cap against what's still open on the order, not what was
+                    // originally packed - a reprint after finding more stock
+                    // than first packed needs to raise the quantity back up.
+                    const maxQty = remainingToShip(order, li);
+                    return (
+                      <tr key={l.lineItemId}>
+                        <td>{li.item}</td>
+                        <td>{li.description}</td>
+                        <td>{li.um}</td>
+                        <td className="amount-cell">{l.qty}</td>
+                        <td>
+                          <input
+                            type="number"
+                            className={`num-input allocate-qty-input ${short ? "short" : ""}`}
+                            min={0}
+                            max={maxQty}
+                            value={qty}
+                            onChange={(e) => setQty(l.lineItemId, Number(e.target.value), maxQty)}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

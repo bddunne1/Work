@@ -204,45 +204,47 @@ export default function GenerateBOL() {
         {filtered.length === 0 ? (
           <p className="muted">No open orders found.</p>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>S.O. #</th>
-                <th>P.O. #</th>
-                <th>Customer</th>
-                <th>Status</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => (
-                <tr
-                  key={o.soNumber}
-                  className="clickable-row"
-                  onClick={() => canEdit && toggleSelect(o.soNumber)}
-                >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(o.soNumber)}
-                      onChange={() => toggleSelect(o.soNumber)}
-                      disabled={!canEdit}
-                    />
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <Link to={`/storage/${o.soNumber}`} target="_blank" className="row-action-outline">
-                      {o.soNumber}
-                    </Link>
-                  </td>
-                  <td>{o.poNumber}</td>
-                  <td>{o.billTo.name}</td>
-                  <td>{o.status}</td>
-                  <td>${orderTotal(o).toFixed(2)}</td>
+          <div className="scroll-window">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>S.O. #</th>
+                  <th>P.O. #</th>
+                  <th>Customer</th>
+                  <th>Status</th>
+                  <th>Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((o) => (
+                  <tr
+                    key={o.soNumber}
+                    className="clickable-row"
+                    onClick={() => canEdit && toggleSelect(o.soNumber)}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(o.soNumber)}
+                        onChange={() => toggleSelect(o.soNumber)}
+                        disabled={!canEdit}
+                      />
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <Link to={`/storage/${o.soNumber}`} target="_blank" className="row-action-outline">
+                        {o.soNumber}
+                      </Link>
+                    </td>
+                    <td>{o.poNumber}</td>
+                    <td>{o.billTo.name}</td>
+                    <td>{o.status}</td>
+                    <td>${orderTotal(o).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {selectedOrders.length > 0 && (
@@ -250,7 +252,7 @@ export default function GenerateBOL() {
             <h2 className="lane-title" style={{ borderColor: "#f06595" }}>
               Shipment Details
             </h2>
-            <div className="table-scroll">
+            <div className="table-scroll scroll-window">
               <table className="data-table">
                 <thead>
                   <tr>

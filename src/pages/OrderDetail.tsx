@@ -374,22 +374,24 @@ function OrderDetailInner() {
         {view.shipmentHistory && view.shipmentHistory.length > 0 && (
           <div className="shipment-history">
             <div className="so-notes-label muted">Shipment History</div>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Lines Shipped</th>
-                </tr>
-              </thead>
-              <tbody>
-                {view.shipmentHistory.map((rec) => (
-                  <tr key={rec.id}>
-                    <td>{new Date(rec.shippedAt).toLocaleString()}</td>
-                    <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+            <div className="scroll-window">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Lines Shipped</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {view.shipmentHistory.map((rec) => (
+                    <tr key={rec.id}>
+                      <td>{new Date(rec.shippedAt).toLocaleString()}</td>
+                      <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

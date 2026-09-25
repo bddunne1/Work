@@ -158,7 +158,7 @@ export default function CustomerPricing() {
               </option>
             ))}
           </datalist>
-          <div className="table-scroll">
+          <div className="table-scroll scroll-window">
             <table className="data-table pricing-grid">
               <thead>
                 <tr>

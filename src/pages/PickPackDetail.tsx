@@ -201,54 +201,56 @@ function PickPackDetailInner() {
           <div className="ship-locations-header">
             <h3>Allocated Lines</h3>
           </div>
-          <table className="data-table line-item-table">
-            <thead>
-              <tr>
-                <th className="col-item">Item</th>
-                <th className="col-desc">Description</th>
-                <th className="col-um">U/M</th>
-                <th className="col-qty">Ordered</th>
-                <th className="col-qty">Remaining</th>
-                <th className="col-qty">Available</th>
-                <th className="col-qty">Allocated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.lineItems.map((li) => {
-                const remaining = remainingToShip(order, li);
-                const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
-                const reservedElsewhere = qtyAllocatedOnOrders(
-                  li.item,
-                  allOrders.filter((o) => o.soNumber !== order.soNumber)
-                );
-                const trueAvailable = catalogItem ? availableQty(catalogItem, reservedElsewhere) : null;
-                const maxQty = trueAvailable !== null ? Math.max(0, Math.min(remaining, trueAvailable)) : remaining;
-                const qty = qtys[li.id] ?? 0;
-                return (
-                  <tr key={li.id}>
-                    <td>{li.item}</td>
-                    <td>{li.description}</td>
-                    <td>{li.um}</td>
-                    <td className="amount-cell">{li.ordered}</td>
-                    <td className="amount-cell">{remaining}</td>
-                    <td className={`amount-cell ${trueAvailable !== null && trueAvailable < 0 ? "qty-negative" : ""}`}>
-                      {trueAvailable !== null ? trueAvailable : "—"}
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="num-input allocate-qty-input"
-                        min={0}
-                        max={maxQty}
-                        value={qty}
-                        onChange={(e) => setQty(li.id, Number(e.target.value), maxQty)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="scroll-window">
+            <table className="data-table line-item-table">
+              <thead>
+                <tr>
+                  <th className="col-item">Item</th>
+                  <th className="col-desc">Description</th>
+                  <th className="col-um">U/M</th>
+                  <th className="col-qty">Ordered</th>
+                  <th className="col-qty">Remaining</th>
+                  <th className="col-qty">Available</th>
+                  <th className="col-qty">Allocated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.lineItems.map((li) => {
+                  const remaining = remainingToShip(order, li);
+                  const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
+                  const reservedElsewhere = qtyAllocatedOnOrders(
+                    li.item,
+                    allOrders.filter((o) => o.soNumber !== order.soNumber)
+                  );
+                  const trueAvailable = catalogItem ? availableQty(catalogItem, reservedElsewhere) : null;
+                  const maxQty = trueAvailable !== null ? Math.max(0, Math.min(remaining, trueAvailable)) : remaining;
+                  const qty = qtys[li.id] ?? 0;
+                  return (
+                    <tr key={li.id}>
+                      <td>{li.item}</td>
+                      <td>{li.description}</td>
+                      <td>{li.um}</td>
+                      <td className="amount-cell">{li.ordered}</td>
+                      <td className="amount-cell">{remaining}</td>
+                      <td className={`amount-cell ${trueAvailable !== null && trueAvailable < 0 ? "qty-negative" : ""}`}>
+                        {trueAvailable !== null ? trueAvailable : "—"}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className="num-input allocate-qty-input"
+                          min={0}
+                          max={maxQty}
+                          value={qty}
+                          onChange={(e) => setQty(li.id, Number(e.target.value), maxQty)}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="button-row">
