@@ -221,60 +221,62 @@ function AllocationDecisionInner() {
               </button>
             </div>
           </div>
-          <table className="data-table line-item-table">
-            <thead>
-              <tr>
-                <th className="col-item">Item</th>
-                <th className="col-desc">Description</th>
-                <th className="col-um">U/M</th>
-                <th className="col-qty">Ordered</th>
-                <th className="col-qty">Shipped</th>
-                <th className="col-qty">Remaining</th>
-                <th className="col-qty">On Hand</th>
-                <th className="col-qty">Available</th>
-                <th className="col-qty">Allocate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.lineItems.map((li) => {
-                const shipped = shippedQtyFor(order, li.id);
-                const remaining = remainingToShip(order, li);
-                const qty = qtys[li.id] ?? 0;
-                const short = qty < remaining;
-                const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
-                const allocatedElsewhere = qtyAllocatedOnOrders(
-                  li.item,
-                  allOrders.filter((o) => o.soNumber !== order.soNumber)
-                );
-                const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
-                const overAvailable = available !== null && qty > available;
-                return (
-                  <tr key={li.id}>
-                    <td>{li.item}</td>
-                    <td>{li.description}</td>
-                    <td>{li.um}</td>
-                    <td className="amount-cell">{li.ordered}</td>
-                    <td className="amount-cell">{shipped}</td>
-                    <td className="amount-cell">{remaining}</td>
-                    <td className="amount-cell">{catalogItem ? catalogItem.qtyOnHand : "—"}</td>
-                    <td className={`amount-cell ${available !== null && available < 0 ? "qty-negative" : ""}`}>
-                      {available !== null ? available : "—"}
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className={`num-input allocate-qty-input ${short ? "short" : ""} ${overAvailable ? "over-available" : ""}`}
-                        min={0}
-                        max={remaining}
-                        value={qty}
-                        onChange={(e) => setQty(li.id, Number(e.target.value), remaining)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="scroll-window">
+            <table className="data-table line-item-table">
+              <thead>
+                <tr>
+                  <th className="col-item">Item</th>
+                  <th className="col-desc">Description</th>
+                  <th className="col-um">U/M</th>
+                  <th className="col-qty">Ordered</th>
+                  <th className="col-qty">Shipped</th>
+                  <th className="col-qty">Remaining</th>
+                  <th className="col-qty">On Hand</th>
+                  <th className="col-qty">Available</th>
+                  <th className="col-qty">Allocate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.lineItems.map((li) => {
+                  const shipped = shippedQtyFor(order, li.id);
+                  const remaining = remainingToShip(order, li);
+                  const qty = qtys[li.id] ?? 0;
+                  const short = qty < remaining;
+                  const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
+                  const allocatedElsewhere = qtyAllocatedOnOrders(
+                    li.item,
+                    allOrders.filter((o) => o.soNumber !== order.soNumber)
+                  );
+                  const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
+                  const overAvailable = available !== null && qty > available;
+                  return (
+                    <tr key={li.id}>
+                      <td>{li.item}</td>
+                      <td>{li.description}</td>
+                      <td>{li.um}</td>
+                      <td className="amount-cell">{li.ordered}</td>
+                      <td className="amount-cell">{shipped}</td>
+                      <td className="amount-cell">{remaining}</td>
+                      <td className="amount-cell">{catalogItem ? catalogItem.qtyOnHand : "—"}</td>
+                      <td className={`amount-cell ${available !== null && available < 0 ? "qty-negative" : ""}`}>
+                        {available !== null ? available : "—"}
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          className={`num-input allocate-qty-input ${short ? "short" : ""} ${overAvailable ? "over-available" : ""}`}
+                          min={0}
+                          max={remaining}
+                          value={qty}
+                          onChange={(e) => setQty(li.id, Number(e.target.value), remaining)}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="decision-flow">

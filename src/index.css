@@ -3281,6 +3281,8 @@ a.brand:hover .brand-name {
   gap: 8px 12px;
   align-items: center;
   margin-bottom: 12px;
+}
+
 /* Import: preview/results table and per-row status */
 .import-banner {
   margin: 12px 0;
@@ -3326,4 +3328,65 @@ a.brand:hover .brand-name {
 .import-status-failed {
   background: rgba(214, 51, 108, 0.12);
   color: var(--danger);
+}
+
+/* Scroll windows: long lists above action buttons */
+.scroll-window {
+  max-height: min(60vh, 560px);
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* The window draws the frame, so the table inside drops its own border and
+   margins (no double border or inner gap), and overflow: visible lets the
+   sticky header stick to the window rather than to the table. */
+.scroll-window > table,
+.scroll-window > .data-table {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.scroll-window thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--page-accent, var(--accent)) 12%, var(--panel-bg));
+  /* Collapsed borders scroll away with sticky cells; draw the rule as a shadow. */
+  border-bottom: 0;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* Carry over spacing the wrapped tables used to have on themselves. */
+.shipment-history .scroll-window {
+  margin-top: 8px;
+}
+
+.scroll-window:has(> .permission-grid) {
+  margin: 4px 0 16px;
+}
+
+@media print {
+  .scroll-window {
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .scroll-window > .data-table {
+    border: 1px solid var(--border);
+  }
+
+  .scroll-window thead th {
+    position: static;
+    border-bottom: 1px solid var(--border);
+    box-shadow: none;
+  }
 }

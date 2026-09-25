@@ -225,48 +225,50 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
               </option>
             ))}
           </datalist>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Our Item #</th>
-                <th>Customer Part #</th>
-                {!readOnly && <th></th>}
-              </tr>
-            </thead>
-            <tbody>
-              {(customer.partNumberMap ?? []).map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <input
-                      value={m.itemNumber}
-                      disabled={readOnly}
-                      list={readOnly ? undefined : ITEM_DATALIST_ID}
-                      onChange={(e) => updatePartMapping(m.id, { itemNumber: e.target.value })}
-                      onBlur={(e) => applyPartMappingItemLookup(m.id, e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={m.customerPartNumber}
-                      disabled={readOnly}
-                      onChange={(e) => updatePartMapping(m.id, { customerPartNumber: e.target.value })}
-                    />
-                  </td>
-                  {!readOnly && (
-                    <td>
-                      <button
-                        type="button"
-                        className="row-action-outline danger-link"
-                        onClick={() => removePartMapping(m.id)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  )}
+          <div className="scroll-window">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Our Item #</th>
+                  <th>Customer Part #</th>
+                  {!readOnly && <th></th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {(customer.partNumberMap ?? []).map((m) => (
+                  <tr key={m.id}>
+                    <td>
+                      <input
+                        value={m.itemNumber}
+                        disabled={readOnly}
+                        list={readOnly ? undefined : ITEM_DATALIST_ID}
+                        onChange={(e) => updatePartMapping(m.id, { itemNumber: e.target.value })}
+                        onBlur={(e) => applyPartMappingItemLookup(m.id, e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={m.customerPartNumber}
+                        disabled={readOnly}
+                        onChange={(e) => updatePartMapping(m.id, { customerPartNumber: e.target.value })}
+                      />
+                    </td>
+                    {!readOnly && (
+                      <td>
+                        <button
+                          type="button"
+                          className="row-action-outline danger-link"
+                          onClick={() => removePartMapping(m.id)}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           </>
         )}
       </div>
