@@ -110,15 +110,24 @@ async function main() {
     await page.context().close();
   }
 
-  // 5. Order entry: Pick & Pack list visible, release controls hidden.
+  // 5. Order entry: Release Orders opens on the print tab; the Ready tab
+  //    shows the list but no way to select or release.
   {
     const page = await newPage();
     await login(page, "oe.tom", "Sim-pass-1");
     await page.goto(`${UI}/#/pick-pack`);
     await page.waitForLoadState("networkidle").catch(() => {});
-    const queueBtn = page.getByRole("button", { name: "Review Queue" });
-    const disabled = await queueBtn.isDisabled().catch(() => null);
-    note("order entry can't release picks", disabled === true, `Review Queue disabled=${disabled}`);
+    const active = await page.locator(".release-tab.is-active").innerText().catch(() => "");
+    await page.locator(".release-tab", { hasText: "Ready to release" }).click();
+    await page.waitForTimeout(300);
+    const boxes = await page.locator(".release-row input[type=checkbox]").count();
+    const bar = await page.locator(".release-bar").count();
+    const review = await page.getByRole("button", { name: "Review one by one" }).count();
+    note(
+      "order entry can't release picks",
+      active.includes("Released") && boxes === 0 && bar === 0 && review === 0,
+      `start tab=${active.split("\n")[0]} checkboxes=${boxes} bar=${bar} review=${review}`
+    );
     await page.context().close();
   }
 
