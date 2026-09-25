@@ -1,0 +1,342 @@
+<title>Release Orders Redesign</title>
+<meta name="description" content="Three layout options for the Release Orders stage (release list, waves, board), with mockups, flows, trade-offs and a recommendation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --ok: #2b7a4b;
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --warn: #b9620f;
+    --warn-bg: rgba(185, 98, 15, 0.09);
+    --shot-bg: #dfe2ea;
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --ok: #5fc48d;
+      --ok-bg: rgba(95, 196, 141, 0.12);
+      --warn: #f0a24e;
+      --warn-bg: rgba(240, 162, 78, 0.12);
+      --shot-bg: #232a32;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --ok: #5fc48d;
+    --ok-bg: rgba(95, 196, 141, 0.12);
+    --warn: #f0a24e;
+    --warn-bg: rgba(240, 162, 78, 0.12);
+    --shot-bg: #232a32;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink-2);
+    font: 17px/1.55 var(--body);
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .prose { max-width: 68ch; }
+  h1, h2, h3 { font-family: var(--display); color: var(--ink); text-wrap: balance; line-height: 1.1; margin: 0; }
+  h1 { font-size: clamp(34px, 5vw, 50px); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 30px; font-weight: 700; }
+  h3 { font-size: 20px; font-weight: 600; }
+  p { margin: 0; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+
+  header.top { padding-block: 48px 28px; border-bottom: 1px solid var(--rule); display: grid; gap: 14px; }
+  header.top .lede { font-size: 19px; color: var(--ink-2); max-width: 70ch; }
+  .jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .jump a { font-family: var(--display); font-weight: 600; font-size: 15px; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 4px 14px; background: var(--surface); }
+  .jump a:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { padding-block: 44px 8px; display: grid; gap: 18px; }
+  section + section { border-top: 1px solid var(--rule); }
+
+  .done { background: var(--ok-bg); border-left: 3px solid var(--ok); padding: 14px 18px; border-radius: 0 6px 6px 0; display: grid; gap: 6px; }
+  .done strong { color: var(--ink); }
+  .done ul { margin: 0; padding-left: 20px; }
+
+  figure { margin: 0; display: grid; gap: 8px; }
+  .shot { display: block; background: var(--shot-bg); border: 1px solid var(--rule-strong); border-radius: 8px; overflow: hidden; }
+  .shot img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 14px; color: var(--muted); }
+  .shots-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+  .shots-2 .shot { max-height: 560px; overflow: hidden; }
+
+  .issues { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .issues li { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; font-size: 16px; }
+  .issues li b { color: var(--ink); display: block; font-family: var(--display); font-size: 17px; font-weight: 600; margin-bottom: 2px; }
+
+  .roles { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .roles th, .roles td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .roles th { font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .roles td:first-child { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .table-scroll { overflow-x: auto; }
+
+  .option-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 16px; }
+  .letter { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--surface); background: var(--ink); border-radius: 4px; padding: 0 9px; line-height: 28px; }
+  .tag { font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 4px; padding: 2px 8px; }
+  .tag.rec { color: var(--ok); background: var(--ok-bg); }
+  .tag.later { color: var(--warn); background: var(--warn-bg); }
+  .tag.plain { color: var(--muted); border: 1px solid var(--rule-strong); }
+
+  .detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px 32px; }
+  .detail h3 { margin-bottom: 8px; }
+  .detail ol, .detail ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+  .detail li::marker { color: var(--muted); }
+  .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pc > div { display: grid; gap: 6px; align-content: start; }
+  .pc h4 { margin: 0; font-family: var(--display); font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .pc .plus h4 { color: var(--ok); }
+  .pc .minus h4 { color: var(--warn); }
+  .pc ul { padding-left: 18px; font-size: 16px; }
+  .effort { font-size: 16px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 16px; display: grid; gap: 4px; }
+  .effort b { color: var(--ink); }
+
+  .compare { width: 100%; border-collapse: collapse; font-size: 16px; background: var(--surface); border: 1px solid var(--rule); }
+  .compare th, .compare td { padding: 10px 12px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+  .compare thead th { font-family: var(--display); font-size: 16px; color: var(--ink); background: var(--accent-soft); }
+  .compare tbody th { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .dots { font-family: var(--mono); letter-spacing: 2px; color: var(--accent); white-space: nowrap; }
+  .dots i { font-style: normal; color: var(--rule-strong); }
+
+  .rec-box { background: var(--surface); border: 1px solid var(--rule-strong); border-top: 4px solid var(--ok); border-radius: 6px; padding: 22px 24px; display: grid; gap: 12px; }
+  .rec-box ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+  .rec-box li b { color: var(--ink); }
+
+  @media (max-width: 560px) {
+    body { font-size: 16px; }
+    .pc { grid-template-columns: 1fr; }
+    .shots-2 .shot { max-height: 420px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Aamstrand ERP · design options · 25 Sep 2026</div>
+    <h1>Release Orders Redesign</h1>
+    <p class="lede">The stage between allocation and the truck turns allocated orders into physical pick lists and packing slips for the warehouse. It's been renamed. Below are three ways the screen could look and flow, drawn with your own orders.</p>
+    <nav class="jump" aria-label="Sections">
+      <a href="#today">Today</a>
+      <a href="#jobs">Who uses it</a>
+      <a href="#option-a">A · Release list</a>
+      <a href="#option-b">B · Waves</a>
+      <a href="#option-c">C · Board</a>
+      <a href="#compare">Compare</a>
+      <a href="#recommendation">Recommendation</a>
+    </nav>
+  </header>
+
+  <section id="renamed">
+    <div class="done">
+      <strong>Done: "Pick &amp; Pack" is now "Release Orders"</strong>
+      <ul>
+        <li>The menu tile, page title, intro, back links and permission names all use the new name.</li>
+        <li>The button on each order is now <b>Release Order</b>.</li>
+        <li>The allocation outcome now reads "send to Release Orders".</li>
+        <li>The Open Picks column is now "Release".</li>
+      </ul>
+      <p>These things stay the same: the web address (<code>/#/pick-pack</code>), so bookmarks still work, and the status an order gets after release ("Pick &amp; Packed"). That status is misleading, since nothing has been picked yet. Renaming it to <b>Released</b> is a small follow-up.</p>
+    </div>
+  </section>
+
+  <section id="today">
+    <h2>What the stage looks like today</h2>
+    <div class="shots-2">
+      <figure>
+        <a class="shot" href="current-list.png" target="_blank" rel="noopener"><img src="current-list.png" alt="Current Release Orders page: a Review list of nine allocated orders with a Review button each, then a Released Picks list of six orders with checkboxes and a Print button."></a>
+        <figcaption>The list page: allocated orders to review up top, released orders to print below.</figcaption>
+      </figure>
+      <figure>
+        <a class="shot" href="current-detail.png" target="_blank" rel="noopener"><img src="current-detail.png" alt="Current per-order release page for S.O. 10084: 24 allocated lines with an editable quantity each and Revise Allocation, Release Order and Unallocate buttons at the bottom."></a>
+        <figcaption>Releasing one order: open it, check the lines, press Release Order, go back.</figcaption>
+      </figure>
+    </div>
+    <ul class="issues">
+      <li><b>One order at a time</b>Each release takes a page visit, a scroll to the bottom and a trip back. At about 150 orders a day that adds up to 150 round trips, and the day simulation already showed analysts as the bottleneck.</li>
+      <li><b>No way to prioritize</b>The review list shows S.O., P.O., customer and status. It leaves out ship date, carrier, size, weight and whether allocation is full or partial, so it's hard to tell which order should go first.</li>
+      <li><b>Two jobs on one page</b>The analysts' decision (what goes) and order entry's task (print it) sit stacked in one scroll, and printing starts with every order selected.</li>
+      <li><b>No view of the floor</b>After printing, an order disappears to Open Picks. The capacity banner shows a percentage, but it isn't tied to the orders you're about to release.</li>
+    </ul>
+  </section>
+
+  <section id="jobs">
+    <h2>Who uses this stage, and for what</h2>
+    <p class="prose">Each option is judged against these jobs. The roles are the ones set up in round 2.</p>
+    <div class="table-scroll">
+      <table class="roles">
+        <thead><tr><th>Role</th><th>Job at this stage</th><th>What they need to see</th></tr></thead>
+        <tbody>
+          <tr><td>Analysts</td><td>Decide which allocated orders go to the floor, and how much of each line.</td><td>Ship-by date, carrier, size and weight, full vs. partial allocation, floor load.</td></tr>
+          <tr><td>Order Entry</td><td>Print pick lists and packing slips for released orders.</td><td>What's released and unprinted, in the order the warehouse wants it.</td></tr>
+          <tr><td>Logistics</td><td>Match what's on the floor to truck pickups and confirm shipments.</td><td>What's picked and waiting, by carrier and pickup time.</td></tr>
+          <tr><td>Customer Service, Sales</td><td>Answer "where is my order?"</td><td>Read-only: which stage an order is in and when it was released or printed.</td></tr>
+          <tr><td>Director</td><td>Everything above, plus the overall picture.</td><td>Counts and weight per stage.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="option-a">
+    <div class="option-head">
+      <span class="letter">A</span>
+      <h2>Release list</h2>
+      <span class="tag rec">Recommended now</span>
+    </div>
+    <p class="prose">This keeps the page you know, reorganized around decisions. There's one table per stage, and each tab belongs to one role. The analyst tab carries the information needed to choose, lets you release many orders at once, and opens any order inline so you can trim a line without leaving the list.</p>
+    <figure>
+      <a class="shot" href="option-a.png" target="_blank" rel="noopener"><img src="option-a.png" alt="Option A mockup: tabs for Ready to release (9), Released print documents (6) and On the floor (8); filter chips for ship date and carrier; a table with ship-by chips, lines, units, weight and Full/Partial allocation; S.O. 10079 expanded to show editable release quantities; a dark bar reading 2 selected, 21 lines, 1,872 units, 4,130 lb, with Unallocate and Release 2 orders buttons."></a>
+      <figcaption>Two orders are selected and one is expanded to trim a line. The bar at the bottom totals what you're about to send to the floor.</figcaption>
+    </figure>
+    <div class="detail">
+      <div>
+        <h3>How it flows</h3>
+        <ol>
+          <li>An analyst opens <b>Ready to release</b>. It's filtered to orders that ship today and sorted by ship date, then by customer.</li>
+          <li>They tick the orders to send. The bar totals lines, units and pounds, so they can compare against the capacity figure before committing.</li>
+          <li>To release part of an order, they expand its row and lower the quantity on any line. The full review page is still one click away.</li>
+          <li>Pressing <b>Release N orders</b> moves those orders to the second tab. A quantity changed on a line releases only that line's quantity.</li>
+          <li>Order Entry works the <b>Released · print documents</b> tab. They pick pick lists, packing slips or both, and print. Nothing is selected until they choose.</li>
+          <li>Printed orders move to <b>On the floor</b>. That tab is read-only, with time since printing, and Logistics carries on from Open Picks as today.</li>
+        </ol>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="pc">
+          <div class="plus"><h4>Good</h4><ul><li>Cuts about 150 page visits a day to a few batches.</li><li>Ship date, weight and partial allocation are visible when choosing.</li><li>Each tab maps to one role and its permission.</li><li>Very little new to learn.</li></ul></div>
+          <div class="minus"><h4>Watch</h4><ul><li>It releases order by order. The warehouse still walks each order separately.</li><li>A bulk release needs a clear undo; unallocating from the Released tab covers it.</li></ul></div>
+        </div>
+        <div class="effort"><b>What it takes: about 2–3 days</b><span>Nothing new in the database. The order list needs ship date, carrier, line, unit and weight totals, and a full/partial flag, all of which already exist on the order. Add one bulk-release endpoint that runs the existing per-order release for each order under the same checks. Tabs, filters and the inline editor are frontend work.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="option-b">
+    <div class="option-head">
+      <span class="letter">B</span>
+      <h2>Waves</h2>
+      <span class="tag later">Best next step</span>
+    </div>
+    <p class="prose">Release in batches (waves) sized to what the floor can pick before the next truck. A wave prints as one combined pick list sorted by bin, so a picker walks each aisle once for several orders. Every order still gets its own packing slip. This is how most distribution warehouses run the step.</p>
+    <figure>
+      <a class="shot" href="option-b.png" target="_blank" rel="noopener"><img src="option-b.png" alt="Option B mockup: filters for ship by today, 2:00 PM pickup, carrier and zone; candidate orders with checkboxes; a Today's waves table showing W-01 picked at dock, W-02 picking 4 of 8 done, W-03 waiting to print; a card for new wave W-04 with 5 orders, 49 lines, 4,384 units, 8,999 pounds, an estimated pick time of 2 h 4 min, a floor-load meter at 48% plus 23%, print options, and Release wave and print."></a>
+      <figcaption>Building wave W-04 for the 2:00 PM pickup: pick-time estimate, floor load after release, and what to print.</figcaption>
+    </figure>
+    <div class="detail">
+      <div>
+        <h3>How it flows</h3>
+        <ol>
+          <li>The analyst filters by the next truck pickup (for example, FedEx Freight at 2:00 PM) and ticks the orders that should make it.</li>
+          <li>The wave card shows totals, an estimated pick time, and the floor load after release. If the pick won't finish before the truck, it says so.</li>
+          <li><b>Release wave &amp; print</b> releases every order and queues one combined pick list by bin, plus a packing slip per order. It can also be saved as a draft for Order Entry to print.</li>
+          <li>The <b>Today's waves</b> list tracks each wave: waiting to print, printed, picking, picked and at the dock. The warehouse lead marks progress.</li>
+          <li>Logistics sees whole waves at the dock and confirms them against the pickup.</li>
+        </ol>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="pc">
+          <div class="plus"><h4>Good</h4><ul><li>Much less walking on the floor, especially for the small orders, which are about half of all POs.</li><li>Releases are timed to trucks, not to when someone got to the list.</li><li>Floor load becomes a planning number, not a warning.</li></ul></div>
+          <div class="minus"><h4>Watch</h4><ul><li>Needs data the system doesn't hold yet: bin locations and carrier pickup times.</li><li>A combined pick list needs a sort-to-order step at packing.</li><li>The 20+ line key-account orders usually go as their own wave anyway.</li></ul></div>
+        </div>
+        <div class="effort"><b>What it takes: about 2 weeks, after the data exists</b><span>New: a bin location on each item, a pickup schedule per truck line, a Wave record that links orders, a picker-count setting, and a combined pick list print. The estimated pick time needs a few weeks of timing data before it's trustworthy.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="option-c">
+    <div class="option-head">
+      <span class="letter">C</span>
+      <h2>Board</h2>
+      <span class="tag plain">Not recommended as the main screen</span>
+    </div>
+    <p class="prose">One card per order, in columns from allocation to the dock. Each column is one step and one role's button. The "On the floor" column has a limit, which replaces the percentage in the capacity banner with a count you can see.</p>
+    <figure>
+      <a class="shot" href="option-c.png" target="_blank" rel="noopener"><img src="option-c.png" alt="Option C mockup: four columns. Ready to release (9) with Release buttons, Released print (6) with Print buttons, On the floor (5, limit 4) showing time since printing, and Picked at the dock (3) with Confirm shipped buttons."></a>
+      <figcaption>Every order between allocation and the truck on one screen. "On the floor" is over its limit of 4, so its count turns red.</figcaption>
+    </figure>
+    <div class="detail">
+      <div>
+        <h3>How it flows</h3>
+        <ol>
+          <li>The analyst presses <b>Release</b> on a card. It opens the order's release page for line changes, or releases in full.</li>
+          <li>The card moves to <b>Released · print</b>. Order Entry presses <b>Print</b> for that order's documents.</li>
+          <li>Printed cards sit in <b>On the floor</b> with a timer. If the column passes its limit, analysts hold new releases.</li>
+          <li>The warehouse lead marks the card picked. Logistics presses <b>Confirm shipped</b> in the last column or on Open Picks.</li>
+        </ol>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="pc">
+          <div class="plus"><h4>Good</h4><ul><li>Best at-a-glance view for the director, logistics and customer service.</li><li>Bottlenecks are obvious: a column that keeps growing is the problem.</li></ul></div>
+          <div class="minus"><h4>Watch</h4><ul><li>Doesn't scale to your volume. About 150 orders a day means columns of 40+ cards.</li><li>Back to one order per click, the problem Option A fixes.</li><li>Cards have no room for lines or weight, which are the details analysts decide on.</li><li>Duplicates Open Picks.</li></ul></div>
+        </div>
+        <div class="effort"><b>What it takes: about 1 week</b><span>Uses existing statuses plus a "picked" mark. Works better as a read-only dashboard view added next to A than as the working screen.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="compare">
+    <h2>Side by side</h2>
+    <div class="table-scroll">
+      <table class="compare">
+        <thead><tr><th scope="col"></th><th scope="col">A · Release list</th><th scope="col">B · Waves</th><th scope="col">C · Board</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Speed for analysts</th><td><span class="dots">●●●<i>●</i></span> bulk release</td><td><span class="dots">●●●●</span> bulk, per truck</td><td><span class="dots">●<i>●●●</i></span> one card at a time</td></tr>
+          <tr><th scope="row">Walking on the floor</th><td>Unchanged</td><td>Much less, with a combined bin-sorted pick</td><td>Unchanged</td></tr>
+          <tr><th scope="row">Floor visibility</th><td>"On the floor" tab</td><td>Wave status plus load meter</td><td>Best: the whole pipeline</td></tr>
+          <tr><th scope="row">Handles about 150 orders a day</th><td>Yes, with filters</td><td>Yes</td><td>Poorly</td></tr>
+          <tr><th scope="row">New data needed</th><td>None</td><td>Bins, pickup times, waves</td><td>A "picked" mark</td></tr>
+          <tr><th scope="row">Effort</th><td>2–3 days</td><td>About 2 weeks, plus data setup</td><td>About 1 week</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="recommendation">
+    <h2>Recommendation</h2>
+    <div class="rec-box">
+      <p class="prose">Build A now and grow it into B. A fixes today's real cost, which is analyst clicks and releasing without knowing ship dates or weight, and it needs nothing new in the database. B's gains depend on bin locations and pickup times, which are worth collecting anyway.</p>
+      <ol>
+        <li><b>Now:</b> Option A. Add the bulk-release endpoint and rename the "Pick &amp; Packed" status to "Released".</li>
+        <li><b>Meanwhile:</b> add a bin location to items (the Inventory import could fill it) and a pickup time on each truck line in the Routing Guide.</li>
+        <li><b>Then:</b> add a "Wave" action to A's Ready tab that groups the selected orders, prints one bin-sorted pick list, and tracks the wave. That makes it Option B without a second screen.</li>
+        <li><b>Optional:</b> C as a read-only pipeline view on the Dashboard for the director and customer service.</li>
+      </ol>
+    </div>
+  </section>
+</div>
