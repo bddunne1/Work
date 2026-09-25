@@ -66,9 +66,9 @@ function shipTo(o: PurchaseOrder): string {
   return [o.shipTo.city, o.shipTo.state].filter(Boolean).join(", ");
 }
 
-function sinceLabel(iso: string | undefined): string {
+function sinceLabel(iso: string | undefined, now: number): string {
   if (!iso) return "—";
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  const mins = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60000));
   if (mins < 60) return `${mins} min`;
   if (mins < 24 * 60) return `${Math.floor(mins / 60)} h ${mins % 60} min`;
   return `${Math.floor(mins / (24 * 60))} d`;
@@ -113,8 +113,15 @@ export default function PickPack() {
   const [includeSlip, setIncludeSlip] = useState(true);
   const [printing, setPrinting] = useState(false);
 
+  // When the lists were last loaded - drives "today", "tomorrow" and time on
+  // the floor, so they stay consistent with the data on screen.
+  const [loadedAt, setLoadedAt] = useState(() => Date.now());
+
   function reload() {
-    return listOpenOrders().then(setOrders);
+    return listOpenOrders().then((os) => {
+      setOrders(os);
+      setLoadedAt(Date.now());
+    });
   }
 
   useEffect(() => {
@@ -122,8 +129,8 @@ export default function PickPack() {
     listItems().then((items) => setWeights(weightIndex(items)));
   }, []);
 
-  const today = isoDay(new Date());
-  const tomorrow = isoDay(new Date(Date.now() + 86_400_000));
+  const today = isoDay(new Date(loadedAt));
+  const tomorrow = isoDay(new Date(loadedAt + 86_400_000));
 
   const all = useMemo(() => orders ?? [], [orders]);
   const lists = useMemo(
@@ -567,7 +574,8 @@ export default function PickPack() {
                         {tab === "floor" && (
                           <td className="release-num">
                             {sinceLabel(
-                              [o.pickListPrintedAt, o.packingSlipPrintedAt].filter(Boolean).sort().pop()
+                              [o.pickListPrintedAt, o.packingSlipPrintedAt].filter(Boolean).sort().pop(),
+                              loadedAt
                             )}
                           </td>
                         )}
