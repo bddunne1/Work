@@ -24,7 +24,7 @@ export default function WarehouseCapacityBanner() {
       <div className="capacity-banner-headline">
         {metrics.utilizationPct !== null ? (
           <>
-            Warehouse at <strong>{metrics.utilizationPct.toFixed(0)}%</strong> of estimated capacity
+            Warehouse at <strong>{metrics.utilizationPct >= 999 ? ">999" : metrics.utilizationPct.toFixed(0)}%</strong> of estimated capacity
           </>
         ) : (
           "Warehouse capacity"

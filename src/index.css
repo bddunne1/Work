@@ -198,6 +198,13 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
+}
+
+/* Keep a page title on one line when a description sits beside it. */
+.page-header.no-print > h1 {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .brand {

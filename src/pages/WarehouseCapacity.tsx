@@ -69,7 +69,7 @@ export default function WarehouseCapacity() {
       <div className={`capacity-recommendation capacity-recommendation-${level}`}>
         <div className="capacity-recommendation-headline">
           {metrics.utilizationPct !== null
-            ? `${metrics.utilizationPct.toFixed(0)}% of estimated capacity`
+            ? `${metrics.utilizationPct >= 999 ? ">999" : metrics.utilizationPct.toFixed(0)}% of estimated capacity`
             : "Capacity not yet estimated"}
         </div>
         <div className="capacity-recommendation-detail">{UTILIZATION_MESSAGES[level]}</div>
