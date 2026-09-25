@@ -281,7 +281,7 @@ export default function Dashboard() {
             color: "#e8590c",
           },
           {
-            label: "Ready to Pick",
+            label: "Ready to Release",
             value: orders.filter((o) => o.status === "Allocated").length,
             to: "/pick-pack",
             color: "#e03131",

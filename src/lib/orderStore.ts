@@ -181,6 +181,28 @@ export async function cancelOrder(order: PurchaseOrder, reason: string): Promise
   );
 }
 
+export interface ReleaseRequest {
+  order: PurchaseOrder;
+  // Per-line release quantities; omit to release everything allocated.
+  lines?: ShipmentLine[];
+}
+
+export interface ReleaseResult {
+  results: { soNumber: string; ok: boolean; error?: string }[];
+  // Server copies of the orders that released.
+  orders: PurchaseOrder[];
+}
+
+// Releases allocated orders to the warehouse in one call. Each order is
+// released (or refused) on its own, so a stale order in the batch doesn't
+// stop the rest - check `results` for any that didn't go.
+export async function releaseOrders(requests: ReleaseRequest[]): Promise<ReleaseResult> {
+  const res = await api.post<ReleaseResult>("/api/sales-orders/release", {
+    orders: requests.map((r) => ({ soNumber: r.order.soNumber, version: r.order.version, lines: r.lines })),
+  });
+  return { results: res.results, orders: res.orders.map(mapOrder) };
+}
+
 // Undoes the most recent shipment on `order` - the server puts those units
 // back into qtyOnHand and re-stages them for Open Picks atomically.
 export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder> {

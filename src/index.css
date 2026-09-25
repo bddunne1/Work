@@ -196,9 +196,14 @@ a {
 
 .page-header.no-print {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 8px 20px;
+}
+
+.page-header.no-print > p {
+  flex: 1 1 320px;
 }
 
 /* Keep a page title on one line when a description sits beside it. */
@@ -1446,6 +1451,321 @@ a.brand:hover .brand-name {
 
 .capacity-banner-unknown {
   background: var(--panel-bg);
+}
+
+/* ---- Release Orders (tabs, filters, bulk release bar) ---- */
+.release-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin: 4px 0 14px;
+}
+
+.release-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.release-tab:hover {
+  color: var(--text-h);
+}
+
+.release-tab.is-active {
+  background: var(--panel-bg);
+  border-color: var(--border);
+  color: var(--text-h);
+  margin-bottom: -1px;
+}
+
+.release-tab-count {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.release-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.release-filter {
+  border: 1px solid var(--border-strong);
+  background: var(--panel-bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.release-filter.is-on {
+  background: var(--text-h);
+  border-color: var(--text-h);
+  color: var(--panel-bg);
+}
+
+.release-select,
+.release-search {
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 5px 10px;
+  background: var(--panel-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.release-search {
+  min-width: 220px;
+  flex: 0 1 260px;
+}
+
+.release-review-btn {
+  margin-left: auto;
+  padding: 5px 12px;
+  font-size: 13px;
+}
+
+.release-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border: 1px solid;
+  font-size: 14px;
+}
+
+.release-message ul {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding-left: 20px;
+}
+
+.release-message .link-btn {
+  margin-left: auto;
+}
+
+.release-message-ok {
+  background: rgba(18, 184, 134, 0.1);
+  border-color: rgba(18, 184, 134, 0.4);
+}
+
+.release-message-error {
+  background: rgba(240, 101, 149, 0.1);
+  border-color: rgba(240, 101, 149, 0.45);
+}
+
+.release-empty {
+  padding: 24px 0;
+}
+
+.release-table td {
+  vertical-align: middle;
+}
+
+.release-row.is-selected td {
+  background: var(--accent-bg);
+}
+
+.release-col-check {
+  width: 36px;
+}
+
+.release-num,
+.release-table .release-num,
+.release-lines-table .release-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.release-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.release-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.release-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 1px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(100, 116, 139, 0.14);
+  color: var(--text);
+}
+
+.release-chip + .release-chip {
+  margin-left: 4px;
+}
+
+.release-chip-today {
+  background: rgba(47, 95, 219, 0.14);
+  color: var(--accent);
+}
+
+.release-chip-tomorrow,
+.release-chip-full {
+  background: rgba(18, 184, 134, 0.16);
+  color: #0f7a58;
+}
+
+.release-chip-late {
+  background: rgba(214, 51, 108, 0.14);
+  color: var(--danger);
+}
+
+.release-chip-partial {
+  background: rgba(245, 159, 0, 0.2);
+  color: #8a5d00;
+}
+
+.release-chip-edited {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .release-chip-tomorrow,
+  :root:not([data-theme="light"]) .release-chip-full {
+    color: #5fd4a8;
+  }
+  :root:not([data-theme="light"]) .release-chip-partial {
+    color: #f2c14e;
+  }
+}
+
+:root[data-theme="dark"] .release-chip-tomorrow,
+:root[data-theme="dark"] .release-chip-full {
+  color: #5fd4a8;
+}
+
+:root[data-theme="dark"] .release-chip-partial {
+  color: #f2c14e;
+}
+
+.release-expand > td {
+  background: color-mix(in srgb, var(--accent) 3%, var(--panel-bg));
+  padding: 8px 16px 12px 48px;
+}
+
+/* Long orders (20+ lines) scroll inside the row instead of pushing the
+   rest of the list - and the release bar - off screen. */
+.release-lines {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-bg);
+}
+
+.release-lines-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.release-lines-table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-bg);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.release-lines-table td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.release-lines-table tr:last-child td {
+  border-bottom: none;
+}
+
+.release-lines-table tr.is-unallocated td {
+  color: var(--muted);
+}
+
+.release-qty {
+  width: 84px;
+  text-align: right;
+}
+
+.release-lines-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* Stays pinned to the bottom of the window while you scroll the list, so
+   the action is always in reach. */
+.release-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px 14px 10px 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.release-bar-sum {
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.release-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.release-bar-actions .checkbox-line {
+  margin: 0;
 }
 
 .capacity-lookback-field {
