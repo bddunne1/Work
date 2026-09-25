@@ -94,55 +94,57 @@ export default function OpenPicks() {
             </div>
           </div>
 
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Select</th>
-                <th>S.O. #</th>
-                <th>P.O. #</th>
-                <th>Customer</th>
-                <th>Packed</th>
-                <th>Days in Warehouse</th>
-                <th>Weight</th>
-                <th>Pick &amp; Pack</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr
-                  key={o.soNumber}
-                  className="clickable-row"
-                  onClick={() => navigate(`/open-picks/${o.soNumber}`)}
-                >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(selected[o.soNumber])}
-                      onChange={() => toggleSelected(o.soNumber)}
-                      aria-label={`Select S.O. ${o.soNumber}`}
-                    />
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
-                      {o.soNumber}
-                    </Link>
-                  </td>
-                  <td>{o.poNumber}</td>
-                  <td>{o.billTo.name}</td>
-                  <td>{o.pickedAt ? new Date(o.pickedAt).toLocaleString() : "—"}</td>
-                  <td>{o.pickedAt ? `${daysInWarehouse(o.pickedAt).toFixed(1)} d` : "—"}</td>
-                  <td className="amount-cell">{pendingShipmentWeight(o, weights).toFixed(0)} lbs</td>
-                  <td>
-                    {o.pickPackStatus && (
-                      <span className={`pickpack-flag pickpack-flag-${o.pickPackStatus.toLowerCase()}`}>
-                        {o.pickPackStatus}
-                      </span>
-                    )}
-                  </td>
+          <div className="scroll-window">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Select</th>
+                  <th>S.O. #</th>
+                  <th>P.O. #</th>
+                  <th>Customer</th>
+                  <th>Packed</th>
+                  <th>Days in Warehouse</th>
+                  <th>Weight</th>
+                  <th>Release</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr
+                    key={o.soNumber}
+                    className="clickable-row"
+                    onClick={() => navigate(`/open-picks/${o.soNumber}`)}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(selected[o.soNumber])}
+                        onChange={() => toggleSelected(o.soNumber)}
+                        aria-label={`Select S.O. ${o.soNumber}`}
+                      />
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                        {o.soNumber}
+                      </Link>
+                    </td>
+                    <td>{o.poNumber}</td>
+                    <td>{o.billTo.name}</td>
+                    <td>{o.pickedAt ? new Date(o.pickedAt).toLocaleString() : "—"}</td>
+                    <td>{o.pickedAt ? `${daysInWarehouse(o.pickedAt).toFixed(1)} d` : "—"}</td>
+                    <td className="amount-cell">{pendingShipmentWeight(o, weights).toFixed(0)} lbs</td>
+                    <td>
+                      {o.pickPackStatus && (
+                        <span className={`pickpack-flag pickpack-flag-${o.pickPackStatus.toLowerCase()}`}>
+                          {o.pickPackStatus}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <div className="button-row">
             <button

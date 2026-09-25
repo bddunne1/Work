@@ -273,81 +273,83 @@ function ReturnDetailInner() {
               ))}
             </datalist>
           )}
-          <table className="data-table line-item-table">
-            <thead>
-              <tr>
-                <th className="col-item">Item</th>
-                <th className="col-desc">Description</th>
-                <th className="col-um">U/M</th>
-                <th className="col-qty">Qty</th>
-                <th className="col-rate">Credit Rate</th>
-                <th className="col-amount">Amount</th>
-                <th className="col-desc">Line Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.lines.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    {editing ? (
-                      <input
-                        value={l.itemNumber}
-                        list={ITEM_DATALIST_ID}
-                        onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
-                        onBlur={(e) => applyItemLookup(l.id, e.target.value)}
-                      />
-                    ) : (
-                      l.itemNumber
-                    )}
-                  </td>
-                  <td>
-                    {editing ? (
-                      <input
-                        value={l.description}
-                        onChange={(e) => updateLine(l.id, { description: e.target.value })}
-                      />
-                    ) : (
-                      l.description
-                    )}
-                  </td>
-                  <td>{editing ? <input value={l.um} onChange={(e) => updateLine(l.id, { um: e.target.value })} /> : l.um}</td>
-                  <td className="amount-cell">
-                    {editing ? (
-                      <input
-                        type="number"
-                        className="num-input"
-                        value={l.qty}
-                        onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) })}
-                      />
-                    ) : (
-                      l.qty
-                    )}
-                  </td>
-                  <td className="amount-cell">
-                    {editing ? (
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="num-input"
-                        value={l.rate}
-                        onChange={(e) => updateLine(l.id, { rate: Number(e.target.value) })}
-                      />
-                    ) : (
-                      `$${l.rate.toFixed(2)}`
-                    )}
-                  </td>
-                  <td className="amount-cell">${(l.qty * l.rate).toFixed(2)}</td>
-                  <td>
-                    {editing ? (
-                      <input value={l.reason} onChange={(e) => updateLine(l.id, { reason: e.target.value })} />
-                    ) : (
-                      l.reason || "—"
-                    )}
-                  </td>
+          <div className="scroll-window">
+            <table className="data-table line-item-table">
+              <thead>
+                <tr>
+                  <th className="col-item">Item</th>
+                  <th className="col-desc">Description</th>
+                  <th className="col-um">U/M</th>
+                  <th className="col-qty">Qty</th>
+                  <th className="col-rate">Credit Rate</th>
+                  <th className="col-amount">Amount</th>
+                  <th className="col-desc">Line Reason</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {view.lines.map((l) => (
+                  <tr key={l.id}>
+                    <td>
+                      {editing ? (
+                        <input
+                          value={l.itemNumber}
+                          list={ITEM_DATALIST_ID}
+                          onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
+                          onBlur={(e) => applyItemLookup(l.id, e.target.value)}
+                        />
+                      ) : (
+                        l.itemNumber
+                      )}
+                    </td>
+                    <td>
+                      {editing ? (
+                        <input
+                          value={l.description}
+                          onChange={(e) => updateLine(l.id, { description: e.target.value })}
+                        />
+                      ) : (
+                        l.description
+                      )}
+                    </td>
+                    <td>{editing ? <input value={l.um} onChange={(e) => updateLine(l.id, { um: e.target.value })} /> : l.um}</td>
+                    <td className="amount-cell">
+                      {editing ? (
+                        <input
+                          type="number"
+                          className="num-input"
+                          value={l.qty}
+                          onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) })}
+                        />
+                      ) : (
+                        l.qty
+                      )}
+                    </td>
+                    <td className="amount-cell">
+                      {editing ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="num-input"
+                          value={l.rate}
+                          onChange={(e) => updateLine(l.id, { rate: Number(e.target.value) })}
+                        />
+                      ) : (
+                        `$${l.rate.toFixed(2)}`
+                      )}
+                    </td>
+                    <td className="amount-cell">${(l.qty * l.rate).toFixed(2)}</td>
+                    <td>
+                      {editing ? (
+                        <input value={l.reason} onChange={(e) => updateLine(l.id, { reason: e.target.value })} />
+                      ) : (
+                        l.reason || "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="so-footer">
@@ -381,32 +383,34 @@ function ReturnDetailInner() {
               Tick the lines going back on the shelf. Unticked lines are logged as received but not restocked
               (damaged or scrap).
             </p>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th className="amount-cell">Qty</th>
-                  <th>Restock</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ra.lines.map((l) => (
-                  <tr key={l.id}>
-                    <td>{l.itemNumber}</td>
-                    <td className="amount-cell">{l.qty}</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        id={`restock-${l.id}`}
-                        aria-label={`Restock ${l.itemNumber}`}
-                        checked={restock[l.id] ?? l.restock ?? true}
-                        onChange={(e) => setRestock((r) => ({ ...r, [l.id]: e.target.checked }))}
-                      />
-                    </td>
+            <div className="scroll-window">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th className="amount-cell">Qty</th>
+                    <th>Restock</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {ra.lines.map((l) => (
+                    <tr key={l.id}>
+                      <td>{l.itemNumber}</td>
+                      <td className="amount-cell">{l.qty}</td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          id={`restock-${l.id}`}
+                          aria-label={`Restock ${l.itemNumber}`}
+                          checked={restock[l.id] ?? l.restock ?? true}
+                          onChange={(e) => setRestock((r) => ({ ...r, [l.id]: e.target.checked }))}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <div className="button-row">
               <button type="button" className="primary-btn" onClick={handleReceive}>
                 Receive Return

@@ -41,6 +41,12 @@ export async function listVendorPos(): Promise<VendorPurchaseOrder[]> {
   return pos.map(mapPo);
 }
 
+// Only POs still waiting on stock (Open / Partially Received).
+export async function listOpenVendorPos(): Promise<VendorPurchaseOrder[]> {
+  const pos = await api.get<VendorPurchaseOrder[]>("/api/vendor-purchase-orders?open=1");
+  return pos.map(mapPo);
+}
+
 export async function getVendorPo(poNumber: string): Promise<VendorPurchaseOrder | undefined> {
   try {
     const po = await api.get<VendorPurchaseOrder>(`/api/vendor-purchase-orders/${encodeURIComponent(poNumber)}`);

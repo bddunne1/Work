@@ -105,9 +105,14 @@ export function computeCapacityMetrics(
       ? avgDailyThroughputWeight * avgDwellDays
       : null;
 
+  // The estimate is only meaningful with some history behind it: on a new
+  // system (or right after a quiet spell) a day or two of shipments made the
+  // banner read "22,469,342% of capacity". Below this, show no percentage.
+  const shippingDays = dailyThroughput.filter((p) => p.weight > 0).length;
+  const enoughHistory = shippingDays >= 5 && dwellSamples.length >= 20;
   const utilizationPct =
-    estimatedCapacityWeight && estimatedCapacityWeight > 0
-      ? (currentLoadWeight / estimatedCapacityWeight) * 100
+    enoughHistory && estimatedCapacityWeight && estimatedCapacityWeight > 0
+      ? Math.min(999, (currentLoadWeight / estimatedCapacityWeight) * 100)
       : null;
 
   return {

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { hasPermission, requireAnyPermission, requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { adjustOnHand, assertAllocationAvailable, itemIdFor, resolveItemIds } from "../lib/inventory.js";
@@ -137,6 +137,20 @@ const updateSchema = createSchema.extend({
 const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema) });
 const undoSchema = z.object({ version: z.number().int() });
 const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling") });
+const releaseSchema = z.object({
+  orders: z
+    .array(
+      z.object({
+        soNumber: z.union([z.string(), z.number()]),
+        version: z.number().int(),
+        // Per-line release quantities. Omitted = release everything that's
+        // allocated; a line left out (or at 0) isn't released this time.
+        lines: z.array(shipmentLineSchema).optional(),
+      })
+    )
+    .min(1)
+    .max(200),
+});
 
 const include = {
   lineItems: true,
@@ -611,6 +625,96 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
   logAudit(req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason });
   const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
   res.json(mapOut(updated!));
+});
+
+// Releases allocated orders to the warehouse (Release Orders): each order's
+// allocated quantities (or the smaller per-line quantities sent) become its
+// staged pick, and the order moves to Pick & Packed, waiting on its pick
+// list and packing slip. Each order is its own transaction, so one stale
+// order doesn't hold up the rest of the batch - the response says which
+// released and why any didn't.
+//
+// Same rules as the single-order release page: a line can release at most
+// what's allocated to it (revise the allocation to send more), and a
+// released line's allocation is used up by the release.
+router.post("/release", requirePermission("pick-release", "edit"), async (req: AuthedRequest, res) => {
+  const parsed = releaseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  type AllocationJson = { lines: { lineItemId: string; allocatedQty: number }[] } & Record<string, unknown>;
+  const results: { soNumber: string; ok: boolean; error?: string }[] = [];
+  const releasedSoNumbers: number[] = [];
+  for (const request of parsed.data.orders) {
+    const soNumber = Number(request.soNumber);
+    try {
+      if (!Number.isInteger(soNumber)) throw new HttpError(404, "Order not found");
+      const summary = await prisma.$transaction(async (tx) => {
+        const order = await lockOrder(tx, soNumber, request.version);
+        if (order.status !== "ALLOCATED") {
+          throw new HttpError(409, `S.O. #${soNumber} is already ${STATUS_OUT[order.status]} - someone else moved it on.`, { conflict: true });
+        }
+        const allocation = order.allocation as AllocationJson | null;
+        const allocatedFor = (id: string) => allocation?.lines.find((l) => l.lineItemId === id)?.allocatedQty ?? 0;
+        const lineIds = new Set(order.lineItems.map((li) => li.id));
+        if (request.lines?.some((l) => !lineIds.has(l.lineItemId))) {
+          throw new HttpError(400, `S.O. #${soNumber} changed since it was loaded - reload and try again.`);
+        }
+        const requested = request.lines ? new Map(request.lines.map((l) => [l.lineItemId, l.qty])) : null;
+        const pending: { lineItemId: string; qty: number }[] = [];
+        for (const li of order.lineItems) {
+          const allocated = allocatedFor(li.id);
+          const qty = requested ? (requested.get(li.id) ?? 0) : allocated;
+          if (qty > allocated) {
+            throw new HttpError(409, `S.O. #${soNumber}: ${li.item} can release at most ${allocated} (what's allocated). Revise the allocation to send more.`, { conflict: true });
+          }
+          if (qty > 0) pending.push({ lineItemId: li.id, qty });
+        }
+        if (pending.length === 0) throw new HttpError(409, `S.O. #${soNumber} has nothing to release.`, { conflict: true });
+
+        const shippedFor = (id: string) =>
+          order.shipmentHistory.reduce((sum, r) => sum + ((r.lines as { lineItemId: string; qty: number }[]).find((x) => x.lineItemId === id)?.qty ?? 0), 0);
+        const pendingFor = (id: string) => pending.find((p) => p.lineItemId === id)?.qty ?? 0;
+        const complete = order.lineItems.every((li) => Math.max(0, li.ordered - shippedFor(li.id)) - pendingFor(li.id) <= 0);
+        const released = new Set(pending.map((p) => p.lineItemId));
+        const nextAllocation = allocation
+          ? { ...allocation, lines: order.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: released.has(li.id) ? 0 : allocatedFor(li.id) })) }
+          : null;
+        await tx.salesOrder.update({
+          where: { soNumber },
+          data: {
+            status: "PICK_PACKED",
+            pickPackStatus: complete ? "COMPLETE" : "PARTIAL",
+            pickedAt: new Date(),
+            pendingShipment: pending,
+            pickListPrintedAt: null,
+            packingSlipPrintedAt: null,
+            allocation: nextAllocation ?? Prisma.JsonNull,
+            version: { increment: 1 },
+          },
+        });
+        return { lines: pending.length, units: pending.reduce((sum, p) => sum + p.qty, 0), complete };
+      });
+      logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+        from: "Allocated",
+        to: "Pick & Packed",
+        lines: summary.lines,
+        units: summary.units,
+        release: summary.complete ? "Complete" : "Partial",
+      });
+      releasedSoNumbers.push(soNumber);
+      results.push({ soNumber: String(soNumber), ok: true });
+    } catch (err) {
+      if (!(err instanceof HttpError)) throw err;
+      const label = `S.O. #${request.soNumber}`;
+      results.push({ soNumber: String(request.soNumber), ok: false, error: err.message.startsWith(label) ? err.message : `${label}: ${err.message}` });
+    }
+  }
+  const orders = releasedSoNumbers.length
+    ? await prisma.salesOrder.findMany({ where: { soNumber: { in: releasedSoNumbers } }, include })
+    : [];
+  res.json({ results, orders: orders.map(mapOut) });
 });
 
 export default router;

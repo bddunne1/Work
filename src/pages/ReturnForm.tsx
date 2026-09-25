@@ -192,83 +192,85 @@ export default function ReturnForm() {
               </option>
             ))}
           </datalist>
-          <table className="data-table line-item-table">
-            <thead>
-              <tr>
-                <th className="col-item">Item</th>
-                <th className="col-desc">Description</th>
-                <th className="col-um">U/M</th>
-                <th className="col-qty">Qty</th>
-                <th className="col-rate">Credit Rate</th>
-                <th className="col-amount">Amount</th>
-                <th className="col-desc">Line Reason</th>
-                <th className="col-remove" />
-              </tr>
-            </thead>
-            <tbody>
-              {ra.lines.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    <input
-                      value={l.itemNumber}
-                      list={ITEM_DATALIST_ID}
-                      onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
-                      onBlur={(e) => applyItemLookup(l.id, e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      value={l.description}
-                      onChange={(e) => updateLine(l.id, { description: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="col-um-input"
-                      value={l.um}
-                      onChange={(e) => updateLine(l.id, { um: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="num-input"
-                      min={0}
-                      value={l.qty}
-                      onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="num-input"
-                      value={l.rate}
-                      onChange={(e) => updateLine(l.id, { rate: Number(e.target.value) })}
-                    />
-                  </td>
-                  <td className="amount-cell">${(l.qty * l.rate).toFixed(2)}</td>
-                  <td>
-                    <input
-                      placeholder="Reason"
-                      value={l.reason}
-                      onChange={(e) => updateLine(l.id, { reason: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      onClick={() => removeLine(l.id)}
-                      aria-label="Remove line"
-                    >
-                      &times;
-                    </button>
-                  </td>
+          <div className="scroll-window">
+            <table className="data-table line-item-table">
+              <thead>
+                <tr>
+                  <th className="col-item">Item</th>
+                  <th className="col-desc">Description</th>
+                  <th className="col-um">U/M</th>
+                  <th className="col-qty">Qty</th>
+                  <th className="col-rate">Credit Rate</th>
+                  <th className="col-amount">Amount</th>
+                  <th className="col-desc">Line Reason</th>
+                  <th className="col-remove" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {ra.lines.map((l) => (
+                  <tr key={l.id}>
+                    <td>
+                      <input
+                        value={l.itemNumber}
+                        list={ITEM_DATALIST_ID}
+                        onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
+                        onBlur={(e) => applyItemLookup(l.id, e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        value={l.description}
+                        onChange={(e) => updateLine(l.id, { description: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="col-um-input"
+                        value={l.um}
+                        onChange={(e) => updateLine(l.id, { um: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="num-input"
+                        min={0}
+                        value={l.qty}
+                        onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="num-input"
+                        value={l.rate}
+                        onChange={(e) => updateLine(l.id, { rate: Number(e.target.value) })}
+                      />
+                    </td>
+                    <td className="amount-cell">${(l.qty * l.rate).toFixed(2)}</td>
+                    <td>
+                      <input
+                        placeholder="Reason"
+                        value={l.reason}
+                        onChange={(e) => updateLine(l.id, { reason: e.target.value })}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        onClick={() => removeLine(l.id)}
+                        aria-label="Remove line"
+                      >
+                        &times;
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="so-footer">

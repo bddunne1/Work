@@ -117,8 +117,14 @@ function mapOut<T extends { status: string }>(ra: T) {
 
 router.use(requireAuth);
 
-router.get("/", requireAnyPermission(RETURN_VIEW_PAGES, "view"), async (_req, res) => {
-  const returns = await prisma.returnAuthorization.findMany({ orderBy: { createdAt: "desc" }, include });
+// `?open=1` returns only RAs issued and not yet received back.
+router.get("/", requireAnyPermission(RETURN_VIEW_PAGES, "view"), async (req, res) => {
+  const openOnly = req.query.open === "1" || req.query.open === "true";
+  const returns = await prisma.returnAuthorization.findMany({
+    where: openOnly ? { status: "ISSUED" } : undefined,
+    orderBy: { createdAt: "desc" },
+    include,
+  });
   res.json(returns.map(mapOut));
 });
 

@@ -23,11 +23,11 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
     case "Backordered":
       return { label: "Re-check Stock", to: `/allocation/${order.soNumber}` };
     case "Allocated":
-      return { label: "To Review", to: `/pick-pack/${order.soNumber}` };
+      return { label: "To Release Orders", to: `/pick-pack/${order.soNumber}` };
     case "Pick & Packed":
       return order.pickListPrintedAt && order.packingSlipPrintedAt
         ? { label: "To Open Picks", to: `/open-picks/${order.soNumber}` }
-        : { label: "To Released Picks", to: "/pick-pack" };
+        : { label: "To Release Orders", to: "/pick-pack" };
     default:
       return null;
   }
@@ -374,22 +374,24 @@ function OrderDetailInner() {
         {view.shipmentHistory && view.shipmentHistory.length > 0 && (
           <div className="shipment-history">
             <div className="so-notes-label muted">Shipment History</div>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Lines Shipped</th>
-                </tr>
-              </thead>
-              <tbody>
-                {view.shipmentHistory.map((rec) => (
-                  <tr key={rec.id}>
-                    <td>{new Date(rec.shippedAt).toLocaleString()}</td>
-                    <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+            <div className="scroll-window">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Lines Shipped</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {view.shipmentHistory.map((rec) => (
+                    <tr key={rec.id}>
+                      <td>{new Date(rec.shippedAt).toLocaleString()}</td>
+                      <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

@@ -130,66 +130,68 @@ export default function PurchaseOrderForm() {
             </option>
           ))}
         </datalist>
-        <table className="data-table line-item-table">
-          <thead>
-            <tr>
-              <th className="col-item">Item #</th>
-              <th className="col-desc">Description</th>
-              <th className="col-qty">Qty</th>
-              <th className="col-rate">Cost</th>
-              <th className="col-amount">Amount</th>
-              <th className="col-remove" />
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((l) => (
-              <tr key={l.id}>
-                <td>
-                  <input
-                    value={l.itemNumber}
-                    list={ITEM_DATALIST_ID}
-                    onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
-                    onBlur={(e) => applyItemLookup(l.id, e.target.value)}
-                  />
-                </td>
-                <td>
-                  <input
-                    value={l.description}
-                    onChange={(e) => updateLine(l.id, { description: e.target.value })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    className="num-input"
-                    value={l.orderedQty}
-                    onChange={(e) => updateLine(l.id, { orderedQty: Number(e.target.value) })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="num-input"
-                    value={l.cost}
-                    onChange={(e) => updateLine(l.id, { cost: Number(e.target.value) })}
-                  />
-                </td>
-                <td className="amount-cell">${(l.orderedQty * l.cost).toFixed(2)}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => removeLine(l.id)}
-                    aria-label="Remove line"
-                  >
-                    &times;
-                  </button>
-                </td>
+        <div className="scroll-window">
+          <table className="data-table line-item-table">
+            <thead>
+              <tr>
+                <th className="col-item">Item #</th>
+                <th className="col-desc">Description</th>
+                <th className="col-qty">Qty</th>
+                <th className="col-rate">Cost</th>
+                <th className="col-amount">Amount</th>
+                <th className="col-remove" />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lines.map((l) => (
+                <tr key={l.id}>
+                  <td>
+                    <input
+                      value={l.itemNumber}
+                      list={ITEM_DATALIST_ID}
+                      onChange={(e) => updateLine(l.id, { itemNumber: e.target.value })}
+                      onBlur={(e) => applyItemLookup(l.id, e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={l.description}
+                      onChange={(e) => updateLine(l.id, { description: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      className="num-input"
+                      value={l.orderedQty}
+                      onChange={(e) => updateLine(l.id, { orderedQty: Number(e.target.value) })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="num-input"
+                      value={l.cost}
+                      onChange={(e) => updateLine(l.id, { cost: Number(e.target.value) })}
+                    />
+                  </td>
+                  <td className="amount-cell">${(l.orderedQty * l.cost).toFixed(2)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() => removeLine(l.id)}
+                      aria-label="Remove line"
+                    >
+                      &times;
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <button type="button" className="secondary-btn" onClick={addLine}>
           + Add Line
         </button>

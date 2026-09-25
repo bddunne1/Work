@@ -87,50 +87,52 @@ function PurchaseOrderDetailInner() {
         </p>
       </div>
 
-      <table className="data-table line-item-table">
-        <thead>
-          <tr>
-            <th className="col-item">Item #</th>
-            <th className="col-desc">Description</th>
-            <th className="col-qty">Ordered</th>
-            <th className="col-qty">Received</th>
-            <th className="col-qty">Outstanding</th>
-            <th className="col-rate">Cost</th>
-            {canEdit && anyOutstanding && <th className="col-qty">Receive Now</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {po.lines.map((l) => {
-            const outstanding = vendorPoLineOutstanding(l);
-            return (
-              <tr key={l.id}>
-                <td>{l.itemNumber}</td>
-                <td>{l.description}</td>
-                <td className="amount-cell">{l.orderedQty}</td>
-                <td className="amount-cell">{l.receivedQty}</td>
-                <td className="amount-cell">{outstanding}</td>
-                <td className="amount-cell">${l.cost.toFixed(2)}</td>
-                {canEdit && anyOutstanding && (
-                  <td>
-                    {outstanding > 0 ? (
-                      <input
-                        type="number"
-                        className="num-input allocate-qty-input"
-                        min={0}
-                        max={outstanding}
-                        value={qtys[l.id] ?? 0}
-                        onChange={(e) => setQty(l.id, Number(e.target.value), outstanding)}
-                      />
-                    ) : (
-                      <span className="muted">—</span>
-                    )}
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="scroll-window">
+        <table className="data-table line-item-table">
+          <thead>
+            <tr>
+              <th className="col-item">Item #</th>
+              <th className="col-desc">Description</th>
+              <th className="col-qty">Ordered</th>
+              <th className="col-qty">Received</th>
+              <th className="col-qty">Outstanding</th>
+              <th className="col-rate">Cost</th>
+              {canEdit && anyOutstanding && <th className="col-qty">Receive Now</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {po.lines.map((l) => {
+              const outstanding = vendorPoLineOutstanding(l);
+              return (
+                <tr key={l.id}>
+                  <td>{l.itemNumber}</td>
+                  <td>{l.description}</td>
+                  <td className="amount-cell">{l.orderedQty}</td>
+                  <td className="amount-cell">{l.receivedQty}</td>
+                  <td className="amount-cell">{outstanding}</td>
+                  <td className="amount-cell">${l.cost.toFixed(2)}</td>
+                  {canEdit && anyOutstanding && (
+                    <td>
+                      {outstanding > 0 ? (
+                        <input
+                          type="number"
+                          className="num-input allocate-qty-input"
+                          min={0}
+                          max={outstanding}
+                          value={qtys[l.id] ?? 0}
+                          onChange={(e) => setQty(l.id, Number(e.target.value), outstanding)}
+                        />
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
       <table className="totals-table">
         <tbody>
