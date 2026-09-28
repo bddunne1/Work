@@ -1,5 +1,12 @@
 # ERP review
 
+## Round 4 — 25 Sep 2026
+- `erp-review-4.html`: a fresh code review (39 bugs/vulnerabilities, 14
+  inefficiencies) and an order-flow analysis with what to condense, automate,
+  redesign and lay out differently, plus a roadmap. No code changes. The
+  findings are also listed in `open-bugs.md`. Published copy:
+  https://claude.ai/artifact/MoFZWNDa9PXNcbCcb14Uzo
+
 ## Round 3 — 25 Sep 2026
 - `erp-review-3.html`: change report for everything since the round-2 merge:
   Pick & Pack renamed to Release Orders and rebuilt (tabs, bulk release, inline
