@@ -119,11 +119,17 @@ model Customer {
   shipCompleteOnly Boolean  @default(false)
   privateLabelName String?
   routingGuide     Json?
+  // Tax handling for invoices: an exempt customer (a reseller with a
+  // certificate on file) is invoiced with no tax whatever the order's rate.
+  taxExempt        Boolean  @default(false)
   createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
   version          Int      @default(1)
 
   shipToLocations ShippingLocation[]
+  invoices        Invoice[]
+  creditMemos     CreditMemo[]
   notes           CustomerNote[]
   partNumberMap   CustomerPartMapping[]
   priceOverrides  CustomerPriceOverride[]
@@ -188,6 +194,7 @@ model Vendor {
   email       String?
   address     Json?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
   version     Int      @default(1)
 
@@ -218,6 +225,7 @@ model Item {
   preferredVendorId  String?
   preferredVendor    Vendor?  @relation(fields: [preferredVendorId], references: [id])
   createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
   // Optimistic concurrency: bumped on every whole-object PUT. A save whose
   // client-supplied version doesn't match the current row means someone
   // else changed it first - rejected with 409 rather than silently
@@ -232,6 +240,8 @@ model Item {
   vendorPoLines   VendorPoLine[]   @relation("VendorPoLineItem")
   returnLines     ReturnLine[]     @relation("ReturnLineItem")
   stockMovements  StockMovement[]
+  invoiceLines    InvoiceLine[]
+  creditMemoLines CreditMemoLine[]
 
   @@index([itemNumber])
   @@index([preferredVendorId])
@@ -296,6 +306,7 @@ model SalesOrder {
   pickPackStatus       PickPackStatus?
   bol                  Json?
   createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
   version              Int             @default(1)
 
@@ -305,6 +316,7 @@ model SalesOrder {
 
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]
+  invoices        Invoice[]
 
   @@index([customerId])
   @@index([status])
@@ -340,6 +352,9 @@ model ShipmentRecord {
   shippedAt  DateTime   @default(now())
   // [{ lineItemId, qty }]
   lines      Json
+  // The invoice raised for this shipment (one per shipment); voided, not
+  // deleted, when the shipment is undone.
+  invoice    Invoice?
 
   @@index([soNumber])
   @@index([shippedAt])
@@ -356,6 +371,7 @@ model VendorPurchaseOrder {
   status       VendorPoStatus @default(OPEN)
   notes        String         @default("")
   createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
   version      Int            @default(1)
 
@@ -411,6 +427,7 @@ model ReturnAuthorization {
   writtenById    String?
   writtenByColor String?
   createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
   // Set when the returned goods are received back at the dock (restocking
   // any lines marked restock) - see POST /returns/:ra/receive.
   receivedAt     DateTime?
@@ -418,7 +435,8 @@ model ReturnAuthorization {
   // Optimistic concurrency - see Item.version.
   version        Int          @default(1)
 
-  lines ReturnLine[]
+  lines      ReturnLine[]
+  creditMemo CreditMemo?
 
   @@index([customerId])
   @@index([status])
@@ -494,4 +512,203 @@ model SavedReport {
   filters       Json
   columns       Json
   createdAt     DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Invoicing and the accounting bridge (round 5, section 05 of the review).
+//
+// This system is the record for customers, items, prices, orders, stock and
+// shipments, and it raises the invoice and credit memo documents. The
+// accounting package (QuickBooks) is the record for money: receivables,
+// payments, tax filing and the ledger. Invoices and credit memos are pushed
+// to it through the outbox below; nothing financial is computed here beyond
+// the document totals.
+
+enum InvoiceStatus {
+  ISSUED
+  VOID
+}
+
+// One invoice per shipment, raised inside the ship transaction from the
+// order's lines and prices as they stood at that moment. Money is stored to
+// the cent; the totals are computed in integer cents (lib/money.ts).
+model Invoice {
+  // "INV-20001" - from the shared Counter table like every other document.
+  invoiceNumber    String          @id
+  soNumber         Int
+  salesOrder       SalesOrder      @relation(fields: [soNumber], references: [soNumber])
+  shipmentRecordId String?         @unique
+  shipmentRecord   ShipmentRecord? @relation(fields: [shipmentRecordId], references: [id], onDelete: SetNull)
+  customerId       String?
+  customer         Customer?       @relation(fields: [customerId], references: [id])
+  customerName     String
+  billTo           Json
+  shipTo           Json
+  poNumber         String          @default("")
+  terms            String          @default("")
+  rep              String          @default("")
+  invoiceDate      DateTime        @db.Date
+  dueDate          DateTime        @db.Date
+  subtotal         Decimal         @db.Decimal(14, 2)
+  taxRate          Decimal         @default(0) @db.Decimal(6, 3)
+  tax              Decimal         @db.Decimal(14, 2)
+  total            Decimal         @db.Decimal(14, 2)
+  status           InvoiceStatus   @default(ISSUED)
+  voidedAt         DateTime?
+  voidedBy         String?
+  voidReason       String?
+  notes            String          @default("")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+
+  lines InvoiceLine[]
+
+  @@index([soNumber])
+  @@index([customerId])
+  @@index([invoiceDate])
+  @@index([status])
+}
+
+model InvoiceLine {
+  id               String  @id @default(uuid())
+  invoiceNumber    String
+  invoice          Invoice @relation(fields: [invoiceNumber], references: [invoiceNumber], onDelete: Cascade)
+  salesOrderLineId String?
+  itemId           String?
+  catalogItem      Item?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  item             String
+  description      String
+  um               String  @default("EA")
+  qty              Int
+  rate             Decimal @db.Decimal(12, 4)
+  amount           Decimal @db.Decimal(14, 2)
+
+  @@index([invoiceNumber])
+  @@index([itemId])
+}
+
+// One credit memo per received return, priced from the invoice that billed
+// the goods when one can be found, else from the RA line.
+model CreditMemo {
+  // "CM-30001"
+  creditMemoNumber String              @id
+  raNumber         String              @unique
+  returnAuth       ReturnAuthorization @relation(fields: [raNumber], references: [raNumber])
+  customerId       String?
+  customer         Customer?           @relation(fields: [customerId], references: [id])
+  customerName     String
+  billTo           Json
+  // The sales order the return referenced, if any.
+  soNumber         String?
+  memoDate         DateTime            @db.Date
+  subtotal         Decimal             @db.Decimal(14, 2)
+  taxRate          Decimal             @default(0) @db.Decimal(6, 3)
+  tax              Decimal             @db.Decimal(14, 2)
+  total            Decimal             @db.Decimal(14, 2)
+  status           InvoiceStatus       @default(ISSUED)
+  voidedAt         DateTime?
+  voidedBy         String?
+  voidReason       String?
+  reason           String              @default("")
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+
+  lines CreditMemoLine[]
+
+  @@index([customerId])
+  @@index([memoDate])
+}
+
+model CreditMemoLine {
+  id               String     @id @default(uuid())
+  creditMemoNumber String
+  creditMemo       CreditMemo @relation(fields: [creditMemoNumber], references: [creditMemoNumber], onDelete: Cascade)
+  returnLineId     String?
+  // The invoice line whose price this credit reverses, when found.
+  invoiceNumber    String?
+  itemId           String?
+  catalogItem      Item?      @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  item             String
+  description      String
+  um               String     @default("EA")
+  qty              Int
+  rate             Decimal    @db.Decimal(12, 4)
+  amount           Decimal    @db.Decimal(14, 2)
+
+  @@index([creditMemoNumber])
+}
+
+// The id an outside system (QuickBooks) knows one of our records by. Ids,
+// never names, are the join key; names change.
+model ExternalRef {
+  id           String   @id @default(uuid())
+  system       String
+  // customer | item | invoice | credit-memo
+  entityType   String
+  entityId     String
+  externalId   String
+  // QuickBooks' optimistic-concurrency token for the record, needed to void.
+  syncToken    String?
+  lastSyncedAt DateTime @default(now())
+
+  @@unique([system, entityType, entityId])
+  @@index([system, entityType, externalId])
+}
+
+// Work waiting to be pushed to an outside system. Written in the same
+// transaction as the document it describes, so an invoice can never exist
+// here without a row saying it must reach QuickBooks - and the worker
+// (integrations/sync.ts) retries with backoff until it does or gives up.
+model SyncOutbox {
+  id            String    @id @default(uuid())
+  system        String
+  entityType    String
+  entityId      String
+  // UPSERT | VOID
+  action        String
+  // PENDING | PROCESSING | DONE | FAILED (will retry) | DEAD (gave up)
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  processedAt   DateTime?
+
+  @@index([system, status, nextAttemptAt])
+  @@index([entityType, entityId])
+}
+
+// Every attempt the worker made, success or failure - what the Activity
+// Log's integration view shows.
+model SyncLog {
+  id         String   @id @default(uuid())
+  system     String
+  entityType String
+  entityId   String
+  action     String
+  ok         Boolean
+  message    String?
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+// The OAuth connection to one QuickBooks company. Tokens are encrypted at
+// rest with TOKEN_ENCRYPTION_KEY when it is set (see integrations/secrets.ts).
+model IntegrationConnection {
+  system           String   @id
+  realmId          String
+  environment      String   @default("sandbox")
+  accessToken      String
+  refreshToken     String
+  accessExpiresAt  DateTime
+  refreshExpiresAt DateTime
+  connectedBy      String?
+  connectedAt      DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+  // Free-form per-connection configuration (income account, item type...).
+  config           Json?
 }

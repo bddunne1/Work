@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
+import { processOutbox } from "../src/integrations/sync.js";
 import { prisma } from "../src/prisma.js";
 import {
   admin, allocate, cancel, check, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, receive, release, resetDb,
@@ -12,7 +14,10 @@ import {
 //
 //   STRESS_WORKERS=12 STRESS_STEPS=80 npm test -- stress   for a heavier run
 
-beforeEach(resetDb);
+beforeEach(async () => {
+  await resetDb();
+  fakeQuickBooks.reset();
+});
 
 const WORKERS = Number(process.env.STRESS_WORKERS ?? 8);
 const STEPS = Number(process.env.STRESS_STEPS ?? 40);
@@ -238,7 +243,31 @@ describe("randomized concurrent workload", () => {
       expect(po.status).toBe(full ? "RECEIVED" : any ? "PARTIALLY_RECEIVED" : "OPEN");
     }
 
-    // 7. Every stock movement names who did it and what for.
+    // 7. Every shipment has exactly one live invoice whose lines match it, an
+    //    undone shipment left a void one behind, and every received return
+    //    has a credit memo. Every document is queued for the bridge.
+    const shipments = await prisma.shipmentRecord.findMany();
+    const invoices = await prisma.invoice.findMany({ include: { lines: true } });
+    const byShipment = new Map(invoices.filter((i) => i.shipmentRecordId).map((i) => [i.shipmentRecordId!, i]));
+    for (const rec of shipments) {
+      const inv = byShipment.get(rec.id);
+      expect(inv, `shipment ${rec.id} has no invoice`).toBeTruthy();
+      expect(inv!.status).toBe("ISSUED");
+      const shippedLines = (rec.lines as { lineItemId: string; qty: number }[]).filter((l) => l.qty > 0);
+      expect(inv!.lines.map((l) => [l.salesOrderLineId, l.qty]).sort()).toEqual(shippedLines.map((l) => [l.lineItemId, l.qty]).sort());
+      const sum = inv!.lines.reduce((s, l) => s + Number(l.amount), 0);
+      expect(Math.round(sum * 100)).toBe(Math.round(Number(inv!.subtotal) * 100));
+    }
+    for (const inv of invoices) if (!inv.shipmentRecordId) expect(inv.status, `${inv.invoiceNumber} orphaned but live`).toBe("VOID");
+    const receivedRas = await prisma.returnAuthorization.findMany({ where: { status: "RECEIVED" } });
+    for (const ra of receivedRas) expect(await prisma.creditMemo.count({ where: { raNumber: ra.raNumber } }), `${ra.raNumber} has no credit memo`).toBe(1);
+    for (const inv of invoices) expect(await prisma.syncOutbox.count({ where: { entityType: "invoice", entityId: inv.invoiceNumber } }), `${inv.invoiceNumber} never queued`).toBeGreaterThan(0);
+    // And the bridge drains without a single failure against the fake.
+    const drained = await processOutbox({ limit: 10_000 });
+    expect(drained.failed + drained.dead, JSON.stringify(drained)).toBe(0);
+    expect(await prisma.syncOutbox.count({ where: { status: { not: "DONE" } } })).toBe(0);
+
+    // 8. Every stock movement names who did it and what for.
     const anonymous = await prisma.stockMovement.count({ where: { actorId: null } });
     expect(anonymous).toBe(0);
     // eslint-disable-next-line no-console

@@ -108,6 +108,8 @@ export const PAGE_DEFS: PageDef[] = [
   { key: "receiving", label: "Receiving", group: "Purchasing", rules: simplePage("/receiving") },
   { key: "vendors", label: "Vendors", group: "Purchasing", rules: simplePage("/vendors") },
 
+  { key: "invoices", label: "Invoices & Credit Memos", group: "Accounting", rules: simplePage("/invoices") },
+
   { key: "accounts", label: "Accounts", group: "Administration", rules: simplePage("/accounts") },
   { key: "settings", label: "Settings", group: "Administration", rules: simplePage("/settings") },
   { key: "audit-log", label: "Activity Log", group: "Administration", rules: simplePage("/audit-log") },
@@ -196,6 +198,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       catalog: "view",
       inventory: "view",
       returns: "edit",
+      invoices: "view",
       reports: "view",
     },
   },
@@ -280,6 +283,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       schedule: "view",
       catalog: "view",
       inventory: "view",
+      invoices: "view",
       analytics: "edit",
       reports: "edit",
     },
@@ -294,7 +298,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
         "order-entry", "validation", "allocation", "back-orders", "labels", "open-orders", "closed-orders",
         "order-detail", "returns", "pick-pack", "pick-release", "open-picks", "warehouse-capacity", "schedule",
         "bol", "shipment-history", "customers", "customer-pricing", "routing-guide", "catalog", "inventory",
-        "import", "analytics", "reports", "purchase-orders", "receiving", "vendors", "settings", "audit-log",
+        "import", "analytics", "reports", "purchase-orders", "receiving", "vendors", "invoices", "settings", "audit-log",
       ].map((k) => [k, "edit" as AccessLevel])
     ),
   },

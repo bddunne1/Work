@@ -38,6 +38,8 @@ const RULES: AccentRule[] = [
   { prefix: "/purchase-orders", color: "#0ca678" },
   { prefix: "/receiving", color: "#0ca678" },
   { prefix: "/vendors", color: "#0ca678" },
+  // Accounting
+  { prefix: "/invoices", color: "#0b7285" },
   // Administration
   { prefix: "/accounts", color: "#495057" },
   { prefix: "/settings", color: "#495057" },

@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { enqueueIfSynced } from "../integrations/sync.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -155,6 +157,10 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
         },
       });
       if (result.count === 0) throw new ConflictError();
+      // A renamed, repriced or redescribed item that QuickBooks knows gets updated there too.
+      if (data.itemNumber !== existing.itemNumber || !existing.rate.equals(new Prisma.Decimal(data.rate)) || data.description !== existing.description) {
+        await enqueueIfSynced(tx, "item", id);
+      }
       await syncChildren(tx.itemComponent, id, "itemId", data.components, (c) => ({
         partNumber: c.partNumber,
         description: c.description,

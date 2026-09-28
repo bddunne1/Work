@@ -16,6 +16,8 @@ import auditLogRouter from "./routes/auditLog.js";
 import authRouter from "./routes/auth.js";
 import countersRouter from "./routes/counters.js";
 import customersRouter from "./routes/customers.js";
+import integrationsRouter from "./routes/integrations.js";
+import invoicesRouter from "./routes/invoices.js";
 import itemsRouter from "./routes/items.js";
 import returnsRouter from "./routes/returns.js";
 import salesOrderSearchRouter from "./routes/salesOrderSearch.js";
@@ -68,6 +70,8 @@ export function createApp(): express.Express {
   app.use("/api/sales-orders", salesOrdersRouter);
   app.use("/api/stock-movements", stockMovementsRouter);
   app.use("/api/analytics", analyticsRouter);
+  app.use("/api/invoices", invoicesRouter);
+  app.use("/api/integrations", integrationsRouter);
 
   // Catches anything a route didn't handle itself (including an async
   // handler's rejected promise, via express-async-errors above) - the whole

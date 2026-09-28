@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
+import { createCreditMemoForReturn } from "../lib/documents.js";
 import { adjustOnHand, itemIdFor, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -301,13 +302,18 @@ router.post("/:raNumber/receive", requireAnyPermission(RETURN_RECEIVE_PAGES, "ed
         restocked += line.qty;
       }
     }
-    await tx.returnAuthorization.update({
+    const received = await tx.returnAuthorization.update({
       where: { raNumber },
       data: { status: "RECEIVED", receivedAt: new Date(), receivedBy: req.account!.username, version: { increment: 1 } },
     });
+    // Goods are back: the customer is credited, at the price they were
+    // billed where that invoice can be found. Queued for QuickBooks here.
+    const memo = await createCreditMemoForReturn(tx, { ...received, lines: await tx.returnLine.findMany({ where: { raNumber } }) }, req.account!);
     logAudit(req.account!, "RETURN_RECEIVED", "return", raNumber, raNumber, {
       unitsRestocked: restocked,
       unitsScrapped: lines.reduce((sum, l) => sum + l.qty, 0) - restocked,
+      creditMemo: memo.creditMemoNumber,
+      creditTotal: memo.total.toString(),
     });
   });
   const updated = await prisma.returnAuthorization.findUnique({ where: { raNumber }, include });

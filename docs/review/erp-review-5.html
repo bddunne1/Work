@@ -192,7 +192,7 @@
     <div style="display:flex;flex-direction:column;gap:12px">
       <div class="eyebrow">Aamstrand ERP · architecture and security review · round 5</div>
       <h1>Round 5: Architecture, Security and the Accounting Question</h1>
-      <p class="lede">A fresh read of the whole codebase after four rounds of fixes: what the design gets right, where the data can still be corrupted or misattributed, how the API and data model should change next, and whether to grow this into a full ERP with invoicing and accounting or keep QuickBooks as the ledger.</p>
+      <p class="lede">A fresh read of the whole codebase after four rounds of fixes (the same branch then implemented the High findings, the first two redesign steps, the test suite and the QuickBooks bridge; see <code>docs/review/open-bugs.md</code> for what is closed): what the design gets right, where the data can still be corrupted or misattributed, how the API and data model should change next, and whether to grow this into a full ERP with invoicing and accounting or keep QuickBooks as the ledger.</p>
     </div>
     <dl class="doc-meta">
       <dt>Date</dt><dd>2026-09-28</dd>
@@ -206,7 +206,7 @@
 
   <section>
     <div class="verdict">
-      <div><span class="eyebrow">New findings</span><span class="big bad">4 high</span><span class="muted">Plus 8 medium and 9 low. All four high findings are data-integrity holes in the API, not the UI. None are exploitable from outside the network without a login.</span></div>
+      <div><span class="eyebrow">New findings</span><span class="big bad">4 high</span><span class="muted">Plus 7 medium and 10 low. All four high findings are data-integrity holes in the API, not the UI. None are exploitable from outside the network without a login.</span></div>
       <div><span class="eyebrow">Automated tests</span><span class="big warn">0</span><span class="muted">The transaction logic that makes this system trustworthy is verified only by the 15-user simulation. One refactor away from a silent regression.</span></div>
       <div><span class="eyebrow">Accounting</span><span class="big good">Keep QuickBooks</span><span class="muted">Own invoicing as a document and an event; let QuickBooks stay the book of record for AR, AP, tax and the general ledger.</span></div>
     </div>
@@ -259,8 +259,8 @@
     <div class="filters" role="group" aria-label="Filter by severity">
       <button class="chip" type="button" data-filter="all" aria-pressed="true">All <span class="sev-count">21</span></button>
       <button class="chip" type="button" data-filter="high" aria-pressed="false">High <span class="sev-count">4</span></button>
-      <button class="chip" type="button" data-filter="medium" aria-pressed="false">Medium <span class="sev-count">8</span></button>
-      <button class="chip" type="button" data-filter="low" aria-pressed="false">Low <span class="sev-count">9</span></button>
+      <button class="chip" type="button" data-filter="medium" aria-pressed="false">Medium <span class="sev-count">7</span></button>
+      <button class="chip" type="button" data-filter="low" aria-pressed="false">Low <span class="sev-count">10</span></button>
     </div>
     <div class="findings" id="finding-list">
 
@@ -353,12 +353,12 @@
       </details>
 
       <details class="finding" data-sev="medium">
-        <summary><span class="fid">R5-09</span><span class="ftitle">Most non-conflict errors vanish without a message<small>Click handlers rethrow inside promises; there is no error boundary</small></span><span class="sev">Medium</span></summary>
+        <summary><span class="fid">R5-09</span><span class="ftitle">No error boundary; page-load failures are silent<small>Failed writes are surfaced by a global handler, rendering errors and failed reads are not</small></span><span class="sev">Low</span></summary>
         <div class="fbody">
           <dl>
             <dt>Where</dt><dd><code>src/pages/AllocationDecision.tsx</code> lines 167 to 174; <code>ValidationDecision.tsx</code> lines 65 to 70; <code>OpenPicksDetail.tsx</code> lines 71 to 78 and 99 to 106; <code>src/App.tsx</code></dd>
-            <dt>Problem</dt><dd>The decision pages catch a 409 and alert it, then <code>throw err</code> for everything else. Inside an async click handler that rejection goes nowhere, so a 400 ("not in the catalog"), a 403 or a 500 shows the user nothing and the order appears to save. There is no React error boundary and no global <code>unhandledrejection</code> handler.</dd>
-            <dt>Fix</dt><dd>One shared <code>handleApiError</code> that shows a toast for every failure, an error boundary around <code>Outlet</code>, and a window-level rejection handler as the last line of defence.</dd>
+            <dt>Problem</dt><dd>The decision pages catch a 409 and alert it, then <code>throw err</code> for everything else. A window-level <code>unhandledrejection</code> handler in <code>main.tsx</code> does catch these for failed writes and shows the server's message, so the failure is not silent (an earlier draft of this finding said it was). What is missing is a React error boundary: a rendering error still blanks the page, and read failures on page load are only in the console.</dd>
+            <dt>Fix</dt><dd>An error boundary around <code>Outlet</code>, toasts in place of <code>alert()</code>, and a visible state for a page whose initial load failed.</dd>
           </dl>
         </div>
       </details>

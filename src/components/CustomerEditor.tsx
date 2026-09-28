@@ -143,6 +143,16 @@ export default function CustomerEditor({ customer, onChange, readOnly }: Props) 
         Ship-complete only — hold the whole order if it can't be fully allocated (no partial shipments)
       </label>
 
+      <label className="checkbox-line shipcomplete-toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(customer.taxExempt)}
+          disabled={readOnly}
+          onChange={(e) => set("taxExempt", e.target.checked)}
+        />
+        Tax exempt — invoices carry no sales tax (reseller certificate on file)
+      </label>
+
       <label className="form-field">
         Private Label Brand Name (optional)
         <input

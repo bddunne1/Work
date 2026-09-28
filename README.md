@@ -49,6 +49,36 @@ VITE_API_URL=http://<api-host>:4000 npm run dev
 `VITE_API_URL` defaults to `http://localhost:4000`, which only works on the
 machine running the API - set it at build time for anyone else on the network.
 
+## Invoicing and QuickBooks
+
+An invoice is raised for every confirmed shipment and a credit memo for every
+received return (`server/src/lib/documents.ts`), at the prices on the order,
+in integer cents. They are pushed to QuickBooks Online by the sync worker
+(`server/src/integrations/sync.ts`): an outbox row is written in the same
+transaction as the document, and the worker retries with backoff until it
+lands, creating the customer and items (as non-inventory) in QuickBooks as
+needed. QuickBooks stays the record for receivables, payments, tax filing and
+the ledger; this system stays the record for stock. See Settings > QuickBooks
+for status, retries and a reconciliation of a date range.
+
+```bash
+# server/.env
+QBO_CLIENT_ID=...                     # from https://developer.intuit.com
+QBO_CLIENT_SECRET=...
+QBO_REDIRECT_URI=http://<api-host>:4000/api/integrations/quickbooks/callback
+QBO_ENVIRONMENT=sandbox               # or production
+QBO_INCOME_ACCOUNT="Sales"            # optional; default: first income account
+TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32)   # encrypts the OAuth tokens at rest
+FRONTEND_URL=http://<web-host>:5173   # where the browser lands after connecting
+QBO_SYNC_INTERVAL_MS=60000            # 0 disables the background worker
+# QBO_FAKE=1                          # in-memory QuickBooks for local development
+```
+
+Then connect the company from Settings > QuickBooks. Turn inventory tracking
+off for the items QuickBooks receives, and reconcile the first month's
+invoices against QuickBooks before trusting the tax figure (a company with
+Automated Sales Tax may recompute it).
+
 ## Development
 
 ```bash
@@ -56,7 +86,15 @@ npm run dev      # start the dev server
 npm run build    # typecheck + production build
 npm run lint     # oxlint
 cd server && npx tsc --noEmit -p .   # typecheck the API
+npm test         # server test suite against Postgres (TEST_DATABASE_URL, default erp_test)
 ```
+
+The tests (`server/test/`) drive the real Express app against a throwaway
+database: authentication and the password policy, every order command and
+its permission, race conditions on ship / allocate / receive, invoicing and
+the QuickBooks bridge against an in-memory fake, and a randomized concurrent
+workload that then checks the stock ledger, the documents and every order
+state agree. `.github/workflows/ci.yml` runs all of it on every push.
 
 ## Simulation
 

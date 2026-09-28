@@ -5,3 +5,6 @@ process.env.DATABASE_URL =
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-only-secret-0123456789abcdef";
 process.env.TOKEN_TTL = "1h";
 process.env.NODE_ENV = "test";
+// The worker runs against the in-memory QuickBooks.
+process.env.QBO_FAKE = "1";
+process.env.QBO_SYNC_INTERVAL_MS = "0";

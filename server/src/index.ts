@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createApp } from "./app.js";
+import { startSyncScheduler } from "./integrations/sync.js";
 import { prisma } from "./prisma.js";
 
 const app = createApp();
@@ -7,6 +8,8 @@ const port = Number(process.env.PORT) || 4000;
 const server = app.listen(port, () => {
   console.log(`API listening on http://localhost:${port}`);
 });
+// Pushes invoices and credit memos to QuickBooks in the background.
+const stopSync = startSyncScheduler();
 
 // Finish in-flight requests and release the database pool on a stop signal,
 // so a deploy never cuts a ship/receive transaction off mid-way.
@@ -15,6 +18,7 @@ function shutdown(signal: string) {
   if (stopping) return;
   stopping = true;
   console.log(`${signal} received - shutting down`);
+  stopSync?.();
   server.close(() => {
     prisma.$disconnect().finally(() => process.exit(0));
   });

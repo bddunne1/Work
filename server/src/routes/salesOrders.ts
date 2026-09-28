@@ -4,6 +4,7 @@ import { z } from "zod";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
+import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
 import { adjustOnHand, assertAllocationAvailable, itemIdFor, resolveItemIds } from "../lib/inventory.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -754,7 +755,10 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
         );
       }
     }
-    await tx.shipmentRecord.create({ data: { soNumber, shippedAt: new Date(), lines: shipped } });
+    const record = await tx.shipmentRecord.create({ data: { soNumber, shippedAt: new Date(), lines: shipped } });
+    // The invoice for this shipment, from the order's prices as they stand,
+    // queued for the accounting bridge in this same transaction.
+    const invoice = await createInvoiceForShipment(tx, order, { id: record.id, shippedAt: record.shippedAt, lines: shipped }, account);
     const history = await tx.shipmentRecord.findMany({ where: { soNumber } });
     const totals = shippedByLine({ shipmentHistory: history });
     const fullyShipped = order.lineItems.every((li) => (totals.get(li.id) ?? 0) >= li.ordered);
@@ -765,6 +769,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     logAudit(account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: shipped.reduce((sum, l) => sum + l.qty, 0),
       result: fullyShipped ? "Shipped" : "Backordered",
+      invoice: invoice.invoiceNumber,
+      invoiceTotal: invoice.total.toString(),
     });
   });
   res.json(await reload(soNumber));
@@ -804,6 +810,8 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
         });
       }
     }
+    // The invoice raised for this shipment is void (its number stays issued).
+    const voided = await voidInvoiceForShipment(tx, last.id, req.account!, "Shipment undone");
     await tx.shipmentRecord.delete({ where: { id: last.id } });
     await tx.salesOrder.update({
       where: { soNumber },
@@ -811,6 +819,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     });
     logAudit(req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
+      ...(voided ? { invoiceVoided: voided.invoiceNumber } : {}),
     });
   });
   res.json(await reload(soNumber));
