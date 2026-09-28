@@ -57,7 +57,7 @@ async function main() {
   const users = [];
   for (const [username] of STAFF.slice(0, 15)) {
     const u = { username, roleLabel: "bench" };
-    u.token = (await post(null, "/api/auth/login", { username: "admin", password: "123" })).token;
+    u.token = (await post(null, "/api/auth/login", { username: "admin", password: process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026" })).token;
     users.push(u);
   }
   const anyOpen = (await get(users[0], "/api/sales-orders?limit=1"))[0]?.soNumber ?? "10001";

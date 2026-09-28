@@ -31,6 +31,11 @@ export default function Layout() {
   if (!account) {
     return <Navigate to="/login" replace />;
   }
+  // A seeded or admin-reset password has to be replaced before any page
+  // will load - the API refuses everything else with 403 until it is.
+  if (account.mustChangePassword) {
+    return <Navigate to="/change-password" replace />;
+  }
 
   const access = getAccessLevel(location.pathname, account);
   const pageAccent = getPageAccent(location.pathname);

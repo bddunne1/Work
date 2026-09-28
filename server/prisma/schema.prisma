@@ -79,6 +79,10 @@ model Account {
   // (see requireAuth) - the mechanism behind "Force Logout", since tokens
   // are otherwise stateless and can't be revoked individually.
   tokenVersion Int      @default(0)
+  // Set on a freshly seeded admin and whenever an admin resets someone's
+  // password: the account can sign in but every other request is refused
+  // until the person picks their own password (POST /api/auth/change-password).
+  mustChangePassword Boolean @default(false)
   createdAt    DateTime @default(now())
 }
 
@@ -195,6 +199,10 @@ model Vendor {
 
 model Item {
   id                 String   @id @default(uuid())
+  // Also unique case- and whitespace-insensitively: every lookup in the app
+  // matches that way, so "BR-1001" and "br-1001 " must be the same item. The
+  // functional index lower(btrim("itemNumber")) lives in the
+  // 20260928120000_phase1_hardening migration; Prisma can't express it here.
   itemNumber         String   @unique
   description        String
   um                 String   @default("EA")
@@ -300,6 +308,9 @@ model SalesOrder {
 
   @@index([customerId])
   @@index([status])
+  @@index([createdAt])
+  @@index([orderDate])
+  @@index([dueDate])
 }
 
 model SalesOrderLine {
@@ -331,6 +342,7 @@ model ShipmentRecord {
   lines      Json
 
   @@index([soNumber])
+  @@index([shippedAt])
 }
 
 model VendorPurchaseOrder {

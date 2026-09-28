@@ -33,7 +33,8 @@
 - `data/`: round-1 raw results.
 
 ## Re-running the simulation
-1. Fresh database: `cd server && npx prisma migrate deploy && npm run seed`, start the API.
+1. Fresh database: `cd server && npx prisma migrate deploy && ADMIN_PASSWORD=Sim-Director-2026 npm run seed`,
+   start the API. (The sim scripts read `SIM_ADMIN_PASSWORD`, default `Sim-Director-2026`.)
 2. `node sim/seed.mjs` (15 staff with the app's role presets, 500 SKUs,
    200 customers, vendors, open POs), then snapshot with `pg_dump -Fc`.
 3. For each run: restore the snapshot, **restart the API** (a restore under a

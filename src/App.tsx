@@ -1,6 +1,16 @@
-import { Route, HashRouter, Routes } from "react-router-dom";
+import { Navigate, Route, HashRouter, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
-import { AuthProvider } from "./lib/authContext";
+import { AuthProvider, useAuth } from "./lib/authContext";
+import ChangePassword from "./pages/ChangePassword";
+
+// The change-password screen sits outside the Layout (no navigation to
+// wander off into while a change is required) but still needs a session.
+function ChangePasswordGate() {
+  const { account, loading } = useAuth();
+  if (loading) return null;
+  if (!account) return <Navigate to="/login" replace />;
+  return <ChangePassword />;
+}
 import Accounts from "./pages/Accounts";
 import Allocation from "./pages/Allocation";
 import AllocationDecision from "./pages/AllocationDecision";
@@ -56,6 +66,7 @@ function App() {
       <HashRouter>
         <Routes>
           <Route path="login" element={<Login />} />
+          <Route path="change-password" element={<ChangePasswordGate />} />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="order-entry" element={<OrderEntry />} />

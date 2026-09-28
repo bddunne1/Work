@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
-import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { adjustOnHand, itemIdFor, resolveItemIds } from "../lib/inventory.js";
@@ -30,27 +30,26 @@ const addressSchema = z.object({
 
 const lineSchema = z.object({
   id: z.string().optional(),
-  itemNumber: z.string(),
-  description: z.string(),
-  um: z.string().default("EA"),
+  itemNumber: z.string().min(1).max(100),
+  description: z.string().max(500),
+  um: z.string().max(20).default("EA"),
   qty: z.number().int().positive(),
-  rate: z.number(),
-  reason: z.string().default(""),
+  rate: z.number().finite().nonnegative(),
+  reason: z.string().max(500).default(""),
   // false = damaged/scrap: received but not put back on the shelf.
   restock: z.boolean().default(true),
 });
 
+// Who wrote the RA is stamped from the token, never taken from the body
+// (R5-02); zod strips those keys if a client still sends them.
 const createSchema = z.object({
   customerId: z.string().nullish(),
-  soNumber: z.string().nullish(),
+  soNumber: z.string().max(50).nullish(),
   billTo: addressSchema,
   requestDate: z.string(),
-  reason: z.string().default(""),
-  notes: z.string().default(""),
-  writtenBy: z.string().nullish(),
-  writtenById: z.string().nullish(),
-  writtenByColor: z.string().nullish(),
-  lines: z.array(lineSchema).default([]),
+  reason: z.string().max(2000).default(""),
+  notes: z.string().max(5000).default(""),
+  lines: z.array(lineSchema).max(500).default([]),
 });
 
 const updateSchema = createSchema.extend({
@@ -165,9 +164,9 @@ router.post("/", requirePermission("returns", "edit"), async (req: AuthedRequest
         reason: data.reason,
         status: "ISSUED",
         notes: data.notes,
-        writtenBy: data.writtenBy,
-        writtenById: data.writtenById,
-        writtenByColor: data.writtenByColor,
+        writtenBy: req.account!.initials,
+        writtenById: req.account!.id,
+        writtenByColor: req.account!.color,
         lines: {
           create: data.lines.map((l) => ({
             itemId: itemIdFor(itemIds, l.itemNumber),
@@ -188,7 +187,9 @@ router.post("/", requirePermission("returns", "edit"), async (req: AuthedRequest
   res.status(201).json(mapOut(ra));
 });
 
-router.put("/:raNumber", requirePermission("returns", "edit"), async (req: AuthedRequest, res) => {
+// The RA's own writer may correct it without Returns edit access - the
+// carve-out the detail page always offered (open bug N-03).
+router.put("/:raNumber", async (req: AuthedRequest, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -200,6 +201,14 @@ router.put("/:raNumber", requirePermission("returns", "edit"), async (req: Authe
   const existing = await prisma.returnAuthorization.findUnique({ where: { raNumber } });
   if (!existing) {
     res.status(404).json({ error: "Return not found" });
+    return;
+  }
+  if (existing.writtenById !== req.account!.id && !hasPermission(req.account!, "returns", "edit")) {
+    res.status(403).json({ error: "Editing a return needs edit access to Returns." });
+    return;
+  }
+  if (existing.status !== "ISSUED" && data.lines.length !== (await prisma.returnLine.count({ where: { raNumber } }))) {
+    res.status(409).json({ error: `${raNumber} has already been received - its lines can't change now.`, conflict: true });
     return;
   }
   // Goods coming back go through Receive Return (which restocks them and
@@ -227,9 +236,6 @@ router.put("/:raNumber", requirePermission("returns", "edit"), async (req: Authe
           reason: data.reason,
           status: STATUS_IN[data.status],
           notes: data.notes,
-          writtenBy: data.writtenBy,
-          writtenById: data.writtenById,
-          writtenByColor: data.writtenByColor,
           version: { increment: 1 },
         },
       });

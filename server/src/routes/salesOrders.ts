@@ -1,17 +1,42 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { adjustOnHand, assertAllocationAvailable, itemIdFor, resolveItemIds } from "../lib/inventory.js";
+import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
+// Sales orders.
+//
+// Round 5 moved every workflow step onto its own command endpoint, each with
+// a narrow input, one permission, and the actor stamped from the token:
+//
+//   PUT  /:so              edit header fields and (while Entered/Checked) lines
+//   POST /:so/check        Entered -> Checked          (Validation)
+//   POST /:so/uncheck      Checked -> Entered          (Validation)
+//   POST /:so/allocate     Checked/Backordered -> Allocated | Backordered,
+//                          or revise an Allocated order (Allocation, Back Orders,
+//                          Release Orders)
+//   POST /:so/unallocate   Allocated | unprinted Pick & Packed -> Checked
+//   POST /release          Allocated -> Pick & Packed, in bulk (Release Orders)
+//   POST /:so/mark-printed stamp pick list / packing slip printed; trim the
+//                          staged quantities (Release Orders, Open Picks)
+//   POST /:so/set-ship-date estimated ship date (Schedule, Back Orders)
+//   POST /:so/set-bol      BOL details (Generate BOL)
+//   POST /:so/ship         confirm a shipment (Open Picks, Shipment History)
+//   POST /:so/undo-shipment
+//   POST /:so/cancel
+//
+// Status, attribution (who entered / who checked), allocation, the staged
+// pick, printed stamps and shipment history are server-owned: the PUT
+// ignores them if sent. This is what closes review findings R5-01, R5-02,
+// R5-03, R5-05 and R5-11.
+
 const router = Router();
 
-// App-facing status strings <-> the Prisma enum, same translation approach
-// as vendorPurchaseOrders.ts and returns.ts.
 const STATUS_IN = {
   Entered: "ENTERED",
   Checked: "CHECKED",
@@ -30,113 +55,96 @@ const STATUS_OUT: Record<string, string> = {
   SHIPPED: "Shipped",
   CANCELLED: "Cancelled",
 };
-const PICK_PACK_STATUS_IN = { Partial: "PARTIAL", Complete: "COMPLETE" } as const;
 const PICK_PACK_STATUS_OUT: Record<string, string> = { PARTIAL: "Partial", COMPLETE: "Complete" };
+void STATUS_IN;
 
 const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
 
+const money = z.number().finite().nonnegative();
+
 const addressSchema = z.object({
-  name: z.string(),
-  addressLine1: z.string(),
-  addressLine2: z.string().optional(),
-  city: z.string(),
-  state: z.string(),
-  zip: z.string(),
-  notes: z.string().optional(),
+  name: z.string().max(200),
+  addressLine1: z.string().max(200),
+  addressLine2: z.string().max(200).optional(),
+  city: z.string().max(100),
+  state: z.string().max(50),
+  zip: z.string().max(20),
+  notes: z.string().max(2000).optional(),
 });
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
-  item: z.string(),
-  description: z.string(),
-  um: z.string().default("EA"),
-  ordered: z.number().int().nonnegative(),
-  rate: z.number(),
-  customerPartNumber: z.string().nullish(),
+  item: z.string().min(1).max(100),
+  description: z.string().max(500),
+  um: z.string().max(20).default("EA"),
+  ordered: z.number().int().positive(),
+  rate: money,
+  customerPartNumber: z.string().max(100).nullish(),
 });
 
-const allocationSchema = z
-  .object({
-    lines: z.array(z.object({ lineItemId: z.string(), allocatedQty: z.number().int().nonnegative() })),
-    fullyAllocated: z.boolean(),
-    shipCompleteOnly: z.boolean().optional(),
-    decidedAt: z.string(),
-  })
-  .nullish();
-
+const allocationLineSchema = z.object({ lineItemId: z.string(), allocatedQty: z.number().int().nonnegative() });
 const shipmentLineSchema = z.object({ lineItemId: z.string(), qty: z.number().int().nonnegative() });
 
-const shipmentRecordSchema = z.object({
-  id: z.string().optional(),
-  shippedAt: z.string(),
-  lines: z.array(shipmentLineSchema),
+const bolSchema = z.object({
+  weight: z.string().max(50),
+  packageCount: z.string().max(50),
+  palletSlip: z.enum(["Y", "N"]),
+  handlingUnitQty: z.string().max(50),
+  handlingUnitType: z.string().max(50),
+  packageQty: z.string().max(50),
+  packageType: z.string().max(50),
+  hazmat: z.boolean(),
+  commodityDescription: z.string().max(500),
+  nmfcNumber: z.string().max(50),
+  freightClass: z.string().max(50),
+  additionalInfo: z.string().max(2000),
+  generatedAt: z.string(),
 });
 
-const bolSchema = z
-  .object({
-    weight: z.string(),
-    packageCount: z.string(),
-    palletSlip: z.enum(["Y", "N"]),
-    handlingUnitQty: z.string(),
-    handlingUnitType: z.string(),
-    packageQty: z.string(),
-    packageType: z.string(),
-    hazmat: z.boolean(),
-    commodityDescription: z.string(),
-    nmfcNumber: z.string(),
-    freightClass: z.string(),
-    additionalInfo: z.string(),
-    generatedAt: z.string(),
-  })
-  .nullish();
-
-const createSchema = z.object({
-  poNumber: z.string().default(""),
+// Header fields the person entering or correcting an order may set. Unknown
+// keys (status, allocation, checkedBy, shipmentHistory...) are stripped by
+// zod, never applied.
+const headerSchema = z.object({
+  poNumber: z.string().max(100).default(""),
   orderDate: z.string(),
   dueDate: z.string(),
   customerId: z.string().nullish(),
   shipToLocationId: z.string().nullish(),
   billTo: addressSchema,
   shipTo: addressSchema,
-  fob: z.string().default(""),
-  shipVia: z.string().default(""),
-  terms: z.string().default(""),
-  rep: z.string().default(""),
-  taxRate: z.number().default(0),
-  notes: z.string().default(""),
-  lineItems: z.array(lineItemSchema).default([]),
-  writtenBy: z.string().nullish(),
-  writtenById: z.string().nullish(),
-  writtenByColor: z.string().nullish(),
+  fob: z.string().max(100).default(""),
+  shipVia: z.string().max(100).default(""),
+  terms: z.string().max(100).default(""),
+  rep: z.string().max(100).default(""),
+  taxRate: z.number().finite().min(0).max(100).default(0),
+  notes: z.string().max(5000).default(""),
+  lineItems: z.array(lineItemSchema).max(500).default([]),
 });
 
-const updateSchema = createSchema.extend({
-  status: z.enum(["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped", "Cancelled"]),
-  checkedAt: z.string().nullish(),
-  checkedBy: z.string().nullish(),
-  checkedByColor: z.string().nullish(),
-  allocation: allocationSchema,
-  labelPrintedAt: z.string().nullish(),
-  pickedAt: z.string().nullish(),
-  pendingShipment: z.array(shipmentLineSchema).nullish(),
-  pickListPrintedAt: z.string().nullish(),
-  packingSlipPrintedAt: z.string().nullish(),
-  shipmentHistory: z.array(shipmentRecordSchema).default([]),
-  estimatedShipDate: z.string().nullish(),
-  pickPackStatus: z.enum(["Partial", "Complete"]).nullish(),
-  bol: bolSchema,
+const createSchema = headerSchema;
+const updateSchema = headerSchema.extend({ version: z.number().int() });
+
+const versionSchema = z.object({ version: z.number().int() });
+const allocateSchema = z.object({
   version: z.number().int(),
-  // Optional guard: the status the caller's page expected the order to be
-  // in. A decision page opened from a stale queue (someone else already
-  // moved the order on) gets a 409 instead of silently dragging the order
-  // backwards through the workflow.
-  expectedStatus: z.enum(["Entered", "Checked", "Allocated", "Backordered", "Pick & Packed", "Shipped", "Cancelled"]).optional(),
+  lines: z.array(allocationLineSchema).max(500),
+  // The ship-complete decision for a partial allocation. Omitted = use the
+  // customer record's flag.
+  shipCompleteOnly: z.boolean().nullish(),
 });
-
-const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema) });
-const undoSchema = z.object({ version: z.number().int() });
-const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling") });
+const markPrintedSchema = z.object({
+  version: z.number().int(),
+  pickList: z.boolean().default(false),
+  packingSlip: z.boolean().default(false),
+  // Optional trim of the staged pick (a shortfall found on the floor) - a
+  // line can only go down from what was staged.
+  lines: z.array(shipmentLineSchema).max(500).optional(),
+});
+const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: z.string().nullable() });
+const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema });
+const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500) });
+const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling").max(2000) });
 const releaseSchema = z.object({
   orders: z
     .array(
@@ -156,6 +164,9 @@ const include = {
   lineItems: true,
   shipmentHistory: { orderBy: { shippedAt: "asc" as const } },
 };
+type OrderRow = Prisma.SalesOrderGetPayload<{ include: typeof include }>;
+type ShipLine = { lineItemId: string; qty: number };
+type AllocationJson = { lines: { lineItemId: string; allocatedQty: number }[]; fullyAllocated: boolean; shipCompleteOnly?: boolean; decidedAt: string };
 
 function mapOut<T extends { soNumber: number; status: string; pickPackStatus: string | null }>(order: T) {
   return {
@@ -166,57 +177,76 @@ function mapOut<T extends { soNumber: number; status: string; pickPackStatus: st
   };
 }
 
-// Orders are touched by many different pages (order entry, validation,
-// allocation, pick/pack, shipping, BOL...), each gated by its own page-level
-// permission. Reads stay open to any signed-in account (the Dashboard and
-// several reports show orders to everyone), but writes need edit access on
-// at least one page that legitimately writes orders - so a view-only
-// account can no longer check, allocate or ship orders by calling the API.
+// Units shipped so far per line id, from the shipment records.
+function shippedByLine(order: Pick<OrderRow, "shipmentHistory">): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const rec of order.shipmentHistory) {
+    for (const l of rec.lines as ShipLine[]) out.set(l.lineItemId, (out.get(l.lineItemId) ?? 0) + (l.qty > 0 ? l.qty : 0));
+  }
+  return out;
+}
+
+function remainingFor(li: { id: string; ordered: number }, shipped: Map<string, number>): number {
+  return Math.max(0, li.ordered - (shipped.get(li.id) ?? 0));
+}
+
+function stagedByLine(order: Pick<OrderRow, "pendingShipment">): Map<string, number> {
+  return new Map(((order.pendingShipment as ShipLine[] | null) ?? []).map((l) => [l.lineItemId, l.qty]));
+}
+
+function parseSo(raw: string): number {
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || String(n) !== raw.trim()) throw new HttpError(404, "Order not found");
+  return n;
+}
+
+// Which pages may run a command. Checked inside the handler (after the
+// order is locked) when the answer depends on the order's state.
 const ORDER_CREATE_PAGES = ["order-entry", "import"];
-const ORDER_WRITE_PAGES = [
-  "order-entry",
-  "order-detail",
-  "validation",
-  "allocation",
-  "back-orders",
-  "pick-pack",
-  "pick-release",
-  "open-picks",
-  "schedule",
-  "bol",
-  "labels",
-  "import",
-];
-// Confirming or undoing a shipment is logistics' job (Open Picks /
-// Shipment History) - not something order entry or pick release can do.
+// Correcting header fields or lines: customer service, order entry, and
+// the analysts who own validation.
+const ORDER_EDIT_PAGES = ["order-entry", "order-detail", "validation", "import"];
 const ORDER_SHIP_PAGES = ["open-picks", "shipment-history"];
-// Cancelling: customer service (order detail) or the analysts who own
-// allocation.
 const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
+const ALLOCATE_PAGES = ["allocation", "back-orders"];
+const REVISE_ALLOCATION_PAGES = ["allocation", "back-orders", "pick-release"];
+const UNALLOCATE_PAGES = ["allocation", "pick-release"];
+const PRINT_PAGES = ["pick-pack", "open-picks"];
+const SHIP_DATE_PAGES = ["schedule", "back-orders", "allocation"];
 
-type DbStatus = keyof typeof STATUS_OUT;
-// Which workflow step a status change is, and whose job it is. A plain save
-// that keeps the status needs edit access on any order page (ORDER_WRITE_PAGES);
-// a change of status needs the page that owns that step - e.g. order entry
-// can't validate, and nobody can move an order sideways past a step.
-// Shipping, un-shipping and cancelling go through their own endpoints.
-const TRANSITIONS: Partial<Record<DbStatus, Partial<Record<DbStatus, string[]>>>> = {
-  ENTERED: { CHECKED: ["validation"] },
-  CHECKED: { ALLOCATED: ["allocation", "back-orders"], BACKORDERED: ["allocation", "back-orders"], ENTERED: ["validation"] },
-  BACKORDERED: { ALLOCATED: ["allocation", "back-orders"] },
-  ALLOCATED: { PICK_PACKED: ["pick-release"], CHECKED: ["pick-release", "allocation"], BACKORDERED: ["allocation", "back-orders"] },
-  PICK_PACKED: { CHECKED: ["pick-release", "allocation"] },
-};
+function requireEditOn(account: AuthedAccount, pageKeys: string[], what: string): void {
+  if (!pageKeys.some((key) => hasPermission(account, key, "edit"))) {
+    throw new HttpError(403, `${what} needs edit access to ${pageLabels(pageKeys)}.`);
+  }
+}
 
-function assertTransitionAllowed(account: NonNullable<AuthedRequest["account"]>, from: DbStatus, to: DbStatus): void {
-  if (from === to) return;
-  const pages = TRANSITIONS[from]?.[to];
-  if (!pages) {
-    throw new HttpError(409, `An order can't go from ${STATUS_OUT[from]} to ${STATUS_OUT[to]} directly.`, { conflict: true });
+function assertOpen(order: OrderRow): void {
+  if (order.status === "SHIPPED") throw new HttpError(409, `S.O. #${order.soNumber} has already shipped.`, { conflict: true });
+  if (order.status === "CANCELLED") throw new HttpError(409, `S.O. #${order.soNumber} was cancelled and can't be changed.`, { conflict: true });
+}
+
+function assertStatus(order: OrderRow, expected: OrderRow["status"][], action: string): void {
+  if (!expected.includes(order.status)) {
+    throw new HttpError(
+      409,
+      `S.O. #${order.soNumber} is ${STATUS_OUT[order.status]}, so it can't be ${action} - someone else may have moved it on. Reload and check.`,
+      { conflict: true }
+    );
   }
-  if (!pages.some((key) => hasPermission(account, key, "edit"))) {
-    throw new HttpError(403, `Moving an order from ${STATUS_OUT[from]} to ${STATUS_OUT[to]} needs edit access to ${pages.join(" or ")}.`);
-  }
+}
+
+// Locks the order row for the rest of the transaction and checks the
+// caller's version, so no two commands interleave on one order.
+async function lockOrder(tx: Prisma.TransactionClient, soNumber: number, version: number): Promise<OrderRow> {
+  const rows = await tx.$queryRaw<{ version: number }[]>`SELECT "version" FROM "SalesOrder" WHERE "soNumber" = ${soNumber} FOR UPDATE`;
+  if (rows.length === 0) throw new HttpError(404, "Order not found");
+  if (rows[0].version !== version) throw new ConflictError();
+  return tx.salesOrder.findUniqueOrThrow({ where: { soNumber }, include });
+}
+
+async function reload(soNumber: number) {
+  const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
+  return mapOut(updated!);
 }
 
 router.use(requireAuth);
@@ -260,8 +290,8 @@ router.get("/:soNumber", async (req, res) => {
 });
 
 // Assigns the S.O. # itself (atomically, via the shared Counter table)
-// rather than trusting one the client precomputed - same reasoning as
-// vendor PO and RA numbers.
+// rather than trusting one the client precomputed, and stamps the writer
+// from the token rather than the body.
 router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -269,6 +299,7 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: A
     return;
   }
   const data = parsed.data;
+  const account = req.account!;
   const order = await prisma.$transaction(async (tx) => {
     const itemIds = await resolveItemIds(tx, data.lineItems.map((l) => l.item));
     const counter = await tx.counter.upsert({
@@ -293,9 +324,9 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: A
         taxRate: data.taxRate,
         notes: data.notes,
         status: "ENTERED",
-        writtenBy: data.writtenBy,
-        writtenById: data.writtenById,
-        writtenByColor: data.writtenByColor,
+        writtenBy: account.initials,
+        writtenById: account.id,
+        writtenByColor: account.color,
         lineItems: {
           create: data.lineItems.map((l) => ({
             itemId: itemIdFor(itemIds, l.item),
@@ -311,7 +342,7 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: A
       include,
     });
   });
-  logAudit(req.account!, "ORDER_CREATED", "sales-order", String(order.soNumber), `S.O. #${order.soNumber}`, {
+  logAudit(account, "ORDER_CREATED", "sales-order", String(order.soNumber), `S.O. #${order.soNumber}`, {
     poNumber: order.poNumber,
     customer: (order.billTo as { name?: string }).name,
     lines: order.lineItems.length,
@@ -319,256 +350,446 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: A
   res.status(201).json(mapOut(order));
 });
 
-router.put("/:soNumber", requireAnyPermission(ORDER_WRITE_PAGES, "edit"), async (req: AuthedRequest, res) => {
-  const soNumber = parseInt(req.params.soNumber, 10);
-  if (!Number.isFinite(soNumber)) {
-    res.status(404).json({ error: "Order not found" });
-    return;
-  }
+// Edits header fields and, while the order is Entered or Checked, its lines.
+// The order's own writer may correct it without page edit access (the
+// carve-out the Sales Order View always offered - open bug N-03).
+router.put("/:soNumber", async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
   const data = parsed.data;
+  const account = req.account!;
 
-  const existing = await prisma.salesOrder.findUnique({ where: { soNumber }, include: { lineItems: true } });
-  if (!existing) {
-    res.status(404).json({ error: "Order not found" });
-    return;
-  }
-  if (data.expectedStatus && STATUS_OUT[existing.status] !== data.expectedStatus) {
-    res.status(409).json({
-      error: `S.O. #${soNumber} is already ${STATUS_OUT[existing.status]} - someone else moved it on since you opened it. Reload and try again.`,
-      conflict: true,
-    });
-    return;
-  }
-  // A shipped order only goes backwards through Undo Last Shipment (which
-  // also puts the stock back) - a plain save can't un-ship it.
-  if (existing.status === "SHIPPED" && data.status !== "Shipped") {
-    res.status(409).json({ error: `S.O. #${soNumber} has already shipped. Use Undo Last Shipment instead.`, conflict: true });
-    return;
-  }
-  if (existing.status === "CANCELLED") {
-    res.status(409).json({ error: `S.O. #${soNumber} was cancelled and can't be changed.`, conflict: true });
-    return;
-  }
-  const toStatus = STATUS_IN[data.status] as DbStatus;
-  if (toStatus === "SHIPPED" && existing.status !== "SHIPPED") {
-    res.status(409).json({ error: "Confirm shipments from Open Picks - a plain save can't mark an order shipped.", conflict: true });
-    return;
-  }
-  if (toStatus === "CANCELLED") {
-    res.status(409).json({ error: "Use Cancel Order to cancel - it records a reason and releases the stock.", conflict: true });
-    return;
-  }
-  assertTransitionAllowed(req.account!, existing.status as DbStatus, toStatus);
-  // Once stock is committed to an order, its lines are frozen: changing a
-  // quantity or item under an allocation or a packed pick leaves them out of
-  // step. Unallocate first (back to Checked), then edit.
-  if (!["ENTERED", "CHECKED"].includes(existing.status)) {
-    const before = new Map(existing.lineItems.map((l) => [l.id, `${l.item.trim().toLowerCase()}|${l.ordered}`]));
-    const after = new Map(data.lineItems.filter((l) => l.id).map((l) => [l.id as string, `${l.item.trim().toLowerCase()}|${l.ordered}`]));
+  const changes: Record<string, unknown> = {};
+  await prisma.$transaction(async (tx) => {
+    const existing = await lockOrder(tx, soNumber, data.version);
+    if (existing.writtenById !== account.id) requireEditOn(account, ORDER_EDIT_PAGES, "Editing an order");
+    assertOpen(existing);
+
+    // Line ids the caller sent that belong to a different order would be
+    // "upserted" onto that other order's row - refuse instead.
+    const ids = data.lineItems.map((l) => l.id).filter((id): id is string => Boolean(id));
+    if (ids.length > 0) {
+      const foreign = await tx.salesOrderLine.count({ where: { id: { in: ids }, soNumber: { not: soNumber } } });
+      if (foreign > 0) throw new HttpError(400, "Some lines on this order belong to a different order - reload the order and try again.");
+    }
+
+    const sig = (item: string, ordered: number) => `${item.trim().toLowerCase()}|${ordered}`;
+    const before = new Map(existing.lineItems.map((l) => [l.id, l]));
+    const after = new Map(data.lineItems.filter((l) => l.id).map((l) => [l.id as string, l]));
     const linesChanged =
       before.size !== data.lineItems.length ||
-      [...before].some(([id, sig]) => after.get(id) !== sig);
-    if (linesChanged) {
-      res.status(409).json({
-        error: `S.O. #${soNumber} is ${STATUS_OUT[existing.status]} - unallocate it (back to Checked) before changing items or quantities.`,
-        conflict: true,
+      [...before.values()].some((l) => {
+        const a = after.get(l.id);
+        return !a || sig(a.item, a.ordered) !== sig(l.item, l.ordered);
       });
-      return;
-    }
-  }
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      const itemIds = await resolveItemIds(tx, data.lineItems.map((l) => l.item));
-      const result = await tx.salesOrder.updateMany({
-        where: { soNumber, version: data.version },
-        data: {
-          poNumber: data.poNumber,
-          orderDate: new Date(data.orderDate),
-          dueDate: new Date(data.dueDate),
-          customerId: data.customerId,
-          shipToLocationId: data.shipToLocationId,
-          billTo: data.billTo,
-          shipTo: data.shipTo,
-          fob: data.fob,
-          shipVia: data.shipVia,
-          terms: data.terms,
-          rep: data.rep,
-          taxRate: data.taxRate,
-          notes: data.notes,
-          status: STATUS_IN[data.status],
-          writtenBy: data.writtenBy,
-          writtenById: data.writtenById,
-          writtenByColor: data.writtenByColor,
-          checkedAt: data.checkedAt ? new Date(data.checkedAt) : null,
-          checkedBy: data.checkedBy ?? null,
-          checkedByColor: data.checkedByColor ?? null,
-          allocation: data.allocation ?? Prisma.JsonNull,
-          labelPrintedAt: data.labelPrintedAt ? new Date(data.labelPrintedAt) : null,
-          pickedAt: data.pickedAt ? new Date(data.pickedAt) : null,
-          pendingShipment: data.pendingShipment ?? Prisma.JsonNull,
-          pickListPrintedAt: data.pickListPrintedAt ? new Date(data.pickListPrintedAt) : null,
-          packingSlipPrintedAt: data.packingSlipPrintedAt ? new Date(data.packingSlipPrintedAt) : null,
-          estimatedShipDate: data.estimatedShipDate ? new Date(data.estimatedShipDate) : null,
-          pickPackStatus: data.pickPackStatus ? PICK_PACK_STATUS_IN[data.pickPackStatus] : null,
-          bol: data.bol ?? Prisma.JsonNull,
-          version: { increment: 1 },
-        },
-      });
-      if (result.count === 0) throw new ConflictError();
-      // Line ids the caller sent that belong to a different order would be
-      // "upserted" onto that other order's row - refuse instead.
-      await assertChildIdsBelong(tx, soNumber, data.lineItems.map((l) => l.id), data.shipmentHistory.map((r) => r.id));
-      await assertAllocationAvailable(
-        tx,
-        soNumber,
-        { lineItems: existing.lineItems, allocation: existing.allocation, pendingShipment: existing.pendingShipment },
-        {
-          lineItems: data.lineItems.filter((l) => l.id).map((l) => ({ id: l.id as string, item: l.item })),
-          allocation: data.allocation ?? null,
-          pendingShipment: data.pendingShipment ?? null,
-        }
+    // Once stock is committed to an order, its lines are frozen: changing a
+    // quantity or item under an allocation or a packed pick leaves them out
+    // of step. Unallocate first (back to Checked), then edit.
+    if (linesChanged && !["ENTERED", "CHECKED"].includes(existing.status)) {
+      throw new HttpError(
+        409,
+        `S.O. #${soNumber} is ${STATUS_OUT[existing.status]} - unallocate it (back to Checked) before changing items or quantities.`,
+        { conflict: true }
       );
-      await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
-        itemId: itemIdFor(itemIds, l.item),
-        item: l.item,
-        description: l.description,
-        um: l.um,
-        ordered: l.ordered,
-        rate: l.rate,
-        customerPartNumber: l.customerPartNumber,
-      }));
-      await syncChildren(tx.shipmentRecord, soNumber, "soNumber", data.shipmentHistory, (r) => ({
-        shippedAt: new Date(r.shippedAt),
-        lines: r.lines,
-      }));
-    });
-  } catch (err) {
-    if (err instanceof ConflictError) {
-      res.status(409).json({ error: err.message, conflict: true });
-      return;
     }
-    throw err;
-  }
+    // A line that has shipped is part of the record whatever the status:
+    // it stays, keeps its item, and can't be cut below what went out (R5-11).
+    const shipped = shippedByLine(existing);
+    for (const l of existing.lineItems) {
+      const qty = shipped.get(l.id) ?? 0;
+      if (qty <= 0) continue;
+      const a = after.get(l.id);
+      if (!a) throw new HttpError(409, `${l.item} on S.O. #${soNumber} has already shipped ${qty} and can't be removed.`, { conflict: true });
+      if (a.item.trim().toLowerCase() !== l.item.trim().toLowerCase()) {
+        throw new HttpError(409, `${l.item} on S.O. #${soNumber} has already shipped and can't be changed to another item.`, { conflict: true });
+      }
+      if (a.ordered < qty) throw new HttpError(409, `${l.item} on S.O. #${soNumber} has already shipped ${qty} - ordered can't go below that.`, { conflict: true });
+    }
 
-  if (existing.status !== toStatus) {
-    logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
-      from: STATUS_OUT[existing.status],
-      to: data.status,
-    });
-  } else {
-    logAudit(req.account!, "ORDER_UPDATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { status: data.status });
-  }
-  const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
-  res.json(mapOut(updated!));
+    const itemIds = await resolveItemIds(tx, data.lineItems.map((l) => l.item));
+    const header = {
+      poNumber: data.poNumber,
+      orderDate: new Date(data.orderDate),
+      dueDate: new Date(data.dueDate),
+      customerId: data.customerId ?? null,
+      shipToLocationId: data.shipToLocationId ?? null,
+      billTo: data.billTo,
+      shipTo: data.shipTo,
+      fob: data.fob,
+      shipVia: data.shipVia,
+      terms: data.terms,
+      rep: data.rep,
+      taxRate: new Prisma.Decimal(data.taxRate),
+      notes: data.notes,
+    };
+    const track = <K extends keyof typeof header>(key: K, was: unknown) => {
+      const now = header[key];
+      const same = now instanceof Date || was instanceof Date
+        ? new Date(String(was)).toDateString() === (now as Date).toDateString()
+        : now instanceof Prisma.Decimal
+          ? now.equals(new Prisma.Decimal(String(was ?? 0)))
+          : JSON.stringify(now) === JSON.stringify(was ?? (typeof now === "string" ? "" : null));
+      if (!same) changes[key] = { from: was, to: now instanceof Date ? now.toISOString().slice(0, 10) : now };
+    };
+    track("poNumber", existing.poNumber);
+    track("orderDate", existing.orderDate);
+    track("dueDate", existing.dueDate);
+    track("customerId", existing.customerId);
+    track("billTo", existing.billTo);
+    track("shipTo", existing.shipTo);
+    track("terms", existing.terms);
+    track("rep", existing.rep);
+    track("taxRate", existing.taxRate);
+    track("notes", existing.notes);
+    if (linesChanged) changes.lines = { from: existing.lineItems.length, to: data.lineItems.length };
+    // Price changes are the ones people ask about later - record each.
+    const rateChanges: Record<string, { from: string; to: number }> = {};
+    for (const l of data.lineItems) {
+      const was = l.id ? before.get(l.id) : undefined;
+      if (was && !was.rate.equals(new Prisma.Decimal(l.rate))) rateChanges[was.item] = { from: was.rate.toString(), to: l.rate };
+    }
+    if (Object.keys(rateChanges).length > 0) changes.rates = rateChanges;
+
+    await tx.salesOrder.update({ where: { soNumber }, data: { ...header, version: { increment: 1 } } });
+    await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
+      itemId: itemIdFor(itemIds, l.item),
+      item: l.item,
+      description: l.description,
+      um: l.um,
+      ordered: l.ordered,
+      rate: l.rate,
+      customerPartNumber: l.customerPartNumber ?? null,
+    }));
+  });
+
+  logAudit(account, "ORDER_UPDATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, changes);
+  res.json(await reload(soNumber));
 });
 
-async function assertChildIdsBelong(
-  tx: Prisma.TransactionClient,
-  soNumber: number,
-  lineIds: (string | undefined)[],
-  shipmentIds: (string | undefined)[]
-): Promise<void> {
-  const ids = lineIds.filter((id): id is string => Boolean(id));
-  const foreignLines = ids.length
-    ? await tx.salesOrderLine.count({ where: { id: { in: ids }, soNumber: { not: soNumber } } })
-    : 0;
-  const sIds = shipmentIds.filter((id): id is string => Boolean(id));
-  const foreignShipments = sIds.length
-    ? await tx.shipmentRecord.count({ where: { id: { in: sIds }, soNumber: { not: soNumber } } })
-    : 0;
-  if (foreignLines + foreignShipments > 0) {
-    throw new HttpError(400, "Some lines on this order belong to a different order - reload the order and try again.");
+// Validation: Entered -> Checked, stamped with who checked it.
+router.post("/:soNumber/check", requirePermission("validation", "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = versionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
   }
-}
+  const account = req.account!;
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    assertStatus(order, ["ENTERED"], "checked");
+    await tx.salesOrder.update({
+      where: { soNumber },
+      data: { status: "CHECKED", checkedAt: new Date(), checkedBy: account.initials, checkedByColor: account.color, version: { increment: 1 } },
+    });
+  });
+  logAudit(account, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from: "Entered", to: "Checked" });
+  res.json(await reload(soNumber));
+});
 
-// Locks the order row for the rest of the transaction and checks the
-// caller's version, so ship/undo can't interleave with any other save.
-async function lockOrder(tx: Prisma.TransactionClient, soNumber: number, version: number) {
-  const rows = await tx.$queryRaw<{ version: number }[]>`SELECT "version" FROM "SalesOrder" WHERE "soNumber" = ${soNumber} FOR UPDATE`;
-  if (rows.length === 0) throw new HttpError(404, "Order not found");
-  if (rows[0].version !== version) throw new ConflictError();
-  return tx.salesOrder.findUniqueOrThrow({ where: { soNumber }, include });
-}
+// Validation: send a Checked order back to Entered (a correction is needed).
+router.post("/:soNumber/uncheck", requirePermission("validation", "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = versionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    assertStatus(order, ["CHECKED"], "sent back to Entered");
+    await tx.salesOrder.update({
+      where: { soNumber },
+      data: { status: "ENTERED", checkedAt: null, checkedBy: null, checkedByColor: null, version: { increment: 1 } },
+    });
+  });
+  logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from: "Checked", to: "Entered" });
+  res.json(await reload(soNumber));
+});
+
+// Allocation decision. From Checked or Backordered: allocating every
+// remaining unit moves the order to Allocated; allocating nothing (or a
+// partial for a ship-complete-only customer) holds it as Backordered with
+// no stock reserved; a partial otherwise goes to Allocated for what's on
+// hand. On an Allocated order this revises the quantities in place.
+// Every increase is checked against free stock under the allocation lock.
+router.post("/:soNumber/allocate", async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = allocateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const account = req.account!;
+  const { version, lines } = parsed.data;
+  const outcome = await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, version);
+    assertStatus(order, ["CHECKED", "BACKORDERED", "ALLOCATED"], "allocated");
+    const revising = order.status === "ALLOCATED";
+    requireEditOn(account, revising ? REVISE_ALLOCATION_PAGES : ALLOCATE_PAGES, revising ? "Revising an allocation" : "Allocating an order");
+
+    const shipped = shippedByLine(order);
+    const byId = new Map(order.lineItems.map((li) => [li.id, li]));
+    const requested = new Map<string, number>();
+    for (const l of lines) {
+      const li = byId.get(l.lineItemId);
+      if (!li) throw new HttpError(400, `S.O. #${soNumber} changed since it was loaded - reload and try again.`);
+      const remaining = remainingFor(li, shipped);
+      if (l.allocatedQty > remaining) {
+        throw new HttpError(400, `${li.item}: only ${remaining} remaining to ship on S.O. #${soNumber}, ${l.allocatedQty} requested.`);
+      }
+      requested.set(li.id, l.allocatedQty);
+    }
+    const qtyFor = (id: string) => requested.get(id) ?? 0;
+    const total = order.lineItems.reduce((sum, li) => sum + qtyFor(li.id), 0);
+    const fullyAllocated = order.lineItems.every((li) => qtyFor(li.id) >= remainingFor(li, shipped));
+
+    let shipCompleteOnly = parsed.data.shipCompleteOnly ?? undefined;
+    if (!fullyAllocated && shipCompleteOnly === undefined && order.customerId) {
+      const customer = await tx.customer.findUnique({ where: { id: order.customerId }, select: { shipCompleteOnly: true } });
+      shipCompleteOnly = customer?.shipCompleteOnly ?? false;
+    }
+
+    let status: OrderRow["status"];
+    let hold = false;
+    if (revising) {
+      if (total === 0) throw new HttpError(400, "Nothing is allocated - use Unallocate to send the order back to Checked instead.");
+      status = "ALLOCATED";
+    } else if (total === 0 || (!fullyAllocated && shipCompleteOnly === true)) {
+      status = "BACKORDERED";
+      hold = true;
+    } else {
+      status = "ALLOCATED";
+    }
+    const allocation: AllocationJson = {
+      lines: order.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: hold ? 0 : qtyFor(li.id) })),
+      fullyAllocated,
+      ...(fullyAllocated ? {} : { shipCompleteOnly: shipCompleteOnly ?? false }),
+      decidedAt: new Date().toISOString(),
+    };
+    await assertAllocationAvailable(
+      tx,
+      soNumber,
+      { lineItems: order.lineItems, allocation: order.allocation, pendingShipment: order.pendingShipment },
+      { lineItems: order.lineItems, allocation, pendingShipment: order.pendingShipment }
+    );
+    await tx.salesOrder.update({ where: { soNumber }, data: { status, allocation, version: { increment: 1 } } });
+    return { from: STATUS_OUT[order.status], to: STATUS_OUT[status], units: hold ? 0 : total, fullyAllocated };
+  });
+  logAudit(account, outcome.from === outcome.to ? "ORDER_ALLOCATION_REVISED" : "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, outcome);
+  res.json(await reload(soNumber));
+});
+
+// Releases an order's allocation and any unprinted staged pick, sending it
+// back to Checked for a fresh decision. A pick whose documents have printed
+// is on the floor and can't be recalled from here.
+router.post("/:soNumber/unallocate", requireAnyPermission(UNALLOCATE_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = versionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const from = await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    assertStatus(order, ["ALLOCATED", "PICK_PACKED"], "unallocated");
+    if (order.status === "PICK_PACKED" && (order.pickListPrintedAt || order.packingSlipPrintedAt)) {
+      throw new HttpError(409, `S.O. #${soNumber}'s pick list or packing slip has printed - the pick is on the floor. Confirm it from Open Picks or cancel the order.`, { conflict: true });
+    }
+    await tx.salesOrder.update({
+      where: { soNumber },
+      data: {
+        status: "CHECKED",
+        allocation: Prisma.JsonNull,
+        pendingShipment: [],
+        pickedAt: null,
+        pickPackStatus: null,
+        pickListPrintedAt: null,
+        packingSlipPrintedAt: null,
+        version: { increment: 1 },
+      },
+    });
+    return STATUS_OUT[order.status];
+  });
+  logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from, to: "Checked", unallocated: true });
+  res.json(await reload(soNumber));
+});
+
+// Stamps the pick list and/or packing slip as printed, optionally trimming
+// the staged quantities first (a shortfall found while picking - the reprint
+// then matches what the floor can actually fulfil). Quantities only go down.
+router.post("/:soNumber/mark-printed", requireAnyPermission(PRINT_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = markPrintedSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { version, pickList, packingSlip, lines } = parsed.data;
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, version);
+    assertStatus(order, ["PICK_PACKED"], "marked printed");
+    const data: Prisma.SalesOrderUpdateInput = { version: { increment: 1 } };
+    const now = new Date();
+    if (pickList) data.pickListPrintedAt = now;
+    if (packingSlip) data.packingSlipPrintedAt = now;
+    if (lines) {
+      const staged = stagedByLine(order);
+      const byId = new Map(order.lineItems.map((li) => [li.id, li]));
+      const next: ShipLine[] = [];
+      for (const l of lines) {
+        const li = byId.get(l.lineItemId);
+        const was = staged.get(l.lineItemId);
+        if (!li || was === undefined) throw new HttpError(400, `S.O. #${soNumber} changed since it was loaded - reload and try again.`);
+        if (l.qty > was) throw new HttpError(400, `${li.item}: ${was} is staged for this pick - it can be trimmed, not increased. Revise the allocation to send more.`);
+        if (l.qty > 0) next.push({ lineItemId: l.lineItemId, qty: l.qty });
+      }
+      // Lines the caller didn't mention keep their staged quantity.
+      for (const [lineItemId, qty] of staged) if (!lines.some((l) => l.lineItemId === lineItemId) && qty > 0) next.push({ lineItemId, qty });
+      if (next.length === 0) throw new HttpError(400, "Every line is trimmed to 0 - unallocate the order instead.");
+      data.pendingShipment = next;
+    }
+    await tx.salesOrder.update({ where: { soNumber }, data });
+  });
+  logAudit(req.account!, "ORDER_PRINTED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { pickList, packingSlip, trimmed: Boolean(lines) });
+  res.json(await reload(soNumber));
+});
+
+router.post("/:soNumber/set-ship-date", requireAnyPermission(SHIP_DATE_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = setShipDateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const date = parsed.data.estimatedShipDate ? new Date(parsed.data.estimatedShipDate) : null;
+  if (date && Number.isNaN(date.getTime())) {
+    res.status(400).json({ error: "That isn't a valid date." });
+    return;
+  }
+  let from: string | null = null;
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    assertOpen(order);
+    from = order.estimatedShipDate ? order.estimatedShipDate.toISOString().slice(0, 10) : null;
+    await tx.salesOrder.update({ where: { soNumber }, data: { estimatedShipDate: date, version: { increment: 1 } } });
+  });
+  logAudit(req.account!, "ORDER_SHIP_DATE_SET", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from, to: parsed.data.estimatedShipDate });
+  res.json(await reload(soNumber));
+});
+
+router.post("/:soNumber/set-bol", requirePermission("bol", "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = setBolSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    if (order.status === "CANCELLED") throw new HttpError(409, `S.O. #${soNumber} was cancelled.`, { conflict: true });
+    await tx.salesOrder.update({ where: { soNumber }, data: { bol: parsed.data.bol, version: { increment: 1 } } });
+  });
+  logAudit(req.account!, "ORDER_BOL_GENERATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { weight: parsed.data.bol.weight, packages: parsed.data.bol.packageCount });
+  res.json(await reload(soNumber));
+});
 
 // Confirms a shipment: records it, rolls the order to Shipped/Backordered,
-// clears the staged pendingShipment AND takes the shipped units out of
-// qtyOnHand - all in one transaction. Previously the browser PATCHed stock
-// line by line and then saved the order; a 409 on that save (someone else
-// touched the order) left stock already decremented, and the natural retry
-// decremented it a second time.
+// clears the staged pick AND takes the shipped units out of qtyOnHand - all
+// in one transaction. Only what was staged for this pick can ship, never
+// more than a line still owes, and never below zero on hand (R5-01).
 router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req: AuthedRequest, res) => {
-  const soNumber = parseInt(req.params.soNumber, 10);
+  const soNumber = parseSo(req.params.soNumber);
   const parsed = shipSchema.safeParse(req.body);
-  if (!Number.isFinite(soNumber) || !parsed.success) {
-    res.status(400).json({ error: parsed.success ? "Order not found" : parsed.error.flatten() });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
   const { version, lines } = parsed.data;
+  const account = req.account!;
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, version);
-    if (order.status !== "PICK_PACKED") {
-      throw new HttpError(409, `S.O. #${soNumber} is ${STATUS_OUT[order.status]}, not waiting to ship - someone may have already confirmed it. Reload and check.`, { conflict: true });
-    }
-    const shipped = lines.filter((l) => l.qty > 0);
+    assertStatus(order, ["PICK_PACKED"], "shipped");
+    const staged = stagedByLine(order);
+    const shippedSoFar = shippedByLine(order);
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
-    for (const l of shipped) {
+    const seen = new Set<string>();
+    const shipped: ShipLine[] = [];
+    for (const l of lines) {
+      if (l.qty <= 0) continue;
       const li = lineById.get(l.lineItemId);
       if (!li) throw new HttpError(400, "Shipment references a line that is no longer on this order - reload and try again.");
-      await adjustOnHand(tx, { itemId: li.itemId, itemNumber: li.item }, -l.qty, {
+      if (seen.has(l.lineItemId)) throw new HttpError(400, `${li.item} appears twice in this shipment.`);
+      seen.add(l.lineItemId);
+      const stagedQty = staged.get(l.lineItemId) ?? 0;
+      if (l.qty > stagedQty) {
+        throw new HttpError(409, `${li.item}: ${stagedQty} ${stagedQty === 1 ? "unit is" : "units are"} staged for this pick, ${l.qty} entered. Only what was released can ship.`, { conflict: true });
+      }
+      const remaining = remainingFor(li, shippedSoFar);
+      if (l.qty > remaining) throw new HttpError(409, `${li.item}: only ${remaining} still owed on S.O. #${soNumber}, ${l.qty} entered.`, { conflict: true });
+      shipped.push({ lineItemId: l.lineItemId, qty: l.qty });
+    }
+    if (shipped.length === 0) throw new HttpError(400, "Nothing to ship - every line is 0.");
+    for (const l of shipped) {
+      const li = lineById.get(l.lineItemId)!;
+      const after = await adjustOnHand(tx, { itemId: li.itemId, itemNumber: li.item }, -l.qty, {
         reason: "SHIP",
         refType: "sales-order",
         refId: String(soNumber),
-        actor: req.account!,
+        actor: account,
       });
+      if (after && after.qtyOnHand < 0) {
+        throw new HttpError(
+          409,
+          `${after.itemNumber}: shipping ${l.qty} would take on-hand to ${after.qtyOnHand}. Correct the count under Inventory first.`,
+          { conflict: true }
+        );
+      }
     }
-    if (shipped.length > 0) {
-      await tx.shipmentRecord.create({ data: { soNumber, shippedAt: new Date(), lines: shipped } });
-    }
+    await tx.shipmentRecord.create({ data: { soNumber, shippedAt: new Date(), lines: shipped } });
     const history = await tx.shipmentRecord.findMany({ where: { soNumber } });
-    const shippedFor = (id: string) =>
-      history.reduce((sum, r) => sum + ((r.lines as { lineItemId: string; qty: number }[]).find((x) => x.lineItemId === id)?.qty ?? 0), 0);
-    const fullyShipped = order.lineItems.every((li) => shippedFor(li.id) >= li.ordered);
+    const totals = shippedByLine({ shipmentHistory: history });
+    const fullyShipped = order.lineItems.every((li) => (totals.get(li.id) ?? 0) >= li.ordered);
     await tx.salesOrder.update({
       where: { soNumber },
       data: { status: fullyShipped ? "SHIPPED" : "BACKORDERED", pendingShipment: [], version: { increment: 1 } },
     });
-    logAudit(req.account!, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+    logAudit(account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: shipped.reduce((sum, l) => sum + l.qty, 0),
       result: fullyShipped ? "Shipped" : "Backordered",
     });
   });
-  const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
-  res.json(mapOut(updated!));
+  res.json(await reload(soNumber));
 });
 
 // Reverses the most recent shipment: puts its units back into qtyOnHand,
 // re-stages them as pendingShipment and returns the order to Pick & Packed -
 // atomically, for the same reason as /ship above.
 router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req: AuthedRequest, res) => {
-  const soNumber = parseInt(req.params.soNumber, 10);
-  const parsed = undoSchema.safeParse(req.body);
-  if (!Number.isFinite(soNumber) || !parsed.success) {
-    res.status(400).json({ error: parsed.success ? "Order not found" : parsed.error.flatten() });
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = versionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, parsed.data.version);
+    if (order.status === "CANCELLED") throw new HttpError(409, `S.O. #${soNumber} was cancelled.`, { conflict: true });
     const last = order.shipmentHistory[order.shipmentHistory.length - 1];
     if (!last) throw new HttpError(409, "This order has no shipment to undo.", { conflict: true });
-    const staged = (order.pendingShipment as { qty: number }[] | null) ?? [];
+    const staged = (order.pendingShipment as ShipLine[] | null) ?? [];
     if (staged.some((l) => l.qty > 0)) {
       // Undoing would overwrite the batch that's already packed and staged
       // (and silently drop its reservation) - make them deal with it first.
       throw new HttpError(409, "Another batch is already packed and waiting to ship on this order. Confirm or unallocate it before undoing the last shipment.", { conflict: true });
     }
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
-    const lines = last.lines as { lineItemId: string; qty: number }[];
+    const lines = last.lines as ShipLine[];
     for (const l of lines) {
       const li = lineById.get(l.lineItemId);
       if (li && l.qty > 0) {
@@ -589,8 +810,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
       units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
     });
   });
-  const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
-  res.json(mapOut(updated!));
+  res.json(await reload(soNumber));
 });
 
 // Cancels an order (or what's left of a partly shipped one): releases its
@@ -598,10 +818,10 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
 // takes it out of every queue. Shipped units stay shipped - undo those
 // separately if the goods are coming back (that's a return).
 router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"), async (req: AuthedRequest, res) => {
-  const soNumber = parseInt(req.params.soNumber, 10);
+  const soNumber = parseSo(req.params.soNumber);
   const parsed = cancelSchema.safeParse(req.body);
-  if (!Number.isFinite(soNumber) || !parsed.success) {
-    res.status(400).json({ error: parsed.success ? "Order not found" : parsed.error.issues[0]?.message ?? "Invalid request" });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid request" });
     return;
   }
   await prisma.$transaction(async (tx) => {
@@ -623,8 +843,7 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
     });
   });
   logAudit(req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason });
-  const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
-  res.json(mapOut(updated!));
+  res.json(await reload(soNumber));
 });
 
 // Releases allocated orders to the warehouse (Release Orders): each order's
@@ -634,16 +853,14 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
 // order doesn't hold up the rest of the batch - the response says which
 // released and why any didn't.
 //
-// Same rules as the single-order release page: a line can release at most
-// what's allocated to it (revise the allocation to send more), and a
-// released line's allocation is used up by the release.
+// A line can release at most what's allocated to it (revise the allocation
+// to send more), and a released line's allocation is used up by the release.
 router.post("/release", requirePermission("pick-release", "edit"), async (req: AuthedRequest, res) => {
   const parsed = releaseSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  type AllocationJson = { lines: { lineItemId: string; allocatedQty: number }[] } & Record<string, unknown>;
   const results: { soNumber: string; ok: boolean; error?: string }[] = [];
   const releasedSoNumbers: number[] = [];
   for (const request of parsed.data.orders) {
@@ -652,9 +869,7 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
       if (!Number.isInteger(soNumber)) throw new HttpError(404, "Order not found");
       const summary = await prisma.$transaction(async (tx) => {
         const order = await lockOrder(tx, soNumber, request.version);
-        if (order.status !== "ALLOCATED") {
-          throw new HttpError(409, `S.O. #${soNumber} is already ${STATUS_OUT[order.status]} - someone else moved it on.`, { conflict: true });
-        }
+        assertStatus(order, ["ALLOCATED"], "released");
         const allocation = order.allocation as AllocationJson | null;
         const allocatedFor = (id: string) => allocation?.lines.find((l) => l.lineItemId === id)?.allocatedQty ?? 0;
         const lineIds = new Set(order.lineItems.map((li) => li.id));
@@ -662,7 +877,7 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
           throw new HttpError(400, `S.O. #${soNumber} changed since it was loaded - reload and try again.`);
         }
         const requested = request.lines ? new Map(request.lines.map((l) => [l.lineItemId, l.qty])) : null;
-        const pending: { lineItemId: string; qty: number }[] = [];
+        const pending: ShipLine[] = [];
         for (const li of order.lineItems) {
           const allocated = allocatedFor(li.id);
           const qty = requested ? (requested.get(li.id) ?? 0) : allocated;
@@ -673,10 +888,9 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
         }
         if (pending.length === 0) throw new HttpError(409, `S.O. #${soNumber} has nothing to release.`, { conflict: true });
 
-        const shippedFor = (id: string) =>
-          order.shipmentHistory.reduce((sum, r) => sum + ((r.lines as { lineItemId: string; qty: number }[]).find((x) => x.lineItemId === id)?.qty ?? 0), 0);
+        const shipped = shippedByLine(order);
         const pendingFor = (id: string) => pending.find((p) => p.lineItemId === id)?.qty ?? 0;
-        const complete = order.lineItems.every((li) => Math.max(0, li.ordered - shippedFor(li.id)) - pendingFor(li.id) <= 0);
+        const complete = order.lineItems.every((li) => remainingFor(li, shipped) - pendingFor(li.id) <= 0);
         const released = new Set(pending.map((p) => p.lineItemId));
         const nextAllocation = allocation
           ? { ...allocation, lines: order.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: released.has(li.id) ? 0 : allocatedFor(li.id) })) }

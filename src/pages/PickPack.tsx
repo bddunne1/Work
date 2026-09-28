@@ -6,9 +6,9 @@ import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { canEdit as canEditPath } from "../lib/permissions";
-import { listOpenOrders, releaseOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, markPrinted, releaseOrders, unallocateOrderCmd } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { allocatedQtyFor, canUnallocate, pendingShipmentWeight, remainingToShip, unallocateOrder, weightIndex } from "../types";
+import { allocatedQtyFor, canUnallocate, pendingShipmentWeight, remainingToShip, weightIndex } from "../types";
 
 // Release Orders: allocated orders become pick lists and packing slips for
 // the warehouse. One tab per step, each owned by one role:
@@ -281,7 +281,7 @@ export default function PickPack() {
     const errors: string[] = [];
     for (const o of eligible) {
       try {
-        await updateOrder(unallocateOrder(o), o.status);
+        await unallocateOrderCmd(o);
       } catch (err) {
         errors.push(`S.O. ${o.soNumber}: ${err instanceof Error ? err.message : "couldn't unallocate"}`);
       }
@@ -325,16 +325,11 @@ export default function PickPack() {
         "Did the pick list / packing slip print successfully? Choose OK to mark these orders printed, or Cancel to keep them here and try again."
       );
       if (!confirmed) return;
-      const now = new Date().toISOString();
       setBusy(true);
       const errors: string[] = [];
       for (const o of batch) {
         try {
-          await updateOrder({
-            ...o,
-            pickListPrintedAt: includePick ? now : o.pickListPrintedAt,
-            packingSlipPrintedAt: includeSlip ? now : o.packingSlipPrintedAt,
-          });
+          await markPrinted(o, { pickList: includePick, packingSlip: includeSlip });
         } catch (err) {
           errors.push(
             `S.O. ${o.soNumber}: ${isConflictError(err) ? "changed by someone else - check it and print again" : err instanceof Error ? err.message : "not saved"}`

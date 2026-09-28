@@ -5,7 +5,7 @@ import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { getOrder, shipOrder, updateOrder } from "../lib/orderStore";
+import { getOrder, markPrinted, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { orderSubtotal, orderTax, orderTotal, remainingToShip } from "../types";
 
@@ -83,18 +83,17 @@ function OpenPicksDetailInner() {
     if (!order || (!includePick && !includeSlip)) return;
     // Carry any corrected "Actual Shipped" quantities into the reprinted
     // documents (and persist them) so a stock shortfall discovered here
-    // reprints a pick list the warehouse can actually fulfill.
-    const now = new Date().toISOString();
+    // reprints a pick list the warehouse can actually fulfill. The server
+    // only lets a staged quantity go down, never up.
     try {
       // Keep the server's copy (new version) - otherwise Mark Shipped right
       // after a reprint is a guaranteed "changed by someone else" 409.
       setOrder(
-        await updateOrder({
-          ...order,
-          pendingShipment: pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? l.qty })),
-          pickListPrintedAt: includePick ? now : order.pickListPrintedAt,
-          packingSlipPrintedAt: includeSlip ? now : order.packingSlipPrintedAt,
-        })
+        await markPrinted(
+          order,
+          { pickList: includePick, packingSlip: includeSlip },
+          pending.map((l) => ({ lineItemId: l.lineItemId, qty: Math.min(l.qty, qtys[l.lineItemId] ?? l.qty) }))
+        )
       );
     } catch (err) {
       if (isConflictError(err)) {

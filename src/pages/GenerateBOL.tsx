@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { listOpenOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, setBol } from "../lib/orderStore";
 import { localIsoDate } from "../lib/dateUtils";
 import type { Address, BolDetails, PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
@@ -157,7 +157,7 @@ export default function GenerateBOL() {
       for (const o of selectedOrders) {
         const d = details[o.soNumber];
         const bol: BolDetails = { ...d, generatedAt };
-        await updateOrder({ ...o, bol });
+        await setBol(o, bol);
       }
     } catch (err) {
       if (isConflictError(err)) {

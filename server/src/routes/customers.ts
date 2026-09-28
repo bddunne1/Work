@@ -41,10 +41,10 @@ const priceOverrideSchema = z.object({
   itemNumber: z.string(),
   customerPartNumber: z.string().default(""),
   description: z.string().default(""),
-  price: z.number(),
-  pricePerFt: z.number().nullish(),
-  length: z.number().nullish(),
-  weight: z.number().nullish(),
+  price: z.number().finite().nonnegative(),
+  pricePerFt: z.number().finite().nonnegative().nullish(),
+  length: z.number().finite().nonnegative().nullish(),
+  weight: z.number().finite().nonnegative().nullish(),
 });
 
 const routingGuideSchema = z

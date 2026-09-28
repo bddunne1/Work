@@ -14,6 +14,8 @@ export default function Login() {
     setError("");
     const loginError = await login(username, password);
     if (!loginError) {
+      // Layout redirects to /change-password itself when the account must
+      // pick a new password; "/" is right in both cases.
       navigate("/");
     } else {
       setError(loginError);
