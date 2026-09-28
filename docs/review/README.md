@@ -1,5 +1,16 @@
 # ERP review
 
+## Master review — 28 Sep 2026
+- `erp-master-review.html`: the working document. All five rounds reconciled
+  into one list of 104 items with current status (closed, partial, open) and
+  the exact next step for each, a five-round summary table, where the system
+  stands, a sprint plan, the checklist for deploying the round-5 branch, the
+  decisions only the owner can make, and the numbers to watch. Work from this
+  page; the round reports below are the record behind it. Published copy:
+  https://claude.ai/artifact/PUT2qC86iT2tub6k8RVimA
+- `open-bugs.md`: regenerated from the same list (open and partial items by
+  theme).
+
 ## Round 5 — 28 Sep 2026
 - `erp-review-5.html`: architecture and security review of the whole codebase
   after the round-3 merge: what holds up, 21 new findings (R5-01 to R5-21, four
