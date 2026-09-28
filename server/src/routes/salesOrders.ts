@@ -529,6 +529,9 @@ router.post("/:soNumber/allocate", async (req: AuthedRequest, res) => {
   const { version, lines } = parsed.data;
   const outcome = await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, version);
+    // Permission first (nobody without any allocation page learns the
+    // order's state from the error), then the state-specific page.
+    requireEditOn(account, REVISE_ALLOCATION_PAGES, "Allocating an order");
     assertStatus(order, ["CHECKED", "BACKORDERED", "ALLOCATED"], "allocated");
     const revising = order.status === "ALLOCATED";
     requireEditOn(account, revising ? REVISE_ALLOCATION_PAGES : ALLOCATE_PAGES, revising ? "Revising an allocation" : "Allocating an order");

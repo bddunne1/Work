@@ -182,7 +182,9 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         if (a.itemNumber.trim().toLowerCase() !== l.itemNumber.trim().toLowerCase()) {
           throw new HttpError(409, `${l.itemNumber} on ${poNumber} has already received stock and can't be changed to another item.`, { conflict: true });
         }
-        if (a.orderedQty < l.receivedQty) throw new HttpError(409, `${l.itemNumber} on ${poNumber} has already received ${l.receivedQty} - ordered can't go below that.`, { conflict: true });
+        // Lowering the quantity under what has arrived is refused; an unchanged
+        // quantity that an allowed over-receipt already exceeds is fine.
+        if (a.orderedQty < l.receivedQty && a.orderedQty !== l.orderedQty) throw new HttpError(409, `${l.itemNumber} on ${poNumber} has already received ${l.receivedQty} - ordered can't go below that.`, { conflict: true });
       }
       const ids = [...after.keys()];
       if (ids.length > 0) {
