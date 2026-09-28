@@ -1,5 +1,14 @@
 # ERP review
 
+## Round 5 — 28 Sep 2026
+- `erp-review-5.html`: architecture and security review of the whole codebase
+  after the round-3 merge: what holds up, 21 new findings (R5-01 to R5-21, four
+  rated High), a six-step redesign plan with the findings each step closes, and
+  the accounting question (build AR/AP/GL here, or own invoicing and keep
+  QuickBooks as the ledger; the report recommends the latter). Static code
+  review only; no new simulation figures. Published copy:
+  https://claude.ai/artifact/5LXfpa9geWniE7XhcHVt59
+
 ## Round 3 — 25 Sep 2026
 - `erp-review-3.html`: change report for everything since the round-2 merge:
   Pick & Pack renamed to Release Orders and rebuilt (tabs, bulk release, inline
