@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
+import { isoDate } from "../lib/dates.js";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
@@ -109,8 +110,8 @@ const bolSchema = z.object({
 // zod, never applied.
 const headerSchema = z.object({
   poNumber: z.string().max(100).default(""),
-  orderDate: z.string(),
-  dueDate: z.string(),
+  orderDate: isoDate,
+  dueDate: isoDate,
   customerId: z.string().nullish(),
   shipToLocationId: z.string().nullish(),
   billTo: addressSchema,
@@ -143,7 +144,7 @@ const markPrintedSchema = z.object({
   // line can only go down from what was staged.
   lines: z.array(shipmentLineSchema).max(500).optional(),
 });
-const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: z.string().nullable() });
+const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: isoDate.nullable() });
 const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema });
 const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500) });
 const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling").max(2000) });
@@ -215,6 +216,7 @@ const PRICE_PAGES = ["order-entry", "order-detail"];
 // Everything that still needs work - listed positively so the status index
 // can serve the open-orders query (PF-04).
 const OPEN_STATUSES = ["ENTERED", "CHECKED", "ALLOCATED", "BACKORDERED", "PICK_PACKED"] as const;
+const MAX_SHIPPED_SINCE_DAYS = 90;
 const ORDER_SHIP_PAGES = ["open-picks", "shipment-history"];
 const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
 const ALLOCATE_PAGES = ["allocation", "back-orders"];
@@ -270,7 +272,10 @@ router.get("/", async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
   const limit = Number(req.query.limit);
   const since = typeof req.query.shippedSince === "string" ? new Date(req.query.shippedSince) : null;
-  const shippedSince = since && !Number.isNaN(since.getTime()) ? since : null;
+  // The capacity window never reaches back more than 90 days (N-05): a
+  // Settings typo of 365 used to pull a year of shipments per page open.
+  const oldest = new Date(Date.now() - MAX_SHIPPED_SINCE_DAYS * 86_400_000);
+  const shippedSince = since && !Number.isNaN(since.getTime()) ? (since < oldest ? oldest : since) : null;
   const orders = await prisma.salesOrder.findMany({
     where: openOnly
       ? shippedSince

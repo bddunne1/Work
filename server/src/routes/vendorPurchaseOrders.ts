@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { isoDate } from "../lib/dates.js";
 import type { Prisma } from "@prisma/client";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
@@ -39,8 +40,8 @@ const lineSchema = z.object({
 const createSchema = z.object({
   vendorId: z.string(),
   vendorName: z.string().max(200),
-  orderDate: z.string(),
-  expectedDate: z.string().nullish(),
+  orderDate: isoDate,
+  expectedDate: isoDate.nullish(),
   notes: z.string().max(5000).default(""),
   lines: z.array(lineSchema).max(500).default([]),
 });

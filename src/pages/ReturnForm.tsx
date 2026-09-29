@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { moveOnEnter } from "../lib/formKeys";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
@@ -130,7 +131,7 @@ export default function ReturnForm() {
         </p>
       </div>
 
-      <form className="sales-order" onSubmit={handleSubmit}>
+      <form className="sales-order" onSubmit={handleSubmit} onKeyDown={moveOnEnter}>
         <div className="customer-picker">
           <label htmlFor="return-customer-search">Customer</label>
           <SearchSelect
@@ -244,7 +245,8 @@ export default function ReturnForm() {
                       <input
                         type="number"
                         className="num-input"
-                        min={0}
+                        min={1}
+                        step={1}
                         value={l.qty}
                         onChange={(e) => updateLine(l.id, { qty: Number(e.target.value) })}
                       />

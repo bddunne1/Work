@@ -56,6 +56,15 @@ export default function ScheduleShipments() {
     [orders, query, statusFilter]
   );
 
+  // Saved when the field is left (or Enter is pressed), and only for a
+  // complete date: a date input reports "0002-10-01" while the year is
+  // still being typed, and each of those used to be a save (R4-21).
+  function commitShipDate(o: PurchaseOrder, value: string) {
+    if (value === (o.estimatedShipDate ?? "")) return;
+    if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    void setEstimatedShipDate(o.soNumber, value);
+  }
+
   async function setEstimatedShipDate(soNumber: string, value: string) {
     const order = orders.find((o) => o.soNumber === soNumber);
     if (!order) return;
@@ -184,10 +193,14 @@ export default function ScheduleShipments() {
                   <td onClick={(e) => e.stopPropagation()}>
                     {canEdit ? (
                       <input
+                        key={`${o.soNumber}:${o.estimatedShipDate ?? ""}`}
                         type="date"
                         className={`schedule-date-input ${o.estimatedShipDate ? "has-date" : ""}`}
-                        value={o.estimatedShipDate ?? ""}
-                        onChange={(e) => setEstimatedShipDate(o.soNumber, e.target.value)}
+                        defaultValue={o.estimatedShipDate ?? ""}
+                        onBlur={(e) => commitShipDate(o, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        }}
                       />
                     ) : o.estimatedShipDate ? (
                       <span className="schedule-ship-date">{o.estimatedShipDate}</span>

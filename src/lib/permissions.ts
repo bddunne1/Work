@@ -228,7 +228,8 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       allocation: "edit",
       "back-orders": "edit",
       "pick-release": "edit",
-      "pick-pack": "view",
+      // Analysts print what they release (G-02): no hand-off to Order Entry.
+      "pick-pack": "edit",
       schedule: "edit",
       "open-orders": "view",
       "closed-orders": "view",

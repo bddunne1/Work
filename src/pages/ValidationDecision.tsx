@@ -4,7 +4,7 @@ import LineItemsTable from "../components/LineItemsTable";
 import { isConflictError } from "../lib/apiClient";
 import { checkOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
-import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
+import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
 import { orderTotal } from "../types";
 
@@ -49,6 +49,15 @@ function ValidationDecisionInner() {
   // leaving its allocation/pick in place.
   const staleStatus = order.status !== "Entered";
 
+  // Park this order for the session and move on (R4-19).
+  function skip() {
+    if (!order) return;
+    skipSoNumber("validation", order.soNumber);
+    const next = nextQueueSoNumber(queueState);
+    if (next) navigate(`/validation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+    else navigate("/validation");
+  }
+
   async function markChecked() {
     if (!order || staleStatus) return;
     try {
@@ -86,6 +95,11 @@ function ValidationDecisionInner() {
           <span className="review-meta-sep">·</span>
           <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
+          {!staleStatus && (
+            <button type="button" className="secondary-btn" onClick={skip} title="Leave this order for later and move to the next one">
+              Skip
+            </button>
+          )}
         </div>
       </div>
 

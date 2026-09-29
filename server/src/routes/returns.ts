@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { isoDate } from "../lib/dates.js";
 import type { Prisma } from "@prisma/client";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
@@ -48,7 +49,7 @@ const createSchema = z.object({
   customerId: z.string().nullish(),
   soNumber: z.string().max(50).nullish(),
   billTo: addressSchema,
-  requestDate: z.string(),
+  requestDate: isoDate,
   reason: z.string().max(2000).default(""),
   notes: z.string().max(5000).default(""),
   lines: z.array(lineSchema).max(500).default([]),

@@ -18,6 +18,7 @@ import countersRouter from "./routes/counters.js";
 import customersRouter from "./routes/customers.js";
 import integrationsRouter from "./routes/integrations.js";
 import invoicesRouter from "./routes/invoices.js";
+import shipmentsRouter from "./routes/shipments.js";
 import itemsRouter from "./routes/items.js";
 import returnsRouter from "./routes/returns.js";
 import salesOrderSearchRouter from "./routes/salesOrderSearch.js";
@@ -76,6 +77,7 @@ export function createApp(): express.Express {
   app.use("/api/stock-movements", stockMovementsRouter);
   app.use("/api/analytics", analyticsRouter);
   app.use("/api/invoices", invoicesRouter);
+  app.use("/api/shipments", shipmentsRouter);
   app.use("/api/integrations", integrationsRouter);
 
   // Catches anything a route didn't handle itself (including an async

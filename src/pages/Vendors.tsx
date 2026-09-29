@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { deleteVendor, listVendors, saveVendor, updateVendor } from "../lib/vendorStore";
@@ -33,12 +33,23 @@ export default function Vendors() {
     setEmail("");
   }
 
-  async function updateField(v: Vendor, patch: Partial<Vendor>) {
-    const updated = { ...v, ...patch };
-    setVendors((vs) => vs.map((x) => (x.id === v.id ? updated : x)));
+  // Typing edits the row on screen; leaving the field saves it once. Saving
+  // on every keystroke raced the server's version check and lost characters
+  // (M-10).
+  const dirty = useRef(new Set<string>());
+  function editField(v: Vendor, patch: Partial<Vendor>) {
+    dirty.current.add(v.id);
+    setVendors((vs) => vs.map((x) => (x.id === v.id ? { ...x, ...patch } : x)));
+  }
+
+  async function commitVendor(id: string) {
+    if (!dirty.current.has(id)) return;
+    dirty.current.delete(id);
+    const updated = vendors.find((x) => x.id === id);
+    if (!updated) return;
     try {
       const saved = await updateVendor(updated);
-      setVendors((vs) => vs.map((x) => (x.id === v.id ? saved : x)));
+      setVendors((vs) => vs.map((x) => (x.id === id ? saved : x)));
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -114,28 +125,32 @@ export default function Vendors() {
                   <input
                     value={v.name}
                     disabled={!canEdit}
-                    onChange={(e) => updateField(v, { name: e.target.value })}
+                    onBlur={() => commitVendor(v.id)}
+                    onChange={(e) => editField(v, { name: e.target.value })}
                   />
                 </td>
                 <td>
                   <input
                     value={v.contactName ?? ""}
                     disabled={!canEdit}
-                    onChange={(e) => updateField(v, { contactName: e.target.value })}
+                    onBlur={() => commitVendor(v.id)}
+                    onChange={(e) => editField(v, { contactName: e.target.value })}
                   />
                 </td>
                 <td>
                   <input
                     value={v.phone ?? ""}
                     disabled={!canEdit}
-                    onChange={(e) => updateField(v, { phone: e.target.value })}
+                    onBlur={() => commitVendor(v.id)}
+                    onChange={(e) => editField(v, { phone: e.target.value })}
                   />
                 </td>
                 <td>
                   <input
                     value={v.email ?? ""}
                     disabled={!canEdit}
-                    onChange={(e) => updateField(v, { email: e.target.value })}
+                    onBlur={() => commitVendor(v.id)}
+                    onChange={(e) => editField(v, { email: e.target.value })}
                   />
                 </td>
                 {canEdit && (

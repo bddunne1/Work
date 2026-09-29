@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { moveOnEnter } from "../lib/formKeys";
 import { Link, useNavigate } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
@@ -99,7 +100,7 @@ export default function PurchaseOrderForm() {
         </p>
       </div>
 
-      <form className="sales-order" onSubmit={handleSubmit}>
+      <form className="sales-order" onSubmit={handleSubmit} onKeyDown={moveOnEnter}>
         <div className="customer-picker">
           <label htmlFor="po-vendor-search">Vendor</label>
           <SearchSelect
@@ -173,6 +174,8 @@ export default function PurchaseOrderForm() {
                   <td>
                     <input
                       type="number"
+                      min={1}
+                      step={1}
                       className="num-input"
                       value={l.orderedQty}
                       onChange={(e) => updateLine(l.id, { orderedQty: Number(e.target.value) })}

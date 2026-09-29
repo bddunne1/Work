@@ -49,6 +49,31 @@ const REPORT_PAGE_SIZE = 500;
 
 const ROW_CAP_NOTICE = `Showing the first ${REPORT_ROW_CAP.toLocaleString()} rows (most recent orders first) - more orders matched. Narrow the date range or filters to see the rest.`;
 
+// "Open" in a status filter means every status that still needs work; the
+// three "Open ..." presets use it (H-10), so their totals no longer count
+// shipped, closed or cancelled records.
+export const OPEN_FILTER = "open";
+const OPEN_ORDER_SET = new Set<string>(OPEN_ORDER_STATUSES);
+const OPEN_VENDOR_PO_SET = new Set<string>(["Open", "Partially Received"]);
+const OPEN_RETURN_SET = new Set<string>(["Issued", "Received"]);
+function statusMatches(filter: string | undefined, status: string, openSet: Set<string>): boolean {
+  if (!filter) return true;
+  if (filter === OPEN_FILTER) return openSet.has(status);
+  return status === filter;
+}
+function statusOptions(all: string[], openLabel: string) {
+  return [{ value: OPEN_FILTER, label: openLabel }, ...all.map((s) => ({ value: s, label: s }))];
+}
+
+// An order report with no date range reads the whole history (163 MB at a
+// year of data - PF-01), so one is always applied: the last 90 days unless
+// the filters say otherwise.
+const DEFAULT_ORDER_DAYS = 90;
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
+const DEFAULT_RANGE_NOTICE = `Showing orders from the last ${DEFAULT_ORDER_DAYS} days - set an order date range to see more.`;
+
 // Pages through one search until the orders fetched so far produce `cap`
 // report rows (or run out). `truncated` means more orders were left unread.
 async function collectOrders(
@@ -84,10 +109,11 @@ async function buildOrderReport(
   filters: ReportFilterValues,
   toRows: (orders: PurchaseOrder[]) => ReportRow[]
 ): Promise<ReportRowsResult> {
+  const defaultedRange = !filters.orderDateFrom && !filters.orderDateTo;
   const base: Omit<OrderSearchParams, "page" | "pageSize"> = {
-    orderFrom: filters.orderDateFrom || undefined,
+    orderFrom: filters.orderDateFrom || (defaultedRange ? isoDaysAgo(DEFAULT_ORDER_DAYS) : undefined),
     orderTo: filters.orderDateTo || undefined,
-    status: filters.status ? [filters.status] : undefined,
+    status: filters.status ? (filters.status === OPEN_FILTER ? [...OPEN_ORDER_STATUSES] : [filters.status]) : undefined,
     q: filters.customer?.trim() || undefined,
     sort: "soNumber",
     dir: "desc",
@@ -97,7 +123,10 @@ async function buildOrderReport(
   let queries = [base];
   if (itemText) {
     const matches = (await listItems()).map((i) => i.itemNumber).filter((n) => includesText(n, itemText));
-    if (matches.length > 0 && matches.length <= MAX_ITEM_QUERIES) queries = matches.map((item) => ({ ...base, item }));
+    // No catalog item matches: there is nothing to fetch. This used to fall
+    // through to a query for every order ever entered, to show nothing.
+    if (matches.length === 0) return { rows: [], notice: `No item number contains "${itemText}".` };
+    if (matches.length <= MAX_ITEM_QUERIES) queries = matches.map((item) => ({ ...base, item }));
   }
 
   const results = await Promise.all(queries.map((q) => collectOrders(q, toRows, REPORT_ROW_CAP)));
@@ -106,7 +135,8 @@ async function buildOrderReport(
   const orders = [...bySo.values()].sort((x, y) => Number(y.soNumber) - Number(x.soNumber));
   const rows = toRows(orders);
   const truncated = results.some((r) => r.truncated) || rows.length > REPORT_ROW_CAP;
-  return { rows: rows.slice(0, REPORT_ROW_CAP), notice: truncated ? ROW_CAP_NOTICE : undefined };
+  const notice = truncated ? ROW_CAP_NOTICE : defaultedRange ? DEFAULT_RANGE_NOTICE : undefined;
+  return { rows: rows.slice(0, REPORT_ROW_CAP), notice };
 }
 
 const salesOrders: ReportDataSource = {
@@ -127,14 +157,14 @@ const salesOrders: ReportDataSource = {
   defaultColumns: ["soNumber", "poNumber", "customer", "orderDate", "status", "total"],
   filterFields: [
     { key: "orderDate", label: "Order Date", type: "dateRange" },
-    { key: "status", label: "Status", type: "select", options: ORDER_STATUSES.map((s) => ({ value: s, label: s })) },
+    { key: "status", label: "Status", type: "select", options: statusOptions(ORDER_STATUSES, "Open (not shipped or cancelled)") },
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
   ],
   async buildRows(filters): Promise<ReportRowsResult> {
     return buildOrderReport(filters, (orders) =>
       orders
         .filter((o) => withinDateRange(o.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? ""))
-        .filter((o) => !filters.status || o.status === filters.status)
+        .filter((o) => statusMatches(filters.status, o.status, OPEN_ORDER_SET))
         .filter((o) => includesText(o.billTo.name, filters.customer ?? ""))
         .map((o) => ({
           soNumber: o.soNumber,
@@ -158,7 +188,7 @@ function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues
   const rows: ReportRow[] = [];
   for (const o of orders) {
     if (!withinDateRange(o.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? "")) continue;
-    if (filters.status && o.status !== filters.status) continue;
+    if (!statusMatches(filters.status, o.status, OPEN_ORDER_SET)) continue;
     if (!includesText(o.billTo.name, filters.customer ?? "")) continue;
     for (const li of o.lineItems) {
       if (exact !== undefined ? li.item.trim().toLowerCase() !== exact : !includesText(li.item, filters.item ?? "")) {
@@ -206,7 +236,7 @@ const salesOrderLines: ReportDataSource = {
   defaultColumns: ["soNumber", "customer", "orderDate", "status", "item", "ordered", "allocated", "amount"],
   filterFields: [
     { key: "orderDate", label: "Order Date", type: "dateRange" },
-    { key: "status", label: "Status", type: "select", options: ORDER_STATUSES.map((s) => ({ value: s, label: s })) },
+    { key: "status", label: "Status", type: "select", options: statusOptions(ORDER_STATUSES, "Open (not shipped or cancelled)") },
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
     { key: "item", label: "Item #", type: "text", placeholder: "Search item #..." },
   ],
@@ -235,7 +265,7 @@ const purchaseOrders: ReportDataSource = {
       key: "status",
       label: "Status",
       type: "select",
-      options: VENDOR_PO_STATUSES.map((s) => ({ value: s, label: s })),
+      options: statusOptions(VENDOR_PO_STATUSES, "Open (not fully received or closed)"),
     },
     { key: "vendor", label: "Vendor", type: "text", placeholder: "Search vendor name..." },
   ],
@@ -243,7 +273,7 @@ const purchaseOrders: ReportDataSource = {
     const pos = await listVendorPos();
     return pos
       .filter((p) => withinDateRange(p.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? ""))
-      .filter((p) => !filters.status || p.status === filters.status)
+      .filter((p) => statusMatches(filters.status, p.status, OPEN_VENDOR_PO_SET))
       .filter((p) => includesText(p.vendorName, filters.vendor ?? ""))
       .map((p) => ({
         poNumber: p.poNumber,
@@ -280,7 +310,7 @@ const purchaseOrderLines: ReportDataSource = {
       key: "status",
       label: "Status",
       type: "select",
-      options: VENDOR_PO_STATUSES.map((s) => ({ value: s, label: s })),
+      options: statusOptions(VENDOR_PO_STATUSES, "Open (not fully received or closed)"),
     },
     { key: "vendor", label: "Vendor", type: "text", placeholder: "Search vendor name..." },
     { key: "item", label: "Item #", type: "text", placeholder: "Search item #..." },
@@ -290,7 +320,7 @@ const purchaseOrderLines: ReportDataSource = {
     const rows: ReportRow[] = [];
     for (const p of pos) {
       if (!withinDateRange(p.orderDate, filters.orderDateFrom ?? "", filters.orderDateTo ?? "")) continue;
-      if (filters.status && p.status !== filters.status) continue;
+      if (!statusMatches(filters.status, p.status, OPEN_VENDOR_PO_SET)) continue;
       if (!includesText(p.vendorName, filters.vendor ?? "")) continue;
       for (const l of p.lines) {
         if (!includesText(l.itemNumber, filters.item ?? "")) continue;
@@ -424,14 +454,14 @@ const returns: ReportDataSource = {
   defaultColumns: ["raNumber", "customer", "requestDate", "status", "totalCredit"],
   filterFields: [
     { key: "requestDate", label: "Request Date", type: "dateRange" },
-    { key: "status", label: "Status", type: "select", options: RETURN_STATUSES.map((s) => ({ value: s, label: s })) },
+    { key: "status", label: "Status", type: "select", options: statusOptions(RETURN_STATUSES, "Open (issued or received, not closed)") },
     { key: "customer", label: "Customer", type: "text", placeholder: "Search customer name..." },
   ],
   async buildRows(filters) {
     const rs = await listReturns();
     return rs
       .filter((r) => withinDateRange(r.requestDate, filters.requestDateFrom ?? "", filters.requestDateTo ?? ""))
-      .filter((r) => !filters.status || r.status === filters.status)
+      .filter((r) => statusMatches(filters.status, r.status, OPEN_RETURN_SET))
       .filter((r) => includesText(r.billTo.name, filters.customer ?? ""))
       .map((r) => ({
         raNumber: r.raNumber,

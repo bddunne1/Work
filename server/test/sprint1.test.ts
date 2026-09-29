@@ -292,6 +292,58 @@ describe("idempotent creates (A-21)", () => {
   });
 });
 
+describe("shipments endpoint (C-09)", () => {
+  it("lists one row per shipment with totals, and marks the undoable one", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100, 2);
+    await makeItem(root, "BR-1002", 100, 3);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 2 }, { item: "BR-1002", ordered: 4, rate: 3 }], { customerId: cust.id });
+    o = ok(await ship(root, o, [6, 4]));
+    expect(o.status).toBe("Backordered");
+    // Round two for the rest.
+    o = ok(await allocate(root, o, [4, 0]));
+    o = ok(await release(root, o, [4, 0]));
+    o = ok(await root.post(`${so(o)}/mark-printed`, { version: o.version, pickList: true, packingSlip: true }));
+    o = ok(await ship(root, o));
+    expect(o.status).toBe("Shipped");
+    const day = new Date().toISOString().slice(0, 10);
+    const res = ok(await root.get(`/api/shipments?from=${day}&to=${day}`));
+    expect(res.total).toBe(2);
+    expect(res.rows.map((r: any) => r.units)).toEqual([4, 10]);
+    expect(res.rows[0].isLatest).toBe(true);
+    expect(res.rows[1].isLatest).toBe(false);
+    expect(res.rows[1].lines.map((l: any) => `${l.item}x${l.qty}`)).toEqual(["BR-1001x6", "BR-1002x4"]);
+    expect(res.rows[0].invoiceNumber).toBe("INV-20002");
+    expect(res.totals).toMatchObject({ shipments: 2, units: 14, amount: "32.00", complete: true });
+    // Search by customer and by P.O.; an empty range.
+    expect(ok(await root.get(`/api/shipments?q=acme`)).total).toBe(2);
+    expect(ok(await root.get(`/api/shipments?q=${o.poNumber}`)).total).toBe(2);
+    expect(ok(await root.get(`/api/shipments?q=nobody`)).total).toBe(0);
+    expect(ok(await root.get(`/api/shipments?from=2020-01-01&to=2020-01-02`)).total).toBe(0);
+    // Needs a page that can see shipments.
+    const nobody = await as("nobody", { permissions: { "order-entry": "edit" } });
+    expect((await nobody.get(`/api/shipments`)).status).toBe(403);
+  });
+});
+
+describe("date validation (C-15)", () => {
+  it("refuses a blank or half-typed date with a field error instead of a 500", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const o = await makeOrder(root, [{ item: "BR-1001", ordered: 1 }]);
+    for (const dueDate of ["", "0002-10-01", "2026-13-40", "next week"]) {
+      const res = await editOrder(root, o, { dueDate });
+      expect(res.status, dueDate).toBe(400);
+      expect(JSON.stringify(res.body.error), dueDate).toMatch(/dueDate/);
+    }
+    // The full timestamp a record round-trips with is fine.
+    expect((await editOrder(root, o, { dueDate: "2026-10-05T00:00:00.000Z" })).status).toBe(200);
+    const shipDate = await root.post(`${so(o)}/set-ship-date`, { version: o.version + 1, estimatedShipDate: "0002-1" });
+    expect(shipDate.status).toBe(400);
+  });
+});
+
 describe("QuickBooks void of a document that no longer exists", () => {
   it("completes the outbox row instead of leaving it dead", async () => {
     const root = await admin();

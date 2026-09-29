@@ -91,9 +91,13 @@ function CustomersInner() {
       text: noteText.trim(),
       createdAt: new Date().toISOString(),
     };
-    const updated = { ...draft, notes: [note, ...draft.notes] };
     try {
-      setDraft(await updateCustomer(updated));
+      // The note goes on the last saved record, not the draft, so adding a
+      // note never saves edits the person has not pressed Save for (M-11).
+      const fresh = await getCustomer(draft.id);
+      if (!fresh) return;
+      const saved = await updateCustomer({ ...fresh, notes: [note, ...fresh.notes] });
+      setDraft((d) => (d ? { ...d, notes: saved.notes, version: saved.version } : d));
       await refresh();
       setNoteText("");
     } catch (err) {
