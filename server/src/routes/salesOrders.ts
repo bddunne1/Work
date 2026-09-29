@@ -281,6 +281,16 @@ router.use(requireAuth);
 // that date - what warehouse capacity needs for its throughput window.
 router.get("/", async (req: AuthedRequest, res) => {
   requireOrderRead(req.account!);
+  // `?pulls=1`: cancelled orders whose printed pick is still on the floor (A-23).
+  if (req.query.pulls === "1" || req.query.pulls === "true") {
+    const pulls = await prisma.salesOrder.findMany({
+      where: { status: "CANCELLED", pullRequestedAt: { not: null }, pullAcknowledgedAt: null },
+      orderBy: { pullRequestedAt: "asc" },
+      include,
+    });
+    res.json(pulls.map((o) => hidePrices(mapOut(o), req.account!)));
+    return;
+  }
   const openOnly = req.query.open === "1" || req.query.open === "true";
   const limit = Number(req.query.limit);
   const since = typeof req.query.shippedSince === "string" ? new Date(req.query.shippedSince) : null;
@@ -508,7 +518,14 @@ router.put("/:soNumber", async (req: AuthedRequest, res) => {
       }
     }
 
-    await tx.salesOrder.update({ where: { soNumber }, data: { ...header, version: { increment: 1 } } });
+    // A line, quantity, price or customer change to a Checked order sends it
+    // back for checking (A-22): the stamp came off with the change.
+    const recheck = existing.status === "CHECKED" && (linesChanged || priceChanged);
+    if (recheck) changes.status = { from: "Checked", to: "Entered" };
+    await tx.salesOrder.update({
+      where: { soNumber },
+      data: { ...header, ...(recheck ? { status: "ENTERED", checkedAt: null, checkedBy: null, checkedByColor: null } : {}), version: { increment: 1 } },
+    });
     await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
       itemId: itemIdFor(itemIds, l.item),
       item: l.item,
@@ -930,12 +947,18 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
     if (order.status === "SHIPPED" || order.status === "CANCELLED") {
       throw new HttpError(409, `S.O. #${soNumber} is already ${STATUS_OUT[order.status]}.`, { conflict: true });
     }
+    // A pick whose documents have printed is on the floor: the staged lines
+    // stay on the order as the list of what to pull back, until Open Picks
+    // acknowledges it (A-23). Nothing is held either way.
+    const onFloor = order.status === "PICK_PACKED" && Boolean(order.pickListPrintedAt || order.packingSlipPrintedAt) && stagedByLine(order).size > 0;
     await tx.salesOrder.update({
       where: { soNumber },
       data: {
         status: "CANCELLED",
         allocation: Prisma.JsonNull,
-        pendingShipment: [],
+        pendingShipment: onFloor ? undefined : [],
+        pullRequestedAt: onFloor ? new Date() : null,
+        pullAcknowledgedAt: null,
         cancelledAt: new Date(),
         cancelledBy: req.account!.username,
         cancelReason: parsed.data.reason,
@@ -943,8 +966,28 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
       },
     });
     await syncReservations(tx, soNumber);
+    await auditIn(tx, req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason, pullFromFloor: onFloor });
   });
-  logAudit(req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason });
+  res.json(await reload(soNumber, req.account!));
+});
+
+// The warehouse has pulled a cancelled order's pick back off the floor.
+router.post("/:soNumber/acknowledge-pull", requirePermission("open-picks", "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = versionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    if (order.status !== "CANCELLED" || !order.pullRequestedAt) throw new HttpError(409, `S.O. #${soNumber} has no pick waiting to be pulled.`, { conflict: true });
+    if (order.pullAcknowledgedAt) throw new HttpError(409, `S.O. #${soNumber} was already pulled.`, { conflict: true });
+    await tx.salesOrder.update({ where: { soNumber }, data: { pullAcknowledgedAt: new Date(), pendingShipment: [], version: { increment: 1 } } });
+    await auditIn(tx, req.account!, "ORDER_PULL_ACKNOWLEDGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+      units: stagedByLine(order).size ? [...stagedByLine(order).values()].reduce((s, q) => s + q, 0) : 0,
+    });
+  });
   res.json(await reload(soNumber, req.account!));
 });
 

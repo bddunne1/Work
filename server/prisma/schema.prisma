@@ -321,6 +321,10 @@ model SalesOrder {
   cancelledAt  DateTime?
   cancelledBy  String?
   cancelReason String?
+  // Cancelled after its pick documents printed: the floor has a pick to pull
+  // back (A-23). Set at cancel, cleared from Open Picks when it is done.
+  pullRequestedAt    DateTime?
+  pullAcknowledgedAt DateTime?
 
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]

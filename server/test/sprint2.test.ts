@@ -5,7 +5,7 @@ import { prisma } from "../src/prisma.js";
 import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
 import { processOutbox } from "../src/integrations/sync.js";
 import { readFileSync } from "node:fs";
-import { admin, allocate, as, cancel, check, editItem, getOrder, issueInvoiceFor, itemByNumber, makeCustomer, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, orderReadyToShip, receive, release, resetDb, ship, so, unallocate, undoShipment } from "./helpers.js";
+import { admin, allocate, as, cancel, check, editItem, editOrder, getOrder, issueInvoiceFor, itemByNumber, makeCustomer, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, orderReadyToShip, receive, release, resetDb, ship, so, unallocate, undoShipment } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -446,5 +446,78 @@ describe("audit and settings (B-11), price sheet endpoints (B-08)", () => {
     const guideLog = await entries("CUSTOMER_ROUTING_GUIDE_CHANGED", cust.id);
     expect(guideLog).toHaveLength(1);
     expect(guideLog[0].detail).toEqual({ preferredCarrier: { from: null, to: "UPS" }, appointmentRequired: { from: null, to: true } });
+  });
+});
+
+describe("edits after Checked (A-22) and pull from floor (A-23)", () => {
+  it("sends a Checked order back to Entered when its lines, prices or customer change, not for a note", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100, 2.5);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    let o = ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 5, rate: 2.5 }])));
+    expect(o.status).toBe("Checked");
+    expect(o.checkedBy).toBeTruthy();
+    // A header correction keeps the stamp.
+    o = ok(await editOrder(root, o, { notes: "dock 4", poNumber: "PO-77" }));
+    expect(o.status).toBe("Checked");
+    expect(o.checkedBy).toBeTruthy();
+    // A quantity change takes it off.
+    o = ok(await editOrder(root, o, { lineItems: o.lineItems.map((l: any) => ({ ...l, ordered: 6 })) }));
+    expect(o.status).toBe("Entered");
+    expect(o.checkedBy).toBeNull();
+    expect(o.checkedAt).toBeNull();
+    const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_UPDATED", targetId: String(o.soNumber) }, orderBy: { createdAt: "desc" } });
+    expect(audit!.detail).toMatchObject({ status: { from: "Checked", to: "Entered" }, lines: { from: 1, to: 1 } });
+    // So do a price, the tax rate and the customer.
+    for (const patch of [
+      (x: any) => ({ lineItems: x.lineItems.map((l: any) => ({ ...l, rate: 3 })) }),
+      () => ({ taxRate: 7 }),
+      () => ({ customerId: cust.id }),
+    ]) {
+      o = ok(await check(root, o));
+      o = ok(await editOrder(root, o, patch(o)));
+      expect(o.status).toBe("Entered");
+    }
+    // Checked again, it can go on to allocation as before.
+    o = ok(await check(root, o));
+    o = ok(await allocate(root, o));
+    expect(o.status).toBe("Allocated");
+  });
+
+  it("keeps a cancelled, printed pick on Open Picks until the floor confirms it was pulled", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 10);
+    // Released but not printed: cancel just frees the stock.
+    let quiet = ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 2 }])))));
+    quiet = ok(await release(root, quiet));
+    quiet = ok(await cancel(root, quiet, "customer called"));
+    expect(quiet.pullRequestedAt).toBeNull();
+    expect(quiet.pendingShipment).toEqual([]);
+    // Printed: the goods are on the floor.
+    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 3 }]);
+    const staged = o.pendingShipment;
+    o = ok(await cancel(root, o, "duplicate order"));
+    expect(o.status).toBe("Cancelled");
+    expect(o.pullRequestedAt).toBeTruthy();
+    expect(o.pullAcknowledgedAt).toBeNull();
+    expect(o.pendingShipment).toEqual(staged);
+    expect((await itemByNumber("BR-1001"))!).toMatchObject({ qtyOnHand: 10, qtyReserved: 0 });
+    const pulls = ok(await root.get("/api/sales-orders?pulls=1"));
+    expect(pulls.map((p: any) => p.soNumber)).toEqual([o.soNumber]);
+    expect(ok(await root.get("/api/sales-orders?open=1")).some((p: any) => p.soNumber === o.soNumber)).toBe(false);
+    expect(ok(await root.get("/api/dashboard/summary")).queues.pull).toMatchObject({ count: 1 });
+    const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_CANCELLED", targetId: String(o.soNumber) } });
+    expect(audit!.detail).toMatchObject({ pullFromFloor: true });
+    // Logistics acknowledges; nobody else can.
+    const analyst = await as("an", { permissions: { allocation: "edit" } });
+    expect((await analyst.post(`${so(o)}/acknowledge-pull`, { version: o.version })).status).toBe(403);
+    const dock = await as("dock", { permissions: { "open-picks": "edit" } });
+    expect((await dock.post(`${so(quiet)}/acknowledge-pull`, { version: quiet.version })).status).toBe(409);
+    o = ok(await dock.post(`${so(o)}/acknowledge-pull`, { version: o.version }));
+    expect(o.pullAcknowledgedAt).toBeTruthy();
+    expect(o.pendingShipment).toEqual([]);
+    expect((await dock.post(`${so(o)}/acknowledge-pull`, { version: o.version })).status).toBe(409);
+    expect(ok(await root.get("/api/sales-orders?pulls=1"))).toEqual([]);
+    expect(ok(await root.get("/api/dashboard/summary")).queues.pull.count).toBe(0);
   });
 });

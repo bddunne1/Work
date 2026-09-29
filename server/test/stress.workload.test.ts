@@ -227,7 +227,8 @@ describe("randomized concurrent workload", () => {
           break;
         case "CANCELLED":
           expect(o.allocation).toBeNull();
-          expect(staged).toEqual([]);
+          // The staged lines stay listed while the floor has a pick to pull back.
+          if (!(o.pullRequestedAt && !o.pullAcknowledgedAt)) expect(staged).toEqual([]);
           break;
         case "CHECKED":
         case "ENTERED":

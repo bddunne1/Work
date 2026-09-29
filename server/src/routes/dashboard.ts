@@ -39,7 +39,7 @@ router.get("/summary", async (req: AuthedRequest, res) => {
   const midnight = Number.isNaN(midnightRaw.getTime()) ? new Date(`${today}T00:00:00.000Z`) : midnightRaw;
 
   const lineSelect = { select: { id: true, catalogItem: { select: { weight: true } } } };
-  const [open, shippedToday] = await Promise.all([
+  const [open, shippedToday, pulls] = await Promise.all([
     prisma.salesOrder.findMany({
       where: { status: { in: [...OPEN] } },
       select: {
@@ -52,6 +52,8 @@ router.get("/summary", async (req: AuthedRequest, res) => {
       where: { shippedAt: { gte: midnight } },
       select: { soNumber: true, lines: true, salesOrder: { select: { lineItems: lineSelect } } },
     }),
+    // Cancelled after printing, not yet pulled back off the floor (A-23).
+    prisma.salesOrder.findMany({ where: { status: "CANCELLED", pullRequestedAt: { not: null }, pullAcknowledgedAt: null }, select: { pullRequestedAt: true } }),
   ]);
 
   type Open = (typeof open)[number];
@@ -72,6 +74,7 @@ router.get("/summary", async (req: AuthedRequest, res) => {
     release: summarize(open.filter((o) => o.status === "ALLOCATED" && allocated(o)).map((o) => entry(o, (o.allocation as { decidedAt?: string } | null)?.decidedAt))),
     print: summarize(open.filter((o) => isStaged(o) && !printed(o)).map((o) => entry(o, o.pickedAt))),
     ship: summarize(open.filter((o) => isStaged(o) && printed(o)).map((o) => entry(o, [o.pickListPrintedAt, o.packingSlipPrintedAt].filter((d): d is Date => Boolean(d)).sort((a, b) => b.getTime() - a.getTime())[0]))),
+    pull: summarize(pulls.map((p) => ({ late: false, since: p.pullRequestedAt }))),
   };
 
   let shippedUnits = 0;

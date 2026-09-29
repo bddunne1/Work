@@ -128,6 +128,10 @@ export interface PurchaseOrder {
   cancelledAt?: string | null;
   cancelledBy?: string | null;
   cancelReason?: string | null;
+  // Cancelled after its pick documents printed: the floor has a pick to pull
+  // back, acknowledged from Open Picks (A-23).
+  pullRequestedAt?: string | null;
+  pullAcknowledgedAt?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;

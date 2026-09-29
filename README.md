@@ -129,6 +129,21 @@ inside it, so a step that rolls back leaves no entry. Settings accept only
 the keys the app knows (`lead_time_days`, `capacity_lookback_days`,
 `company_info`), each with its own validation.
 
+## Corrections after checking, and cancelled picks
+
+A change to a Checked order's items, quantities, prices or customer sends it
+back to Entered and takes the checker's stamp off, so it is validated again;
+header corrections (P.O. number, notes, addresses) keep the stamp. On Sales
+Order View the lines of a Checked order are read-only until Re-open lines is
+pressed, a refused save keeps the typed values on screen, and analysts can
+revise a Backordered or Allocated order's allocation from the same page.
+
+Cancelling an order whose pick list or packing slip has printed leaves its
+staged lines listed under Pull from floor on Open Picks (and a count on the
+Dashboard) until Logistics marks it pulled; nothing is held in the meantime.
+`GET /api/sales-orders?pulls=1` lists them and `POST
+/api/sales-orders/:soNumber/acknowledge-pull` clears one.
+
 ## Development
 
 ```bash

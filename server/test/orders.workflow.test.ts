@@ -210,9 +210,12 @@ describe("order edits (PUT)", () => {
     await makeItem(root, "BR-1002", 100);
     let o = await makeOrder(root, [{ item: "BR-1001", ordered: 10 }, { item: "BR-1002", ordered: 5 }]);
     o = ok(await check(root, o));
-    // Header edits are fine while Checked; so are line edits.
+    // Header edits are fine while Checked; a line edit goes through too,
+    // but takes the checked stamp off (A-22) - it is checked again first.
     o = ok(await editOrder(root, o, { lineItems: [{ ...o.lineItems[0], ordered: 12 }, o.lineItems[1]] }));
     expect(o.lineItems.find((l: any) => l.item === "BR-1001").ordered).toBe(12);
+    expect(o.status).toBe("Entered");
+    o = ok(await check(root, o));
 
     o = ok(await allocate(root, o));
     const frozen = await editOrder(root, o, { lineItems: [{ ...o.lineItems[0], ordered: 20 }, o.lineItems[1]] });
