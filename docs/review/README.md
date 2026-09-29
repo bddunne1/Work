@@ -1,5 +1,12 @@
 # ERP review
 
+## Sprint 1 — 29 Sep 2026
+- Merged to main as #5. The master review's list and narrative are updated
+  with what sprint 1 closed (24 items) and partly closed (3). Screens under
+  `screens/sprint1/`; the day simulation re-run on the sprint 1 code is in
+  `data/round6/` (0 drift, 0 500s, 409s down from 60 to 44, 90 waiting at
+  close against 91 in round 2).
+
 ## Sprint plan — 29 Sep 2026
 - `erp-sprint-plan.html`: sprints 0 to 3 from the master review's work plan
   expanded into tasks, each with the file it touches, the test that proves
