@@ -88,9 +88,25 @@ const pickFromTop = (list, n = 3) => (list.length ? list[Math.floor(rng.next() *
 const bySo = (a, b) => Number(a.soNumber) - Number(b.soNumber);
 
 async function login(user) {
-  const res = await post(null, "/api/auth/login", { username: user.username, password: user.password });
+  // Accounts an admin creates must choose their own password on first
+  // sign-in (round 5); the sim staff do that once, the way a person would.
+  const changed = `${user.password}-2026`;
+  let res;
+  try {
+    res = await post(null, "/api/auth/login", { username: user.username, password: user.password });
+  } catch (err) {
+    if (err?.status !== 401) throw err;
+    res = await post(null, "/api/auth/login", { username: user.username, password: changed });
+    user.password = changed;
+  }
   user.token = res.token;
   user.account = res.account;
+  if (res.account?.mustChangePassword) {
+    const next = await post(user, "/api/auth/change-password", { currentPassword: user.password, newPassword: changed });
+    user.password = changed;
+    user.token = next.token;
+    user.account = next.account;
+  }
   await get(user, "/api/auth/me");
   await get(user, "/api/settings");
 }
