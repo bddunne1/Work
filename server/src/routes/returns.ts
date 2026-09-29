@@ -130,13 +130,36 @@ function mapOut<T extends { status: string }>(ra: T) {
 router.use(requireAuth);
 
 // `?open=1` returns only RAs issued and not yet received back.
+// With `?page=N` the list is paged and searched on the server (PF-03):
+// `{ rows, total, page, pageSize }`; `q` matches the RA #, the S.O. # or
+// the customer name.
 router.get("/", requireAnyPermission(RETURN_VIEW_PAGES, "view"), async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
-  const returns = await prisma.returnAuthorization.findMany({
-    where: openOnly ? { status: "ISSUED" } : undefined,
-    orderBy: { createdAt: "desc" },
-    include,
-  });
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const where: Prisma.ReturnAuthorizationWhereInput = {
+    ...(openOnly ? { status: "ISSUED" as const } : {}),
+    ...(q
+      ? {
+          OR: [
+            { raNumber: { contains: q, mode: "insensitive" } },
+            { soNumber: { contains: q, mode: "insensitive" } },
+            { customer: { name: { contains: q, mode: "insensitive" } } },
+            { billTo: { path: ["name"], string_contains: q } },
+          ],
+        }
+      : {}),
+  };
+  const page = Number(req.query.page);
+  if (Number.isInteger(page) && page > 0) {
+    const pageSize = Math.min(Math.max(1, Number(req.query.pageSize) || 50), 500);
+    const [rows, total] = await Promise.all([
+      prisma.returnAuthorization.findMany({ where, orderBy: { createdAt: "desc" }, include, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.returnAuthorization.count({ where }),
+    ]);
+    res.json({ rows: rows.map(mapOut), total, page, pageSize });
+    return;
+  }
+  const returns = await prisma.returnAuthorization.findMany({ where, orderBy: { createdAt: "desc" }, include });
   res.json(returns.map(mapOut));
 });
 

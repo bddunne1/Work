@@ -344,6 +344,33 @@ describe("date validation (C-15)", () => {
   });
 });
 
+describe("paged PO and return lists (D-06)", () => {
+  it("pages and searches on the server, and still answers the plain list", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const vendor = ok(await root.post("/api/vendors", { name: "Rope Supply Co", contactName: "Rep", phone: "555", email: "rep@example.com", address: { name: "Rope Supply Co", addressLine1: "1 St", city: "C", state: "IL", zip: "60000" } }), 201);
+    for (let i = 0; i < 3; i++) {
+      ok(await root.post("/api/vendor-purchase-orders", { vendorId: vendor.id, vendorName: vendor.name, orderDate: "2026-09-29", lines: [{ itemNumber: "BR-1001", description: "x", orderedQty: 10, cost: 1 }], status: "Open", notes: "" }), 201);
+    }
+    const page1 = ok(await root.get("/api/vendor-purchase-orders?page=1&pageSize=2"));
+    expect(page1.total).toBe(3);
+    expect(page1.rows).toHaveLength(2);
+    const page2 = ok(await root.get("/api/vendor-purchase-orders?page=2&pageSize=2"));
+    expect(page2.rows).toHaveLength(1);
+    expect(ok(await root.get("/api/vendor-purchase-orders?page=1&q=rope")).total).toBe(3);
+    expect(ok(await root.get("/api/vendor-purchase-orders?page=1&q=nobody")).total).toBe(0);
+    expect(Array.isArray(ok(await root.get("/api/vendor-purchase-orders")))).toBe(true);
+
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 5 }])));
+    const ra = await issueReturn(root, o, "BR-1001", 1);
+    const ras = ok(await root.get(`/api/returns?page=1&q=${ra.raNumber}`));
+    expect(ras.total).toBe(1);
+    expect(ok(await root.get(`/api/returns?page=1&q=${o.soNumber}`)).total).toBe(1);
+    expect(ok(await root.get(`/api/returns?page=1&q=zzz`)).total).toBe(0);
+    expect(Array.isArray(ok(await root.get("/api/returns")))).toBe(true);
+  });
+});
+
 describe("QuickBooks void of a document that no longer exists", () => {
   it("completes the outbox row instead of leaving it dead", async () => {
     const root = await admin();

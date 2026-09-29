@@ -86,13 +86,28 @@ router.use(requireAuth);
 // `?open=1` returns only POs still waiting on stock (Open / Partially
 // Received) - what the Dashboard's receiving numbers need - instead of every
 // PO ever written.
+// Plain: every PO (or `?open=1` the open ones). With `?page=N` the list is
+// paged and searched on the server - `{ rows, total, page, pageSize }` -
+// so the Purchase Orders page stops downloading every PO ever written
+// (PF-03). `q` matches the PO # or the vendor name.
 router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
-  const pos = await prisma.vendorPurchaseOrder.findMany({
-    where: openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : undefined,
-    orderBy: { createdAt: "desc" },
-    include,
-  });
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const where: Prisma.VendorPurchaseOrderWhereInput = {
+    ...(openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : {}),
+    ...(q ? { OR: [{ poNumber: { contains: q, mode: "insensitive" } }, { vendorName: { contains: q, mode: "insensitive" } }] } : {}),
+  };
+  const page = Number(req.query.page);
+  if (Number.isInteger(page) && page > 0) {
+    const pageSize = Math.min(Math.max(1, Number(req.query.pageSize) || 50), 500);
+    const [rows, total] = await Promise.all([
+      prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.vendorPurchaseOrder.count({ where }),
+    ]);
+    res.json({ rows: rows.map(mapOut), total, page, pageSize });
+    return;
+  }
+  const pos = await prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include });
   res.json(pos.map(mapOut));
 });
 

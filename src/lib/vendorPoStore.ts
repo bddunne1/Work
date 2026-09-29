@@ -41,6 +41,14 @@ export async function listVendorPos(): Promise<VendorPurchaseOrder[]> {
   return pos.map(mapPo);
 }
 
+// One page of POs, searched on the server (PF-03).
+export async function searchVendorPos(params: { q?: string; page: number; pageSize: number }): Promise<{ rows: VendorPurchaseOrder[]; total: number }> {
+  const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.q) qs.set("q", params.q);
+  const res = await api.get<{ rows: VendorPurchaseOrder[]; total: number }>(`/api/vendor-purchase-orders?${qs.toString()}`);
+  return { rows: res.rows.map(mapPo), total: res.total };
+}
+
 // Only POs still waiting on stock (Open / Partially Received).
 export async function listOpenVendorPos(): Promise<VendorPurchaseOrder[]> {
   const pos = await api.get<VendorPurchaseOrder[]>("/api/vendor-purchase-orders?open=1");

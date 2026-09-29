@@ -42,6 +42,14 @@ export async function listReturns(): Promise<ReturnAuthorization[]> {
   return returns.map(mapReturn);
 }
 
+// One page of RAs, searched on the server (PF-03).
+export async function searchReturns(params: { q?: string; page: number; pageSize: number }): Promise<{ rows: ReturnAuthorization[]; total: number }> {
+  const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.q) qs.set("q", params.q);
+  const res = await api.get<{ rows: ReturnAuthorization[]; total: number }>(`/api/returns?${qs.toString()}`);
+  return { rows: res.rows.map(mapReturn), total: res.total };
+}
+
 // Only RAs issued and not yet received back.
 export async function listOpenReturns(): Promise<ReturnAuthorization[]> {
   const ras = await api.get<ReturnAuthorization[]>("/api/returns?open=1");
