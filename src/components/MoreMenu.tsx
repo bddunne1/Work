@@ -29,8 +29,10 @@ export default function MoreMenu({ account }: Props) {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const items = MORE_MENU_ITEMS.filter((m) => getAccessLevel(m.to, account) !== "none");
-  if (items.length === 0) return null;
+  const items = [
+    ...MORE_MENU_ITEMS.filter((m) => getAccessLevel(m.to, account) !== "none"),
+    { name: "Change Password", to: "/change-password" },
+  ];
 
   return (
     <div className="more-menu" ref={containerRef}>

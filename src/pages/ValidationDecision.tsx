@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { isConflictError } from "../lib/apiClient";
-import { useAuth } from "../lib/authContext";
-import { getOrder, updateOrder } from "../lib/orderStore";
+import { checkOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
@@ -20,7 +19,6 @@ function ValidationDecisionInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { account } = useAuth();
   const queueState = location.state as ReviewQueueState | undefined;
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -54,13 +52,8 @@ function ValidationDecisionInner() {
   async function markChecked() {
     if (!order || staleStatus) return;
     try {
-      await updateOrder({
-        ...order,
-        status: "Checked",
-        checkedAt: new Date().toISOString(),
-        checkedBy: account?.initials,
-        checkedByColor: account?.color,
-      }, "Entered");
+      // The server stamps who checked it from the session, not from here.
+      await checkOrder(order);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);

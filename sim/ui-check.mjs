@@ -27,7 +27,7 @@ async function login(page, username, password) {
 }
 
 async function main() {
-  const admin = { token: (await post(null, "/api/auth/login", { username: "admin", password: "123" })).token };
+  const admin = { token: (await post(null, "/api/auth/login", { username: "admin", password: process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026" })).token };
   admin.account = (await get(admin, "/api/auth/me")).account;
 
   // Stage an order at "Pick & Packed, documents printed" through the API.
@@ -149,7 +149,7 @@ async function main() {
   // 7. Stock ledger on Item Profile.
   {
     const page = await newPage();
-    await login(page, "admin", "123");
+    await login(page, "admin", process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026");
     await page.goto(`${UI}/#/items/${item.id}`);
     await page.getByRole("cell", { name: "Returned to stock", exact: true }).first().waitFor({ timeout: 10_000 }).catch(() => {});
     const shippedRow = await page.getByRole("cell", { name: "Shipped", exact: true }).count();
@@ -170,7 +170,7 @@ async function main() {
   };
   for (const [user, paths] of Object.entries(sweep)) {
     const page = await newPage();
-    await login(page, user, user === "admin" ? "123" : "Sim-pass-1");
+    await login(page, user, user === "admin" ? (process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026") : "Sim-pass-1");
     for (const p of paths) {
       const before = errors.length;
       await page.goto(`${UI}/#${p}`);

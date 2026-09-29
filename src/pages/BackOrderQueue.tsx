@@ -5,7 +5,7 @@ import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { estimateBackorderShipDate } from "../lib/backorderForecast";
 import { listItems } from "../lib/itemStore";
-import { listOpenOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, setEstimatedShipDate } from "../lib/orderStore";
 import { listVendorPos } from "../lib/vendorPoStore";
 import type { Item, PurchaseOrder, VendorPurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
@@ -39,7 +39,7 @@ export default function BackOrderQueue() {
   async function applyEstimate(order: PurchaseOrder, date: string) {
     setApplyingFor(order.soNumber);
     try {
-      await updateOrder({ ...order, estimatedShipDate: date });
+      await setEstimatedShipDate(order, date);
       setAllOrders(await listOpenOrders());
     } catch (err) {
       if (isConflictError(err)) {

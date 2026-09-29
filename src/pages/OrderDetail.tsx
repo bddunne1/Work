@@ -6,9 +6,10 @@ import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
+import { invoicesForOrder, money } from "../lib/invoiceStore";
 import { cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
 import { canView, canEdit as canEditPath } from "../lib/permissions";
-import type { PurchaseOrder } from "../types";
+import type { Invoice, PurchaseOrder } from "../types";
 import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
 
 // Where "continue working this order" should go next, based on its current
@@ -49,6 +50,7 @@ function OrderDetailInner() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PurchaseOrder | undefined>(undefined);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
     if (!soNumber) return;
@@ -56,7 +58,13 @@ function OrderDetailInner() {
       setOrder(o);
       setLoading(false);
     });
+    invoicesForOrder(soNumber).then(setInvoices);
   }, [soNumber]);
+  // A shipment or undo changes the invoices; refresh them with the order.
+  const shipmentCount = order?.shipmentHistory?.length ?? 0;
+  useEffect(() => {
+    if (soNumber && !loading) invoicesForOrder(soNumber).then(setInvoices);
+  }, [soNumber, shipmentCount, loading]);
 
   if (loading) {
     return <div className="page" />;
@@ -459,6 +467,34 @@ function OrderDetailInner() {
           <button type="button" className="primary-btn" onClick={() => navigate(nextStage.to)}>
             {nextStage.label}
           </button>
+        </div>
+      )}
+
+      {invoices.length > 0 && (
+        <div className="shipment-history no-print">
+          <div className="so-notes-label muted">Invoices</div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((inv) => (
+                <tr key={inv.invoiceNumber}>
+                  <td>
+                    <Link to={`/invoices/${inv.invoiceNumber}`}>{inv.invoiceNumber}</Link>
+                  </td>
+                  <td>{inv.invoiceDate}</td>
+                  <td>{money(inv.total)}</td>
+                  <td>{inv.status === "VOID" ? <span className="danger-link">Void</span> : "Issued"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

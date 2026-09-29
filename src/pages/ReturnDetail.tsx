@@ -3,11 +3,12 @@ import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
+import { creditMemoForReturn, money } from "../lib/invoiceStore";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listItems } from "../lib/itemStore";
 import { canEdit as canEditPath } from "../lib/permissions";
 import { getReturn, receiveReturn, updateReturn } from "../lib/returnStore";
-import type { Item, ReturnAuthorization, ReturnLine, ReturnStatus } from "../types";
+import type { CreditMemo, Item, ReturnAuthorization, ReturnLine, ReturnStatus } from "../types";
 import { returnTotal } from "../types";
 
 const STATUSES: ReturnStatus[] = ["Issued", "Received", "Closed"];
@@ -34,6 +35,7 @@ function ReturnDetailInner() {
   const [editing, setEditing] = useState(false);
   const [restock, setRestock] = useState<Record<string, boolean>>({});
   const [draft, setDraft] = useState<ReturnAuthorization | undefined>(undefined);
+  const [creditMemo, setCreditMemo] = useState<CreditMemo | undefined>(undefined);
 
   useEffect(() => {
     if (!raNumber) return;
@@ -41,6 +43,7 @@ function ReturnDetailInner() {
       setRa(r);
       setLoading(false);
     });
+    creditMemoForReturn(raNumber).then(setCreditMemo);
   }, [raNumber]);
 
   if (loading) {
@@ -102,6 +105,7 @@ function ReturnDetailInner() {
     try {
       setRa(await receiveReturn(ra, restock));
       setRestock({});
+      creditMemoForReturn(ra.raNumber).then(setCreditMemo);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -438,6 +442,12 @@ function ReturnDetailInner() {
           </div>
         )}
       </div>
+      {creditMemo && (
+        <p className="stale-status-notice no-print">
+          Credit memo <Link to={`/invoices/credit-memos/${creditMemo.creditMemoNumber}`}>{creditMemo.creditMemoNumber}</Link> for {money(creditMemo.total)}
+          {creditMemo.status === "VOID" ? " (void)" : ""} was raised when this return was received.
+        </p>
+      )}
     </div>
   );
 }

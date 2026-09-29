@@ -10,15 +10,10 @@ import { prisma } from "../prisma.js";
 
 const router = Router();
 
-// App-facing status strings <-> the Prisma enum. Kept as a translation at
+// App-facing status strings <- the Prisma enum. Kept as a translation at
 // this boundary so the rest of the app never has to know the DB spells
-// "Partially Received" as PARTIALLY_RECEIVED.
-const STATUS_IN = {
-  Open: "OPEN",
-  "Partially Received": "PARTIALLY_RECEIVED",
-  Received: "RECEIVED",
-  Closed: "CLOSED",
-} as const;
+// "Partially Received" as PARTIALLY_RECEIVED. Inbound status is derived
+// from the lines (see derivedStatus), never mapped from the client.
 const STATUS_OUT: Record<string, string> = {
   OPEN: "Open",
   PARTIALLY_RECEIVED: "Partially Received",
@@ -29,35 +24,40 @@ const STATUS_OUT: Record<string, string> = {
 const VENDOR_PO_COUNTER_KEY = "vendorPo";
 const VENDOR_PO_START = 5001;
 
+// What a PO's author may set on a line. `receivedQty` is server-owned: it
+// only moves through POST /:po/receive, in the same transaction as the
+// stock it represents (R5-03). If a client sends it, zod strips it.
 const lineSchema = z.object({
   id: z.string().optional(),
-  itemNumber: z.string(),
-  description: z.string(),
-  orderedQty: z.number().int().nonnegative(),
-  receivedQty: z.number().int().nonnegative().default(0),
-  cost: z.number(),
-});
-
-const receivingRecordSchema = z.object({
-  id: z.string().optional(),
-  receivedAt: z.string(),
-  lines: z.array(z.object({ lineId: z.string(), qty: z.number() })),
+  itemNumber: z.string().min(1).max(100),
+  description: z.string().max(500),
+  orderedQty: z.number().int().positive(),
+  cost: z.number().finite().nonnegative(),
 });
 
 const createSchema = z.object({
   vendorId: z.string(),
-  vendorName: z.string(),
+  vendorName: z.string().max(200),
   orderDate: z.string(),
   expectedDate: z.string().nullish(),
-  notes: z.string().default(""),
-  lines: z.array(lineSchema).default([]),
+  notes: z.string().max(5000).default(""),
+  lines: z.array(lineSchema).max(500).default([]),
 });
 
+// The only status a plain save may set is Closed (or Open, to reopen a
+// closed PO); Partially Received / Received are derived from the lines.
+// Receiving history is server-owned and ignored if sent.
 const updateSchema = createSchema.extend({
-  status: z.enum(["Open", "Partially Received", "Received", "Closed"]),
-  receivingHistory: z.array(receivingRecordSchema).default([]),
+  status: z.enum(["Open", "Partially Received", "Received", "Closed"]).optional(),
   version: z.number().int(),
 });
+
+type DbStatus = "OPEN" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CLOSED";
+function derivedStatus(lines: { orderedQty: number; receivedQty: number }[]): DbStatus {
+  if (lines.length > 0 && lines.every((l) => l.receivedQty >= l.orderedQty)) return "RECEIVED";
+  if (lines.some((l) => l.receivedQty > 0)) return "PARTIALLY_RECEIVED";
+  return "OPEN";
+}
 
 const receiveSchema = z.object({
   version: z.number().int(),
@@ -135,7 +135,7 @@ router.post("/", requirePermission("purchase-orders", "edit"), async (req: Authe
             itemNumber: l.itemNumber,
             description: l.description,
             orderedQty: l.orderedQty,
-            receivedQty: l.receivedQty,
+            receivedQty: 0,
             cost: l.cost,
           })),
         },
@@ -158,40 +158,67 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
   const data = parsed.data;
   const poNumber = req.params.poNumber;
 
-  const existing = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber } });
+  const existing = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include: { lines: true } });
   if (!existing) {
     res.status(404).json({ error: "Purchase order not found" });
     return;
   }
 
+  let finalStatus: DbStatus = existing.status;
   try {
     await prisma.$transaction(async (tx) => {
-      const result = await tx.vendorPurchaseOrder.updateMany({
-        where: { poNumber, version: data.version },
+      const rows = await tx.$queryRaw<{ version: number }[]>`SELECT "version" FROM "VendorPurchaseOrder" WHERE "poNumber" = ${poNumber} FOR UPDATE`;
+      if (rows.length === 0) throw new HttpError(404, "Purchase order not found");
+      if (rows[0].version !== data.version) throw new ConflictError();
+
+      // Lines that have received stock are part of the record: they stay,
+      // keep their item, and can't be cut below what has arrived.
+      const before = new Map(existing.lines.map((l) => [l.id, l]));
+      const after = new Map(data.lines.filter((l) => l.id).map((l) => [l.id as string, l]));
+      for (const l of existing.lines) {
+        if (l.receivedQty <= 0) continue;
+        const a = after.get(l.id);
+        if (!a) throw new HttpError(409, `${l.itemNumber} on ${poNumber} has already received ${l.receivedQty} and can't be removed.`, { conflict: true });
+        if (a.itemNumber.trim().toLowerCase() !== l.itemNumber.trim().toLowerCase()) {
+          throw new HttpError(409, `${l.itemNumber} on ${poNumber} has already received stock and can't be changed to another item.`, { conflict: true });
+        }
+        // Lowering the quantity under what has arrived is refused; an unchanged
+        // quantity that an allowed over-receipt already exceeds is fine.
+        if (a.orderedQty < l.receivedQty && a.orderedQty !== l.orderedQty) throw new HttpError(409, `${l.itemNumber} on ${poNumber} has already received ${l.receivedQty} - ordered can't go below that.`, { conflict: true });
+      }
+      const ids = [...after.keys()];
+      if (ids.length > 0) {
+        const foreign = await tx.vendorPoLine.count({ where: { id: { in: ids }, poNumber: { not: poNumber } } });
+        if (foreign > 0) throw new HttpError(400, "Some lines on this PO belong to a different PO - reload and try again.");
+      }
+
+      const merged = data.lines.map((l) => ({ orderedQty: l.orderedQty, receivedQty: (l.id && before.get(l.id)?.receivedQty) || 0 }));
+      const derived = derivedStatus(merged);
+      if (data.status === "Closed") finalStatus = "CLOSED";
+      else if (data.status === "Open" || data.status === undefined) finalStatus = existing.status === "CLOSED" && data.status === undefined ? "CLOSED" : derived;
+      else finalStatus = derived; // "Received" / "Partially Received" are never taken from the client
+
+      await tx.vendorPurchaseOrder.update({
+        where: { poNumber },
         data: {
           vendorId: data.vendorId,
           vendorName: data.vendorName,
           orderDate: new Date(data.orderDate),
           expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
-          status: STATUS_IN[data.status],
+          status: finalStatus,
           notes: data.notes,
           version: { increment: 1 },
         },
       });
-      if (result.count === 0) throw new ConflictError();
       const itemIds = await resolveItemIds(tx, data.lines.map((l) => l.itemNumber));
-      const beforeItems = (await tx.vendorPoLine.findMany({ where: { poNumber }, select: { itemNumber: true } })).map((l) => l.itemNumber);
+      const beforeItems = existing.lines.map((l) => l.itemNumber);
       await syncChildren(tx.vendorPoLine, poNumber, "poNumber", data.lines, (l) => ({
         itemId: itemIdFor(itemIds, l.itemNumber),
         itemNumber: l.itemNumber,
         description: l.description,
         orderedQty: l.orderedQty,
-        receivedQty: l.receivedQty,
+        receivedQty: (l.id && before.get(l.id)?.receivedQty) || 0,
         cost: l.cost,
-      }));
-      await syncChildren(tx.vendorReceivingRecord, poNumber, "poNumber", data.receivingHistory, (r) => ({
-        receivedAt: new Date(r.receivedAt),
-        lines: r.lines,
       }));
       // Items removed from the PO need their on-order total dropped too.
       await recomputeQtyOnPurchaseOrder(tx, [...beforeItems, ...data.lines.map((l) => l.itemNumber)]);
@@ -204,7 +231,10 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
     throw err;
   }
 
-  logAudit(req.account!, "VENDOR_PO_UPDATED", "vendor-po", poNumber, poNumber, { status: data.status });
+  logAudit(req.account!, "VENDOR_PO_UPDATED", "vendor-po", poNumber, poNumber, {
+    status: STATUS_OUT[finalStatus],
+    ...(existing.status !== finalStatus ? { from: STATUS_OUT[existing.status] } : {}),
+  });
   const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });
   res.json(mapOut(updated!));
 });
@@ -230,12 +260,21 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
     if (rows[0].status === "CLOSED") throw new HttpError(409, `${poNumber} is closed - reopen it before receiving against it.`, { conflict: true });
 
     const received = lines.filter((l) => l.qty > 0);
-    if (received.length === 0) return;
+    if (received.length === 0) throw new HttpError(400, "Nothing to receive - every line is 0.");
     const poLines = await tx.vendorPoLine.findMany({ where: { poNumber } });
     const byId = new Map(poLines.map((l) => [l.id, l]));
+    const seen = new Set<string>();
     for (const r of received) {
       const line = byId.get(r.lineId);
       if (!line) throw new HttpError(400, "Receipt references a line that is no longer on this PO - reload and try again.");
+      if (seen.has(r.lineId)) throw new HttpError(400, `${line.itemNumber} appears twice in this receipt.`);
+      seen.add(r.lineId);
+      // Over-receipt happens (a vendor ships a full case), but not by an
+      // order of magnitude: a typo shouldn't add a thousand units to stock.
+      const outstanding = Math.max(0, line.orderedQty - line.receivedQty);
+      if (r.qty > outstanding + Math.max(10, Math.ceil(line.orderedQty * 0.1))) {
+        throw new HttpError(400, `${line.itemNumber}: ${outstanding} outstanding on ${poNumber}, ${r.qty} entered. Change the PO quantity first if the vendor really sent that many.`);
+      }
       await tx.vendorPoLine.update({ where: { id: line.id }, data: { receivedQty: { increment: r.qty } } });
       line.receivedQty += r.qty;
       await adjustOnHand(tx, { itemId: line.itemId, itemNumber: line.itemNumber }, r.qty, {
@@ -246,11 +285,9 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       });
     }
     await tx.vendorReceivingRecord.create({ data: { poNumber, receivedAt: new Date(), lines: received } });
-    const full = poLines.every((l) => l.receivedQty >= l.orderedQty);
-    const any = poLines.some((l) => l.receivedQty > 0);
     await tx.vendorPurchaseOrder.update({
       where: { poNumber },
-      data: { status: full ? "RECEIVED" : any ? "PARTIALLY_RECEIVED" : undefined, version: { increment: 1 } },
+      data: { status: derivedStatus(poLines), version: { increment: 1 } },
     });
     await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemNumber));
     logAudit(req.account!, "VENDOR_PO_RECEIVED", "vendor-po", poNumber, poNumber, {

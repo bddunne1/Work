@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { getOrder, listOpenOrders, updateOrder } from "../lib/orderStore";
+import { allocateOrder, getOrder, listOpenOrders } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
@@ -148,22 +148,15 @@ function AllocationDecisionInner() {
     // otherwise the order lands in Release Orders with no allocated lines and
     // can never be completed there, stalling the review queue.
     const hold = outcomeStatus === "Backordered" || totalAllocated === 0;
-    const finalStatus = hold ? "Backordered" : outcomeStatus;
+    // The server makes the same decision from these inputs (hold -> nothing
+    // reserved; otherwise Allocated for what's entered) and checks every
+    // increase against free stock under its allocation lock.
     const lines = order.lineItems.map((li) => ({
       lineItemId: li.id,
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
     }));
     try {
-      await updateOrder({
-        ...order,
-        status: finalStatus,
-        allocation: {
-          lines,
-          fullyAllocated,
-          shipCompleteOnly: fullyAllocated ? undefined : (shipCompleteOnly as boolean),
-          decidedAt: new Date().toISOString(),
-        },
-      }, order.status);
+      await allocateOrder(order, lines, fullyAllocated ? undefined : shipCompleteOnly);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);

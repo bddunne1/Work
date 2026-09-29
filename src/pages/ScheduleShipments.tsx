@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { listOpenOrders, updateOrder } from "../lib/orderStore";
+import { listOpenOrders, setEstimatedShipDate as setShipDate } from "../lib/orderStore";
 import type { OrderStatus, PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -59,9 +59,8 @@ export default function ScheduleShipments() {
   async function setEstimatedShipDate(soNumber: string, value: string) {
     const order = orders.find((o) => o.soNumber === soNumber);
     if (!order) return;
-    const updated = { ...order, estimatedShipDate: value || undefined };
     try {
-      const saved = await updateOrder(updated);
+      const saved = await setShipDate(order, value || null);
       setOrders((os) => os.map((o) => (o.soNumber === soNumber ? saved : o)));
     } catch (err) {
       if (isConflictError(err)) {

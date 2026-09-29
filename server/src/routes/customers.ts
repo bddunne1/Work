@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { enqueueIfSynced } from "../integrations/sync.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -41,10 +42,10 @@ const priceOverrideSchema = z.object({
   itemNumber: z.string(),
   customerPartNumber: z.string().default(""),
   description: z.string().default(""),
-  price: z.number(),
-  pricePerFt: z.number().nullish(),
-  length: z.number().nullish(),
-  weight: z.number().nullish(),
+  price: z.number().finite().nonnegative(),
+  pricePerFt: z.number().finite().nonnegative().nullish(),
+  length: z.number().finite().nonnegative().nullish(),
+  weight: z.number().finite().nonnegative().nullish(),
 });
 
 const routingGuideSchema = z
@@ -67,6 +68,9 @@ const customerSchema = z.object({
   fob: z.string().default(""),
   rep: z.string().default(""),
   shipCompleteOnly: z.boolean().default(false),
+  // Invoices for an exempt customer (a reseller with a certificate on file)
+  // carry no tax whatever the order's rate says.
+  taxExempt: z.boolean().default(false),
   // .nullish() not .optional(): Prisma hands back `null` for an unset
   // nullable column, and this same object round-trips through PUT on every
   // save - .optional() alone rejects that `null` with a 400.
@@ -149,6 +153,7 @@ router.post("/", requirePermission("customers", "edit"), async (req: AuthedReque
       fob: data.fob,
       rep: data.rep,
       shipCompleteOnly: data.shipCompleteOnly,
+      taxExempt: data.taxExempt,
       privateLabelName: data.privateLabelName,
       routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
       shipToLocations: { create: data.shipToLocations.map((l) => ({ label: l.label, address: l.address })) },
@@ -205,12 +210,15 @@ router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedReq
           fob: data.fob,
           rep: data.rep,
           shipCompleteOnly: data.shipCompleteOnly,
+          taxExempt: data.taxExempt,
           privateLabelName: data.privateLabelName,
           routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
           version: { increment: 1 },
         },
       });
       if (result.count === 0) throw new ConflictError();
+      // Keep QuickBooks' copy current if it has one.
+      await enqueueIfSynced(tx, "customer", id);
 
       await syncChildren(tx.shippingLocation, id, "customerId", data.shipToLocations, (l) => ({
         label: l.label,

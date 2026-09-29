@@ -20,7 +20,7 @@ const addr = (name) => {
 
 async function main() {
   const admin = { username: "admin" };
-  const login = await post(null, "/api/auth/login", { username: "admin", password: "123" });
+  const login = await post(null, "/api/auth/login", { username: "admin", password: process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026" });
   admin.token = login.token;
 
   // ---- accounts

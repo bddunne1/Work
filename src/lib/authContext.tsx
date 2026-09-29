@@ -14,12 +14,19 @@ interface AuthContextValue {
   loading: boolean;
   login: (username: string, password: string) => Promise<string | null>;
   logout: () => void;
+  // Replaces the signed-in account after a change the server made to it
+  // (e.g. a completed password change).
+  setAccount: (account: Account) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Sign out after this long without a click or keypress - a shared warehouse
+// PC left signed in shouldn't stay that way all day (review R5-04).
+const IDLE_MINUTES = Number(import.meta.env.VITE_IDLE_MINUTES) || 45;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [account, setAccount] = useState<Account | null>(null);
+  const [account, setAccountState] = useState<Account | null>(null);
   const [loading, setLoading] = useState(() => Boolean(getToken()));
 
   useEffect(() => {
@@ -32,13 +39,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // that.
     Promise.all([getCurrentAccount(), preloadSettings()]).then(([result]) => {
       if (cancelled) return;
-      setAccount(result);
+      setAccountState(result);
       setLoading(false);
     });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Idle timeout: any interaction resets the clock; when it runs out the
+  // token is dropped and the router sends the person back to sign in.
+  useEffect(() => {
+    if (!account) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const expire = () => {
+      logoutStore();
+      clearSettingsCache();
+      setAccountState(null);
+      if (!window.location.hash.startsWith("#/login")) window.location.assign("#/login");
+    };
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(expire, IDLE_MINUTES * 60_000);
+    };
+    const events: (keyof WindowEventMap)[] = ["pointerdown", "keydown", "scroll", "touchstart"];
+    for (const e of events) window.addEventListener(e, arm, { passive: true });
+    arm();
+    return () => {
+      clearTimeout(timer);
+      for (const e of events) window.removeEventListener(e, arm);
+    };
+  }, [account]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -48,15 +79,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { account: result, error } = await loginStore(username, password);
         if (result) {
           clearSettingsCache();
-          await preloadSettings();
+          // An account that still has to change its password can't read
+          // settings yet - the defaults are fine until it has.
+          if (!result.mustChangePassword) await preloadSettings();
         }
-        setAccount(result);
+        setAccountState(result);
         return result !== null ? null : (error ?? "Incorrect username or password.");
       },
       logout: () => {
         logoutStore();
         clearSettingsCache();
-        setAccount(null);
+        setAccountState(null);
+      },
+      setAccount: (next: Account) => {
+        setAccountState(next);
+        if (!next.mustChangePassword) void preloadSettings();
       },
     }),
     [account, loading]

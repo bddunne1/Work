@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import QuickBooksPanel from "../components/QuickBooksPanel";
 import type { CompanyInfo } from "../lib/companyStore";
 import { getCompanyInfo, setCompanyInfo } from "../lib/companyStore";
 import { maxExistingSalesOrderNumber, nextSalesOrderNumber, setNextSalesOrderNumber } from "../lib/orderStore";
@@ -198,6 +199,8 @@ export default function Settings() {
           </form>
         </div>
       </div>
+
+      <QuickBooksPanel />
     </div>
   );
 }

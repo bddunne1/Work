@@ -185,6 +185,9 @@ export interface Customer {
   fob: string;
   rep: string;
   shipCompleteOnly: boolean;
+  // Invoices for an exempt customer (a reseller with a certificate on file)
+  // carry no sales tax whatever the order's rate says.
+  taxExempt?: boolean;
   // When set, product labels printed for this customer show this brand
   // name instead of ours - for customers who private-label our products.
   privateLabelName?: string;
@@ -649,4 +652,93 @@ export function matchesReturnQuery(ra: Pick<ReturnAuthorization, "raNumber" | "s
     (ra.soNumber ?? "").toLowerCase().includes(q) ||
     ra.billTo.name.toLowerCase().includes(q)
   );
+}
+
+// --- Invoices and credit memos --------------------------------------------
+// Raised by the server: an invoice per shipment (inside the ship
+// transaction) and a credit memo per received return. This system owns the
+// documents; QuickBooks owns the money (receivables, payments, the ledger) -
+// `sync` says how far along the push to QuickBooks is.
+
+export type DocStatus = "ISSUED" | "VOID";
+
+export interface SyncInfo {
+  // NOT_QUEUED | PENDING | PROCESSING | FAILED | DEAD | SYNCED
+  status: string;
+  externalId: string | null;
+  lastError: string | null;
+}
+
+export interface InvoiceLine {
+  id: string;
+  salesOrderLineId?: string | null;
+  itemId?: string | null;
+  item: string;
+  description: string;
+  um: string;
+  qty: number;
+  rate: number;
+  amount: number;
+}
+
+export interface Invoice {
+  invoiceNumber: string;
+  soNumber: number;
+  shipmentRecordId?: string | null;
+  customerId?: string | null;
+  customerName: string;
+  billTo: Address;
+  shipTo: Address;
+  poNumber: string;
+  terms: string;
+  rep: string;
+  invoiceDate: string;
+  dueDate: string;
+  subtotal: number;
+  taxRate: number;
+  tax: number;
+  total: number;
+  status: DocStatus;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  notes: string;
+  createdAt: string;
+  lines: InvoiceLine[];
+  sync?: SyncInfo | null;
+}
+
+export interface CreditMemoLine {
+  id: string;
+  returnLineId?: string | null;
+  invoiceNumber?: string | null;
+  itemId?: string | null;
+  item: string;
+  description: string;
+  um: string;
+  qty: number;
+  rate: number;
+  amount: number;
+}
+
+export interface CreditMemo {
+  creditMemoNumber: string;
+  raNumber: string;
+  customerId?: string | null;
+  customerName: string;
+  billTo: Address;
+  soNumber?: string | null;
+  memoDate: string;
+  subtotal: number;
+  taxRate: number;
+  tax: number;
+  total: number;
+  status: DocStatus;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  reason: string;
+  createdAt: string;
+  lines: CreditMemoLine[];
+  sync?: SyncInfo | null;
 }

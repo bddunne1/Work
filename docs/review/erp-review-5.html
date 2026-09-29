@@ -1,0 +1,705 @@
+<title>Aamstrand ERP Round 5</title>
+<meta name="description" content="Architecture and security review of the Aamstrand ERP: what holds up, 21 new findings, a redesign plan in priority order, and a recommendation on building accounting versus keeping QuickBooks as the ledger.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a;
+    --high: #b9620f;
+    --med: #7d6c0c;
+    --low: #5d6772;
+    --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08);
+    --high-bg: rgba(185, 98, 15, 0.09);
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62;
+      --high: #f0a24e;
+      --med: #d6c35c;
+      --low: #97a1ab;
+      --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12);
+      --high-bg: rgba(240, 162, 78, 0.12);
+      --ok-bg: rgba(95, 196, 141, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62;
+    --high: #f0a24e;
+    --med: #d6c35c;
+    --low: #97a1ab;
+    --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12);
+    --high-bg: rgba(240, 162, 78, 0.12);
+    --ok-bg: rgba(95, 196, 141, 0.12);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+  .prose ul, .prose ol, .panel ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; margin: 0; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 70ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+
+  .verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); }
+  .verdict .big.warn { color: var(--high); }
+  .verdict .big.good { color: var(--ok); }
+  @media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc a { font-family: var(--display); font-weight: 600; font-size: 0.92rem; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.good { color: var(--ok); font-weight: 600; }
+  td.bad { color: var(--crit); font-weight: 600; }
+  td.warn { color: var(--high); font-weight: 600; }
+  th.rec, td.rec { background: var(--ok-bg); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; }
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  details.finding { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev); border-radius: 6px; }
+  details.finding[data-sev="high"] { --sev: var(--crit); }
+  details.finding[data-sev="medium"] { --sev: var(--high); }
+  details.finding[data-sev="low"] { --sev: var(--low); }
+  details.finding summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: baseline; }
+  details.finding summary::-webkit-details-marker { display: none; }
+  .fid { font-family: var(--mono); font-size: 0.8rem; color: var(--sev); font-weight: 600; }
+  .ftitle { font-weight: 600; }
+  .ftitle small { display: block; font-weight: 400; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+  .sev { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sev); white-space: nowrap; }
+  .fbody { padding: 0 14px 14px 84px; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
+  .fbody dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; }
+  .fbody dt { color: var(--muted); font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .fbody dd { margin: 0; }
+  @media (max-width: 620px) {
+    details.finding summary { grid-template-columns: 1fr auto; }
+    .fid { grid-column: 1 / -1; }
+    .fbody { padding-left: 14px; }
+    .fbody dl { grid-template-columns: 1fr; }
+  }
+
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .panel h3 { font-size: 1.05rem; }
+  pre { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.6; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; max-width: none; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  .callout.warn { border-left-color: var(--high); background: var(--high-bg); }
+  .callout p { max-width: 76ch; }
+
+  .plan { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 12px; }
+  .plan li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; }
+  .plan li::before { content: counter(step); font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1; color: var(--accent); }
+  .plan li > div { display: flex; flex-direction: column; gap: 6px; }
+  .plan b.t { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
+  .plan .closes { font-size: 0.86rem; color: var(--muted); }
+  .plan ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; }
+
+  .strip { display: flex; flex-wrap: wrap; gap: 8px; }
+  .strip span { font-family: var(--display); font-size: 0.86rem; border: 1px solid var(--rule-strong); border-radius: 4px; padding: 2px 9px; background: var(--surface); }
+  .strip span.ours { border-color: var(--accent); color: var(--accent); }
+  .strip span.theirs { border-color: var(--ok); color: var(--ok); }
+
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .flow .col { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .flow .col h3 { font-size: 1rem; }
+  .flow .col ul { margin: 0; padding-left: 1.1em; font-size: 0.92rem; display: flex; flex-direction: column; gap: 3px; }
+  .flow .mid { display: flex; flex-direction: column; justify-content: center; gap: 10px; font-family: var(--mono); font-size: 0.78rem; color: var(--ink-2); }
+  .flow .mid span { background: var(--accent-soft); border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
+  @media (max-width: 760px) { .flow { grid-template-columns: 1fr; } .flow .mid { flex-direction: row; flex-wrap: wrap; } }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="eyebrow">Aamstrand ERP · architecture and security review · round 5</div>
+      <h1>Round 5: Architecture, Security and the Accounting Question</h1>
+      <p class="lede">A fresh read of the whole codebase after four rounds of fixes (the same branch then implemented the High findings, the first two redesign steps, the test suite and the QuickBooks bridge; see <code>docs/review/open-bugs.md</code> for what is closed): what the design gets right, where the data can still be corrupted or misattributed, how the API and data model should change next, and whether to grow this into a full ERP with invoicing and accounting or keep QuickBooks as the ledger.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Date</dt><dd>2026-09-28</dd>
+      <dt>Branch</dt><dd>claude/sweet-mccarthy-iug4f3</dd>
+      <dt>Base</dt><dd>main</dd>
+      <dt>Method</dt><dd>static code review</dd>
+      <dt>Server</dt><dd>23 files · 3,459 lines</dd>
+      <dt>Frontend</dt><dd>92 files · 16,536 lines</dd>
+    </dl>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div><span class="eyebrow">New findings</span><span class="big bad">4 high</span><span class="muted">Plus 7 medium and 10 low. All four high findings are data-integrity holes in the API, not the UI. None are exploitable from outside the network without a login.</span></div>
+      <div><span class="eyebrow">Automated tests</span><span class="big warn">0</span><span class="muted">The transaction logic that makes this system trustworthy is verified only by the 15-user simulation. One refactor away from a silent regression.</span></div>
+      <div><span class="eyebrow">Accounting</span><span class="big good">Keep QuickBooks</span><span class="muted">Own invoicing as a document and an event; let QuickBooks stay the book of record for AR, AP, tax and the general ledger.</span></div>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#take">The take</a>
+      <a href="#works">What holds up</a>
+      <a href="#findings">Findings</a>
+      <a href="#redesign">Redesign plan</a>
+      <a href="#accounting">Accounting question</a>
+      <a href="#sequence">Suggested sequence</a>
+      <a href="#method">Scope and method</a>
+    </nav>
+  </section>
+
+  <section id="take">
+    <div class="section-head"><span class="eyebrow">01</span><h2>The take</h2></div>
+    <div class="prose">
+      <p>This is a well-built order-management and warehouse system with purchasing and returns attached. It is not yet an ERP in the sense the name usually carries. There is no invoicing, no receivables or payables, no costing and no ledger. That is not a criticism of the work, but it is the frame for every recommendation below: the strongest parts of the codebase are exactly the parts an accounting package does not do, and the weakest parts are the seams where a whole-object save can rewrite something that should be server-owned.</p>
+      <p>Two things stand out after reading every server route. First, the atomic stock operations, the optimistic versioning and the allocation lock are genuinely good and rare in a system this size. Second, the generic <code>PUT</code> for orders and vendor POs undoes some of that care: it lets a caller with any of a dozen page permissions rewrite shipment history, received quantities and who checked an order, and the ship endpoint never checks quantities at all. The single highest-value change is to finish the move to command endpoints that the ship, receive, cancel and release routes already started.</p>
+      <p>On the accounting question, the short version: do not build it. Build invoicing as a first-class event in this system and push it to QuickBooks, which stays the system of record for money. Section 05 makes the case in full.</p>
+    </div>
+  </section>
+
+  <section id="works">
+    <div class="section-head"><span class="eyebrow">02</span><h2>What holds up</h2></div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Stock is atomic and attributable</h3>
+        <p>Ship, undo-ship, PO receipt and return receipt each run in one transaction and write a <code>StockMovement</code> row with actor, reason and reference. Every on-hand figure can be explained from the ledger. This is the correct foundation and most homegrown systems never reach it.</p>
+      </div>
+      <div class="panel">
+        <h3>Concurrency is handled on purpose</h3>
+        <p>Whole-object saves carry a <code>version</code> and fail with a 409 instead of overwriting. Ship and receive take a row lock. Allocation increases serialize behind an advisory lock in <code>server/src/lib/inventory.ts</code>, so two analysts cannot both be told the last case is free.</p>
+      </div>
+      <div class="panel">
+        <h3>The workflow is enforced server-side</h3>
+        <p>The transition matrix in <code>routes/salesOrders.ts</code> decides which page permission may move an order between which statuses, blocks sideways moves, freezes lines once stock is committed, and routes ship, cancel and undo through dedicated endpoints. Document numbers come from one atomic counter.</p>
+      </div>
+      <div class="panel">
+        <h3>The review habit</h3>
+        <p>Three prior rounds with a 15-user simulated workday, a one-year scale benchmark, a running bug log and design options with mockups. The comments in the code explain why, not what. Keep doing this; it is why the findings below are mostly seams rather than rot.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="findings">
+    <div class="section-head"><span class="eyebrow">03</span><h2>Findings</h2>
+      <p>Everything in <code>docs/review/open-bugs.md</code> still stands. These are new. Severity is rated for an internal network with about 15 trusted users; several would be rated higher if a warehouse kiosk or an outside party ever gets a login. Each finding names where to look and the fix that the redesign plan in section 04 delivers.</p>
+    </div>
+    <div class="filters" role="group" aria-label="Filter by severity">
+      <button class="chip" type="button" data-filter="all" aria-pressed="true">All <span class="sev-count">21</span></button>
+      <button class="chip" type="button" data-filter="high" aria-pressed="false">High <span class="sev-count">4</span></button>
+      <button class="chip" type="button" data-filter="medium" aria-pressed="false">Medium <span class="sev-count">7</span></button>
+      <button class="chip" type="button" data-filter="low" aria-pressed="false">Low <span class="sev-count">10</span></button>
+    </div>
+    <div class="findings" id="finding-list">
+
+      <details class="finding" data-sev="high" open>
+        <summary><span class="fid">R5-01</span><span class="ftitle">The ship endpoint accepts any quantity on any line<small>Over-shipping, shipping unreleased lines and negative on-hand are all possible through the API</small></span><span class="sev">High</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts</code> lines 505 to 548 (<code>POST /:soNumber/ship</code>)</dd>
+            <dt>Problem</dt><dd>The handler checks only that each <code>lineItemId</code> belongs to the order. It never compares the quantity to what was staged in <code>pendingShipment</code>, to what remains on the line, or to what is on hand. A buggy client or a crafted request can ship 500 units against a 10-unit line, mark the order Shipped, drive on-hand negative, and consume stock that other orders have reserved. The UI clamps the number, but <code>OpenPicks.tsx</code> ships <code>pendingShipment</code> as-is and the server is the only real guard.</dd>
+            <dt>Fix</dt><dd>Reject any line not in <code>pendingShipment</code>, cap each quantity at the staged amount, and refuse a shipment that would take on-hand below zero unless an explicit override permission is present.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="high">
+        <summary><span class="fid">R5-02</span><span class="ftitle">Who entered and who checked an order is whatever the client says<small>The accountability stamps the audit trail depends on are forgeable</small></span><span class="sev">High</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/salesOrders.ts</code> schema lines 109 to 118 and writes at 404 to 410; <code>routes/returns.ts</code> lines 50 to 52</dd>
+            <dt>Problem</dt><dd><code>writtenBy</code>, <code>writtenById</code>, <code>checkedBy</code>, <code>checkedAt</code> and the colours arrive in the request body and are stored as sent. Anyone with order-write access can stamp another person's initials on a validation or re-date a check. Cancellation gets this right and stamps <code>cancelledBy</code> from the token; the rest should too.</dd>
+            <dt>Fix</dt><dd>Strip these fields from the input schemas. Set writer fields on create and checker fields inside a dedicated check command, both from <code>req.account</code>.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="high">
+        <summary><span class="fid">R5-03</span><span class="ftitle">Shipment history and PO receipts can be rewritten by a plain save<small>Documents and the stock ledger can be made to disagree without any stock movement</small></span><span class="sev">High</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/salesOrders.ts</code> line 125 and the sync at 446; <code>routes/vendorPurchaseOrders.ts</code> lines 37 to 45 and 184 to 195</dd>
+            <dt>Problem</dt><dd>The order <code>PUT</code> accepts a full <code>shipmentHistory</code> array and syncs it to the table, deleting rows the client omitted. The vendor PO <code>PUT</code> accepts per-line <code>receivedQty</code>, a full <code>receivingHistory</code>, and a status of Received or Closed. Either lets a user "receive" or "un-ship" on paper while on-hand and the ledger stay untouched. The version check prevents accidents from a stale screen but not a fresh, deliberate or buggy client.</dd>
+            <dt>Fix</dt><dd>Make these server-owned: ignore or reject them on <code>PUT</code>, derive PO status from line quantities, and let only the ship, undo, receive and return-receive commands change them.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="high">
+        <summary><span class="fid">R5-04</span><span class="ftitle">Credentials and sessions are weaker than the rest of the system<small>Default admin, one-character passwords, 30-day tokens in localStorage, no idle timeout</small></span><span class="sev">High</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/src/seed.ts</code>; <code>routes/accounts.ts</code> lines 21 and 33; <code>middleware/auth.ts</code> line 27; <code>src/lib/apiClient.ts</code></dd>
+            <dt>Problem</dt><dd>H-07 from round 1 is still open. Beyond it: password minimum is one character, tokens live 30 days and sit in localStorage, and nothing logs a person out of a shared warehouse PC left unattended. Token revocation via <code>tokenVersion</code> is good, but nothing triggers it automatically.</dd>
+            <dt>Fix</dt><dd>Seed a random admin password printed once. Enforce a 10-character minimum and a forced change on first login. Move to 8-hour tokens with a sliding idle timeout in the client. Consider a short-lived access token with a refresh cookie if the app ever leaves the LAN.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-05</span><span class="ftitle">Page permissions grant far more than the page does<small>Twelve different page keys each allow a full rewrite of an order, prices included</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/salesOrders.ts</code> lines 176 to 189 (<code>ORDER_WRITE_PAGES</code>)</dd>
+            <dt>Problem</dt><dd>Edit access on Labels, BOL, Schedule or Import is enough to change an order's customer, addresses, rates and, while Entered or Checked, its quantities. The page model was built for navigation and cannot express "may set a BOL but may not change a price". This is also the root of the writer carve-out mismatch (N-03) and the internal page-key names in errors (N-04).</dd>
+            <dt>Fix</dt><dd>Command endpoints with narrow inputs (section 04, step 1). Each page then needs one permission that does exactly one thing.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-06</span><span class="ftitle">The login throttle can lock any known user out and does not see real client addresses<small>Per-username denial of service; shared IP behind a proxy; unbounded map</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/auth.ts</code> lines 15 to 35</dd>
+            <dt>Problem</dt><dd>Ten wrong passwords for a username lock that username for 15 minutes. Anyone who knows a colleague's login can keep them out indefinitely. Express is not told to trust a proxy, so behind nginx or Caddy every client shares one address and the key degenerates to username alone. The failures map is never pruned.</dd>
+            <dt>Fix</dt><dd>Set <code>trust proxy</code> in production, add a slow-down instead of a hard lock, and prune expired entries. Log throttle events to the audit log so a lockout campaign is visible.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-07</span><span class="ftitle">Any signed-in account can download every order with every price<small>Read access is far broader than the permission model suggests</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/salesOrders.ts</code> line 230 (unfiltered list); <code>routes/items.ts</code> line 65; <code>routes/customers.ts</code> line 98 (summary mode)</dd>
+            <dt>Problem</dt><dd>The comments explain the reasoning (the Dashboard shows orders to everyone), and for 15 trusted staff it is defensible. It stops being defensible the day a warehouse kiosk, a temp or an outside contractor gets a login: the whole order book with line prices and every customer's addresses is one request away.</dd>
+            <dt>Fix</dt><dd>Serve the Dashboard from a purpose-built summary endpoint that returns counts and queue rows without prices. Gate the full list behind an order-view permission. Strip <code>rate</code> from list responses for accounts without a pricing permission.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-08</span><span class="ftitle">The audit log can miss changes and never records what changed<small>Fire-and-forget outside the transaction; status only; settings and counters unlogged</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/src/lib/audit.ts</code>; <code>routes/settings.ts</code> line 31; <code>routes/counters.ts</code> line 64; <code>routes/savedReports.ts</code></dd>
+            <dt>Problem</dt><dd>Audit writes happen after the transaction commits and errors are swallowed, so a committed change can have no entry. <code>ORDER_UPDATED</code> records only the status, so "who changed the price on line 3" is unanswerable. Settings edits, counter overrides and report changes are not logged at all.</dd>
+            <dt>Fix</dt><dd>Write the audit row inside the same transaction. Store a before/after diff of the fields that matter (rates, quantities, addresses, dates). Log every administrative write.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-09</span><span class="ftitle">No error boundary; page-load failures are silent<small>Failed writes are surfaced by a global handler, rendering errors and failed reads are not</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>src/pages/AllocationDecision.tsx</code> lines 167 to 174; <code>ValidationDecision.tsx</code> lines 65 to 70; <code>OpenPicksDetail.tsx</code> lines 71 to 78 and 99 to 106; <code>src/App.tsx</code></dd>
+            <dt>Problem</dt><dd>The decision pages catch a 409 and alert it, then <code>throw err</code> for everything else. A window-level <code>unhandledrejection</code> handler in <code>main.tsx</code> does catch these for failed writes and shows the server's message, so the failure is not silent (an earlier draft of this finding said it was). What is missing is a React error boundary: a rendering error still blanks the page, and read failures on page load are only in the console.</dd>
+            <dt>Fix</dt><dd>An error boundary around <code>Outlet</code>, toasts in place of <code>alert()</code>, and a visible state for a page whose initial load failed.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-10</span><span class="ftitle">Item numbers are unique case-sensitively but looked up case-insensitively<small>Two spellings of one item can coexist, and lookups then pick one at random</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/prisma/schema.prisma</code> line 198; <code>server/src/lib/inventory.ts</code> lines 10 to 14 and 68 to 87</dd>
+            <dt>Problem</dt><dd>The database allows <code>BR-1001</code> and <code>br-1001</code> as two items. Every lookup is case-insensitive, so <code>findFirst</code> returns whichever Postgres finds first and the wrong item's stock moves.</dd>
+            <dt>Fix</dt><dd>A unique index on <code>lower(trim("itemNumber"))</code> via a raw migration, and normalise on write.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-11</span><span class="ftitle">A partly shipped order can have its shipped lines edited or removed<small>Once unallocated back to Checked, the line freeze no longer applies</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/salesOrders.ts</code> lines 366 to 383 and the transition matrix at 203</dd>
+            <dt>Problem</dt><dd>Lines are frozen only while status is outside Entered and Checked. A partly shipped order goes Backordered, then Allocated, then can be unallocated to Checked. At that point a line with shipment history can be deleted or its quantity cut below what shipped. The shipment record's JSON then points at a missing line, undo-shipment silently skips it, and the order can never reconcile.</dd>
+            <dt>Fix</dt><dd>Freeze any line that appears in <code>shipmentHistory</code> regardless of status, and never let <code>ordered</code> drop below the shipped total.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="medium">
+        <summary><span class="fid">R5-12</span><span class="ftitle">"How much is free?" is answered by loading every open order<small>Reservations live in JSON on the order, so both client and server scan the whole open book</small></span><span class="sev">Medium</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/src/lib/inventory.ts</code> lines 160 to 167; <code>src/pages/AllocationDecision.tsx</code> line 39; <code>src/lib/reports/dataSources.ts</code> inventory source</dd>
+            <dt>Problem</dt><dd><code>allocation</code> and <code>pendingShipment</code> are JSON blobs keyed by line id. To compute available stock the server fetches every open order with lines under the advisory lock, and every allocation page downloads the same set to redo the math in the browser. Fine at 500 open orders; a serialisation bottleneck at 5,000. It also means the client re-implements reservation rules that should exist once.</dd>
+            <dt>Fix</dt><dd>Section 04, step 2: a normalised reservation table or a per-item reserved counter maintained inside the same transactions.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-13</span><span class="ftitle">No table records when or by whom it was last changed<small>Only createdAt exists</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/prisma/schema.prisma</code>, every model</dd>
+            <dt>Problem</dt><dd>Answering "when was this customer's terms last edited" means scanning the audit log. Sync to any outside system (QuickBooks included) needs an <code>updatedAt</code> to know what changed.</dd>
+            <dt>Fix</dt><dd>Add <code>updatedAt @updatedAt</code> and <code>updatedBy</code> to every business table in one migration.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-14</span><span class="ftitle">Items have no cost<small>Margin, inventory value and PO defaults all fall back to the sell price</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>schema.prisma</code> Item model; <code>routes/analytics.ts</code> lines 139 and 143; open bugs M-15 and L-02</dd>
+            <dt>Problem</dt><dd>Analytics reports inventory value at sell price. PO cost defaults to sell price. No report can show margin by customer or item, which is the one number a sales manager asks for.</dd>
+            <dt>Fix</dt><dd>Add <code>unitCost</code> to Item, snapshot it onto order lines at ship time, and update it from PO receipts (last cost or a simple moving average).</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-15</span><span class="ftitle">Quantities are integers and units are free text<small>A problem if anything is ever sold by the foot rather than the spool</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>schema.prisma</code>: <code>SalesOrderLine.ordered Int</code>, <code>Item.um String</code>; price overrides carry <code>pricePerFt</code> and <code>length</code></dd>
+            <dt>Problem</dt><dd>The price sheet already knows about feet and lengths, but a line cannot order 12.5 of anything and nothing converts between a reel and its footage. Decide now, before invoicing depends on it, whether quantities need decimals and whether U/M needs a table.</dd>
+            <dt>Fix</dt><dd>If yes: <code>Decimal(12,3)</code> quantities and a small <code>UnitOfMeasure</code> table with conversion factors. If no: document that the unit of sale is always a whole item and remove the per-foot fields.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-16</span><span class="ftitle">The columns every list sorts and filters on are unindexed<small>createdAt, orderDate, dueDate and shippedAt</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>schema.prisma</code> SalesOrder and ShipmentRecord</dd>
+            <dt>Problem</dt><dd>The order list sorts by <code>createdAt</code>, search filters by <code>orderDate</code>, the capacity banner queries <code>shippedAt</code>, and the Dashboard checks <code>dueDate</code>. None are indexed, so each is a sequential scan that grows with a year of history.</dd>
+            <dt>Fix</dt><dd>Add the four indexes. Consider a functional index on <code>lower(btrim("item"))</code> for the line search.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-17</span><span class="ftitle">A dead endpoint lets any account burn document numbers<small>POST /api/counters/:key/next is no longer used by the app</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/counters.ts</code> lines 45 to 58; <code>src/lib/counterStore.ts</code> line 24 has no callers</dd>
+            <dt>Problem</dt><dd>Numbers are now assigned inside the create transactions, so this route exists only to create gaps in the S.O., PO and RA sequences.</dd>
+            <dt>Fix</dt><dd>Delete the route and the client wrapper.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-18</span><span class="ftitle">Negative rates, costs and prices pass validation<small>taxRate is unbounded too</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd>zod schemas in <code>routes/salesOrders.ts</code>, <code>vendorPurchaseOrders.ts</code>, <code>customers.ts</code>, <code>returns.ts</code></dd>
+            <dt>Problem</dt><dd>A typo in a price sheet can store a negative price and flow onto orders and, later, invoices. Zero-quantity lines are also accepted on sales orders.</dd>
+            <dt>Fix</dt><dd><code>.nonnegative()</code> on money, <code>.min(0).max(100)</code> on tax, <code>.positive()</code> on ordered quantity.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-19</span><span class="ftitle">No automated tests and no CI<small>The transaction logic is verified only by the simulation</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd>repository root: no test runner, no <code>.github/</code></dd>
+            <dt>Problem</dt><dd>Rated Low as a defect and High as a risk. Every finding above will be fixed by editing <code>inventory.ts</code> and <code>salesOrders.ts</code>, and nothing but a 12-minute simulation will say whether the double-ship or over-allocate races came back.</dd>
+            <dt>Fix</dt><dd>Section 04, step 3.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-20</span><span class="ftitle">Operations gaps<small>No Node version pin, no request logging, no graceful shutdown, no backup runbook, misleading FK errors</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>server/package.json</code>; <code>server/src/index.ts</code>; <code>README.md</code></dd>
+            <dt>Problem</dt><dd>A 500 leaves only a <code>console.error</code> with no request id. The process does not disconnect Prisma on SIGTERM. The README covers development but not deployment, backup or restore. A save with a deleted customer's id surfaces as "That number or name is already in use" because every P2003 maps to one message.</dd>
+            <dt>Fix</dt><dd>Add <code>engines</code> and <code>.nvmrc</code>, pino-http with request ids, a shutdown hook, a one-page runbook with nightly <code>pg_dump</code> and a tested restore, and per-constraint error messages.</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details class="finding" data-sev="low">
+        <summary><span class="fid">R5-21</span><span class="ftitle">Login reveals whether a username exists<small>Timing and a distinct message for deactivated accounts</small></span><span class="sev">Low</span></summary>
+        <div class="fbody">
+          <dl>
+            <dt>Where</dt><dd><code>routes/auth.ts</code> lines 49 to 60</dd>
+            <dt>Problem</dt><dd>An unknown username skips the bcrypt compare and returns faster. A deactivated account with the right password gets its own message, confirming both the username and the password. Minor on a LAN; worth closing before any exposure.</dd>
+            <dt>Fix</dt><dd>Always run a compare against a dummy hash, and return the generic message for deactivated accounts while logging the real reason.</dd>
+          </dl>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section id="redesign">
+    <div class="section-head"><span class="eyebrow">04</span><h2>Redesign plan, in priority order</h2>
+      <p>Six moves. The first one closes most of the high findings on its own, and the second removes the last place where the client re-implements server rules. Each step names the findings it closes so the bug log can be updated as work lands.</p>
+    </div>
+    <ol class="plan">
+      <li><div>
+        <b class="t">Replace the whole-object order PUT with command endpoints</b>
+        <p>The ship, undo, cancel, receive and release routes already show the pattern. Extend it: <code>check</code>, <code>allocate</code>, <code>unallocate</code>, <code>set-ship-date</code>, <code>stamp-printed</code>, <code>set-bol</code>, and an <code>edit</code> that accepts header fields and lines only while the order is Entered or Checked. Each command has a narrow zod schema, stamps the actor from the token, and is gated by exactly one permission. Status, attribution, shipment history and received quantities become server-owned and are rejected if sent. Do the same for vendor POs.</p>
+        <ul>
+          <li>Ship validates every line against <code>pendingShipment</code> and on-hand.</li>
+          <li>Pages send one small payload instead of the whole record, which ends the 5 MB customer problem's cousins on orders.</li>
+          <li>Permission names in errors come from one shared page map used by client and server.</li>
+        </ul>
+        <span class="closes">Closes R5-01, R5-02, R5-03, R5-05, R5-11 and open bugs N-03, N-04, part of L-06.</span>
+      </div></li>
+      <li><div>
+        <b class="t">Normalise reservations</b>
+        <p>Move <code>allocation</code> and <code>pendingShipment</code> out of JSON into an <code>Allocation</code> table with <code>soNumber</code>, <code>lineId</code>, <code>itemId</code>, <code>allocatedQty</code>, <code>stagedQty</code>. Maintain <code>Item.qtyReserved</code> in the same transactions that write it, exactly as <code>qtyOnHand</code> is maintained today. Available stock becomes one indexed read, the advisory lock protects a single row update instead of a full scan, and the Dashboard, allocation page and inventory report stop downloading the open order book.</p>
+        <span class="closes">Closes R5-12 and open bugs N-05, N-06, M-12b, M-13's first half.</span>
+      </div></li>
+      <li><div>
+        <b class="t">Tests and CI before more features</b>
+        <p>Vitest against a throwaway Postgres (Testcontainers or a CI service) for <code>inventory.ts</code> and the order commands, with explicit tests for: ship twice with a stale version, two allocations racing for the last unit, undo after a repack, receive against a closed PO, and rename an item with history. A Playwright smoke run over the five core flows in the simulation. GitHub Actions running typecheck, oxlint, tests and <code>prisma migrate diff</code> on every push to a branch.</p>
+        <span class="closes">Closes R5-19. Makes steps 1 and 2 safe to do.</span>
+      </div></li>
+      <li><div>
+        <b class="t">Deployment and session hardening</b>
+        <p>Serve the built frontend from the API (or behind Caddy) on one origin with TLS, drop CORS, add helmet, set <code>trust proxy</code>. Eight-hour tokens with a client idle timeout. Ten-character passwords, forced change on first login, random seeded admin password. Slow-down instead of hard lockout. A deployment and backup runbook in the README.</p>
+        <span class="closes">Closes R5-04, R5-06, R5-21, R5-20 and open bugs H-07, L-03.</span>
+      </div></li>
+      <li><div>
+        <b class="t">Schema pass</b>
+        <p>One migration: <code>updatedAt</code> and <code>updatedBy</code> everywhere, <code>Item.unitCost</code> with a cost snapshot on shipped lines, a case-insensitive unique index on item number, the four date indexes, a diff column on audit rows written inside the transaction, non-negative money constraints, and the quantity-precision decision from R5-15. Move money math on the client to integer cents.</p>
+        <span class="closes">Closes R5-08, R5-10, R5-13, R5-14, R5-15, R5-16, R5-18 and open bugs L-04, M-15, L-02.</span>
+      </div></li>
+      <li><div>
+        <b class="t">Frontend plumbing</b>
+        <p>TanStack Query for fetching, caching and invalidation, so pages stop re-downloading the catalog. A toast component to replace the 34 <code>alert()</code> calls, an error boundary around the router outlet and a global rejection handler. Split <code>GenerateBOL.tsx</code> (975 lines) and <code>PickPack.tsx</code> (735 lines) into form and print views. Move <code>PAGE_DEFS</code> into a shared package imported by both client and server.</p>
+        <span class="closes">Closes R5-09, R5-17 and open bugs L-06, N-02, M-10, M-11.</span>
+      </div></li>
+    </ol>
+  </section>
+
+  <section id="accounting">
+    <div class="section-head"><span class="eyebrow">05</span><h2>The accounting question</h2>
+      <p>Would it be easier to grow this into a real ERP with invoicing and accounting, or leave those to QuickBooks? The honest answer has two parts, because "invoicing" and "accounting" are different sizes of problem.</p>
+    </div>
+
+    <div class="prose">
+      <p><b>Invoicing is small and belongs here.</b> An invoice is a document generated from a shipment, with the prices and tax this system already knows. The data model is nearly ready: <code>ShipmentRecord</code> is already one row per shipment, rates are stored as decimals, and returns are already a separate document. Owning the invoice means the customer gets a correct invoice the moment the truck leaves, with your part numbers, their PO number and your pricing logic, and nobody re-keys anything.</p>
+      <p><b>Accounting is large and does not belong here.</b> Being the book of record means receivables with payment application, partial payments, credit memos and aging; payables with vendor bills and payment runs; a double-entry ledger with a chart of accounts, journal entries and period close; sales tax by jurisdiction with filing; bank feeds and reconciliation; financial statements; 1099s; year-end; and your accountant's access and habits. None of it is technically exotic. All of it is unforgiving, changes with tax law, and has to be right every single month with no "reload and try again". Payroll is a separate universe nobody builds.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Option</th><th>What this app owns</th><th>What QuickBooks owns</th><th>Effort to reach usable</th><th>Ongoing cost</th><th>Main risk</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>A. Full ERP</b><br><span class="muted">Build AR, AP, GL, tax</span></td>
+            <td>Everything</td>
+            <td>Nothing (retired)</td>
+            <td class="bad">9 to 18 months solo, then forever</td>
+            <td class="bad">Permanent: tax rules, year-end, accountant training, audits</td>
+            <td>You become the vendor your accountant blames. No bank feeds, no tax tables, no ecosystem.</td>
+          </tr>
+          <tr>
+            <td class="rec"><b>B. Own invoicing, integrate</b><br><span class="muted">Recommended</span></td>
+            <td class="rec">Customers, items, pricing, orders, stock quantities, shipments, invoice and credit memo documents, sync status</td>
+            <td class="rec">AR, AP, GL, payments, tax filing, statements, bank rec, financials</td>
+            <td class="rec good">3 to 6 weeks for QuickBooks Online; 4 to 8 for Desktop</td>
+            <td class="rec">Small: watch the sync log, handle the occasional mapping error</td>
+            <td class="rec">Two systems can disagree; a sync log with retry and a daily reconciliation report keeps it honest.</td>
+          </tr>
+          <tr>
+            <td><b>C. Export only</b><br><span class="muted">Nightly file, no documents</span></td>
+            <td>Orders, stock, shipments</td>
+            <td>Invoicing and everything after it</td>
+            <td class="good">1 to 2 weeks</td>
+            <td>Someone imports a file and fixes rejects by hand</td>
+            <td>Invoices lag shipments by a day; pricing lives in two places; re-keying returns.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout ok">
+      <p><b>Recommendation: Option B.</b> Make this system the record for customers, items, prices, orders, inventory quantities and shipments. Generate invoices and credit memos here as documents and events. Push them to QuickBooks, which stays the record for money. Turn off inventory tracking on the QuickBooks side so there is exactly one stock count. Pull payment status back only if customer service needs to answer "has this been paid" without opening QuickBooks.</p>
+    </div>
+
+    <div class="flow" aria-label="Division of responsibility">
+      <div class="col">
+        <h3>This app (operations record)</h3>
+        <ul>
+          <li>Customers, ship-tos, terms, price sheets</li>
+          <li>Item catalog, on-hand, reserved, on PO</li>
+          <li>Sales orders through shipment</li>
+          <li>Vendor POs and receipts</li>
+          <li>Returns and restock</li>
+          <li><b>Invoice document per shipment</b></li>
+          <li><b>Credit memo per received return</b></li>
+          <li>Sync log and reconciliation report</li>
+        </ul>
+      </div>
+      <div class="mid">
+        <span>customer upsert →</span>
+        <span>item upsert →</span>
+        <span>invoice on ship →</span>
+        <span>credit memo on return →</span>
+        <span>vendor bill on receipt →</span>
+        <span>← payment status</span>
+      </div>
+      <div class="col">
+        <h3>QuickBooks (financial record)</h3>
+        <ul>
+          <li>Accounts receivable and aging</li>
+          <li>Payments, deposits, statements</li>
+          <li>Accounts payable and bill pay</li>
+          <li>Sales tax and filing</li>
+          <li>General ledger and period close</li>
+          <li>Bank feeds and reconciliation</li>
+          <li>P&amp;L, balance sheet, 1099s</li>
+          <li>Accountant access</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>What to build for Option B</h3>
+        <ul>
+          <li><b>Invoice model.</b> <code>Invoice</code> with number, <code>soNumber</code>, <code>shipmentRecordId</code>, line snapshots (item, description, qty, rate, extended), tax, terms, due date, status (Draft, Issued, Synced, Void). Generated automatically on ship; printable like the BOL.</li>
+          <li><b>Credit memo model.</b> Same shape, created on return receipt, priced from the original invoice line, which fixes M-15's third point.</li>
+          <li><b>Mapping tables.</b> <code>ExternalRef(entityType, entityId, system, externalId)</code> for customers, items, invoices and credit memos. QuickBooks ids are the join key; never rely on names.</li>
+          <li><b>Sync worker.</b> An outbox table written in the same transaction as the invoice, a worker that pushes in order with retry and backoff, and a <code>SyncLog</code> the Activity Log page can show. Idempotent by invoice number.</li>
+          <li><b>Reconciliation report.</b> Invoices issued here versus invoices in QuickBooks for a date range, with the differences. Run it daily for the first quarter.</li>
+          <li><b>Prerequisites from section 04.</b> Integer-cent money math (L-04), <code>updatedAt</code> for change detection (R5-13), and non-negative prices (R5-18). A tax code per customer rather than a bare rate per order, because QuickBooks wants a tax code.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Decisions that change the estimate</h3>
+        <ul>
+          <li><b>QuickBooks Online or Desktop?</b> Online has a REST API with OAuth 2, a sandbox company and good documentation; the integration is a few weeks. Desktop needs the Web Connector and QBXML, or a paid connector, or an IIF file import. If you are on Desktop, start with a nightly IIF export (Option C) and decide whether moving to Online is worth it for this alone.</li>
+          <li><b>Who is the customer of record?</b> If QuickBooks already has customers, do a one-time match on account number and store the ids; make this app authoritative from then on.</li>
+          <li><b>Invoice per shipment or per order?</b> Per shipment matches the ledger and how partials actually bill. Confirm with whoever does collections.</li>
+          <li><b>Items in QuickBooks.</b> Create them as non-inventory or service items so QuickBooks never tracks quantity. If they are already inventory items, plan the conversion.</li>
+          <li><b>Sales tax.</b> If most customers are exempt resellers, a per-customer tax code is enough. If you collect in several states, let QuickBooks or its tax service compute it and store the result back on the invoice.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="prose">
+      <p><b>When would building accounting be the right call?</b> When you outgrow QuickBooks: multiple legal entities to consolidate, revenue recognition rules, or an auditor who wants controls QuickBooks cannot give. At that point the answer is still not to build; it is to move to a mid-market package and keep this system as the operations layer in front of it. The integration boundary described above is the same one you would need then, which is another reason to draw it now.</p>
+      <p><b>One more honest note.</b> The instinct to keep everything in one system is sound, and the code quality here suggests you could build a passable AR module. The trouble is not building it; it is being on the hook for it at month-end, at tax time and at audit, forever, while also being the person who ships rope. QuickBooks costs a subscription. Owning the ledger costs your attention.</p>
+    </div>
+  </section>
+
+  <section id="sequence">
+    <div class="section-head"><span class="eyebrow">06</span><h2>Suggested sequence</h2>
+      <p>Roughly a quarter of focused work, ordered so that each step makes the next one safer. Estimates assume one developer with the codebase already in their head.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Weeks</th><th>Work</th><th>Why in this order</th><th>Closes</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>Quick hardening: ship quantity checks, server-stamped attribution, strip history from PUT, password policy, seed fix, delete dead counter route, validation bounds.</td><td>Small edits that remove every High finding without waiting for the refactor.</td><td>R5-01 to 04, 17, 18, H-07</td></tr>
+          <tr><td class="num">2 to 3</td><td>Test harness and CI. Write the race tests against the current code first so they document today's behaviour.</td><td>Nothing below is safe without it.</td><td>R5-19</td></tr>
+          <tr><td class="num">4 to 6</td><td>Command endpoints for orders and POs. Pages move one at a time; the old PUT stays until the last page is off it, then dies.</td><td>The largest change; tests from weeks 2 to 3 catch regressions.</td><td>R5-05, 11, N-03, N-04</td></tr>
+          <tr><td class="num">7 to 8</td><td>Schema pass and reservation table. Migration with backfill from the JSON blobs, then delete the client-side reservation math.</td><td>Depends on the command endpoints so only one writer touches reservations.</td><td>R5-08, 10, 12 to 16, L-04, N-05, N-06</td></tr>
+          <tr><td class="num">9</td><td>Deployment: single origin, TLS, helmet, sessions, runbook, request logging.</td><td>Independent; scheduled here so the API surface is final before it is exposed.</td><td>R5-06, 20, 21, L-03</td></tr>
+          <tr><td class="num">10 to 13</td><td>Invoice and credit memo models, outbox and sync worker, QuickBooks mapping, reconciliation report, frontend plumbing along the way.</td><td>Needs cents math, <code>updatedAt</code> and per-shipment records from the steps above.</td><td>M-15, L-02, R5-09</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-head"><span class="eyebrow">07</span><h2>Scope and method</h2></div>
+    <div class="prose">
+      <p>This round is a static review: every file under <code>server/src</code>, the Prisma schema and migrations, the frontend stores and permission layer, the workflow decision pages, the report data sources, the simulation harness and the three earlier review documents. Nothing was executed against a database this round, so line references are exact but no timing or load figures are new; the round 2 and 3 numbers still apply.</p>
+      <p>Findings are numbered R5-01 to R5-21 and should be added to <code>docs/review/open-bugs.md</code> alongside the H, M, L and N series. Where a new finding overlaps an open one, the finding text says which.</p>
+      <ul>
+        <li><b>Server:</b> <code>index.ts</code>, <code>middleware/auth.ts</code>, <code>lib/inventory.ts</code>, <code>lib/syncChildren.ts</code>, <code>lib/audit.ts</code>, <code>lib/conflictError.ts</code>, all fifteen route files, <code>seed.ts</code>, <code>schema.prisma</code>, the stock-ledger migration.</li>
+        <li><b>Frontend:</b> <code>App.tsx</code>, <code>Layout.tsx</code>, <code>authContext.tsx</code>, <code>authStore.ts</code>, <code>apiClient.ts</code>, <code>permissions.ts</code>, <code>orderStore.ts</code>, <code>counterStore.ts</code>, <code>settingsCache.ts</code>, <code>types.ts</code>, <code>warehouseCapacity.ts</code>, <code>reports/dataSources.ts</code>, <code>importParsers.ts</code>, and the OrderEntry, Validation, Allocation, OpenPicks, Receiving, Settings and Dashboard pages.</li>
+        <li><b>Context:</b> <code>README.md</code>, <code>docs/review/</code> rounds 1 to 3 and the open bug log, <code>sim/day.mjs</code> and <code>sim/lib.mjs</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Aamstrand ERP review, round 5, 28 September 2026. Companion to rounds 1 to 3 in <code>docs/review/</code>. Findings R5-01 to R5-21 are rated for an internal network of about 15 trusted users.</footer>
+</div>
+
+<script>
+  (function () {
+    var chips = document.querySelectorAll(".chip[data-filter]");
+    var items = document.querySelectorAll("#finding-list details.finding");
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var f = chip.getAttribute("data-filter");
+        chips.forEach(function (c) { c.setAttribute("aria-pressed", c === chip ? "true" : "false"); });
+        items.forEach(function (d) { d.hidden = f !== "all" && d.getAttribute("data-sev") !== f; });
+      });
+    });
+  })();
+</script>

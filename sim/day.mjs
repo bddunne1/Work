@@ -81,7 +81,8 @@ async function idle(user, mins) {
 const listOpen = async (u) => (await get(u, "/api/sales-orders?open=1")).map(mapOrder);
 const getOrder = async (u, so) => mapOrder(await get(u, `/api/sales-orders/${so}`));
 const listItems = async (u) => (await get(u, "/api/items")).map(mapItem);
-const updateOrder = async (u, o, expectedStatus) => mapOrder(await put(u, `/api/sales-orders/${o.soNumber}`, { ...o, expectedStatus }));
+// Round 5: workflow steps are commands, each carrying the order's version.
+const command = async (u, o, name, body = {}) => mapOrder(await post(u, `/api/sales-orders/${o.soNumber}/${name}`, { version: o.version, ...body }));
 const search = (u, params) => get(u, `/api/sales-orders/search?${new URLSearchParams(params)}`);
 const pickFromTop = (list, n = 3) => (list.length ? list[Math.floor(rng.next() * Math.min(n, list.length))] : undefined);
 const bySo = (a, b) => Number(a.soNumber) - Number(b.soNumber);
@@ -217,12 +218,11 @@ async function orderEntry(user) {
       if (released.length) {
         did = true;
         await work(user, 1 + released.length * 0.3); // printer
-        const now = new Date().toISOString();
         for (const o of released) {
           await attempt(user, "print-picks", async (again) => {
             const cur = again ? await getOrder(user, o.soNumber) : o;
             if (cur.pickListPrintedAt && cur.packingSlipPrintedAt) return;
-            await updateOrder(user, { ...cur, pickListPrintedAt: now, packingSlipPrintedAt: now }, "Pick & Packed");
+            await command(user, cur, "mark-printed", { pickList: true, packingSlip: true });
             event(user, "pick-printed", { so: o.soNumber, at: simNow() });
           });
         }
@@ -338,7 +338,7 @@ async function validate(user, soNumber) {
     const [o] = await Promise.all([getOrder(user, soNumber), listItems(user)]);
     if (o.status !== "Entered") return; // page shows "already moved on"
     await work(user, 1 + o.lineItems.length * 0.15);
-    await updateOrder(user, { ...o, status: "Checked", checkedAt: new Date().toISOString(), checkedBy: user.account.initials, checkedByColor: user.account.color }, "Entered");
+    await command(user, o, "check");
     event(user, "order-checked", { so: o.soNumber, at: simNow() });
   });
 }
@@ -365,10 +365,10 @@ async function allocate(user, soNumber) {
     const shipCompleteOnly = cust?.shipCompleteOnly ?? false;
     const total = Object.values(qtys).reduce((a, b) => a + b, 0);
     const hold = (!fully && shipCompleteOnly) || total === 0;
-    await updateOrder(user, {
-      ...o, status: hold ? "Backordered" : "Allocated",
-      allocation: { lines: o.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: hold ? 0 : qtys[li.id] })), fullyAllocated: fully, shipCompleteOnly: fully ? undefined : shipCompleteOnly, decidedAt: new Date().toISOString() },
-    }, o.status);
+    await command(user, o, "allocate", {
+      lines: o.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: hold ? 0 : qtys[li.id] })),
+      shipCompleteOnly: fully ? undefined : shipCompleteOnly,
+    });
     event(user, "order-allocated", { so: o.soNumber, status: hold ? "Backordered" : "Allocated", fully, at: simNow() });
   });
 }
@@ -381,12 +381,9 @@ async function releasePick(user, soNumber) {
     await work(user, 1 + o.lineItems.length * 0.1);
     const qtys = Object.fromEntries(o.lineItems.map((li) => [li.id, allocatedQtyFor(o, li.id)]));
     const pendingShipment = o.lineItems.filter((li) => qtys[li.id] > 0).map((li) => ({ lineItemId: li.id, qty: qtys[li.id] }));
-    const complete = o.lineItems.every((li) => remainingToShip(o, li) - qtys[li.id] <= 0);
-    await updateOrder(user, {
-      ...o, status: "Pick & Packed", pickPackStatus: complete ? "Complete" : "Partial", pickedAt: new Date().toISOString(), pendingShipment,
-      pickListPrintedAt: undefined, packingSlipPrintedAt: undefined,
-      allocation: o.allocation ? { ...o.allocation, lines: o.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: qtys[li.id] > 0 ? 0 : allocatedQtyFor(o, li.id) })) } : o.allocation,
-    }, "Allocated");
+    const res = await post(user, "/api/sales-orders/release", { orders: [{ soNumber: o.soNumber, version: o.version, lines: pendingShipment }] });
+    const failed = res.results.find((r) => !r.ok);
+    if (failed) throw new ApiError(409, failed.error, res);
     event(user, "pick-released", { so: o.soNumber, units: pendingShipment.reduce((s, l) => s + l.qty, 0), at: simNow() });
   });
 }
@@ -400,7 +397,7 @@ async function backorderReview(user, soNumber) {
     await work(user, 2);
     const eta = pos.filter((p) => p.status !== "Closed" && p.expectedDate).map((p) => p.expectedDate.slice(0, 10)).sort()[0];
     if (eta && o.estimatedShipDate !== eta) {
-      await updateOrder(user, { ...o, estimatedShipDate: eta }, "Backordered");
+      await command(user, o, "set-ship-date", { estimatedShipDate: eta });
       event(user, "eta-set", { so: o.soNumber });
     }
   });
@@ -425,7 +422,7 @@ async function logistics(user) {
       await attempt(user, "generate-bol", async (again) => {
         const cur = again ? await getOrder(user, needBol.soNumber) : needBol;
         await work(user, 4);
-        await updateOrder(user, { ...cur, bol: { weight: "1200", packageCount: "3", palletSlip: "Y", handlingUnitQty: "3", handlingUnitType: "PLT", packageQty: "40", packageType: "CTN", hazmat: false, commodityDescription: "Hardware", nmfcNumber: "", freightClass: "70", additionalInfo: "", generatedAt: new Date().toISOString() } }, "Pick & Packed");
+        await command(user, cur, "set-bol", { bol: { weight: "1200", packageCount: "3", palletSlip: "Y", handlingUnitQty: "3", handlingUnitType: "PLT", packageQty: "40", packageType: "CTN", hazmat: false, commodityDescription: "Hardware", nmfcNumber: "", freightClass: "70", additionalInfo: "", generatedAt: new Date().toISOString() } });
         event(user, "bol-generated", { so: cur.soNumber });
       });
     }
@@ -450,7 +447,7 @@ async function logistics(user) {
       for (const o of unscheduled) {
         await attempt(user, "schedule-pickup", async (again) => {
           const cur = again ? await getOrder(user, o.soNumber) : o;
-          await updateOrder(user, { ...cur, estimatedShipDate: today() }, "Pick & Packed");
+          await command(user, cur, "set-ship-date", { estimatedShipDate: today() });
           event(user, "pickup-scheduled", { so: o.soNumber });
         });
       }
@@ -731,7 +728,7 @@ function summarize() {
 }
 
 async function main() {
-  const adminUser = { username: "admin", password: "123", roleLabel: "setup" };
+  const adminUser = { username: "admin", password: process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026", roleLabel: "setup" };
   await login(adminUser);
   if (process.env.SIM_AUDIT_ONLY) {
     console.log(JSON.stringify(await audit(adminUser), null, 1));

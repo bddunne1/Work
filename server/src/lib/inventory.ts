@@ -33,13 +33,15 @@ export async function requireItem(tx: Tx, itemNumber: string) {
 // matching StockMovement row, so every change to stock is attributable.
 // Pass `itemId` when the line already carries its catalog link; otherwise
 // the item # is resolved (and an unknown item fails the whole transaction).
+// Returns the item row after the move (null when delta is 0) so callers can
+// refuse a result they don't accept - shipping never takes stock below zero.
 export async function adjustOnHand(
   tx: Tx,
   item: { itemId?: string | null; itemNumber: string },
   delta: number,
   ctx: StockContext
-): Promise<void> {
-  if (delta === 0) return;
+): Promise<{ id: string; itemNumber: string; qtyOnHand: number } | null> {
+  if (delta === 0) return null;
   const target = item.itemId
     ? ((await tx.item.findUnique({ where: { id: item.itemId } })) ?? (await requireItem(tx, item.itemNumber)))
     : await requireItem(tx, item.itemNumber);
@@ -60,6 +62,7 @@ export async function adjustOnHand(
       actorUsername: ctx.actor.username,
     },
   });
+  return { id: updated.id, itemNumber: updated.itemNumber, qtyOnHand: updated.qtyOnHand };
 }
 
 // Maps each distinct item # on a set of lines to its catalog id, failing
