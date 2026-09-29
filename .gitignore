@@ -31,3 +31,6 @@ server/*.tsbuildinfo
 
 # Claude Code agent worktrees
 .claude/worktrees/
+e2e/.state.json
+test-results/
+playwright-report/

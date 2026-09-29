@@ -67,11 +67,15 @@ export default function LineItemsTable({
       (m) => m.itemNumber.trim().toLowerCase() === q
     )?.customerPartNumber;
     const priceOverride = customerPriceOverrides?.find((p) => p.itemNumber.trim().toLowerCase() === q)?.price;
+    // The customer's price if they have one, else the catalog rate - but a
+    // rate someone already typed on the line is left alone.
+    const current = items.find((li) => li.id === id);
+    const rate = priceOverride ?? (current && current.rate > 0 ? undefined : match.rate);
     update(id, {
       item: match.itemNumber,
       description: match.description,
       um: match.um,
-      ...(priceOverride !== undefined ? { rate: priceOverride } : {}),
+      ...(rate !== undefined ? { rate } : {}),
       ...(customerPartNumber ? { customerPartNumber } : {}),
     });
   }
