@@ -1,6 +1,8 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listItems } from "../lib/itemStore";
+import LoadFailed from "../components/LoadFailed";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { acknowledgePull, listOpenOrders, listPendingPulls, shipOrder } from "../lib/orderStore";
@@ -30,11 +32,17 @@ export default function OpenPicks() {
   const [weights, setWeights] = useState<Map<string, number>>(new Map());
   const [pulling, setPulling] = useState<string | null>(null);
 
-  useEffect(() => {
-    listItems().then((items) => setWeights(weightIndex(items)));
-    listOpenOrders().then((os) => setOrders(openPickOrders(os)));
-    listPendingPulls().then(setPulls);
-  }, []);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const load = () => {
+    listItems().then((items) => setWeights(weightIndex(items))).catch(() => {});
+    listOpenOrders().then((os) => setOrders(openPickOrders(os))).catch(() => setLoadFailed(true));
+    listPendingPulls().then(setPulls).catch(() => {});
+  };
+  const retry = () => {
+    setLoadFailed(false);
+    load();
+  };
+  useEffect(load, []);
 
   // Cancelled after its pick list printed: the goods are staged on the floor
   // and have to go back on the shelf (A-23).
@@ -46,7 +54,7 @@ export default function OpenPicks() {
       setPulls((ps) => ps.filter((p) => p.soNumber !== o.soNumber));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setPulls(await listPendingPulls());
       } else {
         throw err;
@@ -97,7 +105,7 @@ export default function OpenPicks() {
       setConfirming(false);
     }
     if (failures.length > 0) {
-      alert(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`);
+      showToast(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`);
     }
   }
 
@@ -110,6 +118,8 @@ export default function OpenPicks() {
           logistics can confirm what actually shipped.
         </p>
       </div>
+
+      {loadFailed && <LoadFailed what="open picks" onRetry={retry} />}
 
       {pulls.length > 0 && (
         <section className="pull-list" aria-label="Pull from floor">

@@ -36,6 +36,12 @@ export type OrderStatus =
   | "Cancelled";
 
 // Statuses that are finished - nothing left to pick, ship or hold stock for.
+// What a status is called on screen. "Pick & Packed" is the stored name of
+// the stage between release and shipment; it reads as Released (C-17).
+export function statusLabel(status: OrderStatus | string): string {
+  return status === "Pick & Packed" ? "Released" : status;
+}
+
 export function isClosedStatus(status: OrderStatus): boolean {
   return status === "Shipped" || status === "Cancelled";
 }
@@ -246,6 +252,8 @@ export interface Item {
   // order step. Available = qtyOnHand - qtyReserved.
   qtyReserved: number;
   preferredVendorId?: string;
+  // Read-only, from the server: the preferred vendor's name (C-16).
+  preferredVendor?: { name: string } | null;
   reorderPoint?: number;
   countryOfOrigin?: string;
   // Weight per unit (lbs) - drives order/shipment weight for warehouse

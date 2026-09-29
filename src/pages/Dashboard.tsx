@@ -149,7 +149,7 @@ const QUEUES: QueueDef[] = [
   { key: "ship", label: "To confirm shipped", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "pull", label: "To pull from floor", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#f06595", lateLabel: "", note: "cancelled after printing" },
   { key: "receive", label: "POs to receive", to: "/receiving", tile: "/receiving", workPath: "/receiving", viewPath: "/receiving", color: "#1c7ed6", lateLabel: "past expected date" },
-  { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/returns", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
+  { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/receiving", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
 ];
 
 // The queues an order passes through (the rest are stock coming in).
@@ -377,17 +377,23 @@ export default function Dashboard() {
   }
 
   // Tile badges: how many are waiting in the queue(s) behind each tile.
-  const tileCounts = new Map<string, { count: number; late: number }>();
+  // A tile behind two queues (Release Orders: to release and to print)
+  // shows both figures rather than one sum (C-17).
+  const tileCounts = new Map<string, { count: number; late: number; parts: string[] }>();
   for (const qd of visibleQueues) {
     const q = queueData[qd.key];
-    const cur = tileCounts.get(qd.tile) ?? { count: 0, late: 0 };
-    tileCounts.set(qd.tile, { count: cur.count + (q?.count ?? 0), late: cur.late + (q?.late ?? 0) });
+    const cur = tileCounts.get(qd.tile) ?? { count: 0, late: 0, parts: [] };
+    tileCounts.set(qd.tile, {
+      count: cur.count + (q?.count ?? 0),
+      late: cur.late + (q?.late ?? 0),
+      parts: q && q.count > 0 ? [...cur.parts, `${q.count} ${qd.label.toLowerCase()}`] : cur.parts,
+    });
   }
 
   // Drafts waiting for Accounting, on the Invoices tile.
   if (reviewQueue && reviewQueue.invoices + reviewQueue.creditMemos > 0) {
     const oldest = reviewQueue.oldestDraftAt ? loadedAt - new Date(reviewQueue.oldestDraftAt).getTime() : 0;
-    tileCounts.set("/invoices", { count: reviewQueue.invoices + reviewQueue.creditMemos, late: oldest > 2 * 86_400_000 ? 1 : 0 });
+    tileCounts.set("/invoices", { count: reviewQueue.invoices + reviewQueue.creditMemos, late: oldest > 2 * 86_400_000 ? 1 : 0, parts: [] });
   }
 
   // Today strip: the order figures from the server, the PO figures from the list.
@@ -496,9 +502,9 @@ export default function Dashboard() {
                       {badge && badge.count > 0 && (
                         <span
                           className={`dash-tile-badge${badge.late > 0 ? " is-late" : ""}`}
-                          title={badge.late > 0 ? `${badge.count} waiting, ${badge.late} late` : `${badge.count} waiting`}
+                          title={`${badge.parts.length > 1 ? badge.parts.join(", ") : `${badge.count} waiting`}${badge.late > 0 ? `, ${badge.late} late` : ""}`}
                         >
-                          {badge.count}
+                          {badge.parts.length > 1 ? badge.parts.map((p) => p.split(" ")[0]).join(" · ") : badge.count}
                         </span>
                       )}
                     </Link>

@@ -1,3 +1,4 @@
+import { showToast } from './lib/toast'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -17,7 +18,7 @@ window.addEventListener('unhandledrejection', (event) => {
   const err = event.reason
   if (err instanceof ApiError && err.status !== 401 && err.method !== 'GET') {
     event.preventDefault()
-    alert(err.status === 403 ? `You don't have permission to do that. (${err.message})` : err.message)
+    showToast(err.status === 403 ? `You don't have permission to do that. (${err.message})` : err.message, 'error')
   }
 })
 

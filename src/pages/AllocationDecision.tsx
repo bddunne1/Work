@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -7,7 +8,7 @@ import { allocateOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
-import { availableQty, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor } from "../types";
+import { availableQty, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor, statusLabel } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -156,7 +157,7 @@ function AllocationDecisionInner() {
       await allocateOrder(order, lines, fullyAllocated ? undefined : shipCompleteOnly);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -206,7 +207,7 @@ function AllocationDecisionInner() {
 
       {staleStatus && (
         <p className="stale-status-notice">
-          This order is already {order.status} - someone else moved it on since this queue was loaded, so it can't be
+          This order is already {statusLabel(order.status)} - someone else moved it on since this queue was loaded, so it can't be
           re-allocated from here.
         </p>
       )}

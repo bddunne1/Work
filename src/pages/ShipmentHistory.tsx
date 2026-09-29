@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
@@ -70,7 +71,7 @@ export default function ShipmentHistory() {
       await undoShipment(order);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setReloadTick((t) => t + 1);
         return;
       }

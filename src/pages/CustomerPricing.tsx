@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
@@ -55,7 +56,7 @@ export default function CustomerPricing() {
     if (requestedId.current !== id) return;
     setLoadingCustomer(false);
     if (!full) {
-      alert(`Couldn't load ${c.name}'s pricing. Try selecting the customer again.`);
+      showToast(`Couldn't load ${c.name}'s pricing. Try selecting the customer again.`);
       return;
     }
     setDraft({ ...full, priceOverrides: withTrailingBlank(full.priceOverrides ?? [], MIN_BLANK_ROWS) });
@@ -106,7 +107,7 @@ export default function CustomerPricing() {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         const fresh = await getCustomer(draft.id);
         if (fresh) setDraft({ ...fresh, priceOverrides: withTrailingBlank(fresh.priceOverrides ?? [], MIN_BLANK_ROWS) });
         return;

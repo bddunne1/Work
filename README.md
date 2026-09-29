@@ -144,6 +144,24 @@ Dashboard) until Logistics marks it pulled; nothing is held in the meantime.
 `GET /api/sales-orders?pulls=1` lists them and `POST
 /api/sales-orders/:soNumber/acknowledge-pull` clears one.
 
+## Screens: errors, messages and small fixes
+
+A page that fails to render shows a Reload / Try again panel inside the app
+shell instead of a blank window; messages that used to be browser alerts are
+toasts at the bottom right; the queue pages say when their list did not
+load. The BOL compares ship-to addresses ignoring case and spacing and, for
+several destinations, prints each order's ship-to in its row. Reports offer
+only the data sources the account can read, show the server's refusal, and
+ignore a slow answer that arrives after a later run. The import preview
+flags order lines whose item is not in the catalog, shows the server's field
+errors, and no longer takes an On Purchase Order column (that figure comes
+from open vendor POs). Sidebar links appear only where the account has
+access; the returns queue counts as Receiving's work. Warehouse capacity
+groups shipments by local calendar day, and item responses carry the
+preferred vendor's name. The stage between release and shipment reads as
+Released on screen (its stored status name is unchanged); a new order line
+scrolls into view; the Release Orders tile shows "to release · to print".
+
 ## Development
 
 ```bash

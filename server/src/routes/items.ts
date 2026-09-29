@@ -56,7 +56,8 @@ const adjustQtySchema = z.object({
   expectedQtyOnHand: z.number().int().optional(),
 });
 
-const include = { components: true, links: true };
+// The preferred vendor's name rides along so lists don't fetch every vendor to show it (C-16).
+const include = { components: true, links: true, preferredVendor: { select: { name: true } } };
 
 router.use(requireAuth);
 

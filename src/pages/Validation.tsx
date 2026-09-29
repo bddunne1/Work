@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import LoadFailed from "../components/LoadFailed";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
@@ -14,8 +15,14 @@ export default function Validation() {
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
   const [showSkipped, setShowSkipped] = useState(false);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const load = () => listOpenOrders().then(setAllOrders).catch(() => setLoadFailed(true));
+  const retry = () => {
+    setLoadFailed(false);
+    void load();
+  };
   useEffect(() => {
-    listOpenOrders().then(setAllOrders);
+    void load();
   }, []);
 
   // Re-read each render: a Skip on the decision page lands in sessionStorage.
@@ -37,6 +44,7 @@ export default function Validation() {
         <h1>Validation</h1>
         <p className="muted">Review each order for accuracy, then mark it checked to send it to allocation. Oldest due date first.</p>
       </div>
+      {loadFailed && <LoadFailed what="the validation queue" onRetry={retry} />}
 
       <div className="toolbar">
         <input

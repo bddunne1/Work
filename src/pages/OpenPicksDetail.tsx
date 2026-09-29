@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
@@ -70,7 +71,7 @@ function OpenPicksDetailInner() {
       await shipOrder(order, lines);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -97,7 +98,7 @@ function OpenPicksDetailInner() {
       );
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }

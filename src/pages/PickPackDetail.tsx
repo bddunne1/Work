@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -6,7 +7,7 @@ import { allocateOrder, getOrder, releaseOrders, unallocateOrderCmd } from "../l
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Item, PurchaseOrder } from "../types";
-import { allocatedQtyFor, availableQty, canUnallocate, remainingToShip, reservedElsewhere } from "../types";
+import { allocatedQtyFor, availableQty, canUnallocate, remainingToShip, reservedElsewhere, statusLabel } from "../types";
 
 export default function PickPackDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -75,7 +76,7 @@ function PickPackDetailInner() {
     if (!order) return;
     const anyAllocated = order.lineItems.some((li) => (qtys[li.id] ?? 0) > 0);
     if (!anyAllocated) {
-      alert("At least one line needs an allocated quantity - use Unallocate instead to send this order back to Checked.");
+      showToast("At least one line needs an allocated quantity - use Unallocate instead to send this order back to Checked.");
       return;
     }
     const lines = order.lineItems.map((li) => ({
@@ -87,7 +88,7 @@ function PickPackDetailInner() {
       setSaved(true);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -107,13 +108,13 @@ function PickPackDetailInner() {
       const res = await releaseOrders([{ order, lines }]);
       const failed = res.results.find((r) => !r.ok);
       if (failed) {
-        alert(failed.error ?? `S.O. #${order.soNumber} didn't release.`);
+        showToast(failed.error ?? `S.O. #${order.soNumber} didn't release.`);
         setOrder(await getOrder(order.soNumber));
         return;
       }
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -135,7 +136,7 @@ function PickPackDetailInner() {
       await unallocateOrderCmd(order);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -168,7 +169,7 @@ function PickPackDetailInner() {
 
       {staleStatus && (
         <p className="stale-status-notice">
-          This order is already {order.status} - someone else moved it on since this queue was loaded. Nothing here
+          This order is already {statusLabel(order.status)} - someone else moved it on since this queue was loaded. Nothing here
           can be released again; skip to the next order.
         </p>
       )}

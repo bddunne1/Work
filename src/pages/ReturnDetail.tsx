@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -108,7 +109,7 @@ function ReturnDetailInner() {
       creditMemoForReturn(ra.raNumber).then(setCreditMemo);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setRa(await getReturn(ra.raNumber));
         return;
       }
@@ -124,7 +125,7 @@ function ReturnDetailInner() {
       setEditing(false);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setRa(await getReturn(draft.raNumber));
         setDraft(undefined);
         setEditing(false);

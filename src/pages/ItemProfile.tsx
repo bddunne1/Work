@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import StockLedger from "../components/StockLedger";
@@ -104,7 +105,7 @@ function ItemProfileInner() {
       setEditing(false);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setItem(await getItem(draft.id));
         setDraft(undefined);
         setEditing(false);

@@ -39,6 +39,20 @@ export function isConflictError(err: unknown): err is ApiError {
   return err instanceof ApiError && err.status === 409;
 }
 
+// The server's message, or its validation errors ("lineItems.0.rate:
+// Expected number") flattened to one line, so a refused save says what was
+// wrong rather than "Request failed (400)".
+function errorText(body: unknown, status: number): string {
+  const error = (body as { error?: unknown } | null)?.error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const { formErrors, fieldErrors } = error as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+    const parts = [...(formErrors ?? []), ...Object.entries(fieldErrors ?? {}).map(([field, msgs]) => `${field}: ${(msgs ?? []).join(", ")}`)];
+    if (parts.length > 0) return parts.join("; ");
+  }
+  return `Request failed (${status})`;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers = new Headers(options.headers);
@@ -64,9 +78,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (!window.location.hash.startsWith("#/change-password")) window.location.assign("#/change-password");
   }
   if (!res.ok) {
-    const message =
-      body && typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
-    throw new ApiError(res.status, message, (options.method ?? "GET").toUpperCase());
+    throw new ApiError(res.status, errorText(body, res.status), (options.method ?? "GET").toUpperCase());
   }
   return body as T;
 }

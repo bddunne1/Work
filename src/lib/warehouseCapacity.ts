@@ -36,8 +36,10 @@ function daysBetween(fromIso: string, toIso: string): number {
   return (new Date(toIso).getTime() - new Date(fromIso).getTime()) / 86_400_000;
 }
 
+// Local calendar day (C-16): a shipment at 7 pm Central is that day's, not
+// the next UTC day's.
 function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleDateString("en-CA");
 }
 
 export function computeCapacityMetrics(
@@ -77,7 +79,7 @@ export function computeCapacityMetrics(
     for (const rec of o.shipmentHistory ?? []) {
       if (rec.shippedAt < windowStartIso) continue;
       const weight = shipmentRecordWeight(o, rec, weights);
-      const dateKey = rec.shippedAt.slice(0, 10);
+      const dateKey = isoDate(new Date(rec.shippedAt));
       throughputByDate.set(dateKey, (throughputByDate.get(dateKey) ?? 0) + weight);
       if (o.pickedAt && o.pickedAt < rec.shippedAt) {
         dwellSamples.push(daysBetween(o.pickedAt, rec.shippedAt));

@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -173,7 +174,7 @@ function OrderDetailInner() {
       setDraft(undefined);
       setEditing(false);
       if (order?.status === "Checked" && saved.status === "Entered") {
-        alert(`S.O. #${saved.soNumber} goes back to Validation: its lines, prices or customer changed after it was checked.`);
+        showToast(`S.O. #${saved.soNumber} goes back to Validation: its lines, prices or customer changed after it was checked.`);
       }
     } catch (err) {
       // The typed values stay on screen; a stale copy needs a reload first.
@@ -190,14 +191,14 @@ function OrderDetailInner() {
     );
     if (reason === null) return;
     if (!reason.trim()) {
-      alert("A reason is required to cancel an order.");
+      showToast("A reason is required to cancel an order.");
       return;
     }
     try {
       setOrder(await cancelOrder(order, reason.trim()));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -221,7 +222,7 @@ function OrderDetailInner() {
       setOrder(await undoShipment(order));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }

@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -86,7 +87,7 @@ function RoutingGuideDetailInner() {
       setEditing(false);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setCustomer(await getCustomer(draft.id));
         setDraft(undefined);
         setEditing(false);

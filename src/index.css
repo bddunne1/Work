@@ -3825,3 +3825,65 @@ a.dash-lookup-row:focus-visible {
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   border-radius: 4px;
 }
+
+/* ---- Toasts (C-01): brief messages, bottom right, in place of alert() ---- */
+.toast-host {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  max-width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent, #4c6ef5);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-size: 14px;
+  white-space: pre-line;
+}
+.toast-error { border-left-color: var(--danger); }
+.toast-success { border-left-color: #12b886; }
+.toast-text { flex: 1; }
+.toast-close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.load-failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-radius: 4px;
+}
+.error-boundary .button-row { justify-content: center; }
+.bol-row-shipto { font-size: 12px; }
+
+/* ---- Phone width (C-17): the top bar wraps and wide tables scroll ---- */
+@media (max-width: 480px) {
+  .topbar { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  .topbar-username { display: none; }
+  .page { padding-left: 4px; padding-right: 4px; }
+  .content { overflow-x: hidden; }
+  .data-table { font-size: 13px; }
+  .scroll-window { max-width: calc(100vw - 24px); }
+  .toolbar { flex-wrap: wrap; }
+}

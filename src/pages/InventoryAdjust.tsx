@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
@@ -43,7 +44,7 @@ export default function InventoryAdjust() {
       updated = await setQtyOnHandIfUnchanged(selectedItem.itemNumber, selectedItem.qtyOnHand, newQty);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setItems(await listItems());
         return;
       }

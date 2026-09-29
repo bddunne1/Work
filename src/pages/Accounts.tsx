@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { Fragment, useEffect, useState } from "react";
 import { ApiError } from "../lib/apiClient";
 import { useAuth } from "../lib/authContext";
@@ -156,7 +157,7 @@ export default function Accounts() {
 
   async function handleDelete(a: Account) {
     if (a.role === "admin" && a.active && activeAdmins.length <= 1) {
-      alert("Can't delete the last active admin account.");
+      showToast("Can't delete the last active admin account.");
       return;
     }
     if (!confirm(`Delete account "${a.username}"?`)) return;
@@ -183,7 +184,7 @@ export default function Accounts() {
 
   async function saveEdit(a: Account) {
     if (a.role === "admin" && editRole === "custom" && activeAdmins.length <= 1) {
-      alert("Can't demote the last active admin account - create another admin first.");
+      showToast("Can't demote the last active admin account - create another admin first.");
       return;
     }
     try {
@@ -198,7 +199,7 @@ export default function Accounts() {
       await refresh();
       setEditingId(null);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Failed to save account.");
+      showToast(err instanceof ApiError ? err.message : "Failed to save account.");
     }
   }
 

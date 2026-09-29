@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "./BrandMark";
+import ErrorBoundary from "./ErrorBoundary";
+import ToastHost from "./Toast";
 import MoreMenu from "./MoreMenu";
 import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
@@ -39,6 +41,9 @@ export default function Layout() {
 
   const access = getAccessLevel(location.pathname, account);
   const pageAccent = getPageAccent(location.pathname);
+  // Only links the account can follow (C-14): a warehouse login never sees
+  // a sidebar entry that opens on Access denied.
+  const canGo = (path: string) => getAccessLevel(path, account!) !== "none";
 
   function handleLogout() {
     logout();
@@ -54,22 +59,30 @@ export default function Layout() {
             <DashboardIcon />
             Dashboard
           </NavLink>
-          <NavLink to="/customers" className={({ isActive }) => (isActive ? "active" : "")}>
-            <CustomersIcon />
-            Customers
-          </NavLink>
-          <NavLink to="/inventory" className={({ isActive }) => (isActive ? "active" : "")}>
-            <InventoryIcon />
-            Inventory
-          </NavLink>
-          <NavLink to="/items" className={({ isActive }) => (isActive ? "active" : "")}>
-            <CatalogIcon />
-            Catalog
-          </NavLink>
-          <NavLink to="/analytics" className={({ isActive }) => (isActive ? "active" : "")}>
-            <AnalyticsIcon />
-            Analytics
-          </NavLink>
+          {(canGo("/customers/all") || canGo("/customers/pricing") || canGo("/customers/routing-guide")) && (
+            <NavLink to="/customers" className={({ isActive }) => (isActive ? "active" : "")}>
+              <CustomersIcon />
+              Customers
+            </NavLink>
+          )}
+          {canGo("/inventory") && (
+            <NavLink to="/inventory" className={({ isActive }) => (isActive ? "active" : "")}>
+              <InventoryIcon />
+              Inventory
+            </NavLink>
+          )}
+          {canGo("/items") && (
+            <NavLink to="/items" className={({ isActive }) => (isActive ? "active" : "")}>
+              <CatalogIcon />
+              Catalog
+            </NavLink>
+          )}
+          {canGo("/analytics") && (
+            <NavLink to="/analytics" className={({ isActive }) => (isActive ? "active" : "")}>
+              <AnalyticsIcon />
+              Analytics
+            </NavLink>
+          )}
         </div>
       </nav>
       <div className="app-main">
@@ -97,10 +110,13 @@ export default function Layout() {
               </div>
             </div>
           ) : (
-            <Outlet />
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           )}
         </main>
       </div>
+      <ToastHost />
     </div>
   );
 }

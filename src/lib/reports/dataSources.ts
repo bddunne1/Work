@@ -140,6 +140,7 @@ async function buildOrderReport(
 
 const salesOrders: ReportDataSource = {
   key: "sales-orders",
+  viewPaths: ["/open-orders", "/closed-orders", "/storage", "/order-entry", "/validation", "/allocation", "/back-orders", "/pick-pack", "/open-picks", "/schedule", "/bol", "/shipment-history"],
   label: "Sales Orders",
   description: "One row per sales order.",
   columns: [
@@ -215,6 +216,7 @@ function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues
 
 const salesOrderLines: ReportDataSource = {
   key: "sales-order-lines",
+  viewPaths: ["/open-orders", "/closed-orders", "/storage", "/order-entry", "/validation", "/allocation", "/back-orders", "/pick-pack", "/open-picks", "/schedule", "/bol", "/shipment-history"],
   label: "Sales Order Lines",
   description: "One row per item line across every sales order - which orders an item is on, and how much of it.",
   columns: [
@@ -246,6 +248,7 @@ const salesOrderLines: ReportDataSource = {
 
 const purchaseOrders: ReportDataSource = {
   key: "purchase-orders",
+  viewPaths: ["/purchase-orders", "/receiving"],
   label: "Purchase Orders",
   description: "One row per outbound purchase order to a vendor.",
   columns: [
@@ -288,6 +291,7 @@ const purchaseOrders: ReportDataSource = {
 
 const purchaseOrderLines: ReportDataSource = {
   key: "purchase-order-lines",
+  viewPaths: ["/purchase-orders", "/receiving"],
   label: "Purchase Order Lines",
   description: "One row per item line across every purchase order - which POs an item is on, and how much is outstanding.",
   columns: [
@@ -343,6 +347,7 @@ const purchaseOrderLines: ReportDataSource = {
 
 const inventory: ReportDataSource = {
   key: "inventory",
+  viewPaths: ["/inventory", "/items", "/open-orders", "/allocation"],
   label: "Inventory Stock Status",
   description: "Every catalog item with on hand, on sales order, allocated, on purchase order, and available.",
   columns: [
@@ -384,6 +389,7 @@ const inventory: ReportDataSource = {
 
 const customers: ReportDataSource = {
   key: "customers",
+  viewPaths: ["/customers/all", "/order-entry", "/customers/pricing", "/customers/routing-guide"],
   label: "Customers",
   description: "One row per customer.",
   columns: [
@@ -415,6 +421,7 @@ const customers: ReportDataSource = {
 
 const vendors: ReportDataSource = {
   key: "vendors",
+  viewPaths: ["/vendors", "/purchase-orders"],
   label: "Vendors",
   description: "One row per vendor.",
   columns: [
@@ -440,6 +447,7 @@ const vendors: ReportDataSource = {
 
 const returns: ReportDataSource = {
   key: "returns",
+  viewPaths: ["/returns"],
   label: "Returns",
   description: "One row per Return Authorization.",
   columns: [

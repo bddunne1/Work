@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listItems } from "../lib/itemStore";
 import type { CustomerPartMapping, CustomerPriceOverride, Item, LineItem, ShipmentRecord } from "../types";
 import { lineAmount, emptyLineItem, shippedQtyFor } from "../types";
@@ -30,6 +30,17 @@ export default function LineItemsTable({
 }: Props) {
   const [catalog, setCatalog] = useState<Item[]>([]);
   const showShipped = Boolean(shipmentHistory && shipmentHistory.length > 0);
+  // A new line is scrolled into view and gets focus, so a long order's
+  // "+ Add Line" doesn't leave the person hunting below the fold (C-17).
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const focusLast = useRef(false);
+  useEffect(() => {
+    if (!focusLast.current) return;
+    focusLast.current = false;
+    const row = bodyRef.current?.lastElementChild as HTMLElement | null;
+    row?.scrollIntoView({ block: "nearest" });
+    row?.querySelector("input")?.focus();
+  }, [items.length]);
 
   useEffect(() => {
     listItems().then(setCatalog);
@@ -45,6 +56,7 @@ export default function LineItemsTable({
 
   function addRow() {
     onChange([...items, emptyLineItem()]);
+    focusLast.current = true;
   }
 
   function applyItemLookup(id: string, itemNumber: string) {
@@ -91,7 +103,7 @@ export default function LineItemsTable({
               {!readOnly && <th className="col-remove" />}
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={bodyRef}>
             {items.map((li) => (
               <tr key={li.id}>
                 <td>

@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -61,7 +62,7 @@ function PurchaseOrderDetailInner() {
       setQtys({});
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setPo(await getVendorPo(po.poNumber));
         setQtys({});
         return;

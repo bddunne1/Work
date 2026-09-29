@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
@@ -43,7 +44,7 @@ export default function BackOrderQueue() {
       setAllOrders(await listOpenOrders());
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setAllOrders(await listOpenOrders());
         return;
       }

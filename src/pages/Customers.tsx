@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CustomerEditor from "../components/CustomerEditor";
@@ -58,7 +59,7 @@ function CustomersInner() {
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setDraft(await getCustomer(draft.id));
         await refresh();
         return;
@@ -76,7 +77,7 @@ function CustomersInner() {
       // A customer with orders, returns or invoices keeps them: the server
       // says so and points at the Inactive flag on the editor.
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         return;
       }
       throw err;
@@ -102,7 +103,7 @@ function CustomersInner() {
       setNoteText("");
     } catch (err) {
       if (isConflictError(err)) {
-        alert(`${err.message} Your note wasn't added - try again.`);
+        showToast(`${err.message} Your note wasn't added - try again.`);
         setDraft(await getCustomer(draft.id));
         await refresh();
         return;
@@ -119,7 +120,7 @@ function CustomersInner() {
       await refresh();
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setDraft(await getCustomer(draft.id));
         await refresh();
         return;
