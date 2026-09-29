@@ -146,6 +146,25 @@ router.get("/:id", requireAnyPermission(CUSTOMER_VIEW_PAGES, "view"), async (req
   res.json(customer);
 });
 
+// What this customer has bought, one row per catalog item, most recently
+// ordered first - for Product Labels (D-10), instead of its order history.
+router.get("/:id/purchased-items", requireAnyPermission([...CUSTOMER_VIEW_PAGES, "labels"], "view"), async (req, res) => {
+  const rows = await prisma.$queryRaw<{ itemNumber: string; description: string; um: string; lastOrdered: Date; qty: number }[]>`
+    SELECT COALESCE(i."itemNumber", l."item") AS "itemNumber",
+           COALESCE(i."description", MAX(l."description")) AS "description",
+           COALESCE(i."um", MAX(l."um")) AS "um",
+           MAX(so."orderDate") AS "lastOrdered",
+           SUM(l."ordered")::int AS "qty"
+    FROM "SalesOrderLine" l
+    JOIN "SalesOrder" so ON so."soNumber" = l."soNumber"
+    LEFT JOIN "Item" i ON i."id" = l."itemId"
+    WHERE so."customerId" = ${req.params.id} AND so."status" <> 'CANCELLED'
+    GROUP BY COALESCE(i."itemNumber", l."item"), i."description", i."um"
+    ORDER BY MAX(so."orderDate") DESC, 1 ASC
+    LIMIT 2000`;
+  res.json(rows.map((r) => ({ ...r, lastOrdered: r.lastOrdered.toISOString().slice(0, 10) })));
+});
+
 router.post("/", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {
   const parsed = customerSchema.safeParse(req.body);
   if (!parsed.success) {

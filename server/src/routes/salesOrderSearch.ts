@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { findItemByNumber } from "../lib/inventory.js";
 import { hidePrices, requireOrderRead } from "../lib/orderView.js";
 import { prisma } from "../prisma.js";
 
@@ -130,11 +131,12 @@ router.get("/", async (req: AuthedRequest, res) => {
 
   const q = str(query.q);
   if (q) {
-    const pattern = likePattern(q);
+    // lower() LIKE lower(), matching the trigram indexes (D-08).
+    const pattern = likePattern(q.toLowerCase());
     const ors: Prisma.Sql[] = [
-      Prisma.sql`so."poNumber" ILIKE ${pattern}`,
-      Prisma.sql`so."billTo"->>'name' ILIKE ${pattern}`,
-      Prisma.sql`so."shipTo"->>'name' ILIKE ${pattern}`,
+      Prisma.sql`lower(so."poNumber") LIKE ${pattern}`,
+      Prisma.sql`lower(so."billTo"->>'name') LIKE ${pattern}`,
+      Prisma.sql`lower(so."shipTo"->>'name') LIKE ${pattern}`,
     ];
     if (/^\d+$/.test(q)) {
       const n = Number(q);
@@ -147,12 +149,17 @@ router.get("/", async (req: AuthedRequest, res) => {
   if (customerId) conditions.push(Prisma.sql`so."customerId" = ${customerId}`);
 
   const poNumber = str(query.poNumber);
-  if (poNumber) conditions.push(Prisma.sql`so."poNumber" ILIKE ${likePattern(poNumber)}`);
+  if (poNumber) conditions.push(Prisma.sql`lower(so."poNumber") LIKE ${likePattern(poNumber.toLowerCase())}`);
 
   const item = str(query.item);
   if (item) {
+    // By catalog id (indexed), not by the line's item # text (D-08); an item
+    // that isn't in the catalog is on no order.
+    const catalogItem = await findItemByNumber(prisma, item);
     conditions.push(
-      Prisma.sql`EXISTS (SELECT 1 FROM "SalesOrderLine" l WHERE l."soNumber" = so."soNumber" AND lower(btrim(l."item")) = ${item.toLowerCase()})`,
+      catalogItem
+        ? Prisma.sql`EXISTS (SELECT 1 FROM "SalesOrderLine" l WHERE l."soNumber" = so."soNumber" AND l."itemId" = ${catalogItem.id})`
+        : Prisma.sql`FALSE`,
     );
   }
 
@@ -183,12 +190,11 @@ router.get("/", async (req: AuthedRequest, res) => {
 
   const dir = str(query.dir).toLowerCase() === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
   const sort = str(query.sort);
-  let join = Prisma.empty;
+  const join = Prisma.empty;
   let orderBy: Prisma.Sql;
   if (sort === "shippedAt") {
-    // Latest shipment per order; never-shipped orders sort last either way.
-    join = Prisma.sql`LEFT JOIN (SELECT "soNumber", max("shippedAt") AS "lastShippedAt" FROM "ShipmentRecord" GROUP BY "soNumber") ls ON ls."soNumber" = so."soNumber"`;
-    orderBy = Prisma.sql`ls."lastShippedAt" ${dir} NULLS LAST, so."soNumber" ${dir}`;
+    // The latest shipment is kept on the order (D-08); never-shipped orders sort last either way.
+    orderBy = Prisma.sql`so."lastShippedAt" ${dir} NULLS LAST, so."soNumber" ${dir}`;
   } else if (sort === "orderDate") {
     orderBy = Prisma.sql`so."orderDate" ${dir}, so."soNumber" ${dir}`;
   } else {

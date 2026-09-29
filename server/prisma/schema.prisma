@@ -325,6 +325,9 @@ model SalesOrder {
   // back (A-23). Set at cancel, cleared from Open Picks when it is done.
   pullRequestedAt    DateTime?
   pullAcknowledgedAt DateTime?
+  // The most recent shipment, kept here by the ship and undo commands so
+  // Shipment History sorts and filters without joining every record (D-08).
+  lastShippedAt      DateTime?
 
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]
@@ -336,6 +339,7 @@ model SalesOrder {
   @@index([createdAt])
   @@index([orderDate])
   @@index([dueDate])
+  @@index([lastShippedAt])
 }
 
 model SalesOrderLine {

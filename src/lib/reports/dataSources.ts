@@ -1,6 +1,6 @@
 import { listCustomers } from "../customerStore";
-import { getItemByNumber, listItems } from "../itemStore";
-import { listOpenOrders, OPEN_ORDER_STATUSES, searchAllOrders, searchOrders } from "../orderStore";
+import { listItems } from "../itemStore";
+import { listOpenOrders, OPEN_ORDER_STATUSES, searchOrders } from "../orderStore";
 import type { OrderSearchParams } from "../orderStore";
 import { listReturns } from "../returnStore";
 import { listVendorPos } from "../vendorPoStore";
@@ -496,53 +496,3 @@ export function getDataSource(key: string): ReportDataSource | undefined {
   return DATA_SOURCES.find((d) => d.key === key);
 }
 
-// The Item Quick Report (see ItemQuickReport.tsx) reuses the sales-order-line
-// and purchase-order-line builders directly, scoped to one item number,
-// rather than going through the generic filter UI.
-export async function itemQuickReportData(itemNumber: string) {
-  const [history, open, pos, catalogItem] = await Promise.all([
-    // Every order with this item, most recent first, up to the cap...
-    collectOrders({ item: itemNumber, sort: "soNumber", dir: "desc" }, (os) => salesOrderLineRows(os, {}, itemNumber), REPORT_ROW_CAP),
-    // ...and, separately and uncapped, the unshipped ones the stock
-    // figures are computed from.
-    searchAllOrders({ item: itemNumber, status: OPEN_ORDER_STATUSES }, Number.MAX_SAFE_INTEGER),
-    listVendorPos(),
-    getItemByNumber(itemNumber),
-  ]);
-  const orders = open.orders;
-  const allocated = catalogItem?.qtyReserved ?? 0;
-
-  const soLines = salesOrderLineRows(history.orders, {}, itemNumber).slice(0, REPORT_ROW_CAP);
-  const poLines: ReportRow[] = [];
-  for (const p of pos) {
-    for (const l of p.lines) {
-      if (l.itemNumber.trim().toLowerCase() !== itemNumber.trim().toLowerCase()) continue;
-      poLines.push({
-        poNumber: p.poNumber,
-        vendor: p.vendorName,
-        orderDate: p.orderDate,
-        status: p.status,
-        orderedQty: l.orderedQty,
-        receivedQty: l.receivedQty,
-        outstanding: vendorPoLineOutstanding(l),
-        cost: l.cost,
-      });
-    }
-  }
-
-  return {
-    item: catalogItem,
-    summary: catalogItem
-      ? {
-          onHand: catalogItem.qtyOnHand,
-          onSalesOrder: qtyOnOpenSalesOrders(itemNumber, orders),
-          allocated,
-          onPurchaseOrder: catalogItem.qtyOnPurchaseOrder,
-          available: availableQty(catalogItem, allocated),
-        }
-      : null,
-    soLines,
-    poLines,
-    notice: history.truncated ? ROW_CAP_NOTICE : undefined,
-  };
-}

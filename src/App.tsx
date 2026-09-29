@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, HashRouter, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuth } from "./lib/authContext";
@@ -17,7 +18,6 @@ function ChangePasswordGate() {
 import Accounts from "./pages/Accounts";
 import Allocation from "./pages/Allocation";
 import AllocationDecision from "./pages/AllocationDecision";
-import Analytics from "./pages/Analytics";
 import AuditLog from "./pages/AuditLog";
 import BackOrderQueue from "./pages/BackOrderQueue";
 import CustomerForm from "./pages/CustomerForm";
@@ -25,15 +25,12 @@ import Customers from "./pages/Customers";
 import CustomerPricing from "./pages/CustomerPricing";
 import CustomersHub from "./pages/CustomersHub";
 import Dashboard from "./pages/Dashboard";
-import GenerateBOL from "./pages/GenerateBOL";
-import Import from "./pages/Import";
 import Inventory from "./pages/Inventory";
 import InventoryAdjust from "./pages/InventoryAdjust";
 import ItemForm from "./pages/ItemForm";
 import ItemProfile from "./pages/ItemProfile";
 import ItemQuickReport from "./pages/ItemQuickReport";
 import Items from "./pages/Items";
-import LabelsHome from "./pages/LabelsHome";
 import Login from "./pages/Login";
 import OpenPicks from "./pages/OpenPicks";
 import OpenPicksDetail from "./pages/OpenPicksDetail";
@@ -43,13 +40,10 @@ import Preferences from "./pages/Preferences";
 import OrdersList from "./pages/OrdersList";
 import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
-import ProductLabels from "./pages/ProductLabels";
 import PurchaseOrderDetail from "./pages/PurchaseOrderDetail";
 import PurchaseOrderForm from "./pages/PurchaseOrderForm";
 import PurchaseOrders from "./pages/PurchaseOrders";
 import Receiving from "./pages/Receiving";
-import ReportRunner from "./pages/ReportRunner";
-import Reports from "./pages/Reports";
 import ReturnDetail from "./pages/ReturnDetail";
 import ReturnForm from "./pages/ReturnForm";
 import Returns from "./pages/Returns";
@@ -58,16 +52,27 @@ import RoutingGuideDetail from "./pages/RoutingGuideDetail";
 import ScheduleShipments from "./pages/ScheduleShipments";
 import Settings from "./pages/Settings";
 import ShipmentHistory from "./pages/ShipmentHistory";
-import ShippingLabelCreate from "./pages/ShippingLabelCreate";
 import Validation from "./pages/Validation";
 import ValidationDecision from "./pages/ValidationDecision";
 import Vendors from "./pages/Vendors";
 import WarehouseCapacity from "./pages/WarehouseCapacity";
 
+// Pages with heavy, rarely-used code (charts, CSV parsing, the BOL and
+// label layouts) load on first visit rather than in the main bundle (D-12).
+const Analytics = lazy(() => import("./pages/Analytics"));
+const GenerateBOL = lazy(() => import("./pages/GenerateBOL"));
+const Import = lazy(() => import("./pages/Import"));
+const LabelsHome = lazy(() => import("./pages/LabelsHome"));
+const ProductLabels = lazy(() => import("./pages/ProductLabels"));
+const ReportRunner = lazy(() => import("./pages/ReportRunner"));
+const Reports = lazy(() => import("./pages/Reports"));
+const ShippingLabelCreate = lazy(() => import("./pages/ShippingLabelCreate"));
+
 function App() {
   return (
     <AuthProvider>
       <HashRouter>
+        <Suspense fallback={<div className="page"><p className="muted">Loading…</p></div>}>
         <Routes>
           <Route path="login" element={<Login />} />
           <Route path="change-password" element={<ChangePasswordGate />} />
@@ -129,6 +134,7 @@ function App() {
             <Route path="invoices/:invoiceNumber" element={<InvoiceDetail />} />
           </Route>
         </Routes>
+        </Suspense>
       </HashRouter>
     </AuthProvider>
   );

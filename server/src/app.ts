@@ -6,6 +6,7 @@
 // rejection that crashes the whole process - must be imported before any
 // router is defined. Express 4 doesn't do this on its own.
 import "express-async-errors";
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { Prisma } from "@prisma/client";
@@ -61,6 +62,8 @@ export function createApp(): express.Express {
   // The default 100 KB limit was hit in simulation by a key account's
   // customer record (300 price overrides + notes): every save of that
   // customer failed with a 500 and it could never be edited again.
+  // Order lists and search pages are large JSON; gzip cuts them 5-10x (D-12).
+  app.use(compression());
   app.use(express.json({ limit: "5mb" }));
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));

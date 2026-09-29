@@ -172,6 +172,12 @@ cd server && npx tsc --noEmit -p .   # typecheck the API
 npm test         # server test suite against Postgres (TEST_DATABASE_URL, default erp_test)
 ```
 
+In production the API serves gzip-compressed JSON (`compression`); serve the
+built client from `dist/` with any static server (nginx, Caddy, `npx serve
+dist`) and point it at the API, or put both behind one host with `/api`
+proxied to the API port. The client's heavy pages (Analytics, Reports, BOL,
+Labels, Import) load on first visit rather than in the main bundle.
+
 The tests (`server/test/`) drive the real Express app against a throwaway
 database: authentication and the password policy, every order command and
 its permission, race conditions on ship / allocate / receive, invoicing and

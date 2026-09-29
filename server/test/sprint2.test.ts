@@ -521,3 +521,79 @@ describe("edits after Checked (A-22) and pull from floor (A-23)", () => {
     expect(ok(await root.get("/api/dashboard/summary")).queues.pull.count).toBe(0);
   });
 });
+
+describe("search, small endpoints, revenue and capacity (D-02, D-08, D-10, D-13)", () => {
+  it("searches by catalog item, sorts by the kept last-shipped date, and matches names case-insensitively", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    await makeItem(root, "BR-2002", 100);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    const first = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 1 }], { customerId: cust.id, poNumber: "PO-ALPHA" })));
+    const second = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-2002", ordered: 1 }], { customerId: cust.id, poNumber: "po-beta" })));
+    expect(first.lastShippedAt).toBeTruthy();
+    // Typed with the wrong case, still the catalog item; a renamed item still matches.
+    expect(ok(await root.get("/api/sales-orders/search?item=br-1001")).rows.map((r: any) => r.soNumber)).toEqual([first.soNumber]);
+    expect(ok(await root.get("/api/sales-orders/search?item=NOPE")).total).toBe(0);
+    expect(ok(await root.get("/api/sales-orders/search?q=ACME")).total).toBe(2);
+    expect(ok(await root.get("/api/sales-orders/search?poNumber=PO-BETA")).rows.map((r: any) => r.soNumber)).toEqual([second.soNumber]);
+    const byShipped = ok(await root.get("/api/sales-orders/search?sort=shippedAt&dir=desc"));
+    expect(byShipped.rows.map((r: any) => r.soNumber)).toEqual([second.soNumber, first.soNumber]);
+    // Undo clears the kept date again.
+    const undone = ok(await undoShipment(root, second));
+    expect(undone.lastShippedAt).toBeNull();
+    expect(ok(await root.get("/api/sales-orders/search?sort=shippedAt&dir=desc")).rows.map((r: any) => r.soNumber)).toEqual([first.soNumber, second.soNumber]);
+  });
+
+  it("serves the item quick report and a customer's purchased items in one request each", async () => {
+    const root = await admin();
+    const item = await makeItem(root, "BR-1001", 100, 2.5);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 4, rate: 2.5 }], { customerId: cust.id })));
+    ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 6 }], { customerId: cust.id })))));
+    const report = ok(await root.get(`/api/items/${item.id}/quick-report`));
+    expect(report.summary).toEqual({ onHand: 96, onSalesOrder: 6, allocated: 6, onPurchaseOrder: 0, available: 90 });
+    expect(report.soLines).toHaveLength(2);
+    expect(report.soLines[1]).toMatchObject({ soNumber: o.soNumber, ordered: 4, shipped: 4, remaining: 0, status: "Shipped", rate: 2.5, amount: 10 });
+    expect(report.soLines[0]).toMatchObject({ ordered: 6, shipped: 0, remaining: 6, allocated: 6, status: "Allocated" });
+    expect(report.pricesHidden).toBe(false);
+    const dock = await as("dock", { permissions: { "open-picks": "edit" } });
+    const hidden = ok(await dock.get(`/api/items/${item.id}/quick-report`));
+    expect(hidden.pricesHidden).toBe(true);
+    expect(hidden.soLines[0].rate).toBeUndefined();
+    const bought = ok(await root.get(`/api/customers/${cust.id}/purchased-items`));
+    expect(bought).toEqual([{ itemNumber: "BR-1001", description: expect.any(String), um: "EA", lastOrdered: expect.any(String), qty: 10 }]);
+  });
+
+  it("reports revenue from issued documents, not from what was ordered, and capacity from the floor", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100, 10);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 5, rate: 10 }], { customerId: cust.id })));
+    // Ordered but not invoiced yet: no revenue.
+    await makeOrder(root, [{ item: "BR-1001", ordered: 50, rate: 10 }], { customerId: cust.id });
+    const month = new Date().toISOString().slice(0, 7);
+    let summary = ok(await root.get(`/api/analytics/summary?endMonth=${month}&thisMonth=${month}&months=1&nocache=1`));
+    expect(summary.sales.totalRevenue).toBe(0);
+    expect(summary.sales.totalOrders).toBe(2);
+    await issueInvoiceFor(root, o.soNumber);
+    // The summary is cached for a minute; a different window key reads fresh.
+    summary = ok(await root.get(`/api/analytics/summary?endMonth=${month}&thisMonth=${month}&months=2`));
+    expect(summary.sales.totalRevenue).toBe(50);
+    expect(summary.monthlyRevenue.at(-1)).toEqual({ month, revenue: 50 });
+    expect(summary.topCustomers).toEqual([{ customerId: cust.id, name: "Acme Fabrication", revenue: 50 }]);
+    const detail = ok(await root.get(`/api/analytics/customer/${cust.id}?endMonth=${month}&months=2`));
+    expect(detail.lifetimeRevenue).toBe(50);
+    expect(detail.totalOrders).toBe(2);
+    // Capacity: one released order on the floor, weight from the catalog.
+    const heavy = await makeItem(root, "HV-1", 10, 1);
+    await editItem(root, ok(await root.get(`/api/items/${heavy.id}`)), { weight: 12.5 });
+    await orderReadyToShip(root, [{ item: "HV-1", ordered: 4 }]);
+    const dock = await as("dock", { permissions: { "pick-pack": "view" } });
+    const cap = ok(await dock.get("/api/analytics/capacity?days=7&tzOffset=300"));
+    expect(cap).toMatchObject({ lookbackDays: 7, currentLoadOrders: 1, currentLoadWeight: 50, utilizationPct: null });
+    expect(cap.dailyThroughput).toHaveLength(7);
+    expect(cap.agingPicks).toHaveLength(1);
+    expect(cap.itemsMissingWeight).toBe(0);
+    expect((await dock.get("/api/analytics/summary")).status).toBe(403);
+  });
+});

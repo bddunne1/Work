@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { getCompanyInfo } from "../lib/companyStore";
-import { listCustomerSummaries } from "../lib/customerStore";
-import { itemsIndex, listItems } from "../lib/itemStore";
-import { searchAllOrders } from "../lib/orderStore";
-import type { Customer, Item, PurchaseOrder } from "../types";
+import { listCustomerSummaries, listPurchasedItems, type PurchasedItem } from "../lib/customerStore";
+import { listItems } from "../lib/itemStore";
+import type { Customer, Item } from "../types";
 
 type Mode = "customer" | "all";
 
@@ -15,34 +14,13 @@ interface LabelItem {
   um: string;
 }
 
-function purchasedItemsFor(
-  customerId: string,
-  itemsByNumber: Map<string, Item>,
-  allOrders: PurchaseOrder[]
-): LabelItem[] {
-  const orders = allOrders.filter((o) => o.customerId === customerId);
-  const byNumber = new Map<string, LabelItem>();
-  for (const o of orders) {
-    for (const li of o.lineItems) {
-      const key = li.item.trim().toLowerCase();
-      if (!key || byNumber.has(key)) continue;
-      const catalogItem = itemsByNumber.get(key);
-      byNumber.set(key, {
-        itemNumber: li.item,
-        description: catalogItem?.description || li.description,
-        um: catalogItem?.um || li.um,
-      });
-    }
-  }
-  return [...byNumber.values()].sort((a, b) => a.itemNumber.localeCompare(b.itemNumber));
-}
 
 export default function ProductLabels() {
   const [mode, setMode] = useState<Mode>("customer");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const [customerOrders, setCustomerOrders] = useState<{ customerId: string; orders: PurchaseOrder[] } | null>(null);
+  const [purchased, setPurchased] = useState<{ customerId: string; items: PurchasedItem[] } | null>(null);
 
   useEffect(() => {
     listCustomerSummaries().then(setCustomers);
@@ -50,34 +28,33 @@ export default function ProductLabels() {
   }, []);
   const [customerId, setCustomerId] = useState<string | undefined>();
 
-  // Only the chosen customer's orders (most recent 2,000) - not the whole
-  // order history - to list what they've bought.
+  // What the chosen customer has bought, one row per item, from the server
+  // (D-10) - not their order history.
   useEffect(() => {
     if (!customerId) return;
     let cancelled = false;
-    searchAllOrders({ customerId, sort: "orderDate", dir: "desc" }, 2000).then(
-      (r) => !cancelled && setCustomerOrders({ customerId, orders: r.orders })
-    );
+    listPurchasedItems(customerId).then((items) => !cancelled && setPurchased({ customerId, items }));
     return () => {
       cancelled = true;
     };
   }, [customerId]);
-  const allOrders = useMemo(
-    () => (customerOrders && customerOrders.customerId === customerId ? customerOrders.orders : []),
-    [customerOrders, customerId]
+  const purchasedItems = useMemo(
+    () => (purchased && purchased.customerId === customerId ? purchased.items : []),
+    [purchased, customerId]
   );
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
-  const itemsByNumber = useMemo(() => itemsIndex(items), [items]);
 
   const candidates: LabelItem[] = useMemo(() => {
     if (mode === "customer") {
-      return customerId ? purchasedItemsFor(customerId, itemsByNumber, allOrders) : [];
+      return customerId
+        ? [...purchasedItems].sort((a, b) => a.itemNumber.localeCompare(b.itemNumber)).map((p) => ({ itemNumber: p.itemNumber, description: p.description, um: p.um }))
+        : [];
     }
     return items.map((i) => ({ itemNumber: i.itemNumber, description: i.description, um: i.um }));
-  }, [mode, customerId, items, itemsByNumber, allOrders]);
+  }, [mode, customerId, items, purchasedItems]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

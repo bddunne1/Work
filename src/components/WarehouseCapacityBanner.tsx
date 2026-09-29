@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listItems } from "../lib/itemStore";
-import { listCapacityOrders } from "../lib/orderStore";
 import { getCapacityLookbackDays } from "../lib/settingsStore";
 import type { CapacityMetrics } from "../lib/warehouseCapacity";
-import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
+import { getCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
+// The one-line capacity verdict above Release Orders, from the server's
+// figures (D-02) rather than every open order and the window's shipments.
 export default function WarehouseCapacityBanner() {
   const [metrics, setMetrics] = useState<CapacityMetrics | null>(null);
 
   useEffect(() => {
-    const lookbackDays = getCapacityLookbackDays();
-    Promise.all([listItems(), listCapacityOrders(lookbackDays)]).then(([items, orders]) => {
-      setMetrics(computeCapacityMetrics(orders, items, lookbackDays));
-    });
+    let cancelled = false;
+    getCapacityMetrics(getCapacityLookbackDays())
+      .then((m) => !cancelled && setMetrics(m))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (!metrics) return null;

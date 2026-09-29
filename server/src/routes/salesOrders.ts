@@ -838,8 +838,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     await tx.salesOrder.update({
       where: { soNumber },
       data: fullyShipped
-        ? { status: "SHIPPED", pendingShipment: [], version: { increment: 1 } }
-        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, version: { increment: 1 } },
+        ? { status: "SHIPPED", pendingShipment: [], lastShippedAt: record.shippedAt, version: { increment: 1 } }
+        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, lastShippedAt: record.shippedAt, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
     await auditIn(tx, account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
@@ -918,9 +918,10 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     // (its number stays issued).
     const voided = await voidInvoiceForShipment(tx, last.id, req.account!, "Shipment undone");
     await tx.shipmentRecord.delete({ where: { id: last.id } });
+    const previous = order.shipmentHistory.length > 1 ? order.shipmentHistory[order.shipmentHistory.length - 2].shippedAt : null;
     await tx.salesOrder.update({
       where: { soNumber },
-      data: { status: "PICK_PACKED", pendingShipment: lines, version: { increment: 1 } },
+      data: { status: "PICK_PACKED", pendingShipment: lines, lastShippedAt: previous, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
     await auditIn(tx, req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {

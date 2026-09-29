@@ -71,6 +71,19 @@ export async function saveRoutingGuide(customer: Customer): Promise<Customer> {
   return mapCustomer(updated);
 }
 
+export interface PurchasedItem {
+  itemNumber: string;
+  description: string;
+  um: string;
+  lastOrdered: string;
+  qty: number;
+}
+
+// What a customer has bought, one row per item, most recent first (D-10).
+export async function listPurchasedItems(customerId: string): Promise<PurchasedItem[]> {
+  return api.get<PurchasedItem[]>(`/api/customers/${encodeURIComponent(customerId)}/purchased-items`);
+}
+
 export async function deleteCustomer(id: string): Promise<void> {
   await api.del(`/api/customers/${id}`);
 }
