@@ -49,6 +49,54 @@ VITE_API_URL=http://<api-host>:4000 npm run dev
 `VITE_API_URL` defaults to `http://localhost:4000`, which only works on the
 machine running the API - set it at build time for anyone else on the network.
 
+## Test data
+
+`server/scripts/generate-test-data.mjs` fills the database with a realistic
+data set for trying the system out: 1,500 customers, 300 SKUs, 20 vendors and
+20,000 sales orders covering the last ~6 months, ending today.
+
+```bash
+cd server
+npm run seed:testdata              # refuses if the database already has customers, items or orders
+npm run seed:testdata -- --reset   # deletes business data first; keeps accounts and settings
+# options: --customers 1500 --skus 300 --orders 20000 --seed 42
+```
+
+Restart the API afterwards. It takes about a minute to run. What you get:
+
+- **Orders**
+  - Most orders are shipped, with a live pipeline at every stage today:
+    entered, checked, allocated, back ordered, released (printed and not yet
+    printed), a few partial shipments, and cancellations.
+  - The top 10% of customers place about 80% of orders.
+  - Order sizes follow the operation: 10% have 20+ lines with hundreds of
+    units per line, 40% have 8-14 lines, and the rest are small.
+- **Customers**
+  - Customers have ship-to locations and notes.
+  - Key accounts also have price overrides, customer part numbers and
+    routing guides.
+  - Order lines pick up those prices and part numbers.
+- **Stock**
+  - Vendor POs replenish stock every couple of weeks. Some recent POs are
+    overdue or part received.
+  - Returns are in every state (issued, received, closed).
+  - The stock ledger adds up to every item's on-hand, and no item ever goes
+    negative.
+  - About 8% of items are deliberately short, so back orders are genuine.
+- **Invoices and credit memos**
+  - Every shipment has its invoice, priced from the order line with tax
+    unless the customer is tax exempt.
+  - Every received return has its credit memo.
+  - None of them are queued for QuickBooks, so test history never reaches a
+    connected company file.
+- **Accounts**
+  - Accounts are never touched.
+  - Orders are stamped with your existing order entry, analyst and receiving
+    accounts, or with admin if there are none.
+- **Repeatability**
+  - The same seed gives the same data set each time.
+  - Dates are relative to the day you run it.
+
 ## Invoicing and QuickBooks
 
 An invoice is raised for every confirmed shipment and a credit memo for every

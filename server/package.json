@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx src/seed.ts",
+    "seed:testdata": "node scripts/generate-test-data.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
