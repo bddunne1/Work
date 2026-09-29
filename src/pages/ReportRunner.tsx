@@ -58,11 +58,13 @@ export default function ReportRunner() {
     setVisibleColumns(next?.defaultColumns ?? []);
     setRows([]);
     setNotice(undefined);
+    setHasRun(false);
   }
 
   function runReport() {
     if (!dataSource) return;
     setLoading(true);
+    setHasRun(true);
     dataSource.buildRows(filters).then((r) => {
       setRows(Array.isArray(r) ? r : r.rows);
       setNotice(Array.isArray(r) ? undefined : r.notice);
@@ -70,10 +72,10 @@ export default function ReportRunner() {
     });
   }
 
-  useEffect(() => {
-    if (dataSource) runReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSourceKey]);
+  // Reports never run themselves (PF-01): opening a preset or a memorized
+  // report shows its filters and waits for Run, so a broad report is a
+  // choice rather than a side effect of a click.
+  const [hasRun, setHasRun] = useState(false);
 
   function setFilter(key: string, value: string) {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -223,7 +225,7 @@ export default function ReportRunner() {
           </p>
           {notice && <p className="muted">{notice}</p>}
           {rows.length === 0 ? (
-            <p className="muted">No results for the current filters.</p>
+            <p className="muted">{hasRun ? "No results for the current filters." : "Set the filters and press Run to build the report."}</p>
           ) : (
             <table className="data-table">
               <thead>

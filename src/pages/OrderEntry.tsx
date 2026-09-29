@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { moveOnEnter } from "../lib/formKeys";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
@@ -47,6 +48,9 @@ export default function OrderEntry() {
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // One key per draft: a repeated submit (double click, a retry after a
+  // dropped connection) gets the same order back instead of a second one.
+  const submitKey = useRef(crypto.randomUUID());
   // The picker lists customer summaries (names, addresses, ship-to
   // locations); the selected customer's full record - price overrides and
   // part-number map, which drive line-item autofill - is loaded on selection.
@@ -68,6 +72,10 @@ export default function OrderEntry() {
     fullCustomer && fullCustomer.id === order.customerId
       ? fullCustomer
       : customers.find((c) => c.id === order.customerId);
+  // A saveable order has a customer and at least one complete line (R4-15,
+  // decided 29 Sep); blank trailing rows are dropped, not sent (R4-14).
+  const completeLines = order.lineItems.filter((li) => li.item.trim() && li.ordered > 0);
+  const canSave = Boolean(selectedCustomer) && completeLines.length > 0;
   const company = getCompanyInfo();
 
   function handleSelectCustomer(id: string) {
@@ -120,12 +128,12 @@ export default function OrderEntry() {
     e.preventDefault();
     // A double-click (or Enter pressed twice) used to POST twice and create
     // two sales orders with two different S.O. numbers.
-    if (submitting) return;
+    if (submitting || !canSave) return;
     setSubmitting(true);
     try {
       const estimatedShipDate = addBusinessDays(order.orderDate, getLeadTimeDays());
       const { soNumber: _soNumber, ...rest } = order;
-      const saved = await saveOrder({ ...rest, estimatedShipDate });
+      const saved = await saveOrder({ ...rest, lineItems: completeLines, estimatedShipDate }, submitKey.current);
       setOrder(saved);
       setSaved(true);
     } catch (err) {
@@ -136,13 +144,14 @@ export default function OrderEntry() {
   }
 
   async function startNewOrder() {
+    submitKey.current = crypto.randomUUID();
     setOrder(blankOrder("", account));
     setSameAsBillTo(false);
     setSaved(false);
     setCustomerQuery("");
     requestedCustomerId.current = undefined;
     setFullCustomer(undefined);
-    setCustomers(await listCustomerSummaries());
+    setCustomers((await listCustomerSummaries()).filter((c) => c.active !== false));
     nextSalesOrderNumber().then((n) => setOrder((o) => ({ ...o, soNumber: n })));
   }
 
@@ -175,7 +184,7 @@ export default function OrderEntry() {
         <p className="muted">Enter a customer purchase order to generate a new sales order.</p>
       </div>
 
-      <form className="sales-order" onSubmit={handleSubmit}>
+      <form className="sales-order" onSubmit={handleSubmit} onKeyDown={moveOnEnter}>
         <div className="customer-picker">
           <label htmlFor="customer-search">Customer</label>
           <SearchSelect
@@ -356,9 +365,12 @@ export default function OrderEntry() {
         </div>
 
         <div className="button-row">
-          <button type="submit" className="primary-btn" disabled={submitting}>
+          <button type="submit" className="primary-btn" disabled={submitting || !canSave}>
             {submitting ? "Saving…" : "Save Order"}
           </button>
+          {!canSave && (
+            <span className="muted">{selectedCustomer ? "Add at least one line with an item and a quantity." : "Pick a customer to save this order."}</span>
+          )}
         </div>
       </form>
     </div>

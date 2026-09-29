@@ -42,6 +42,14 @@ export async function listReturns(): Promise<ReturnAuthorization[]> {
   return returns.map(mapReturn);
 }
 
+// One page of RAs, searched on the server (PF-03).
+export async function searchReturns(params: { q?: string; page: number; pageSize: number }): Promise<{ rows: ReturnAuthorization[]; total: number }> {
+  const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.q) qs.set("q", params.q);
+  const res = await api.get<{ rows: ReturnAuthorization[]; total: number }>(`/api/returns?${qs.toString()}`);
+  return { rows: res.rows.map(mapReturn), total: res.total };
+}
+
 // Only RAs issued and not yet received back.
 export async function listOpenReturns(): Promise<ReturnAuthorization[]> {
   const ras = await api.get<ReturnAuthorization[]>("/api/returns?open=1");
@@ -60,8 +68,8 @@ export async function getReturn(raNumber: string): Promise<ReturnAuthorization |
 // Creates a new return - the server assigns the real RA # atomically, so
 // this takes everything except that field and returns the saved record
 // (with its real raNumber) to the caller.
-export async function saveReturn(ra: Omit<ReturnAuthorization, "raNumber">): Promise<ReturnAuthorization> {
-  return mapReturn(await api.post<ReturnAuthorization>("/api/returns", ra));
+export async function saveReturn(ra: Omit<ReturnAuthorization, "raNumber">, idempotencyKey?: string): Promise<ReturnAuthorization> {
+  return mapReturn(await api.post<ReturnAuthorization>("/api/returns", ra, { idempotencyKey }));
 }
 
 // Returns the server's copy (with its new `version`) - keep that one.

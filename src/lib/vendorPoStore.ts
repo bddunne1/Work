@@ -41,6 +41,14 @@ export async function listVendorPos(): Promise<VendorPurchaseOrder[]> {
   return pos.map(mapPo);
 }
 
+// One page of POs, searched on the server (PF-03).
+export async function searchVendorPos(params: { q?: string; page: number; pageSize: number }): Promise<{ rows: VendorPurchaseOrder[]; total: number }> {
+  const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.q) qs.set("q", params.q);
+  const res = await api.get<{ rows: VendorPurchaseOrder[]; total: number }>(`/api/vendor-purchase-orders?${qs.toString()}`);
+  return { rows: res.rows.map(mapPo), total: res.total };
+}
+
 // Only POs still waiting on stock (Open / Partially Received).
 export async function listOpenVendorPos(): Promise<VendorPurchaseOrder[]> {
   const pos = await api.get<VendorPurchaseOrder[]>("/api/vendor-purchase-orders?open=1");
@@ -60,8 +68,8 @@ export async function getVendorPo(poNumber: string): Promise<VendorPurchaseOrder
 // recomputes each affected item's qtyOnPurchaseOrder in the same
 // transaction), so this takes everything except that field and returns the
 // saved record (with its real poNumber) to the caller.
-export async function saveVendorPo(po: Omit<VendorPurchaseOrder, "poNumber">): Promise<VendorPurchaseOrder> {
-  return mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po));
+export async function saveVendorPo(po: Omit<VendorPurchaseOrder, "poNumber">, idempotencyKey?: string): Promise<VendorPurchaseOrder> {
+  return mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po, { idempotencyKey }));
 }
 
 // Returns the server's copy (with its new `version`) - callers must keep

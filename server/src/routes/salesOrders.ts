@@ -1,11 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
+import { isoDate } from "../lib/dates.js";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
+import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
-import { adjustOnHand, assertAllocationAvailable, itemIdFor, resolveItemIds } from "../lib/inventory.js";
+import { adjustOnHand, assertAllocationAvailable, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -108,8 +110,8 @@ const bolSchema = z.object({
 // zod, never applied.
 const headerSchema = z.object({
   poNumber: z.string().max(100).default(""),
-  orderDate: z.string(),
-  dueDate: z.string(),
+  orderDate: isoDate,
+  dueDate: isoDate,
   customerId: z.string().nullish(),
   shipToLocationId: z.string().nullish(),
   billTo: addressSchema,
@@ -142,7 +144,7 @@ const markPrintedSchema = z.object({
   // line can only go down from what was staged.
   lines: z.array(shipmentLineSchema).max(500).optional(),
 });
-const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: z.string().nullable() });
+const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: isoDate.nullable() });
 const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema });
 const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500) });
 const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling").max(2000) });
@@ -206,7 +208,15 @@ function parseSo(raw: string): number {
 const ORDER_CREATE_PAGES = ["order-entry", "import"];
 // Correcting header fields or lines: customer service, order entry, and
 // the analysts who own validation.
-const ORDER_EDIT_PAGES = ["order-entry", "order-detail", "validation", "import"];
+// Import creates orders but never edits them (R4-07, decided 29 Sep).
+const ORDER_EDIT_PAGES = ["order-entry", "order-detail", "validation"];
+// Once stock is committed to an order only the two pricing pages may change
+// what it will be billed at; once it is released nobody can (R4-03).
+const PRICE_PAGES = ["order-entry", "order-detail"];
+// Everything that still needs work - listed positively so the status index
+// can serve the open-orders query (PF-04).
+const OPEN_STATUSES = ["ENTERED", "CHECKED", "ALLOCATED", "BACKORDERED", "PICK_PACKED"] as const;
+const MAX_SHIPPED_SINCE_DAYS = 90;
 const ORDER_SHIP_PAGES = ["open-picks", "shipment-history"];
 const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
 const ALLOCATE_PAGES = ["allocation", "back-orders"];
@@ -262,12 +272,15 @@ router.get("/", async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
   const limit = Number(req.query.limit);
   const since = typeof req.query.shippedSince === "string" ? new Date(req.query.shippedSince) : null;
-  const shippedSince = since && !Number.isNaN(since.getTime()) ? since : null;
+  // The capacity window never reaches back more than 90 days (N-05): a
+  // Settings typo of 365 used to pull a year of shipments per page open.
+  const oldest = new Date(Date.now() - MAX_SHIPPED_SINCE_DAYS * 86_400_000);
+  const shippedSince = since && !Number.isNaN(since.getTime()) ? (since < oldest ? oldest : since) : null;
   const orders = await prisma.salesOrder.findMany({
     where: openOnly
       ? shippedSince
-        ? { OR: [{ status: { notIn: ["SHIPPED", "CANCELLED"] } }, { shipmentHistory: { some: { shippedAt: { gte: shippedSince } } } }] }
-        : { status: { notIn: ["SHIPPED", "CANCELLED"] } }
+        ? { OR: [{ status: { in: [...OPEN_STATUSES] } }, { shipmentHistory: { some: { shippedAt: { gte: shippedSince } } } }] }
+        : { status: { in: [...OPEN_STATUSES] } }
       : undefined,
     orderBy: { createdAt: "desc" },
     take: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : undefined,
@@ -293,7 +306,7 @@ router.get("/:soNumber", async (req, res) => {
 // Assigns the S.O. # itself (atomically, via the shared Counter table)
 // rather than trusting one the client precomputed, and stamps the writer
 // from the token rather than the body.
-router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), async (req: AuthedRequest, res) => {
+router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), idempotent("sales-order"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -455,6 +468,18 @@ router.put("/:soNumber", async (req: AuthedRequest, res) => {
       if (was && !was.rate.equals(new Prisma.Decimal(l.rate))) rateChanges[was.item] = { from: was.rate.toString(), to: l.rate };
     }
     if (Object.keys(rateChanges).length > 0) changes.rates = rateChanges;
+
+    // Price lock (R4-03): what the order will be billed at is frozen once
+    // the pick is released, and needs a pricing page once stock is held.
+    const priceChanged = Object.keys(rateChanges).length > 0 || "taxRate" in changes || "customerId" in changes;
+    if (priceChanged) {
+      if (existing.status === "PICK_PACKED") {
+        throw new HttpError(409, `S.O. #${soNumber} is released to the warehouse - prices, tax and customer are locked. Unallocate it first to change them.`, { conflict: true });
+      }
+      if (existing.status === "ALLOCATED" || existing.status === "BACKORDERED") {
+        requireEditOn(account, PRICE_PAGES, "Changing prices, tax or customer on an allocated order");
+      }
+    }
 
     await tx.salesOrder.update({ where: { soNumber }, data: { ...header, version: { increment: 1 } } });
     await syncChildren(tx.salesOrderLine, soNumber, "soNumber", data.lineItems, (l) => ({
@@ -724,6 +749,7 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
     const seen = new Set<string>();
     const shipped: ShipLine[] = [];
+    await lockItems(tx, lines.map((l) => lineById.get(l.lineItemId)?.itemId));
     for (const l of lines) {
       if (l.qty <= 0) continue;
       const li = lineById.get(l.lineItemId);
@@ -791,6 +817,32 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     if (order.status === "CANCELLED") throw new HttpError(409, `S.O. #${soNumber} was cancelled.`, { conflict: true });
     const last = order.shipmentHistory[order.shipmentHistory.length - 1];
     if (!last) throw new HttpError(409, "This order has no shipment to undo.", { conflict: true });
+    // Units that came back on a received return are already on hand again;
+    // undoing the shipment would count them twice (R4-12).
+    const receivedReturns = await tx.returnAuthorization.findMany({
+      where: { soNumber: String(soNumber), receivedAt: { not: null } },
+      select: { raNumber: true },
+    });
+    if (receivedReturns.length > 0) {
+      throw new HttpError(
+        409,
+        `S.O. #${soNumber} has a received return (${receivedReturns.map((r) => r.raNumber).join(", ")}) - those units are back on hand, so the shipment can't be undone.`,
+        { conflict: true }
+      );
+    }
+    // Once the invoice is in QuickBooks the accounting side owns it: void it
+    // from the Invoices page (which pushes the void), then undo (decided 29 Sep).
+    const invoice = await tx.invoice.findUnique({ where: { shipmentRecordId: last.id } });
+    if (invoice && invoice.status === "ISSUED") {
+      const synced = await tx.externalRef.findFirst({ where: { system: "quickbooks", entityType: "invoice", entityId: invoice.invoiceNumber } });
+      if (synced) {
+        throw new HttpError(
+          409,
+          `Invoice ${invoice.invoiceNumber} for this shipment has already reached QuickBooks. Void it from the Invoices page first, then undo the shipment.`,
+          { conflict: true }
+        );
+      }
+    }
     const staged = (order.pendingShipment as ShipLine[] | null) ?? [];
     if (staged.some((l) => l.qty > 0)) {
       // Undoing would overwrite the batch that's already packed and staged
@@ -799,6 +851,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     }
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
     const lines = last.lines as ShipLine[];
+    await lockItems(tx, lines.map((l) => lineById.get(l.lineItemId)?.itemId));
     for (const l of lines) {
       const li = lineById.get(l.lineItemId);
       if (li && l.qty > 0) {
@@ -932,9 +985,17 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
       releasedSoNumbers.push(soNumber);
       results.push({ soNumber: String(soNumber), ok: true });
     } catch (err) {
-      if (!(err instanceof HttpError)) throw err;
+      // Any failure stays with its own order: the ones before it released,
+      // the ones after it still get their turn (R4-28).
       const label = `S.O. #${request.soNumber}`;
-      results.push({ soNumber: String(request.soNumber), ok: false, error: err.message.startsWith(label) ? err.message : `${label}: ${err.message}` });
+      let message: string;
+      if (err instanceof HttpError) {
+        message = err.message;
+      } else {
+        console.error(`release ${label} failed:`, err);
+        message = "Unexpected error - this order was not released. Reload and try again.";
+      }
+      results.push({ soNumber: String(request.soNumber), ok: false, error: message.startsWith(label) ? message : `${label}: ${message}` });
     }
   }
   const orders = releasedSoNumbers.length

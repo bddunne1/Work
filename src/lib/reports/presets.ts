@@ -9,6 +9,7 @@ export const REPORT_PRESETS: ReportPreset[] = [
     label: "Open Sales Orders",
     description: "Every sales order that hasn't shipped complete yet.",
     dataSourceKey: "sales-orders",
+    defaultFilters: { status: "open" },
   },
   {
     key: "sales-order-lines-by-item",
@@ -21,7 +22,7 @@ export const REPORT_PRESETS: ReportPreset[] = [
     label: "Open Purchase Orders",
     description: "Every outbound purchase order that isn't fully received or closed.",
     dataSourceKey: "purchase-orders",
-    defaultFilters: {},
+    defaultFilters: { status: "open" },
   },
   {
     key: "purchase-order-lines-by-item",
@@ -40,6 +41,7 @@ export const REPORT_PRESETS: ReportPreset[] = [
     label: "Open Returns",
     description: "Return Authorizations that haven't been closed out yet.",
     dataSourceKey: "returns",
+    defaultFilters: { status: "open" },
   },
 ];
 

@@ -18,6 +18,7 @@ import countersRouter from "./routes/counters.js";
 import customersRouter from "./routes/customers.js";
 import integrationsRouter from "./routes/integrations.js";
 import invoicesRouter from "./routes/invoices.js";
+import shipmentsRouter from "./routes/shipments.js";
 import itemsRouter from "./routes/items.js";
 import returnsRouter from "./routes/returns.js";
 import salesOrderSearchRouter from "./routes/salesOrderSearch.js";
@@ -27,6 +28,11 @@ import settingsRouter from "./routes/settings.js";
 import stockMovementsRouter from "./routes/stockMovements.js";
 import vendorPurchaseOrdersRouter from "./routes/vendorPurchaseOrders.js";
 import vendorsRouter from "./routes/vendors.js";
+
+function isDeadlock(err: unknown): boolean {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") return true;
+  return err instanceof Prisma.PrismaClientUnknownRequestError && /40P01|deadlock detected/i.test(err.message);
+}
 
 export function createApp(): express.Express {
   const app = express();
@@ -71,6 +77,7 @@ export function createApp(): express.Express {
   app.use("/api/stock-movements", stockMovementsRouter);
   app.use("/api/analytics", analyticsRouter);
   app.use("/api/invoices", invoicesRouter);
+  app.use("/api/shipments", shipmentsRouter);
   app.use("/api/integrations", integrationsRouter);
 
   // Catches anything a route didn't handle itself (including an async
@@ -112,6 +119,14 @@ export function createApp(): express.Express {
         res.status(404).json({ error: "Record not found" });
         return;
       }
+    }
+    // Two transactions that took item rows in different orders can deadlock
+    // (Postgres 40P01); Postgres aborts one, nothing is half-written, and
+    // the caller simply repeats. Stock loops now take rows in item-id order,
+    // so this is rare - but it is a retry, not a server fault.
+    if (isDeadlock(err)) {
+      res.status(409).json({ error: "Another change collided with this one - nothing was saved. Try again.", conflict: true, retry: true });
+      return;
     }
     console.error("Unhandled request error:", err);
     res.status(500).json({ error: "Internal server error" });

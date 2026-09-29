@@ -128,6 +128,8 @@ export default function LineItemsTable({
                 <td>
                   <input
                     type="number"
+                    min={1}
+                    step={1}
                     className="num-input"
                     value={li.ordered}
                     disabled={readOnly}

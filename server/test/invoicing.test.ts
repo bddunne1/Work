@@ -3,7 +3,7 @@ import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
 import { processOutbox, reconcileInvoices } from "../src/integrations/sync.js";
 import { termsDays } from "../src/lib/money.js";
 import { prisma } from "../src/prisma.js";
-import { admin, as, editOrder, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship, so, undoShipment } from "./helpers.js";
+import { admin, as, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship, so, undoShipment } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -16,8 +16,8 @@ describe("invoices", () => {
     await makeItem(root, "BR-1001", 100, 2.5);
     await makeItem(root, "BR-1002", 100, 0.3333);
     const cust = await makeCustomer(root, "Acme Fabrication", { terms: "Net 45" });
-    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 2.5 }, { item: "BR-1002", ordered: 7, rate: 0.3333 }]);
-    o = ok(await root.put(so(o), { ...o, taxRate: 6.25, customerId: cust.id, terms: "Net 45", lineItems: o.lineItems.map((l: any) => ({ ...l, rate: Number(l.rate) })) }));
+    // Customer, tax and terms are set before allocation: they lock once stock is committed (B-06).
+    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 2.5 }, { item: "BR-1002", ordered: 7, rate: 0.3333 }], { taxRate: 6.25, customerId: cust.id, terms: "Net 45" });
     // Ship 4 of the first line and all of the second.
     o = ok(await ship(root, o, [4, 7]));
     const invoices = await prisma.invoice.findMany({ include: { lines: true } });
@@ -115,8 +115,7 @@ describe("credit memos", () => {
   it("credits a received return at the price the invoice charged", async () => {
     const root = await admin();
     await makeItem(root, "BR-1001", 100, 2.5);
-    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 4.75 }]);
-    o = ok(await root.put(so(o), { ...o, taxRate: 5, lineItems: o.lineItems.map((l: any) => ({ ...l, rate: Number(l.rate) })) }));
+    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 4.75 }], { taxRate: 5 });
     o = ok(await ship(root, o));
     // The RA is written at the catalog price; the credit uses the invoiced one.
     const ra = ok(
@@ -144,8 +143,7 @@ describe("credit memos", () => {
 
 describe("QuickBooks bridge", () => {
   async function shippedInvoice(root: Awaited<ReturnType<typeof admin>>, customerId?: string) {
-    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2, rate: 10 }, { item: "BR-1002", ordered: 1, rate: 5 }]);
-    if (customerId) o = ok(await editOrder(root, o, { customerId }));
+    let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2, rate: 10 }, { item: "BR-1002", ordered: 1, rate: 5 }], customerId ? { customerId } : {});
     o = ok(await ship(root, o));
     return prisma.invoice.findFirstOrThrow({ where: { soNumber: Number(o.soNumber) } });
   }

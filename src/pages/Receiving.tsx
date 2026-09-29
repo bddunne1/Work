@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listVendorPos } from "../lib/vendorPoStore";
+import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { VendorPurchaseOrder } from "../types";
 import { matchesVendorPoQuery, vendorPoOutstandingTotal } from "../types";
 
@@ -10,7 +10,7 @@ export default function Receiving() {
   const [pos, setPos] = useState<VendorPurchaseOrder[]>([]);
 
   useEffect(() => {
-    listVendorPos().then(setPos);
+    listOpenVendorPos().then(setPos);
   }, []);
 
   const openPos = useMemo(

@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
+import { isoDate } from "../lib/dates.js";
 import type { Prisma } from "@prisma/client";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createCreditMemoForReturn } from "../lib/documents.js";
-import { adjustOnHand, itemIdFor, resolveItemIds } from "../lib/inventory.js";
+import { adjustOnHand, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -47,7 +49,7 @@ const createSchema = z.object({
   customerId: z.string().nullish(),
   soNumber: z.string().max(50).nullish(),
   billTo: addressSchema,
-  requestDate: z.string(),
+  requestDate: isoDate,
   reason: z.string().max(2000).default(""),
   notes: z.string().max(5000).default(""),
   lines: z.array(lineSchema).max(500).default([]),
@@ -94,8 +96,18 @@ async function assertWithinShipped(
     const key = li.item.trim().toLowerCase();
     shipped.set(key, (shipped.get(key) ?? 0) + qty);
   }
+  // Every RA that is still open or whose goods actually came back counts
+  // against the shipped total. An RA's normal life is Issued, Received,
+  // Closed, so "not Closed" excluded exactly the returns that had restocked
+  // (R4-05): only an RA closed without ever being received is left out.
   const others = await tx.returnLine.findMany({
-    where: { returnAuth: { soNumber: { in: [String(soNumber), soNumberText ?? ""] }, status: { not: "CLOSED" }, ...(raNumber ? { raNumber: { not: raNumber } } : {}) } },
+    where: {
+      returnAuth: {
+        soNumber: { in: [String(soNumber), soNumberText ?? ""] },
+        OR: [{ status: "ISSUED" }, { receivedAt: { not: null } }],
+        ...(raNumber ? { raNumber: { not: raNumber } } : {}),
+      },
+    },
   });
   const already = new Map<string, number>();
   for (const l of others) already.set(l.itemNumber.trim().toLowerCase(), (already.get(l.itemNumber.trim().toLowerCase()) ?? 0) + l.qty);
@@ -118,13 +130,36 @@ function mapOut<T extends { status: string }>(ra: T) {
 router.use(requireAuth);
 
 // `?open=1` returns only RAs issued and not yet received back.
+// With `?page=N` the list is paged and searched on the server (PF-03):
+// `{ rows, total, page, pageSize }`; `q` matches the RA #, the S.O. # or
+// the customer name.
 router.get("/", requireAnyPermission(RETURN_VIEW_PAGES, "view"), async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
-  const returns = await prisma.returnAuthorization.findMany({
-    where: openOnly ? { status: "ISSUED" } : undefined,
-    orderBy: { createdAt: "desc" },
-    include,
-  });
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const where: Prisma.ReturnAuthorizationWhereInput = {
+    ...(openOnly ? { status: "ISSUED" as const } : {}),
+    ...(q
+      ? {
+          OR: [
+            { raNumber: { contains: q, mode: "insensitive" } },
+            { soNumber: { contains: q, mode: "insensitive" } },
+            { customer: { name: { contains: q, mode: "insensitive" } } },
+            { billTo: { path: ["name"], string_contains: q } },
+          ],
+        }
+      : {}),
+  };
+  const page = Number(req.query.page);
+  if (Number.isInteger(page) && page > 0) {
+    const pageSize = Math.min(Math.max(1, Number(req.query.pageSize) || 50), 500);
+    const [rows, total] = await Promise.all([
+      prisma.returnAuthorization.findMany({ where, orderBy: { createdAt: "desc" }, include, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.returnAuthorization.count({ where }),
+    ]);
+    res.json({ rows: rows.map(mapOut), total, page, pageSize });
+    return;
+  }
+  const returns = await prisma.returnAuthorization.findMany({ where, orderBy: { createdAt: "desc" }, include });
   res.json(returns.map(mapOut));
 });
 
@@ -140,7 +175,7 @@ router.get("/:raNumber", requireAnyPermission(RETURN_VIEW_PAGES, "view"), async 
 // Assigns the RA number itself (atomically, via the shared Counter table)
 // rather than trusting one the client precomputed - same reasoning as
 // vendor PO numbers (see vendorPurchaseOrders.ts).
-router.post("/", requirePermission("returns", "edit"), async (req: AuthedRequest, res) => {
+router.post("/", requirePermission("returns", "edit"), idempotent("return"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -222,6 +257,25 @@ router.put("/:raNumber", async (req: AuthedRequest, res) => {
     res.status(409).json({ error: `${raNumber} has already been ${existing.status === "RECEIVED" ? "received" : "closed"}.`, conflict: true });
     return;
   }
+  if (existing.status === "CLOSED" && data.status === "Received") {
+    res.status(409).json({ error: `${raNumber} is closed - it can't go back to Received.`, conflict: true });
+    return;
+  }
+  // Once the goods are back (or the RA is closed) the lines are the record
+  // of what was restocked and credited: item, quantity, price and the
+  // restock flag can't change any more (R4-09).
+  if (existing.status !== "ISSUED") {
+    const current = await prisma.returnLine.findMany({ where: { raNumber } });
+    const byId = new Map(current.map((l) => [l.id, l]));
+    const frozen = data.lines.find((l) => {
+      const was = l.id ? byId.get(l.id) : undefined;
+      return !was || was.itemNumber.trim().toLowerCase() !== l.itemNumber.trim().toLowerCase() || was.qty !== l.qty || !was.rate.equals(l.rate) || was.restock !== l.restock;
+    });
+    if (frozen) {
+      res.status(409).json({ error: `${raNumber} has already been received - its lines (item, quantity, credit rate, restock) can't change now.`, conflict: true });
+      return;
+    }
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -285,6 +339,7 @@ router.post("/:raNumber/receive", requireAnyPermission(RETURN_RECEIVE_PAGES, "ed
     if (rows[0].version !== parsed.data.version) throw new ConflictError();
     if (rows[0].status !== "ISSUED") throw new HttpError(409, `${raNumber} has already been received or closed.`, { conflict: true });
     const lines = await tx.returnLine.findMany({ where: { raNumber } });
+    await lockItems(tx, lines.map((l) => l.itemId));
     const override = new Map(parsed.data.lines.map((l) => [l.lineId, l.restock]));
     let restocked = 0;
     for (const line of lines) {

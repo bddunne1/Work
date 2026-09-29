@@ -102,22 +102,42 @@ router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest
     res.status(409).json({ error: `Item number "${data.itemNumber}" already exists` });
     return;
   }
-  const item = await prisma.item.create({
-    data: {
-      itemNumber: data.itemNumber,
-      description: data.description,
-      um: data.um,
-      rate: data.rate,
-      qtyOnHand: data.qtyOnHand,
-      reorderPoint: data.reorderPoint,
-      countryOfOrigin: data.countryOfOrigin,
-      weight: data.weight,
-      notes: data.notes,
-      preferredVendorId: data.preferredVendorId,
-      components: { create: data.components.map((c) => ({ partNumber: c.partNumber, description: c.description })) },
-      links: { create: data.links.map((l) => ({ label: l.label, url: l.url })) },
-    },
-    include,
+  const item = await prisma.$transaction(async (tx) => {
+    const created = await tx.item.create({
+      data: {
+        itemNumber: data.itemNumber,
+        description: data.description,
+        um: data.um,
+        rate: data.rate,
+        qtyOnHand: data.qtyOnHand,
+        reorderPoint: data.reorderPoint,
+        countryOfOrigin: data.countryOfOrigin,
+        weight: data.weight,
+        notes: data.notes,
+        preferredVendorId: data.preferredVendorId,
+        components: { create: data.components.map((c) => ({ partNumber: c.partNumber, description: c.description })) },
+        links: { create: data.links.map((l) => ({ label: l.label, url: l.url })) },
+      },
+      include,
+    });
+    // Opening stock is a movement like any other, so the ledger starts at
+    // zero for every item and start-plus-movements always equals on hand (R4-26).
+    if (created.qtyOnHand !== 0) {
+      await tx.stockMovement.create({
+        data: {
+          itemId: created.id,
+          itemNumber: created.itemNumber,
+          delta: created.qtyOnHand,
+          qtyAfter: created.qtyOnHand,
+          reason: "OPENING",
+          refType: "item",
+          refId: created.id,
+          actorId: req.account!.id,
+          actorUsername: req.account!.username,
+        },
+      });
+    }
+    return created;
   });
   logAudit(req.account!, "ITEM_CREATED", "item", item.id, item.itemNumber, { qtyOnHand: item.qtyOnHand });
   res.status(201).json(item);
@@ -192,6 +212,7 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
         await tx.salesOrderLine.updateMany({ where: { itemId: id }, data: { item: data.itemNumber } });
         await tx.vendorPoLine.updateMany({ where: { itemId: id }, data: { itemNumber: data.itemNumber } });
         await tx.returnLine.updateMany({ where: { itemId: id }, data: { itemNumber: data.itemNumber } });
+        await tx.stockMovement.updateMany({ where: { itemId: id }, data: { itemNumber: data.itemNumber } });
         await tx.customerPriceOverride.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
         await tx.customerPartMapping.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
       }

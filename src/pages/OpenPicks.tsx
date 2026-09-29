@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { isConflictError } from "../lib/apiClient";
 import { listItems } from "../lib/itemStore";
 import { listOpenOrders, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
@@ -47,23 +46,33 @@ export default function OpenPicks() {
     setSelected({});
   }
 
+  const [confirming, setConfirming] = useState(false);
+
+  // Each order is its own attempt (R4-31): one refusal no longer stops the
+  // rest, the button is locked while the batch runs, and the list is
+  // reloaded whatever happened, because it is stale either way.
   async function confirmSelected() {
-    if (selectedOrders.length === 0) return;
-    const confirmedSoNumbers = new Set(selectedOrders.map((o) => o.soNumber));
-    try {
-      for (const o of selectedOrders) {
+    if (selectedOrders.length === 0 || confirming) return;
+    setConfirming(true);
+    const failures: string[] = [];
+    let shipped = 0;
+    for (const o of selectedOrders) {
+      try {
         await shipOrder(o, o.pendingShipment ?? []);
+        shipped++;
+      } catch (err) {
+        failures.push(`S.O. #${o.soNumber}: ${err instanceof Error ? err.message : String(err)}`);
       }
-    } catch (err) {
-      if (isConflictError(err)) {
-        alert(`${err.message} Some selected orders may not have shipped - review and retry.`);
-        listOpenOrders().then((os) => setOrders(openPickOrders(os)));
-        return;
-      }
-      throw err;
     }
-    setOrders((os) => os.filter((o) => !confirmedSoNumbers.has(o.soNumber)));
-    setSelected({});
+    try {
+      setOrders(openPickOrders(await listOpenOrders()));
+      setSelected({});
+    } finally {
+      setConfirming(false);
+    }
+    if (failures.length > 0) {
+      alert(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`);
+    }
   }
 
   return (
@@ -150,10 +159,10 @@ export default function OpenPicks() {
             <button
               type="button"
               className="primary-btn"
-              disabled={selectedOrders.length === 0}
+              disabled={selectedOrders.length === 0 || confirming}
               onClick={confirmSelected}
             >
-              Confirm Shipment (Selected)
+              {confirming ? "Confirming…" : "Confirm Shipment (Selected)"}
             </button>
             <span className="muted">Ships exactly what was packed, no quantity changes.</span>
           </div>

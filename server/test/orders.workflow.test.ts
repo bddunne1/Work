@@ -171,7 +171,7 @@ describe("order workflow commands", () => {
     expect((await cancel(root, o)).status).toBe(409);
     expect((await editOrder(root, o, { notes: "x" })).status).toBe(409);
     // Stock is untouched: cancelling releases a reservation, not a shipment.
-    expect((await expectLedgerReconciles("BR-1001", 100)).moves).toHaveLength(0);
+    expect((await expectLedgerReconciles("BR-1001", 100)).moves.filter((m) => m.reason !== "OPENING")).toHaveLength(0);
   });
 });
 

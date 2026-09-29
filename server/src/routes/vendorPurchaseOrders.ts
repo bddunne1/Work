@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
+import { isoDate } from "../lib/dates.js";
 import type { Prisma } from "@prisma/client";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
-import { adjustOnHand, itemIdFor, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
+import { adjustOnHand, itemIdFor, lockItems, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -38,8 +40,8 @@ const lineSchema = z.object({
 const createSchema = z.object({
   vendorId: z.string(),
   vendorName: z.string().max(200),
-  orderDate: z.string(),
-  expectedDate: z.string().nullish(),
+  orderDate: isoDate,
+  expectedDate: isoDate.nullish(),
   notes: z.string().max(5000).default(""),
   lines: z.array(lineSchema).max(500).default([]),
 });
@@ -84,13 +86,28 @@ router.use(requireAuth);
 // `?open=1` returns only POs still waiting on stock (Open / Partially
 // Received) - what the Dashboard's receiving numbers need - instead of every
 // PO ever written.
+// Plain: every PO (or `?open=1` the open ones). With `?page=N` the list is
+// paged and searched on the server - `{ rows, total, page, pageSize }` -
+// so the Purchase Orders page stops downloading every PO ever written
+// (PF-03). `q` matches the PO # or the vendor name.
 router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req, res) => {
   const openOnly = req.query.open === "1" || req.query.open === "true";
-  const pos = await prisma.vendorPurchaseOrder.findMany({
-    where: openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : undefined,
-    orderBy: { createdAt: "desc" },
-    include,
-  });
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const where: Prisma.VendorPurchaseOrderWhereInput = {
+    ...(openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : {}),
+    ...(q ? { OR: [{ poNumber: { contains: q, mode: "insensitive" } }, { vendorName: { contains: q, mode: "insensitive" } }] } : {}),
+  };
+  const page = Number(req.query.page);
+  if (Number.isInteger(page) && page > 0) {
+    const pageSize = Math.min(Math.max(1, Number(req.query.pageSize) || 50), 500);
+    const [rows, total] = await Promise.all([
+      prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.vendorPurchaseOrder.count({ where }),
+    ]);
+    res.json({ rows: rows.map(mapOut), total, page, pageSize });
+    return;
+  }
+  const pos = await prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include });
   res.json(pos.map(mapOut));
 });
 
@@ -106,7 +123,7 @@ router.get("/:poNumber", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req
 // Assigns the PO number itself (atomically, via the shared Counter table)
 // rather than trusting one the client precomputed - two people saving a new
 // PO at the same moment can never land on the same number.
-router.post("/", requirePermission("purchase-orders", "edit"), async (req: AuthedRequest, res) => {
+router.post("/", requirePermission("purchase-orders", "edit"), idempotent("vendor-po"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -264,6 +281,7 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
     const poLines = await tx.vendorPoLine.findMany({ where: { poNumber } });
     const byId = new Map(poLines.map((l) => [l.id, l]));
     const seen = new Set<string>();
+    await lockItems(tx, received.map((r) => byId.get(r.lineId)?.itemId));
     for (const r of received) {
       const line = byId.get(r.lineId);
       if (!line) throw new HttpError(400, "Receipt references a line that is no longer on this PO - reload and try again.");

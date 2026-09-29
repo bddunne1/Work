@@ -70,7 +70,17 @@ function CustomersInner() {
   async function handleDelete() {
     if (!draft) return;
     if (!confirm(`Delete customer "${draft.name}"?`)) return;
-    await deleteCustomer(draft.id);
+    try {
+      await deleteCustomer(draft.id);
+    } catch (err) {
+      // A customer with orders, returns or invoices keeps them: the server
+      // says so and points at the Inactive flag on the editor.
+      if (isConflictError(err)) {
+        alert(err.message);
+        return;
+      }
+      throw err;
+    }
     navigate("/customers/all");
   }
 
@@ -81,9 +91,13 @@ function CustomersInner() {
       text: noteText.trim(),
       createdAt: new Date().toISOString(),
     };
-    const updated = { ...draft, notes: [note, ...draft.notes] };
     try {
-      setDraft(await updateCustomer(updated));
+      // The note goes on the last saved record, not the draft, so adding a
+      // note never saves edits the person has not pressed Save for (M-11).
+      const fresh = await getCustomer(draft.id);
+      if (!fresh) return;
+      const saved = await updateCustomer({ ...fresh, notes: [note, ...fresh.notes] });
+      setDraft((d) => (d ? { ...d, notes: saved.notes, version: saved.version } : d));
       await refresh();
       setNoteText("");
     } catch (err) {
@@ -157,6 +171,7 @@ function CustomersInner() {
                     onClick={() => navigate(`/customers/all/${c.id}`)}
                   >
                     {c.name || "Unnamed Customer"}
+                    {c.active === false && <span className="muted"> (inactive)</span>}
                   </button>
                 </li>
               ))}

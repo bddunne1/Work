@@ -168,7 +168,10 @@ describe("randomized concurrent workload", () => {
       const item = await prisma.item.findUniqueOrThrow({ where: { itemNumber: n } });
       const moves = await prisma.stockMovement.findMany({ where: { itemNumber: n }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
       const sum = moves.reduce((s, m) => s + m.delta, 0);
-      expect(item.qtyOnHand, `${n}: ledger`).toBe(START_QTY + sum);
+      // Opening stock is itself the first movement (A-17), so the ledger
+      // explains on hand from nothing.
+      expect(item.qtyOnHand, `${n}: ledger`).toBe(sum);
+      expect(moves[0]?.reason, `${n}: first movement`).toBe("OPENING");
       // 3. Shipping never drove on-hand negative.
       for (const m of moves) if (m.reason === "SHIP") expect(m.qtyAfter, `${n}: SHIP left ${m.qtyAfter}`).toBeGreaterThanOrEqual(0);
     }

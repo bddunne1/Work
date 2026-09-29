@@ -20,5 +20,5 @@ export function getCapacityLookbackDays(): number {
 }
 
 export async function setCapacityLookbackDays(days: number): Promise<void> {
-  await setSetting("capacity_lookback_days", Math.max(1, Math.floor(days)));
+  await setSetting("capacity_lookback_days", Math.min(90, Math.max(1, Math.floor(days))));
 }

@@ -1,5 +1,11 @@
 # ERP review
 
+## Sprint plan — 29 Sep 2026
+- `erp-sprint-plan.html`: sprints 0 to 3 from the master review's work plan
+  expanded into tasks, each with the file it touches, the test that proves
+  it, a size, the decisions needed before starting and the order to do them
+  in. Published copy: https://claude.ai/artifact/Q8Nsez1F3WDdPyGTPuCT6L
+
 ## Master review — 28 Sep 2026
 - `erp-master-review.html`: the working document. All five rounds reconciled
   into one list of 104 items with current status (closed, partial, open) and

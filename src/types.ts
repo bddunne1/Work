@@ -1,3 +1,4 @@
+import { fromCents, lineAmountCents, taxCents } from "./lib/money";
 import { localIsoDate } from "./lib/dateUtils";
 
 export interface Address {
@@ -188,6 +189,9 @@ export interface Customer {
   // Invoices for an exempt customer (a reseller with a certificate on file)
   // carry no sales tax whatever the order's rate says.
   taxExempt?: boolean;
+  // False once the customer is retired: kept for its history, hidden from
+  // the pickers on new orders and returns.
+  active?: boolean;
   // When set, product labels printed for this customer show this brand
   // name instead of ours - for customers who private-label our products.
   privateLabelName?: string;
@@ -297,7 +301,7 @@ export function emptyLineItem(): LineItem {
 }
 
 export function lineAmount(li: LineItem): number {
-  return (li.ordered || 0) * (li.rate || 0);
+  return fromCents(lineAmountCents(li.ordered || 0, li.rate || 0));
 }
 
 export function allocatedQtyFor(order: Pick<PurchaseOrder, "allocation">, lineItemId: string): number {
@@ -462,16 +466,23 @@ export function shipmentRecordWeight(
   }, 0);
 }
 
+// Totals in integer cents, the same arithmetic the server uses for the
+// invoice, so the order page never shows a total one cent off its invoice.
+export function orderSubtotalCents(order: Pick<PurchaseOrder, "lineItems">): number {
+  return order.lineItems.reduce((sum, li) => sum + lineAmountCents(li.ordered || 0, li.rate || 0), 0);
+}
+
 export function orderSubtotal(order: Pick<PurchaseOrder, "lineItems">): number {
-  return order.lineItems.reduce((sum, li) => sum + lineAmount(li), 0);
+  return fromCents(orderSubtotalCents(order));
 }
 
 export function orderTax(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
-  return orderSubtotal(order) * ((order.taxRate || 0) / 100);
+  return fromCents(taxCents(orderSubtotalCents(order), order.taxRate || 0));
 }
 
 export function orderTotal(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
-  return orderSubtotal(order) + orderTax(order);
+  const subtotal = orderSubtotalCents(order);
+  return fromCents(subtotal + taxCents(subtotal, order.taxRate || 0));
 }
 
 // Shared search-box matcher: S.O. #, P.O. #, or customer name, case-insensitive.

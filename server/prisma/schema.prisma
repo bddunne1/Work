@@ -122,6 +122,10 @@ model Customer {
   // Tax handling for invoices: an exempt customer (a reseller with a
   // certificate on file) is invoiced with no tax whatever the order's rate.
   taxExempt        Boolean  @default(false)
+  // A customer with history is never deleted (its orders, returns, invoices
+  // and credit memos reference it); it is made inactive instead, which
+  // hides it from Order Entry and the returns form (R4-06).
+  active           Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
@@ -243,7 +247,6 @@ model Item {
   invoiceLines    InvoiceLine[]
   creditMemoLines CreditMemoLine[]
 
-  @@index([itemNumber])
   @@index([preferredVendorId])
 }
 
@@ -279,7 +282,7 @@ model SalesOrder {
   orderDate            DateTime        @db.Date
   dueDate              DateTime        @db.Date
   customerId           String?
-  customer             Customer?       @relation(fields: [customerId], references: [id])
+  customer             Customer?       @relation(fields: [customerId], references: [id], onDelete: Restrict)
   shipToLocationId     String?
   billTo               Json
   shipTo               Json
@@ -414,7 +417,7 @@ model ReturnAuthorization {
   // App-generated, formatted "RA-3001" etc, same pattern as VendorPurchaseOrder.
   raNumber       String       @id
   customerId     String?
-  customer       Customer?    @relation(fields: [customerId], references: [id])
+  customer       Customer?    @relation(fields: [customerId], references: [id], onDelete: Restrict)
   // Free-text reference to the original sales order, not a real FK - a
   // customer can return goods without one on hand.
   soNumber       String?
@@ -540,7 +543,7 @@ model Invoice {
   shipmentRecordId String?         @unique
   shipmentRecord   ShipmentRecord? @relation(fields: [shipmentRecordId], references: [id], onDelete: SetNull)
   customerId       String?
-  customer         Customer?       @relation(fields: [customerId], references: [id])
+  customer         Customer?       @relation(fields: [customerId], references: [id], onDelete: Restrict)
   customerName     String
   billTo           Json
   shipTo           Json
@@ -595,7 +598,7 @@ model CreditMemo {
   raNumber         String              @unique
   returnAuth       ReturnAuthorization @relation(fields: [raNumber], references: [raNumber])
   customerId       String?
-  customer         Customer?           @relation(fields: [customerId], references: [id])
+  customer         Customer?           @relation(fields: [customerId], references: [id], onDelete: Restrict)
   customerName     String
   billTo           Json
   // The sales order the return referenced, if any.
@@ -640,6 +643,23 @@ model CreditMemoLine {
 
 // The id an outside system (QuickBooks) knows one of our records by. Ids,
 // never names, are the join key; names change.
+// One row per Idempotency-Key a client sent on a create request: the first
+// request claims the key, the response is stored, and a repeat (a double
+// click, a retried request after a dropped connection) gets the same
+// answer back instead of a second order, PO or return (R4-16).
+model IdempotencyKey {
+  scope     String
+  key       String
+  accountId String
+  // 0 while the first request is still running; the HTTP status after.
+  status    Int      @default(0)
+  body      Json?
+  createdAt DateTime @default(now())
+
+  @@id([scope, key, accountId])
+  @@index([createdAt])
+}
+
 model ExternalRef {
   id           String   @id @default(uuid())
   system       String

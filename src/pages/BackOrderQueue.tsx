@@ -6,7 +6,7 @@ import { useCanEdit } from "../lib/authContext";
 import { estimateBackorderShipDate } from "../lib/backorderForecast";
 import { listItems } from "../lib/itemStore";
 import { listOpenOrders, setEstimatedShipDate } from "../lib/orderStore";
-import { listVendorPos } from "../lib/vendorPoStore";
+import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { Item, PurchaseOrder, VendorPurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
@@ -22,7 +22,7 @@ export default function BackOrderQueue() {
   useEffect(() => {
     listOpenOrders().then(setAllOrders);
     listItems().then(setItems);
-    listVendorPos().then(setVendorPos);
+    listOpenVendorPos().then(setVendorPos);
   }, []);
 
   const orders = useMemo(() => allOrders.filter((o) => o.status === "Backordered"), [allOrders]);

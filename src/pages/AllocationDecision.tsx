@@ -5,7 +5,7 @@ import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { allocateOrder, getOrder, listOpenOrders } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
-import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
+import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
 import { availableQty, orderTotal, qtyAllocatedOnOrders, remainingToShip, shippedQtyFor } from "../types";
 
@@ -191,6 +191,19 @@ function AllocationDecisionInner() {
           <span className="review-meta-sep">·</span>
           <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
+          <button
+            type="button"
+            className="secondary-btn"
+            title="Leave this order for later and move to the next one"
+            onClick={() => {
+              skipSoNumber("allocation", order.soNumber);
+              const next = nextQueueSoNumber(queueState);
+              if (next) navigate(`/allocation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+              else navigate("/allocation");
+            }}
+          >
+            Skip
+          </button>
         </div>
       </div>
 
