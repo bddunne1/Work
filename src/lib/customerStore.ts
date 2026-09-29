@@ -50,6 +50,27 @@ export async function updateCustomer(customer: Customer): Promise<Customer> {
   return mapCustomer(updated);
 }
 
+// The price sheet (and the part numbers it is keyed by) has its own
+// endpoint, gated by the Customer Pricing page (B-08); the customer PUT
+// leaves prices alone.
+export async function saveCustomerPrices(customer: Customer): Promise<Customer> {
+  const updated = await api.put<Customer>(`/api/customers/${customer.id}/prices`, {
+    version: customer.version,
+    priceOverrides: customer.priceOverrides ?? [],
+    partNumberMap: customer.partNumberMap ?? [],
+  });
+  return mapCustomer(updated);
+}
+
+// The routing guide likewise, gated by the Routing Guide page.
+export async function saveRoutingGuide(customer: Customer): Promise<Customer> {
+  const updated = await api.put<Customer>(`/api/customers/${customer.id}/routing-guide`, {
+    version: customer.version,
+    routingGuide: customer.routingGuide ?? null,
+  });
+  return mapCustomer(updated);
+}
+
 export async function deleteCustomer(id: string): Promise<void> {
   await api.del(`/api/customers/${id}`);
 }

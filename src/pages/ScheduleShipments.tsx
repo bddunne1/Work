@@ -5,7 +5,7 @@ import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listOpenOrders, setEstimatedShipDate as setShipDate } from "../lib/orderStore";
 import type { OrderStatus, PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "Entered",
@@ -189,7 +189,7 @@ export default function ScheduleShipments() {
                   <td>
                     <StatusPill order={o} />
                   </td>
-                  <td>${orderTotal(o).toFixed(2)}</td>
+                  <td>{orderTotalLabel(o)}</td>
                   <td onClick={(e) => e.stopPropagation()}>
                     {canEdit ? (
                       <input

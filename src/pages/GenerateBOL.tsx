@@ -6,7 +6,7 @@ import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listOpenOrders, setBol } from "../lib/orderStore";
 import { localIsoDate } from "../lib/dateUtils";
 import type { Address, BolDetails, PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 interface BolInput {
   weight: string;
@@ -239,7 +239,7 @@ export default function GenerateBOL() {
                     <td>{o.poNumber}</td>
                     <td>{o.billTo.name}</td>
                     <td>{o.status}</td>
-                    <td>${orderTotal(o).toFixed(2)}</td>
+                    <td>{orderTotalLabel(o)}</td>
                   </tr>
                 ))}
               </tbody>

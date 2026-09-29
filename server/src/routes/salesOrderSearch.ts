@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { hidePrices, requireOrderRead } from "../lib/orderView.js";
 import { prisma } from "../prisma.js";
 
 // Paged, server-filtered sales order search - for history pages (Closed
@@ -107,7 +108,8 @@ function parseDateOnly(raw: string): string | null {
 
 router.use(requireAuth);
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: AuthedRequest, res) => {
+  requireOrderRead(req.account!);
   const query = req.query;
   const conditions: Prisma.Sql[] = [];
 
@@ -206,7 +208,7 @@ router.get("/", async (req, res) => {
   const bySo = new Map(orders.map((o) => [o.soNumber, o]));
   const rows = ids.flatMap((id) => {
     const o = bySo.get(id);
-    return o ? [mapOut(o)] : [];
+    return o ? [hidePrices(mapOut(o), req.account!)] : [];
   });
 
   res.json({ rows, total, page, pageSize });

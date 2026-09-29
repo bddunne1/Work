@@ -3,7 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { enqueueIfSynced } from "../integrations/sync.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn, diffFields, logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -143,6 +143,9 @@ router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest
   res.status(201).json(item);
 });
 
+// The catalog fields whose changes are recorded field by field.
+const ITEM_FIELDS = ["itemNumber", "description", "um", "rate", "qtyOnHand", "reorderPoint", "countryOfOrigin", "weight", "notes", "preferredVendorId"];
+
 router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedRequest, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -216,6 +219,10 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
         await tx.customerPriceOverride.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
         await tx.customerPartMapping.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
       }
+      // Field by field, in the transaction (B-11).
+      const changes: Record<string, unknown> = diffFields(existing, data, ITEM_FIELDS);
+      if (data.itemNumber !== existing.itemNumber) changes.renamedFrom = existing.itemNumber;
+      await auditIn(tx, req.account!, "ITEM_UPDATED", "item", id, data.itemNumber, changes);
     });
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -225,10 +232,6 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
     throw err;
   }
 
-  logAudit(req.account!, "ITEM_UPDATED", "item", id, data.itemNumber, {
-    ...(data.itemNumber !== existing.itemNumber ? { renamedFrom: existing.itemNumber } : {}),
-    ...(data.qtyOnHand !== existing.qtyOnHand ? { qtyOnHand: { from: existing.qtyOnHand, to: data.qtyOnHand } } : {}),
-  });
   const updated = await prisma.item.findUnique({ where: { id }, include });
   res.json(updated);
 });
@@ -296,6 +299,7 @@ router.patch("/by-number/:itemNumber/qty", requireAnyPermission(["catalog", "inv
     if (qtyOnPurchaseOrder !== undefined) {
       await tx.item.update({ where: { id: current.id }, data: { qtyOnPurchaseOrder, version: { increment: 1 } } });
     }
+    if (changedBy !== 0) await auditIn(tx, req.account!, "STOCK_ADJUSTED", "item", current.id, current.itemNumber, { delta: changedBy });
     return undefined;
   });
   if (conflictAt !== undefined) {
@@ -305,9 +309,6 @@ router.patch("/by-number/:itemNumber/qty", requireAnyPermission(["catalog", "inv
       qtyOnHand: conflictAt,
     });
     return;
-  }
-  if (changedBy !== 0) {
-    logAudit(req.account!, "STOCK_ADJUSTED", "item", current.id, current.itemNumber, { delta: changedBy });
   }
   res.json(await prisma.item.findUnique({ where: { id: current.id }, include }));
 });

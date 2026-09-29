@@ -8,7 +8,7 @@ import { listItems } from "../lib/itemStore";
 import { listOpenOrders, setEstimatedShipDate } from "../lib/orderStore";
 import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { Item, PurchaseOrder, VendorPurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 export default function BackOrderQueue() {
   const navigate = useNavigate();
@@ -102,7 +102,7 @@ export default function BackOrderQueue() {
                   <td>
                     <StatusPill order={o} />
                   </td>
-                  <td>${orderTotal(o).toFixed(2)}</td>
+                  <td>{orderTotalLabel(o)}</td>
                   <td>
                     {estimate?.estimatedShipDate ? (
                       <span className="schedule-ship-date">{estimate.estimatedShipDate}</span>

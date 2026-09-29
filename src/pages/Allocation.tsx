@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal, orderTotalLabel } from "../types";
 
 type SortKey = "dueDate" | "soNumber" | "customer" | "orderDate" | "total";
 
@@ -148,7 +148,7 @@ export default function Allocation() {
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>
-                <td>${orderTotal(o).toFixed(2)}</td>
+                <td>{orderTotalLabel(o)}</td>
               </tr>
             ))}
           </tbody>

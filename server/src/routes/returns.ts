@@ -4,7 +4,7 @@ import { isoDate } from "../lib/dates.js";
 import type { Prisma } from "@prisma/client";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createCreditMemoForReturn } from "../lib/documents.js";
 import { adjustOnHand, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
@@ -364,7 +364,7 @@ router.post("/:raNumber/receive", requireAnyPermission(RETURN_RECEIVE_PAGES, "ed
     // Goods are back: the customer is credited, at the price they were
     // billed where that invoice can be found. Queued for QuickBooks here.
     const memo = await createCreditMemoForReturn(tx, { ...received, lines: await tx.returnLine.findMany({ where: { raNumber } }) }, req.account!);
-    logAudit(req.account!, "RETURN_RECEIVED", "return", raNumber, raNumber, {
+    await auditIn(tx, req.account!, "RETURN_RECEIVED", "return", raNumber, raNumber, {
       unitsRestocked: restocked,
       unitsScrapped: lines.reduce((sum, l) => sum + l.qty, 0) - restocked,
       creditMemoDraft: memo.id,

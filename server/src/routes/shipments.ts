@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Prisma } from "@prisma/client";
-import { requireAnyPermission, requireAuth } from "../middleware/auth.js";
+import { requireAnyPermission, requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { canSeePrices } from "../lib/orderView.js";
 import { prisma } from "../prisma.js";
 
 // One row per shipment (R4-20): what Shipment History and the end-of-day
@@ -29,7 +30,8 @@ function dateOnly(s: string | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req, res) => {
+router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req: AuthedRequest, res) => {
+  const showPrices = canSeePrices(req.account!);
   const str = (k: string) => (typeof req.query[k] === "string" ? String(req.query[k]).trim() : "");
   const from = dateOnly(str("from"));
   const to = dateOnly(str("to"));
@@ -89,7 +91,7 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req, res) => {
       units: lines.reduce((sum, l) => sum + l.qty, 0),
       invoiceId: r.invoice?.id ?? null,
       invoiceNumber: r.invoice?.invoiceNumber ?? null,
-      invoiceTotal: r.invoice ? r.invoice.total.toString() : null,
+      invoiceTotal: r.invoice && showPrices ? r.invoice.total.toString() : null,
       invoiceStatus: r.invoice?.status ?? null,
       isLatest: latestId.get(r.soNumber) === r.id,
     };
@@ -102,7 +104,7 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req, res) => {
   const totals = {
     shipments: total,
     units: all.reduce((sum, r) => sum + ((r.lines as ShipLine[] | null) ?? []).reduce((s, l) => s + (l.qty > 0 ? l.qty : 0), 0), 0),
-    amount: all.reduce((sum, r) => sum + (r.invoice && r.invoice.status !== "VOID" ? Number(r.invoice.total) : 0), 0).toFixed(2),
+    amount: showPrices ? all.reduce((sum, r) => sum + (r.invoice && r.invoice.status !== "VOID" ? Number(r.invoice.total) : 0), 0).toFixed(2) : null,
     complete: all.length === total,
   };
 

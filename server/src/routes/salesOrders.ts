@@ -5,11 +5,12 @@ import { isoDate } from "../lib/dates.js";
 import { estimatedShipDateFor } from "../lib/leadTime.js";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
-import { adjustOnHand, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
+import { adjustOnHand, findItemByNumber, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { assertAllocationAvailable, syncReservations } from "../lib/reservations.js";
+import { hidePrices, requireOrderRead } from "../lib/orderView.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -128,7 +129,14 @@ const headerSchema = z.object({
 });
 
 const createSchema = headerSchema;
-const updateSchema = headerSchema.extend({ version: z.number().int() });
+// A login that can't see prices gets the order without them (B-10) and
+// sends it back the same way: on a PUT, a missing rate or tax rate means
+// "leave it as it is", filled in from the stored order below.
+const updateSchema = headerSchema.extend({
+  version: z.number().int(),
+  taxRate: z.number().finite().min(0).max(100).nullish(),
+  lineItems: z.array(lineItemSchema.extend({ rate: money.nullish() })).max(500).default([]),
+});
 
 const versionSchema = z.object({ version: z.number().int() });
 const allocateSchema = z.object({
@@ -257,9 +265,10 @@ async function lockOrder(tx: Prisma.TransactionClient, soNumber: number, version
   return tx.salesOrder.findUniqueOrThrow({ where: { soNumber }, include });
 }
 
-async function reload(soNumber: number) {
+// The order as the caller may see it (prices only for the office, B-10).
+async function reload(soNumber: number, account: AuthedAccount) {
   const updated = await prisma.salesOrder.findUnique({ where: { soNumber }, include });
-  return mapOut(updated!);
+  return hidePrices(mapOut(updated!), account);
 }
 
 router.use(requireAuth);
@@ -270,7 +279,8 @@ router.use(requireAuth);
 // `?limit=N` returns just the N most recent (e.g. the Dashboard's list).
 // `?open=1&shippedSince=<ISO date>` adds orders with a shipment on or after
 // that date - what warehouse capacity needs for its throughput window.
-router.get("/", async (req, res) => {
+router.get("/", async (req: AuthedRequest, res) => {
+  requireOrderRead(req.account!);
   const openOnly = req.query.open === "1" || req.query.open === "true";
   const limit = Number(req.query.limit);
   const since = typeof req.query.shippedSince === "string" ? new Date(req.query.shippedSince) : null;
@@ -288,10 +298,11 @@ router.get("/", async (req, res) => {
     take: Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : undefined,
     include,
   });
-  res.json(orders.map(mapOut));
+  res.json(orders.map((o) => hidePrices(mapOut(o), req.account!)));
 });
 
-router.get("/:soNumber", async (req, res) => {
+router.get("/:soNumber", async (req: AuthedRequest, res) => {
+  requireOrderRead(req.account!);
   const soNumber = parseInt(req.params.soNumber, 10);
   if (!Number.isFinite(soNumber)) {
     res.status(404).json({ error: "Order not found" });
@@ -302,7 +313,7 @@ router.get("/:soNumber", async (req, res) => {
     res.status(404).json({ error: "Order not found" });
     return;
   }
-  res.json(mapOut(order));
+  res.json(hidePrices(mapOut(order), req.account!));
 });
 
 // Assigns the S.O. # itself (atomically, via the shared Counter table)
@@ -366,7 +377,7 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), idempotent("s
     customer: (order.billTo as { name?: string }).name,
     lines: order.lineItems.length,
   });
-  res.status(201).json(mapOut(order));
+  res.status(201).json(hidePrices(mapOut(order), account));
 });
 
 // Edits header fields and, while the order is Entered or Checked, its lines.
@@ -379,14 +390,25 @@ router.put("/:soNumber", async (req: AuthedRequest, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const data = parsed.data;
+  const sent = parsed.data;
   const account = req.account!;
 
   const changes: Record<string, unknown> = {};
   await prisma.$transaction(async (tx) => {
-    const existing = await lockOrder(tx, soNumber, data.version);
+    const existing = await lockOrder(tx, soNumber, sent.version);
     if (existing.writtenById !== account.id) requireEditOn(account, ORDER_EDIT_PAGES, "Editing an order");
     assertOpen(existing);
+
+    // Prices the caller left out stay what they were (an existing line) or
+    // start at the catalog rate (a new line); see updateSchema.
+    const priorRate = new Map(existing.lineItems.map((l) => [l.id, Number(l.rate)]));
+    const lineItems: z.infer<typeof lineItemSchema>[] = [];
+    for (const l of sent.lineItems) {
+      let rate = l.rate ?? (l.id ? priorRate.get(l.id) : undefined);
+      if (rate == null) rate = Number((await findItemByNumber(tx, l.item))?.rate ?? 0);
+      lineItems.push({ ...l, rate });
+    }
+    const data = { ...sent, taxRate: sent.taxRate ?? Number(existing.taxRate), lineItems };
 
     // Line ids the caller sent that belong to a different order would be
     // "upserted" onto that other order's row - refuse instead.
@@ -499,7 +521,7 @@ router.put("/:soNumber", async (req: AuthedRequest, res) => {
   });
 
   logAudit(account, "ORDER_UPDATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, changes);
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Validation: Entered -> Checked, stamped with who checked it.
@@ -520,7 +542,7 @@ router.post("/:soNumber/check", requirePermission("validation", "edit"), async (
     });
   });
   logAudit(account, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from: "Entered", to: "Checked" });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Validation: send a Checked order back to Entered (a correction is needed).
@@ -540,7 +562,7 @@ router.post("/:soNumber/uncheck", requirePermission("validation", "edit"), async
     });
   });
   logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from: "Checked", to: "Entered" });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Allocation decision. From Checked or Backordered: allocating every
@@ -612,7 +634,7 @@ router.post("/:soNumber/allocate", async (req: AuthedRequest, res) => {
     return { from: STATUS_OUT[order.status], to: STATUS_OUT[status], units: hold ? 0 : total, fullyAllocated };
   });
   logAudit(account, outcome.from === outcome.to ? "ORDER_ALLOCATION_REVISED" : "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, outcome);
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Releases an order's allocation and any unprinted staged pick, sending it
@@ -648,7 +670,7 @@ router.post("/:soNumber/unallocate", requireAnyPermission(UNALLOCATE_PAGES, "edi
     return STATUS_OUT[order.status];
   });
   logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from, to: "Checked", unallocated: true });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Stamps the pick list and/or packing slip as printed, optionally trimming
@@ -689,7 +711,7 @@ router.post("/:soNumber/mark-printed", requireAnyPermission(PRINT_PAGES, "edit")
     if (lines) await syncReservations(tx, soNumber);
   });
   logAudit(req.account!, "ORDER_PRINTED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { pickList, packingSlip, trimmed: Boolean(lines) });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 router.post("/:soNumber/set-ship-date", requireAnyPermission(SHIP_DATE_PAGES, "edit"), async (req: AuthedRequest, res) => {
@@ -712,7 +734,7 @@ router.post("/:soNumber/set-ship-date", requireAnyPermission(SHIP_DATE_PAGES, "e
     await tx.salesOrder.update({ where: { soNumber }, data: { estimatedShipDate: date, version: { increment: 1 } } });
   });
   logAudit(req.account!, "ORDER_SHIP_DATE_SET", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from, to: parsed.data.estimatedShipDate });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 router.post("/:soNumber/set-bol", requirePermission("bol", "edit"), async (req: AuthedRequest, res) => {
@@ -728,7 +750,7 @@ router.post("/:soNumber/set-bol", requirePermission("bol", "edit"), async (req: 
     await tx.salesOrder.update({ where: { soNumber }, data: { bol: parsed.data.bol, version: { increment: 1 } } });
   });
   logAudit(req.account!, "ORDER_BOL_GENERATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { weight: parsed.data.bol.weight, packages: parsed.data.bol.packageCount });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Confirms a shipment: records it, rolls the order to Shipped/Backordered,
@@ -752,7 +774,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
     const seen = new Set<string>();
     const shipped: ShipLine[] = [];
-    await lockItems(tx, lines.map((l) => lineById.get(l.lineItemId)?.itemId));
+    // Every item on the order, in id order - the same set every command locks.
+    await lockItems(tx, order.lineItems.map((li) => li.itemId));
     for (const l of lines) {
       if (l.qty <= 0) continue;
       const li = lineById.get(l.lineItemId);
@@ -802,14 +825,14 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
         : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
-    logAudit(account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+    await auditIn(tx, account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: shipped.reduce((sum, l) => sum + l.qty, 0),
       result: fullyShipped ? "Shipped" : "Backordered",
       invoice: invoice.invoiceNumber,
       invoiceTotal: invoice.total.toString(),
     });
   });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Reverses the most recent shipment: puts its units back into qtyOnHand,
@@ -861,7 +884,8 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     }
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
     const lines = last.lines as ShipLine[];
-    await lockItems(tx, lines.map((l) => lineById.get(l.lineItemId)?.itemId));
+    // Every item on the order, in id order - the same set every command locks.
+    await lockItems(tx, order.lineItems.map((li) => li.itemId));
     for (const l of lines) {
       const li = lineById.get(l.lineItemId);
       if (li && l.qty > 0) {
@@ -882,12 +906,12 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
       data: { status: "PICK_PACKED", pendingShipment: lines, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
-    logAudit(req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+    await auditIn(tx, req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
       ...(voided ? (voided.status === "DELETED" ? { invoiceDraftRemoved: true } : { invoiceVoided: voided.invoiceNumber }) : {}),
     });
   });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Cancels an order (or what's left of a partly shipped one): releases its
@@ -921,7 +945,7 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
     await syncReservations(tx, soNumber);
   });
   logAudit(req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason });
-  res.json(await reload(soNumber));
+  res.json(await reload(soNumber, req.account!));
 });
 
 // Releases allocated orders to the warehouse (Release Orders): each order's
@@ -1015,7 +1039,7 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
   const orders = releasedSoNumbers.length
     ? await prisma.salesOrder.findMany({ where: { soNumber: { in: releasedSoNumbers } }, include })
     : [];
-  res.json({ results, orders: orders.map(mapOut) });
+  res.json({ results, orders: orders.map((o) => hidePrices(mapOut(o), req.account!)) });
 });
 
 export default router;

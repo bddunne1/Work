@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 // Orders waiting to be checked, oldest first by due date (R4-19), so the
 // backlog is worked in the order it will hurt. Skipped orders (from the
@@ -94,7 +94,7 @@ export default function Validation() {
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>
                 <td>{o.dueDate}</td>
-                <td>${orderTotal(o).toFixed(2)}</td>
+                <td>{orderTotalLabel(o)}</td>
               </tr>
             ))}
           </tbody>

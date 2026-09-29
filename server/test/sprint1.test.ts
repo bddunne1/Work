@@ -7,6 +7,7 @@ import { processOutbox } from "../src/integrations/sync.js";
 import { prisma } from "../src/prisma.js";
 import {
   admin,
+  getOrder,
   allocate,
   as,
   check,
@@ -202,7 +203,10 @@ describe("price lock and Import (B-06, B-07)", () => {
     let o = await makeOrder(root, [{ item: "BR-1001", ordered: 5, rate: 2.5 }]);
     // Before allocation any editor may reprice.
     o = ok(await editOrder(validator, o, { lineItems: o.lineItems.map((l: any) => ({ ...l, rate: 3 })) }));
-    expect(Number(o.lineItems[0].rate)).toBe(3);
+    // Validation is not a pricing page: the validator's copy has no rates (B-10).
+    expect(o.pricesHidden).toBe(true);
+    expect(o.lineItems[0].rate).toBeUndefined();
+    expect(Number((await getOrder(root, o.soNumber)).lineItems[0].rate)).toBe(3);
     o = ok(await check(root, o));
     o = ok(await allocate(root, o));
     // Allocated: Validation edit is not a pricing page.

@@ -7,7 +7,7 @@ import { isConflictError } from "../lib/apiClient";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getOrder, markPrinted, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { orderSubtotal, orderTax, orderTotal, remainingToShip } from "../types";
+import { orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -221,7 +221,7 @@ function OpenPicksDetailInner() {
               </tr>
               <tr className="total-row">
                 <td>Total</td>
-                <td>${orderTotal(order).toFixed(2)}</td>
+                <td>{orderTotalLabel(order)}</td>
               </tr>
             </tbody>
           </table>

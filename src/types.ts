@@ -112,6 +112,9 @@ export interface PurchaseOrder {
   // the checked stamp.
   checkedByColor?: string;
   allocation?: AllocationDecision;
+  // Set by the server when this login may not see prices (B-10): every
+  // line's rate and the tax rate are left out, and totals show a dash.
+  pricesHidden?: boolean;
   labelPrintedAt?: string;
   pickedAt?: string;
   pendingShipment?: ShipmentLine[];
@@ -493,6 +496,12 @@ export function orderTax(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): n
 export function orderTotal(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
   const subtotal = orderSubtotalCents(order);
   return fromCents(subtotal + taxCents(subtotal, order.taxRate || 0));
+}
+
+// The order total as a list shows it, or a dash for a login that may not
+// see prices.
+export function orderTotalLabel(order: Pick<PurchaseOrder, "lineItems" | "taxRate" | "pricesHidden">): string {
+  return order.pricesHidden ? "—" : `$${orderTotal(order).toFixed(2)}`;
 }
 
 // Shared search-box matcher: S.O. #, P.O. #, or customer name, case-insensitive.

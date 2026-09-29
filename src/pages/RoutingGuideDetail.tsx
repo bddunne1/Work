@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { getCustomer, updateCustomer } from "../lib/customerStore";
+import { getCustomer, saveRoutingGuide } from "../lib/customerStore";
 import type { Customer, RoutingGuide as RoutingGuideData } from "../types";
 
 function emptyRoutingGuide(): RoutingGuideData {
@@ -80,7 +80,7 @@ function RoutingGuideDetailInner() {
   async function saveEdit() {
     if (!draft) return;
     try {
-      const saved = await updateCustomer(draft);
+      const saved = await saveRoutingGuide(draft);
       setCustomer(saved);
       setDraft(undefined);
       setEditing(false);

@@ -10,7 +10,7 @@ import { invoicePath, invoicesForOrder, money } from "../lib/invoiceStore";
 import { cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
 import { canView, canEdit as canEditPath } from "../lib/permissions";
 import type { Invoice, PurchaseOrder } from "../types";
-import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
+import { itemLabel, orderSubtotal, orderTax, orderTotalLabel } from "../types";
 
 // Where "continue working this order" should go next, based on its current
 // stage - so a Sales Order view can drop you straight into whatever screen
@@ -443,7 +443,7 @@ function OrderDetailInner() {
               </tr>
               <tr className="total-row">
                 <td>Total</td>
-                <td>${orderTotal(view).toFixed(2)}</td>
+                <td>{orderTotalLabel(view)}</td>
               </tr>
             </tbody>
           </table>

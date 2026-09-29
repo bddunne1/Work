@@ -7,7 +7,7 @@ import { allocateOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
-import { availableQty, orderTotal, remainingToShip, reservedElsewhere, shippedQtyFor } from "../types";
+import { availableQty, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -186,7 +186,7 @@ function AllocationDecisionInner() {
           <span className="review-meta-sep">·</span>
           <strong>{order.billTo.name}</strong>
           <span className="review-meta-sep">·</span>
-          <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
+          <span className="review-meta-total">{orderTotalLabel(order)}</span>
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
           <button
             type="button"

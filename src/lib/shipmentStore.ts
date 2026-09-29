@@ -26,7 +26,8 @@ export interface ShipmentRow {
 export interface ShipmentTotals {
   shipments: number;
   units: number;
-  amount: string;
+  // Null for a login that may not see prices (B-10).
+  amount: string | null;
   // False when the range held more shipments than the totals were summed over.
   complete: boolean;
 }

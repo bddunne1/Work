@@ -296,3 +296,155 @@ describe("reservation table", () => {
     expect((await itemByNumber("BR-1001-X"))!).toMatchObject({ qtyOnHand: 3, qtyOnPurchaseOrder: 4 });
   });
 });
+
+describe("read exposure (B-10)", () => {
+  it("shows prices only to office pages and the order list only to order pages", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100, 2.5);
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 4, rate: 2.5 }], { taxRate: 5 })));
+    // Warehouse: reads orders, sees no money.
+    const warehouse = await as("dock", { permissions: { "open-picks": "edit", "shipment-history": "view" } });
+    const seen = ok(await warehouse.get(so(o)));
+    expect(seen.pricesHidden).toBe(true);
+    expect(seen.lineItems[0].rate).toBeUndefined();
+    expect(seen.taxRate).toBeUndefined();
+    expect(seen.lineItems[0].item).toBe("BR-1001");
+    const list = ok(await warehouse.get("/api/sales-orders?open=1"));
+    expect(list.every((x: any) => x.pricesHidden === true)).toBe(true);
+    const search = ok(await warehouse.get("/api/sales-orders/search?status=Shipped"));
+    expect(search.rows[0].pricesHidden).toBe(true);
+    expect(search.rows[0].lineItems[0].rate).toBeUndefined();
+    const shipments = ok(await warehouse.get("/api/shipments"));
+    expect(shipments.rows[0].invoiceTotal).toBeNull();
+    expect(shipments.totals.amount).toBeNull();
+    // Office: everything.
+    const office = await as("desk", { permissions: { "order-detail": "view" } });
+    const full = ok(await office.get(so(o)));
+    expect(full.pricesHidden).toBeUndefined();
+    expect(full.lineItems[0].rate).toBe("2.5");
+    expect(full.taxRate).toBe("5");
+    // Receiving only: no order list at all, but the Dashboard counts.
+    const receiver = await as("rcv", { permissions: { receiving: "edit" } });
+    expect((await receiver.get("/api/sales-orders?open=1")).status).toBe(403);
+    expect((await receiver.get(so(o))).status).toBe(403);
+    expect((await receiver.get("/api/sales-orders/search?q=1")).status).toBe(403);
+    const summary = ok(await receiver.get(`/api/dashboard/summary?today=2026-09-29&midnight=${new Date(Date.now() - 3_600_000).toISOString()}`));
+    expect(summary.queues.validate).toMatchObject({ count: 0, late: 0 });
+    expect(summary.todayStats.shippedOrders).toBe(1);
+    expect(summary.todayStats.shippedUnits).toBe(4);
+  });
+
+  it("counts every queue and today's work for the Dashboard", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    await makeOrder(root, [{ item: "BR-1001", ordered: 1 }], { dueDate: "2026-09-01" });
+    const checked = ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 1 }])));
+    ok(await allocate(root, checked));
+    ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 1 }]))), [0]));
+    await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }]);
+    // Ship-by is the estimated ship date (order date plus lead time) when
+    // there is one, else the due date; seen from today nothing is late...
+    let s = ok(await root.get("/api/dashboard/summary?today=2026-09-29"));
+    expect(s.queues).toMatchObject({ validate: { count: 1, late: 0 }, allocate: { count: 0 }, release: { count: 1 }, backorder: { count: 1 }, print: { count: 0 }, ship: { count: 1 } });
+    expect(s.queues.validate.oldest).toBeTruthy();
+    expect(s.todayStats).toMatchObject({ late: 0, floor: 1, shippedOrders: 0 });
+    // ...and seen from next year everything is.
+    s = ok(await root.get("/api/dashboard/summary?today=2027-01-01"));
+    expect(s.queues).toMatchObject({ validate: { late: 1 }, release: { late: 1 }, backorder: { late: 1 }, ship: { late: 1 } });
+    expect(s.todayStats.late).toBe(4);
+    // A warehouse login saving an order it can't price leaves the prices alone.
+    const dock = await as("dock", { permissions: { validation: "edit" } });
+    const mine = ok(await dock.get(so(checked)));
+    const saved = ok(await dock.put(so(checked), { ...mine, taxRate: undefined, notes: "dock 4", lineItems: mine.lineItems }));
+    expect(saved.notes).toBe("dock 4");
+    const after = await getOrder(root, checked.soNumber);
+    expect(after.lineItems[0].rate).toBe(checked.lineItems[0].rate);
+    expect(after.taxRate).toBe(checked.taxRate);
+  });
+});
+
+describe("audit and settings (B-11), price sheet endpoints (B-08)", () => {
+  const entries = (action: string, targetId: string) => prisma.auditLog.findMany({ where: { action, targetId }, orderBy: { createdAt: "asc" } });
+
+  it("accepts only known settings with valid values, and logs the change", async () => {
+    const root = await admin();
+    expect((await root.put("/api/settings/lead_time_days", { value: 7 })).status).toBe(204);
+    expect((await root.put("/api/settings/lead_time_days", { value: -1 })).status).toBe(400);
+    expect((await root.put("/api/settings/lead_time_days", { value: "7" })).status).toBe(400);
+    expect((await root.put("/api/settings/favourite_colour", { value: "blue" })).status).toBe(400);
+    expect((await root.put("/api/settings/company_info", { value: { name: "Aamstrand", street: "711 N Grove", city: "Manteno", state: "IL", zip: "60950", phone: "" } })).status).toBe(204);
+    expect((await root.put("/api/settings/company_info", { value: { name: "x", evil: true } })).status).toBe(400);
+    const all = ok(await root.get("/api/settings"));
+    expect(all.lead_time_days).toBe(7);
+    expect(all.favourite_colour).toBeUndefined();
+    const log = await entries("SETTING_CHANGED", "lead_time_days");
+    expect(log).toHaveLength(1);
+    expect(log[0].detail).toMatchObject({ from: null, to: 7 });
+  });
+
+  it("records customer and item changes field by field, inside the transaction", async () => {
+    const root = await admin();
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    const c = ok(await root.get(`/api/customers/${cust.id}`));
+    ok(await root.put(`/api/customers/${cust.id}`, { ...c, terms: "Net 45", rep: "JD" }));
+    let log = await entries("CUSTOMER_UPDATED", cust.id);
+    expect(log).toHaveLength(1);
+    expect(log[0].detail).toEqual({ terms: { from: "Net 30", to: "Net 45" }, rep: { from: "", to: "JD" } });
+    // A stale save changes nothing and leaves no entry.
+    expect((await root.put(`/api/customers/${cust.id}`, { ...c, terms: "Net 60" })).status).toBe(409);
+    expect(await entries("CUSTOMER_UPDATED", cust.id)).toHaveLength(1);
+
+    const item = await makeItem(root, "BR-1001", 10, 2.5);
+    const full = ok(await root.get(`/api/items/${item.id}`));
+    ok(await root.put(`/api/items/${item.id}`, { ...full, rate: 3, weight: Number(full.weight), description: "Braided rope 1/4in", components: [], links: [] }));
+    log = await entries("ITEM_UPDATED", item.id);
+    expect(log).toHaveLength(1);
+    expect(log[0].detail).toEqual({ rate: { from: 2.5, to: 3 }, description: { from: full.description, to: "Braided rope 1/4in" } });
+    // A stock adjustment that loses the compare-and-set writes no entry.
+    expect((await root.patch(`/api/items/by-number/BR-1001/qty`, { setQtyOnHand: 12, expectedQtyOnHand: 99 })).status).toBe(409);
+    expect(await entries("STOCK_ADJUSTED", item.id)).toHaveLength(0);
+    ok(await root.patch(`/api/items/by-number/BR-1001/qty`, { setQtyOnHand: 12, expectedQtyOnHand: 10 }));
+    expect(await entries("STOCK_ADJUSTED", item.id)).toHaveLength(1);
+  });
+
+  it("changes prices only through the pricing endpoint, one audit row per price", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 10, 2.5);
+    await makeItem(root, "BR-2002", 10, 4);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    const pricing = await as("pricer", { permissions: { "customer-pricing": "edit", customers: "view" } });
+    const service = await as("cs", { permissions: { customers: "edit", "customer-pricing": "view" } });
+    let c = ok(await pricing.get(`/api/customers/${cust.id}`));
+    const rows = [
+      { itemNumber: "BR-1001", customerPartNumber: "", description: "", price: 2.25 },
+      { itemNumber: "BR-2002", customerPartNumber: "A-2", description: "", price: 3.75 },
+    ];
+    c = ok(await pricing.put(`/api/customers/${cust.id}/prices`, { version: c.version, priceOverrides: rows }));
+    expect(c.priceOverrides.map((p: any) => [p.itemNumber, p.price])).toEqual([["BR-1001", "2.25"], ["BR-2002", "3.75"]]);
+    let log = await entries("CUSTOMER_PRICE_CHANGED", cust.id);
+    expect(log.map((l) => (l.detail as any).itemNumber).sort()).toEqual(["BR-1001", "BR-2002"]);
+    expect(log.find((l) => (l.detail as any).itemNumber === "BR-1001")!.detail).toMatchObject({ from: null, to: { price: 2.25 } });
+    // Reprice one, drop one: two more rows, none for the unchanged.
+    c = ok(await pricing.put(`/api/customers/${cust.id}/prices`, { version: c.version, priceOverrides: [{ ...rows[0], price: 2.1 }] }));
+    log = await entries("CUSTOMER_PRICE_CHANGED", cust.id);
+    expect(log).toHaveLength(4);
+    expect(log[2].detail).toMatchObject({ itemNumber: "BR-1001", from: { price: 2.25 }, to: { price: 2.1 } });
+    expect(log[3].detail).toMatchObject({ itemNumber: "BR-2002", to: null });
+    // Customer Service edits the account, not the price sheet.
+    expect((await service.put(`/api/customers/${cust.id}/prices`, { version: c.version, priceOverrides: [] })).status).toBe(403);
+    expect((await service.put(`/api/customers/${cust.id}/routing-guide`, { version: c.version, routingGuide: { preferredCarrier: "UPS" } })).status).toBe(403);
+    const asService = ok(await service.get(`/api/customers/${cust.id}`));
+    const edited = ok(await service.put(`/api/customers/${cust.id}`, { ...asService, terms: "Net 45", priceOverrides: [], routingGuide: { preferredCarrier: "Hijack" } }));
+    expect(edited.terms).toBe("Net 45");
+    expect(edited.priceOverrides.map((p: any) => p.price)).toEqual(["2.1"]);
+    expect(edited.routingGuide).toBeNull();
+    expect((await pricing.put(`/api/customers/${cust.id}`, { ...asService, version: edited.version, terms: "Net 60" })).status).toBe(403);
+    // The routing guide has its own page and endpoint.
+    const router = await as("route", { permissions: { "routing-guide": "edit" } });
+    const routed = ok(await router.put(`/api/customers/${cust.id}/routing-guide`, { version: edited.version, routingGuide: { preferredCarrier: "UPS", appointmentRequired: true } }));
+    expect(routed.routingGuide).toEqual({ preferredCarrier: "UPS", appointmentRequired: true });
+    const guideLog = await entries("CUSTOMER_ROUTING_GUIDE_CHANGED", cust.id);
+    expect(guideLog).toHaveLength(1);
+    expect(guideLog[0].detail).toEqual({ preferredCarrier: { from: null, to: "UPS" }, appointmentRequired: { from: null, to: true } });
+  });
+});

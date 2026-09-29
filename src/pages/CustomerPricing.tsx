@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { getCustomer, listCustomerSummaries, updateCustomer } from "../lib/customerStore";
+import { getCustomer, listCustomerSummaries, saveCustomerPrices } from "../lib/customerStore";
 import { listItems } from "../lib/itemStore";
 import type { Customer, CustomerPriceOverride, Item } from "../types";
 
@@ -97,7 +97,7 @@ export default function CustomerPricing() {
       priceOverrides: (draft.priceOverrides ?? []).filter((o) => o.itemNumber.trim()),
     };
     try {
-      const result = await updateCustomer(payload);
+      const result = await saveCustomerPrices(payload);
       // Refresh the picker's copy too - re-selecting this customer later
       // otherwise starts from the pre-save version and 409s on the next save.
       setCustomers((cs) => cs.map((c) => (c.id === result.id ? result : c)));

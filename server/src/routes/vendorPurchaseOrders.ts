@@ -4,7 +4,7 @@ import { isoDate } from "../lib/dates.js";
 import type { Prisma } from "@prisma/client";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { adjustOnHand, itemIdFor, lockItems, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -308,7 +308,7 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       data: { status: derivedStatus(poLines), version: { increment: 1 } },
     });
     await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemId));
-    logAudit(req.account!, "VENDOR_PO_RECEIVED", "vendor-po", poNumber, poNumber, {
+    await auditIn(tx, req.account!, "VENDOR_PO_RECEIVED", "vendor-po", poNumber, poNumber, {
       units: received.reduce((sum, l) => sum + l.qty, 0),
       lines: received.length,
     });

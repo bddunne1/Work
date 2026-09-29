@@ -143,7 +143,11 @@ export default function ShipmentHistory() {
       {totals && (
         <p className="muted">
           <b>{totals.shipments.toLocaleString()}</b> shipment{totals.shipments === 1 ? "" : "s"} · <b>{totals.units.toLocaleString()}</b> units ·{" "}
-          <b>${Number(totals.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> invoiced
+          {totals.amount !== null && (
+            <>
+              <b>${Number(totals.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> invoiced
+            </>
+          )}
           {!totals.complete && " (totals cover the most recent 5,000 shipments in this range)"}
         </p>
       )}

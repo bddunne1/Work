@@ -86,7 +86,10 @@ export async function syncReservations(tx: Tx, soNumber: number): Promise<void> 
     }
   }
   if (creates.length + updates.length + deletes.length === 0) return;
-  await lockItems(tx, [...deltas.keys()]);
+  // Every item on the order, not just the ones changing: each command locks
+  // the same full set in the same order, so two commands never hold one
+  // item each while waiting for the other's (a deadlock).
+  await lockItems(tx, [...order.lineItems.map((l) => l.itemId), ...order.allocations.map((a) => a.itemId)]);
   if (deletes.length > 0) await tx.allocation.deleteMany({ where: { id: { in: deletes } } });
   for (const u of updates) await tx.allocation.update({ where: { id: u.id }, data: { itemId: u.itemId, qty: u.qty } });
   if (creates.length > 0) await tx.allocation.createMany({ data: creates.map((c) => ({ soNumber, ...c })) });
@@ -99,9 +102,9 @@ export async function syncReservations(tx: Tx, soNumber: number): Promise<void> 
 // hand, less what every other open order holds (Item.qtyReserved, minus this
 // order's own current rows). Only items whose hold this save increases are
 // checked, so re-saving an order that is already over-committed because of
-// a stock count correction isn't blocked by unrelated edits. The item rows
-// are locked first, so two people allocating the same scarce item at the
-// same moment queue instead of both being told it's available.
+// a stock count correction isn't blocked by unrelated edits. The order's
+// item rows are locked first, so two people allocating the same scarce item
+// at the same moment queue instead of both being told it's available.
 export async function assertAllocationAvailable(tx: Tx, soNumber: number, after: HoldingOrder): Promise<void> {
   const wanted = heldByItem(after);
   if (wanted.size === 0) return;
@@ -112,7 +115,8 @@ export async function assertAllocationAvailable(tx: Tx, soNumber: number, after:
   const increased = [...wanted.entries()].filter(([itemId, qty]) => qty > (mine.get(itemId) ?? 0));
   if (increased.length === 0) return;
   const ids = increased.map(([itemId]) => itemId);
-  await lockItems(tx, ids);
+  // Lock the whole order's items (see syncReservations), then read the increased ones.
+  await lockItems(tx, after.lineItems.map((l) => l.itemId));
   const items = new Map((await tx.item.findMany({ where: { id: { in: ids } }, select: { id: true, itemNumber: true, qtyOnHand: true, qtyReserved: true } })).map((i) => [i.id, i]));
   const shortages: string[] = [];
   for (const [itemId, qty] of increased) {

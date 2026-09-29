@@ -106,6 +106,29 @@ table from the `allocation` / `pendingShipment` JSON an upgraded database
 carries, and `qtyOnPurchaseOrder` is recomputed by catalog link rather than
 item number text, so renaming an item no longer leaves its total stale.
 
+## Who sees what, and the activity log
+
+Orders can be read by any login with an order page (Order Entry through
+Shipment History, Inventory, Reports, Analytics, Invoices). Prices are shown
+only to the office: Order Entry, Sales Order View, Customer Pricing and
+Invoices. Any other login gets each order without its rates and tax rate and
+with `pricesHidden: true`, lists show a dash for the total, and a save from
+such a login leaves the prices as they were. Shipment History withholds
+invoice amounts the same way. The Dashboard reads its counts from
+`GET /api/dashboard/summary`, so a receiving-only login still sees the day
+without reading the order list.
+
+The customer price sheet is saved through `PUT /api/customers/:id/prices`
+(Customer Pricing page) and the routing guide through
+`PUT /api/customers/:id/routing-guide` (Routing Guide page); the customer PUT
+ignores both. Every price that changes, appears or is removed is its own
+activity-log entry with the item, the old and the new price. Customer and
+item edits are logged field by field, and steps that run in a transaction
+(shipping, receiving, stock adjustments, these edits) write their log entry
+inside it, so a step that rolls back leaves no entry. Settings accept only
+the keys the app knows (`lead_time_days`, `capacity_lookback_days`,
+`company_info`), each with its own validation.
+
 ## Development
 
 ```bash

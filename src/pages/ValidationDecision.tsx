@@ -6,7 +6,7 @@ import { checkOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
-import { orderTotal } from "../types";
+import { orderTotalLabel } from "../types";
 
 export default function ValidationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -93,7 +93,7 @@ function ValidationDecisionInner() {
           <span className="review-meta-sep">·</span>
           <strong>{order.billTo.name}</strong>
           <span className="review-meta-sep">·</span>
-          <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
+          <span className="review-meta-total">{orderTotalLabel(order)}</span>
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
           {!staleStatus && (
             <button type="button" className="secondary-btn" onClick={skip} title="Leave this order for later and move to the next one">
