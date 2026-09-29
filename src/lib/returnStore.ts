@@ -60,8 +60,8 @@ export async function getReturn(raNumber: string): Promise<ReturnAuthorization |
 // Creates a new return - the server assigns the real RA # atomically, so
 // this takes everything except that field and returns the saved record
 // (with its real raNumber) to the caller.
-export async function saveReturn(ra: Omit<ReturnAuthorization, "raNumber">): Promise<ReturnAuthorization> {
-  return mapReturn(await api.post<ReturnAuthorization>("/api/returns", ra));
+export async function saveReturn(ra: Omit<ReturnAuthorization, "raNumber">, idempotencyKey?: string): Promise<ReturnAuthorization> {
+  return mapReturn(await api.post<ReturnAuthorization>("/api/returns", ra, { idempotencyKey }));
 }
 
 // Returns the server's copy (with its new `version`) - keep that one.

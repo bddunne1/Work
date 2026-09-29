@@ -140,13 +140,21 @@ async function docLines(api: QuickBooksApi, lines: { itemId: string | null; item
   return out;
 }
 
+// A document that QuickBooks says it no longer has needs no voiding: the
+// outcome we wanted already holds, so the row completes instead of dying.
+function goneIsVoided(err: unknown): null {
+  if (err instanceof QuickBooksError && (err.status === 404 || /object not found/i.test(err.message))) return null;
+  throw err;
+}
+
 async function pushInvoice(api: QuickBooksApi, invoiceNumber: string, action: Action): Promise<string> {
   const inv = await prisma.invoice.findUnique({ where: { invoiceNumber }, include: { lines: true } });
   if (!inv) throw new QuickBooksError(`Invoice ${invoiceNumber} no longer exists`, 404, undefined, true);
   const existing = await getRef("invoice", invoiceNumber);
   if (action === "VOID" || inv.status === "VOID") {
     if (!existing) return "never reached QuickBooks - nothing to void";
-    const ref = await api.voidInvoice(existing.externalId);
+    const ref = await api.voidInvoice(existing.externalId).catch(goneIsVoided);
+    if (!ref) return `QuickBooks invoice ${existing.externalId} no longer exists - nothing to void`;
     await saveRef("invoice", invoiceNumber, ref);
     return `voided QuickBooks invoice ${ref.id}`;
   }
@@ -175,7 +183,8 @@ async function pushCreditMemo(api: QuickBooksApi, creditMemoNumber: string, acti
   const existing = await getRef("credit-memo", creditMemoNumber);
   if (action === "VOID" || memo.status === "VOID") {
     if (!existing) return "never reached QuickBooks - nothing to void";
-    const ref = await api.voidCreditMemo(existing.externalId);
+    const ref = await api.voidCreditMemo(existing.externalId).catch(goneIsVoided);
+    if (!ref) return `QuickBooks credit memo ${existing.externalId} no longer exists - nothing to void`;
     await saveRef("credit-memo", creditMemoNumber, ref);
     return `voided QuickBooks credit memo ${ref.id}`;
   }

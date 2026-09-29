@@ -70,7 +70,17 @@ function CustomersInner() {
   async function handleDelete() {
     if (!draft) return;
     if (!confirm(`Delete customer "${draft.name}"?`)) return;
-    await deleteCustomer(draft.id);
+    try {
+      await deleteCustomer(draft.id);
+    } catch (err) {
+      // A customer with orders, returns or invoices keeps them: the server
+      // says so and points at the Inactive flag on the editor.
+      if (isConflictError(err)) {
+        alert(err.message);
+        return;
+      }
+      throw err;
+    }
     navigate("/customers/all");
   }
 
@@ -157,6 +167,7 @@ function CustomersInner() {
                     onClick={() => navigate(`/customers/all/${c.id}`)}
                   >
                     {c.name || "Unnamed Customer"}
+                    {c.active === false && <span className="muted"> (inactive)</span>}
                   </button>
                 </li>
               ))}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
@@ -23,7 +23,7 @@ export default function ReturnForm() {
   useEffect(() => {
     // Names and bill-to addresses are all a return needs - not every
     // customer's price sheet and part-number map.
-    listCustomerSummaries().then(setCustomers);
+    listCustomerSummaries().then((cs) => setCustomers(cs.filter((c) => c.active !== false)));
     listItems().then(setCatalog);
     nextReturnNumber().then((n) => setRa((r) => (r.raNumber ? r : { ...r, raNumber: n })));
   }, []);
@@ -63,9 +63,14 @@ export default function ReturnForm() {
   const validLines = ra.lines.filter((l) => l.itemNumber.trim() && l.qty > 0);
   const canSave = Boolean(selectedCustomer) && validLines.length > 0;
 
+  // Same double-click guard and idempotency key as Order Entry (R4-16).
+  const [submitting, setSubmitting] = useState(false);
+  const submitKey = useRef(crypto.randomUUID());
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canSave) return;
+    if (!canSave || submitting) return;
+    setSubmitting(true);
     const { raNumber: _raNumber, ...rest } = ra;
     const draft = {
       ...rest,
@@ -74,12 +79,17 @@ export default function ReturnForm() {
       writtenById: account?.id,
       writtenByColor: account?.color,
     };
-    const finalRa = await saveReturn(draft);
-    setRa(finalRa);
-    setSaved(true);
+    try {
+      const finalRa = await saveReturn(draft, submitKey.current);
+      setRa(finalRa);
+      setSaved(true);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function startNew() {
+    submitKey.current = crypto.randomUUID();
     setRa(emptyReturn(""));
     setCustomerQuery("");
     setSaved(false);

@@ -48,17 +48,18 @@ export async function makeAccount(
 
 export class Client {
   constructor(public token: string | null, public username = "") {}
-  private send(method: "get" | "post" | "put" | "patch" | "delete", path: string, body?: unknown): Promise<Res> {
+  private send(method: "get" | "post" | "put" | "patch" | "delete", path: string, body?: unknown, headers: Record<string, string> = {}): Promise<Res> {
     let req = request(app)[method](path);
     if (this.token) req = req.set("Authorization", `Bearer ${this.token}`);
+    for (const [k, v] of Object.entries(headers)) req = req.set(k, v);
     if (body !== undefined) req = req.send(body as object);
     return req.then((r) => ({ status: r.status, body: r.body }));
   }
   get(path: string) {
     return this.send("get", path);
   }
-  post(path: string, body: unknown = {}) {
-    return this.send("post", path, body);
+  post(path: string, body: unknown = {}, headers: Record<string, string> = {}) {
+    return this.send("post", path, body, headers);
   }
   put(path: string, body: unknown) {
     return this.send("put", path, body);
@@ -191,9 +192,19 @@ export async function getOrder(c: Client, soNumber: string | number) {
   return ok(await c.get(`/api/sales-orders/${soNumber}`));
 }
 
-// Walks a fresh order all the way to "printed and waiting to ship".
-export async function orderReadyToShip(c: Client, lines: LineSpec[]) {
-  let o = await makeOrder(c, lines);
+// Walks an existing order from Entered to "printed and waiting to ship".
+export async function walkToPrinted(c: Client, o: any) {
+  o = ok(await check(c, o));
+  o = ok(await allocate(c, o));
+  o = ok(await release(c, o));
+  return ok(await markPrinted(c, o));
+}
+
+// Walks a fresh order all the way to "printed and waiting to ship". Header
+// fields that are locked once stock is committed (customer, tax, prices)
+// go in `extra` so they are set before allocation.
+export async function orderReadyToShip(c: Client, lines: LineSpec[], extra: Record<string, unknown> = {}) {
+  let o = await makeOrder(c, lines, extra);
   o = ok(await check(c, o));
   o = ok(await allocate(c, o));
   o = ok(await release(c, o));
@@ -232,11 +243,17 @@ export async function movementsFor(itemNumber: string) {
   return prisma.stockMovement.findMany({ where: { itemNumber }, orderBy: { createdAt: "asc" } });
 }
 
-// The ledger must always explain on-hand: start + sum(deltas) === on hand.
+// The ledger must always explain on-hand from nothing: the item's opening
+// stock is itself a movement (R4-26), so sum(deltas) === on hand, and the
+// first movement is the OPENING one for `startQty` when that was non-zero.
 export async function expectLedgerReconciles(itemNumber: string, startQty: number) {
   const item = await itemByNumber(itemNumber);
   const moves = await movementsFor(itemNumber);
   const sum = moves.reduce((s, m) => s + m.delta, 0);
-  expect(item.qtyOnHand, `ledger for ${itemNumber}: start ${startQty} + ${sum}`).toBe(startQty + sum);
+  expect(item.qtyOnHand, `ledger for ${itemNumber}: movements sum to ${sum}`).toBe(sum);
+  if (startQty !== 0) {
+    expect(moves[0]?.reason, `ledger for ${itemNumber} starts with its opening stock`).toBe("OPENING");
+    expect(moves[0]?.delta).toBe(startQty);
+  }
   return { item, moves };
 }

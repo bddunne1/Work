@@ -60,8 +60,8 @@ export async function getVendorPo(poNumber: string): Promise<VendorPurchaseOrder
 // recomputes each affected item's qtyOnPurchaseOrder in the same
 // transaction), so this takes everything except that field and returns the
 // saved record (with its real poNumber) to the caller.
-export async function saveVendorPo(po: Omit<VendorPurchaseOrder, "poNumber">): Promise<VendorPurchaseOrder> {
-  return mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po));
+export async function saveVendorPo(po: Omit<VendorPurchaseOrder, "poNumber">, idempotencyKey?: string): Promise<VendorPurchaseOrder> {
+  return mapPo(await api.post<VendorPurchaseOrder>("/api/vendor-purchase-orders", po, { idempotencyKey }));
 }
 
 // Returns the server's copy (with its new `version`) - callers must keep

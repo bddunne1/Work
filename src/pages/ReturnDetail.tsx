@@ -201,8 +201,9 @@ function ReturnDetailInner() {
                         value={view.status}
                         onChange={(e) => setField("status", e.target.value as ReturnStatus)}
                       >
-                        {/* Issued -> Received only through Receive Return below (it restocks). */}
-                        {STATUSES.filter((s) => (ra.status === "Issued" ? s !== "Received" : s !== "Issued")).map((s) => (
+                        {/* Issued -> Received only through Receive Return below (it restocks);
+                            a closed RA stays closed. */}
+                        {STATUSES.filter((s) => (ra.status === "Issued" ? s !== "Received" : ra.status === "Received" ? s !== "Issued" : s === "Closed")).map((s) => (
                           <option key={s} value={s}>
                             {s}
                           </option>

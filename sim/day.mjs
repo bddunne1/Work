@@ -633,10 +633,10 @@ async function audit(adminUser) {
   const all = (await get(adminUser, "/api/sales-orders")).map(mapOrder);
   const pos = (await get(adminUser, "/api/vendor-purchase-orders")).map(mapPo);
   const ras = await get(adminUser, "/api/returns");
-  const moves = await get(adminUser, "/api/stock-movements?limit=1000");
+  const moves = await get(adminUser, "/api/stock-movements?limit=10000");
   const start = new Map(seed.items.map((i) => [i.itemNumber, i.startQty]));
   const add = (m, k, v) => m.set(k, (m.get(k) ?? 0) + v);
-  const shipped = new Map(), received = new Map(), restocked = new Map(), adjusted = new Map(), ledger = new Map();
+  const shipped = new Map(), received = new Map(), restocked = new Map(), adjusted = new Map(), ledger = new Map(), opening = new Map();
   let overShippedLines = 0;
   for (const o of all) for (const li of o.lineItems) {
     const s = (o.shipmentHistory ?? []).reduce((a, r) => a + (r.lines.find((l) => l.lineItemId === li.id)?.qty ?? 0), 0);
@@ -648,6 +648,9 @@ async function audit(adminUser) {
   for (const m of moves) {
     add(ledger, m.itemNumber, m.delta);
     if (m.reason === "ADJUST" || m.reason === "ITEM_EDIT") add(adjusted, m.itemNumber, m.delta);
+    // Since sprint 1 the opening stock is a movement too; the ledger then
+    // explains on hand from zero rather than from the seed's start quantity.
+    if (m.reason === "OPENING") add(opening, m.itemNumber, m.delta);
   }
   let docDrift = 0, docDriftUnits = 0, ledgerDrift = 0, negative = 0, over = 0, overUnits = 0, onPoMismatch = 0;
   const samples = [];
@@ -655,7 +658,7 @@ async function audit(adminUser) {
     const s0 = start.get(it.itemNumber) ?? 0;
     const expected = s0 + (received.get(it.itemNumber) ?? 0) - (shipped.get(it.itemNumber) ?? 0) + (restocked.get(it.itemNumber) ?? 0) + (adjusted.get(it.itemNumber) ?? 0);
     if (it.qtyOnHand !== expected) { docDrift++; docDriftUnits += Math.abs(it.qtyOnHand - expected); samples.push({ item: it.itemNumber, expected, actual: it.qtyOnHand }); }
-    if (it.qtyOnHand !== s0 + (ledger.get(it.itemNumber) ?? 0)) ledgerDrift++;
+    if (it.qtyOnHand !== (opening.has(it.itemNumber) ? 0 : s0) + (ledger.get(it.itemNumber) ?? 0)) ledgerDrift++;
     if (it.qtyOnHand < 0) negative++;
     const reserved = qtyAllocatedOnOrders(it.itemNumber, all.filter((o) => o.status !== "Cancelled"));
     if (reserved > Math.max(0, it.qtyOnHand)) { over++; overUnits += reserved - Math.max(0, it.qtyOnHand); }

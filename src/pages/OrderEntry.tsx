@@ -47,6 +47,9 @@ export default function OrderEntry() {
   const [sameAsBillTo, setSameAsBillTo] = useState(false);
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // One key per draft: a repeated submit (double click, a retry after a
+  // dropped connection) gets the same order back instead of a second one.
+  const submitKey = useRef(crypto.randomUUID());
   // The picker lists customer summaries (names, addresses, ship-to
   // locations); the selected customer's full record - price overrides and
   // part-number map, which drive line-item autofill - is loaded on selection.
@@ -125,7 +128,7 @@ export default function OrderEntry() {
     try {
       const estimatedShipDate = addBusinessDays(order.orderDate, getLeadTimeDays());
       const { soNumber: _soNumber, ...rest } = order;
-      const saved = await saveOrder({ ...rest, estimatedShipDate });
+      const saved = await saveOrder({ ...rest, estimatedShipDate }, submitKey.current);
       setOrder(saved);
       setSaved(true);
     } catch (err) {
@@ -136,13 +139,14 @@ export default function OrderEntry() {
   }
 
   async function startNewOrder() {
+    submitKey.current = crypto.randomUUID();
     setOrder(blankOrder("", account));
     setSameAsBillTo(false);
     setSaved(false);
     setCustomerQuery("");
     requestedCustomerId.current = undefined;
     setFullCustomer(undefined);
-    setCustomers(await listCustomerSummaries());
+    setCustomers((await listCustomerSummaries()).filter((c) => c.active !== false));
     nextSalesOrderNumber().then((n) => setOrder((o) => ({ ...o, soNumber: n })));
   }
 

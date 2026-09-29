@@ -145,8 +145,8 @@ export async function getOrder(soNumber: string): Promise<PurchaseOrder | undefi
 // Creates a new order - the server assigns the real S.O. # atomically, so
 // this takes everything except that field and returns the saved record
 // (with its real soNumber) to the caller.
-export async function saveOrder(order: Omit<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
-  return mapOrder(await api.post<PurchaseOrder>("/api/sales-orders", order));
+export async function saveOrder(order: Omit<PurchaseOrder, "soNumber">, idempotencyKey?: string): Promise<PurchaseOrder> {
+  return mapOrder(await api.post<PurchaseOrder>("/api/sales-orders", order, { idempotencyKey }));
 }
 
 // Saves an order's header fields and (while it is Entered or Checked) its

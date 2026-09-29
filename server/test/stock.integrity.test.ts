@@ -48,7 +48,7 @@ describe("shipping guards (R5-01)", () => {
     expect(await prisma.shipmentRecord.count()).toBe(0);
     // The transaction rolled back: no SHIP movement was left behind.
     const moves = await prisma.stockMovement.findMany({ where: { itemNumber: "BR-1001" } });
-    expect(moves.map((m) => m.reason)).toEqual(["ADJUST"]);
+    expect(moves.map((m) => m.reason)).toEqual(["OPENING", "ADJUST"]);
   });
 });
 

@@ -2,9 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
-import { adjustOnHand, itemIdFor, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
+import { adjustOnHand, itemIdFor, lockItems, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -106,7 +107,7 @@ router.get("/:poNumber", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req
 // Assigns the PO number itself (atomically, via the shared Counter table)
 // rather than trusting one the client precomputed - two people saving a new
 // PO at the same moment can never land on the same number.
-router.post("/", requirePermission("purchase-orders", "edit"), async (req: AuthedRequest, res) => {
+router.post("/", requirePermission("purchase-orders", "edit"), idempotent("vendor-po"), async (req: AuthedRequest, res) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -264,6 +265,7 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
     const poLines = await tx.vendorPoLine.findMany({ where: { poNumber } });
     const byId = new Map(poLines.map((l) => [l.id, l]));
     const seen = new Set<string>();
+    await lockItems(tx, received.map((r) => byId.get(r.lineId)?.itemId));
     for (const r of received) {
       const line = byId.get(r.lineId);
       if (!line) throw new HttpError(400, "Receipt references a line that is no longer on this PO - reload and try again.");
