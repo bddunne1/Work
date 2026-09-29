@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ApiError } from './lib/apiClient'
+import { applyTheme, getThemePreference } from './lib/theme'
+
+// The saved theme goes on <html> before the first paint.
+applyTheme(getThemePreference())
 
 // Most pages handle a 409 conflict themselves and rethrow everything else,
 // which used to end as a silent unhandled rejection - a Save/Ship/Receive

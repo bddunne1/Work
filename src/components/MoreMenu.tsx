@@ -9,6 +9,7 @@ import { getAccessLevel } from "../lib/permissions";
 const MORE_MENU_ITEMS = [
   { name: "Reports", to: "/reports" },
   { name: "Import Data", to: "/import" },
+  { name: "Settings", to: "/settings" },
 ];
 
 interface Props {
@@ -31,6 +32,7 @@ export default function MoreMenu({ account }: Props) {
 
   const items = [
     ...MORE_MENU_ITEMS.filter((m) => getAccessLevel(m.to, account) !== "none"),
+    { name: "Preferences", to: "/preferences" },
     { name: "Change Password", to: "/change-password" },
   ];
 

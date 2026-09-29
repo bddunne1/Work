@@ -2713,6 +2713,35 @@ a.dash-lookup-row:focus-visible {
   padding-top: 10px;
 }
 
+/* Order notes and shipping notes on the pick list and packing slip: the
+   floor reads these before touching the pallet, so they are boxed and set
+   larger than the line table, not tucked into the footer. */
+.doc-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.doc-notes-block { display: flex; gap: 10px; align-items: baseline; }
+.doc-notes-label {
+  flex: 0 0 auto;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 2px;
+}
+.doc-notes-text { white-space: pre-wrap; font-weight: 600; color: var(--text-h); }
+
+.pref-group { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pref-group legend { padding: 0 0 6px; }
+.pref-option { align-items: flex-start; }
+
 .pick-list-notes {
   border-top: none;
   border-bottom: 1px solid var(--border);

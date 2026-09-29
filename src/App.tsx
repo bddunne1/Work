@@ -39,6 +39,7 @@ import OpenPicks from "./pages/OpenPicks";
 import OpenPicksDetail from "./pages/OpenPicksDetail";
 import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
+import Preferences from "./pages/Preferences";
 import OrdersList from "./pages/OrdersList";
 import PickPack from "./pages/PickPack";
 import PickPackDetail from "./pages/PickPackDetail";
@@ -108,6 +109,7 @@ function App() {
             <Route path="accounts" element={<Accounts />} />
             <Route path="settings" element={<Settings />} />
             <Route path="audit-log" element={<AuditLog />} />
+            <Route path="preferences" element={<Preferences />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="bol" element={<GenerateBOL />} />
             <Route path="vendors" element={<Vendors />} />

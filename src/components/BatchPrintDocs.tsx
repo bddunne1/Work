@@ -11,6 +11,31 @@ function lineFor(order: PurchaseOrder, lineItemId: string) {
   return order.lineItems.find((li) => li.id === lineItemId);
 }
 
+// What the floor needs to read before picking or packing: the order's notes
+// and the ship-to location's shipping notes (dock hours, gate codes, special
+// handling), both printed in full on the pick list and the packing slip.
+function DocNotes({ order }: { order: PurchaseOrder }) {
+  const notes = (order.notes ?? "").trim();
+  const shipping = (order.shipTo?.notes ?? "").trim();
+  if (!notes && !shipping) return null;
+  return (
+    <div className="doc-notes">
+      {notes && (
+        <div className="doc-notes-block">
+          <span className="doc-notes-label">Order notes</span>
+          <span className="doc-notes-text">{notes}</span>
+        </div>
+      )}
+      {shipping && (
+        <div className="doc-notes-block">
+          <span className="doc-notes-label">Shipping notes</span>
+          <span className="doc-notes-text">{shipping}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PickListDoc({ order, pageClass }: { order: PurchaseOrder; pageClass: string }) {
   return (
     <div className={pageClass}>
@@ -38,11 +63,7 @@ function PickListDoc({ order, pageClass }: { order: PurchaseOrder; pageClass: st
           </table>
         </div>
       </div>
-      {order.notes && (
-        <div className="label-notes pick-list-notes">
-          <span className="muted">Notes</span> {order.notes}
-        </div>
-      )}
+      <DocNotes order={order} />
       <table className="data-table line-item-table">
         <thead>
           <tr>
@@ -95,6 +116,7 @@ function PackingSlipDoc({ order, pageClass }: { order: PurchaseOrder; pageClass:
         </fieldset>
       </div>
 
+      <DocNotes order={order} />
       <table className="data-table line-item-table">
         <thead>
           <tr>

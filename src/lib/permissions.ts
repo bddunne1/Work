@@ -118,7 +118,7 @@ export const PAGE_DEFS: PageDef[] = [
 // Routes always reachable once logged in, regardless of an account's
 // per-page permissions - hub/index pages that only ever link onward to
 // pages which are themselves gated.
-const ALWAYS_VIEW_EXACT = new Set(["/", "/login", "/change-password", "/customers"]);
+const ALWAYS_VIEW_EXACT = new Set(["/", "/login", "/change-password", "/preferences", "/customers"]);
 
 function buildRules(permissions: Record<string, AccessLevel>): RouteRule[] {
   const rules: RouteRule[] = [];

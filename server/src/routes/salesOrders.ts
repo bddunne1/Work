@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { isoDate } from "../lib/dates.js";
+import { estimatedShipDateFor } from "../lib/leadTime.js";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
@@ -327,6 +328,9 @@ router.post("/", requireAnyPermission(ORDER_CREATE_PAGES, "edit"), idempotent("s
         poNumber: data.poNumber,
         orderDate: new Date(data.orderDate),
         dueDate: new Date(data.dueDate),
+        // Order date plus the standard lead time; Schedule Shipments can
+        // move it afterwards.
+        estimatedShipDate: await estimatedShipDateFor(tx, new Date(data.orderDate)),
         customerId: data.customerId,
         shipToLocationId: data.shipToLocationId,
         billTo: data.billTo,
