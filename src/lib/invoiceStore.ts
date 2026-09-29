@@ -29,7 +29,7 @@ function mapMemo(m: CreditMemo): CreditMemo {
 
 export interface DocSearchParams {
   q?: string;
-  status?: "ISSUED" | "VOID" | "";
+  status?: "DRAFT" | "ISSUED" | "VOID" | "";
   customerId?: string;
   soNumber?: string;
   from?: string;
@@ -57,11 +57,61 @@ export async function searchInvoices(params: DocSearchParams = {}): Promise<Page
   return { ...res, rows: res.rows.map(mapInvoice) };
 }
 
-export async function getInvoice(invoiceNumber: string): Promise<Invoice | undefined> {
+// `ref` is the invoice number once issued, or the id while a draft.
+export async function getInvoice(ref: string): Promise<Invoice | undefined> {
   try {
-    return mapInvoice(await api.get<Invoice>(`/api/invoices/${encodeURIComponent(invoiceNumber)}`));
+    return mapInvoice(await api.get<Invoice>(`/api/invoices/${encodeURIComponent(ref)}`));
   } catch {
     return undefined;
+  }
+}
+
+// Where a document lives in the app: by number once issued, by id before.
+export const invoicePath = (inv: Pick<Invoice, "id" | "invoiceNumber">) => `/invoices/${encodeURIComponent(inv.invoiceNumber ?? inv.id)}`;
+export const creditMemoPath = (m: Pick<CreditMemo, "id" | "creditMemoNumber">) => `/invoices/credit-memos/${encodeURIComponent(m.creditMemoNumber ?? m.id)}`;
+export const docLabel = (n: string | null, kind: "Invoice" | "Credit memo") => n ?? `${kind} draft`;
+
+// What a reviewer sends back for a draft: the lines as they should be
+// (shipped lines repriced, charge lines added or removed) and the note.
+export interface DraftLineInput {
+  id?: string;
+  kind: "ITEM" | "CHARGE";
+  item: string;
+  description: string;
+  um?: string;
+  qty: number;
+  rate: number;
+  taxable: boolean;
+}
+
+export async function saveInvoiceDraft(id: string, version: number, lines: DraftLineInput[], notes: string): Promise<Invoice> {
+  return mapInvoice(await api.put<Invoice>(`/api/invoices/${encodeURIComponent(id)}`, { version, lines, notes }));
+}
+
+export async function issueInvoice(id: string, version: number): Promise<Invoice> {
+  return mapInvoice(await api.post<Invoice>(`/api/invoices/${encodeURIComponent(id)}/issue`, { version }));
+}
+
+export async function saveCreditMemoDraft(id: string, version: number, lines: DraftLineInput[]): Promise<CreditMemo> {
+  return mapMemo(await api.put<CreditMemo>(`/api/invoices/credit-memos/${encodeURIComponent(id)}`, { version, lines }));
+}
+
+export async function issueCreditMemo(id: string, version: number): Promise<CreditMemo> {
+  return mapMemo(await api.post<CreditMemo>(`/api/invoices/credit-memos/${encodeURIComponent(id)}/issue`, { version }));
+}
+
+export interface ReviewQueueCounts {
+  invoices: number;
+  creditMemos: number;
+  oldestDraftAt: string | null;
+}
+
+// Empty counts when the account cannot see invoices.
+export async function reviewQueueCounts(): Promise<ReviewQueueCounts> {
+  try {
+    return await api.get<ReviewQueueCounts>("/api/invoices/queue");
+  } catch {
+    return { invoices: 0, creditMemos: 0, oldestDraftAt: null };
   }
 }
 
@@ -74,8 +124,8 @@ export async function invoicesForOrder(soNumber: string): Promise<Invoice[]> {
   }
 }
 
-export async function voidInvoice(invoiceNumber: string, reason: string): Promise<Invoice> {
-  return mapInvoice(await api.post<Invoice>(`/api/invoices/${encodeURIComponent(invoiceNumber)}/void`, { reason }));
+export async function voidInvoice(ref: string, reason: string): Promise<Invoice> {
+  return mapInvoice(await api.post<Invoice>(`/api/invoices/${encodeURIComponent(ref)}/void`, { reason }));
 }
 
 export async function searchCreditMemos(params: DocSearchParams = {}): Promise<Paged<CreditMemo>> {
@@ -83,9 +133,9 @@ export async function searchCreditMemos(params: DocSearchParams = {}): Promise<P
   return { ...res, rows: res.rows.map(mapMemo) };
 }
 
-export async function getCreditMemo(number: string): Promise<CreditMemo | undefined> {
+export async function getCreditMemo(ref: string): Promise<CreditMemo | undefined> {
   try {
-    return mapMemo(await api.get<CreditMemo>(`/api/invoices/credit-memos/${encodeURIComponent(number)}`));
+    return mapMemo(await api.get<CreditMemo>(`/api/invoices/credit-memos/${encodeURIComponent(ref)}`));
   } catch {
     return undefined;
   }
@@ -100,8 +150,8 @@ export async function creditMemoForReturn(raNumber: string): Promise<CreditMemo 
   }
 }
 
-export async function voidCreditMemo(number: string, reason: string): Promise<CreditMemo> {
-  return mapMemo(await api.post<CreditMemo>(`/api/invoices/credit-memos/${encodeURIComponent(number)}/void`, { reason }));
+export async function voidCreditMemo(ref: string, reason: string): Promise<CreditMemo> {
+  return mapMemo(await api.post<CreditMemo>(`/api/invoices/credit-memos/${encodeURIComponent(ref)}/void`, { reason }));
 }
 
 export const money = (n: number) => n.toLocaleString(undefined, { style: "currency", currency: "USD" });

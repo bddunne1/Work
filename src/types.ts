@@ -671,7 +671,13 @@ export function matchesReturnQuery(ra: Pick<ReturnAuthorization, "raNumber" | "s
 // documents; QuickBooks owns the money (receivables, payments, the ledger) -
 // `sync` says how far along the push to QuickBooks is.
 
-export type DocStatus = "ISSUED" | "VOID";
+// A document is a Draft until Accounting reviews and issues it; only an
+// issued document has a number and goes to QuickBooks.
+export type DocStatus = "DRAFT" | "ISSUED" | "VOID";
+export type DocLineKind = "ITEM" | "CHARGE";
+// Charge lines a reviewer may add. DEDUCTION is for credit memos (negative).
+export const CHARGE_CODES = ["FREIGHT", "HANDLING", "OTHER", "DEDUCTION"] as const;
+export type ChargeCode = (typeof CHARGE_CODES)[number];
 
 export interface SyncInfo {
   // NOT_QUEUED | PENDING | PROCESSING | FAILED | DEAD | SYNCED
@@ -682,6 +688,9 @@ export interface SyncInfo {
 
 export interface InvoiceLine {
   id: string;
+  kind: DocLineKind;
+  taxable: boolean;
+  position?: number;
   salesOrderLineId?: string | null;
   itemId?: string | null;
   item: string;
@@ -693,7 +702,9 @@ export interface InvoiceLine {
 }
 
 export interface Invoice {
-  invoiceNumber: string;
+  id: string;
+  // Null while a draft.
+  invoiceNumber: string | null;
   soNumber: number;
   shipmentRecordId?: string | null;
   customerId?: string | null;
@@ -710,10 +721,13 @@ export interface Invoice {
   tax: number;
   total: number;
   status: DocStatus;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
   voidedAt?: string | null;
   voidedBy?: string | null;
   voidReason?: string | null;
   notes: string;
+  version: number;
   createdAt: string;
   lines: InvoiceLine[];
   sync?: SyncInfo | null;
@@ -721,6 +735,9 @@ export interface Invoice {
 
 export interface CreditMemoLine {
   id: string;
+  kind: DocLineKind;
+  taxable: boolean;
+  position?: number;
   returnLineId?: string | null;
   invoiceNumber?: string | null;
   itemId?: string | null;
@@ -733,7 +750,8 @@ export interface CreditMemoLine {
 }
 
 export interface CreditMemo {
-  creditMemoNumber: string;
+  id: string;
+  creditMemoNumber: string | null;
   raNumber: string;
   customerId?: string | null;
   customerName: string;
@@ -745,10 +763,13 @@ export interface CreditMemo {
   tax: number;
   total: number;
   status: DocStatus;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
   voidedAt?: string | null;
   voidedBy?: string | null;
   voidReason?: string | null;
   reason: string;
+  version: number;
   createdAt: string;
   lines: CreditMemoLine[];
   sync?: SyncInfo | null;

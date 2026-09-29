@@ -89,7 +89,7 @@ export default function ShipmentHistory() {
       `${r.shipTo.city}, ${r.shipTo.state}`,
       r.lines.map((l) => `${l.item} x ${l.qty}`).join("; "),
       String(r.units),
-      r.invoiceNumber ?? "",
+      r.invoiceNumber ?? (r.invoiceId ? "Draft" : ""),
       r.invoiceTotal ?? "",
     ]);
     const blob = new Blob(["﻿" + toCsvTable(headers, body)], { type: "text/csv;charset=utf-8" });
@@ -186,9 +186,9 @@ export default function ShipmentHistory() {
                 <td>{r.lines.map((l) => `${l.item} × ${l.qty}`).join(", ")}</td>
                 <td className="amount-cell">{r.units.toLocaleString()}</td>
                 <td onClick={(e) => e.stopPropagation()}>
-                  {r.invoiceNumber ? (
-                    <Link to={`/invoices/${r.invoiceNumber}`} className={r.invoiceStatus === "VOID" ? "muted" : undefined}>
-                      {r.invoiceNumber}
+                  {r.invoiceId ? (
+                    <Link to={`/invoices/${encodeURIComponent(r.invoiceNumber ?? r.invoiceId)}`} className={r.invoiceStatus === "VOID" ? "muted" : undefined}>
+                      {r.invoiceNumber ?? "Draft"}
                       {r.invoiceStatus === "VOID" ? " (void)" : ""}
                     </Link>
                   ) : (

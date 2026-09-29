@@ -28,6 +28,7 @@ import {
 import { useAuth } from "../lib/authContext";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { listItems } from "../lib/itemStore";
+import { reviewQueueCounts, type ReviewQueueCounts } from "../lib/invoiceStore";
 import { listOpenOrdersShippedSince, listRecentOrders, searchOrders } from "../lib/orderStore";
 import { getAccessLevel } from "../lib/permissions";
 import { listOpenReturns } from "../lib/returnStore";
@@ -107,7 +108,7 @@ const LANES: Lane[] = [
     lane: "Accounting",
     color: "#0b7285",
     modules: [
-      { name: "Invoices", description: "Invoices per shipment, credit memos per return, QuickBooks sync", to: "/invoices", icon: ShipmentHistoryIcon },
+      { name: "Invoices", description: "Review and issue invoices and credit memos; QuickBooks sync", to: "/invoices", icon: ShipmentHistoryIcon },
     ],
   },
   {
@@ -321,6 +322,7 @@ export default function Dashboard() {
   const [loadedAt] = useState(() => Date.now());
   const today = isoDay(new Date(loadedAt));
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
+  const [reviewQueue, setReviewQueue] = useState<ReviewQueueCounts | null>(null);
   const [pos, setPos] = useState<VendorPurchaseOrder[] | null>(null);
   const [ras, setRas] = useState<ReturnAuthorization[] | null>(null);
   const [weights, setWeights] = useState<Map<string, number>>(new Map());
@@ -328,6 +330,7 @@ export default function Dashboard() {
   const access = (path: string) => getAccessLevel(path, account!);
   const canSeePos = ["/receiving", "/purchase-orders"].some((p) => access(p) !== "none");
   const canSeeReturns = access("/returns") !== "none";
+  const canSeeInvoices = access("/invoices") !== "none";
 
   useEffect(() => {
     const midnight = new Date(loadedAt);
@@ -335,10 +338,11 @@ export default function Dashboard() {
     // Open orders (every queue) plus anything shipped since midnight, in one
     // request - not the whole order history.
     listOpenOrdersShippedSince(midnight).then(setOrders);
+    if (canSeeInvoices) reviewQueueCounts().then(setReviewQueue);
     listItems().then((items) => setWeights(weightIndex(items)));
     if (canSeePos) listOpenVendorPos().then(setPos);
     if (canSeeReturns) listOpenReturns().then(setRas);
-  }, [loadedAt, canSeePos, canSeeReturns]);
+  }, [loadedAt, canSeePos, canSeeReturns, canSeeInvoices]);
 
   const queueData = useMemo(() => buildQueues(orders ?? [], pos, ras, today), [orders, pos, ras, today]);
 
@@ -399,6 +403,12 @@ export default function Dashboard() {
     const entries = queueData[qd.key] ?? [];
     const cur = tileCounts.get(qd.tile) ?? { count: 0, late: 0 };
     tileCounts.set(qd.tile, { count: cur.count + entries.length, late: cur.late + entries.filter((e) => e.late).length });
+  }
+
+  // Drafts waiting for Accounting, on the Invoices tile.
+  if (reviewQueue && reviewQueue.invoices + reviewQueue.creditMemos > 0) {
+    const oldest = reviewQueue.oldestDraftAt ? loadedAt - new Date(reviewQueue.oldestDraftAt).getTime() : 0;
+    tileCounts.set("/invoices", { count: reviewQueue.invoices + reviewQueue.creditMemos, late: oldest > 2 * 86_400_000 ? 1 : 0 });
   }
 
   // Today strip.

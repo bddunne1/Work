@@ -3777,6 +3777,17 @@ a.dash-lookup-row:focus-visible {
 .row-void td { color: var(--muted); text-decoration: line-through; }
 .row-void td:last-child, .row-void td:nth-last-child(2) { text-decoration: none; }
 .doc-void { position: relative; }
+.doc-draft { position: relative; }
+.doc-draft-banner { color: #7d6c0c; border-color: #b9a30f; opacity: 0.85; }
+.doc-draft-notice {
+  border-left: 4px solid #b9a30f;
+  background: rgba(185, 163, 15, 0.1);
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 12px;
+}
+.doc-charge-row td { background: var(--accent-bg); }
+.doc-charge-row input, .doc-charge-row select { max-width: 100%; }
 .doc-void-banner {
   position: absolute;
   top: 40px;

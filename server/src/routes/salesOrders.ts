@@ -837,7 +837,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     // Once the invoice is in QuickBooks the accounting side owns it: void it
     // from the Invoices page (which pushes the void), then undo (decided 29 Sep).
     const invoice = await tx.invoice.findUnique({ where: { shipmentRecordId: last.id } });
-    if (invoice && invoice.status === "ISSUED") {
+    if (invoice && invoice.status === "ISSUED" && invoice.invoiceNumber) {
       const synced = await tx.externalRef.findFirst({ where: { system: "quickbooks", entityType: "invoice", entityId: invoice.invoiceNumber } });
       if (synced) {
         throw new HttpError(
@@ -867,7 +867,8 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
         });
       }
     }
-    // The invoice raised for this shipment is void (its number stays issued).
+    // A draft invoice for this shipment is removed; an issued one is void
+    // (its number stays issued).
     const voided = await voidInvoiceForShipment(tx, last.id, req.account!, "Shipment undone");
     await tx.shipmentRecord.delete({ where: { id: last.id } });
     await tx.salesOrder.update({
@@ -876,7 +877,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     });
     logAudit(req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
-      ...(voided ? { invoiceVoided: voided.invoiceNumber } : {}),
+      ...(voided ? (voided.status === "DELETED" ? { invoiceDraftRemoved: true } : { invoiceVoided: voided.invoiceNumber }) : {}),
     });
   });
   res.json(await reload(soNumber));

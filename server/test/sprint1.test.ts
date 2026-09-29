@@ -13,6 +13,7 @@ import {
   editOrder,
   editRa,
   expectLedgerReconciles,
+  issueInvoiceFor,
   itemByNumber,
   makeCustomer,
   makeItem,
@@ -115,8 +116,9 @@ describe("undo last shipment (A-15)", () => {
     const root = await admin();
     await makeItem(root, "BR-1001", 100);
     let o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10 }])));
-    const invoice = await prisma.invoice.findFirstOrThrow();
+    const invoice = await issueInvoiceFor(root, o.soNumber);
     expect((await processOutbox({ limit: 10 })).done).toBeGreaterThan(0);
+    o = ok(await root.get(so(o)));
     const blocked = await undoShipment(root, o);
     expect(blocked.status).toBe(409);
     expect(blocked.body.error).toMatch(/reached QuickBooks/);
@@ -314,7 +316,9 @@ describe("shipments endpoint (C-09)", () => {
     expect(res.rows[0].isLatest).toBe(true);
     expect(res.rows[1].isLatest).toBe(false);
     expect(res.rows[1].lines.map((l: any) => `${l.item}x${l.qty}`)).toEqual(["BR-1001x6", "BR-1002x4"]);
-    expect(res.rows[0].invoiceNumber).toBe("INV-20002");
+    expect(res.rows[0].invoiceStatus).toBe("DRAFT");
+    expect(res.rows[0].invoiceId).toBeTruthy();
+    expect(res.rows[0].invoiceNumber).toBeNull();
     expect(res.totals).toMatchObject({ shipments: 2, units: 14, amount: "32.00", complete: true });
     // Search by customer and by P.O.; an empty range.
     expect(ok(await root.get(`/api/shipments?q=acme`)).total).toBe(2);
@@ -375,9 +379,9 @@ describe("QuickBooks void of a document that no longer exists", () => {
   it("completes the outbox row instead of leaving it dead", async () => {
     const root = await admin();
     await makeItem(root, "BR-1001", 100);
-    ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }])));
+    const shipped = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }])));
+    const invoice = await issueInvoiceFor(root, shipped.soNumber);
     expect((await processOutbox({ limit: 10 })).done).toBeGreaterThan(0);
-    const invoice = await prisma.invoice.findFirstOrThrow();
     // QuickBooks "loses" the invoice (a deleted sandbox company, say).
     fakeQuickBooks.reset();
     ok(await root.post(`/api/invoices/${invoice.invoiceNumber}/void`, { reason: "duplicate" }));

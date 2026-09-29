@@ -3,7 +3,7 @@ import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
 import { processOutbox, reconcileInvoices } from "../src/integrations/sync.js";
 import { termsDays } from "../src/lib/money.js";
 import { prisma } from "../src/prisma.js";
-import { admin, as, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship, so, undoShipment } from "./helpers.js";
+import { admin, as, issueInvoiceFor, issueMemoFor, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship, so, undoShipment } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -23,11 +23,12 @@ describe("invoices", () => {
     const invoices = await prisma.invoice.findMany({ include: { lines: true } });
     expect(invoices).toHaveLength(1);
     const inv = invoices[0];
-    expect(inv.invoiceNumber).toBe("INV-20001");
+    // A draft: no number and nothing queued until Accounting issues it.
+    expect(inv.invoiceNumber).toBeNull();
     expect(inv.soNumber).toBe(Number(o.soNumber));
     expect(inv.customerId).toBe(cust.id);
     expect(inv.customerName).toBe("Acme Fabrication");
-    expect(inv.status).toBe("ISSUED");
+    expect(inv.status).toBe("DRAFT");
     // 4 x 2.50 = 10.00; 7 x 0.3333 = 2.3331 -> 2.33 (rounded per line)
     expect(inv.lines.map((l) => l.amount.toString()).sort()).toEqual(["10", "2.33"]);
     expect(inv.subtotal.toString()).toBe("12.33");
@@ -37,7 +38,12 @@ describe("invoices", () => {
     // Due 45 days after the invoice date.
     expect((inv.dueDate.getTime() - inv.invoiceDate.getTime()) / 86_400_000).toBe(45);
     expect(inv.shipmentRecordId).toBe(o.shipmentHistory[0].id);
-    // Queued for QuickBooks in the same transaction.
+    expect(await prisma.syncOutbox.count()).toBe(0);
+    // Issuing assigns the number and queues it for QuickBooks.
+    const issued = await issueInvoiceFor(root, o.soNumber);
+    expect(issued.invoiceNumber).toBe("INV-20001");
+    expect(issued.status).toBe("ISSUED");
+    expect(issued.approvedBy).toBe("admin");
     const outbox = await prisma.syncOutbox.findMany();
     expect(outbox.map((r) => [r.entityType, r.entityId, r.action, r.status])).toEqual([["invoice", "INV-20001", "UPSERT", "PENDING"]]);
 
@@ -46,6 +52,7 @@ describe("invoices", () => {
     o = ok(await root.post("/api/sales-orders/release", { orders: [{ soNumber: o.soNumber, version: o.version }] })).orders[0];
     o = ok(await root.post(`${so(o)}/mark-printed`, { version: o.version, pickList: true, packingSlip: true }));
     o = ok(await ship(root, o));
+    await issueInvoiceFor(root, o.soNumber);
     const second = await prisma.invoice.findUniqueOrThrow({ where: { invoiceNumber: "INV-20002" }, include: { lines: true } });
     expect(second.lines).toHaveLength(1);
     expect(second.subtotal.toString()).toBe("15");
@@ -72,8 +79,15 @@ describe("invoices", () => {
     await makeItem(root, "BR-1001", 100);
     let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 3 }]);
     o = ok(await ship(root, o));
+    // Undoing while still a draft removes the draft and burns no number.
+    o = ok(await undoShipment(root, o));
+    expect(await prisma.invoice.count()).toBe(0);
+    o = ok(await ship(root, o));
+    await issueInvoiceFor(root, o.soNumber);
+    o = ok(await root.get(so(o)));
     o = ok(await undoShipment(root, o));
     const inv = await prisma.invoice.findFirstOrThrow();
+    expect(inv.invoiceNumber).toBe("INV-20001");
     expect(inv.status).toBe("VOID");
     expect(inv.voidedBy).toBe("admin");
     expect(inv.voidReason).toBe("Shipment undone");
@@ -84,8 +98,9 @@ describe("invoices", () => {
     const run = await processOutbox();
     expect(run.done).toBe(1);
     expect(fakeQuickBooks.invoices.size).toBe(0);
-    // Re-shipping raises a fresh invoice number; the void one stays on record.
+    // Re-shipping raises a fresh draft; issued, it takes the next number and the void one stays on record.
     o = ok(await ship(root, o));
+    await issueInvoiceFor(root, o.soNumber);
     expect((await prisma.invoice.findMany()).map((i) => [i.invoiceNumber, i.status]).sort()).toEqual([["INV-20001", "VOID"], ["INV-20002", "ISSUED"]]);
   });
 
@@ -94,6 +109,7 @@ describe("invoices", () => {
     await makeItem(root, "BR-1001", 100);
     let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 3 }]);
     o = ok(await ship(root, o));
+    await issueInvoiceFor(root, o.soNumber);
     const viewer = await as("viewer", { permissions: { invoices: "view" } });
     const nobody = await as("nobody", { permissions: { "open-orders": "view" } });
     const list = ok(await viewer.get("/api/invoices?q=INV-20001"));
@@ -117,6 +133,7 @@ describe("credit memos", () => {
     await makeItem(root, "BR-1001", 100, 2.5);
     let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 4.75 }], { taxRate: 5 });
     o = ok(await ship(root, o));
+    await issueInvoiceFor(root, o.soNumber);
     // The RA is written at the catalog price; the credit uses the invoiced one.
     const ra = ok(
       await root.post("/api/returns", { soNumber: String(o.soNumber), billTo: o.billTo, requestDate: "2026-09-29", reason: "damaged", lines: [{ itemNumber: "BR-1001", description: "x", qty: 3, rate: 2.5, restock: false }] }),
@@ -125,8 +142,12 @@ describe("credit memos", () => {
     expect(await prisma.creditMemo.count()).toBe(0);
     const received = ok(await root.post(`/api/returns/${ra.raNumber}/receive`, { version: ra.version, lines: [] }));
     expect(received.status).toBe("Received");
+    const draft = await prisma.creditMemo.findFirstOrThrow({ include: { lines: true } });
+    expect(draft.status).toBe("DRAFT");
+    expect(draft.creditMemoNumber).toBeNull();
+    const issuedMemo = await issueMemoFor(root, ra.raNumber);
+    expect(issuedMemo.creditMemoNumber).toBe("CM-30001");
     const memo = await prisma.creditMemo.findFirstOrThrow({ include: { lines: true } });
-    expect(memo.creditMemoNumber).toBe("CM-30001");
     expect(memo.raNumber).toBe(ra.raNumber);
     expect(memo.lines[0].rate.toString()).toBe("4.75");
     expect(memo.lines[0].invoiceNumber).toBe("INV-20001");
@@ -145,6 +166,7 @@ describe("QuickBooks bridge", () => {
   async function shippedInvoice(root: Awaited<ReturnType<typeof admin>>, customerId?: string) {
     let o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2, rate: 10 }, { item: "BR-1002", ordered: 1, rate: 5 }], customerId ? { customerId } : {});
     o = ok(await ship(root, o));
+    await issueInvoiceFor(root, o.soNumber);
     return prisma.invoice.findFirstOrThrow({ where: { soNumber: Number(o.soNumber) } });
   }
 
@@ -271,6 +293,7 @@ describe("QuickBooks bridge", () => {
     await processOutbox();
     const ra = ok(await root.post("/api/returns", { customerId: cust.id, soNumber: String(inv.soNumber), billTo: cust.billTo, requestDate: "2026-09-29", lines: [{ itemNumber: "BR-1001", description: "x", qty: 1, rate: 1 }] }), 201);
     ok(await root.post(`/api/returns/${ra.raNumber}/receive`, { version: ra.version, lines: [] }));
+    await issueMemoFor(root, ra.raNumber);
     const run = await processOutbox();
     expect(run.done).toBe(1);
     expect(fakeQuickBooks.creditMemos.size).toBe(1);

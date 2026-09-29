@@ -53,7 +53,7 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req, res) => {
 
   const include = {
     salesOrder: { select: { poNumber: true, billTo: true, shipTo: true, status: true, version: true, lineItems: { select: { id: true, item: true, description: true, um: true } } } },
-    invoice: { select: { invoiceNumber: true, total: true, status: true } },
+    invoice: { select: { id: true, invoiceNumber: true, total: true, status: true } },
   } satisfies Prisma.ShipmentRecordInclude;
 
   const [records, total] = await Promise.all([
@@ -87,6 +87,7 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req, res) => {
       orderVersion: r.salesOrder.version,
       lines,
       units: lines.reduce((sum, l) => sum + l.qty, 0),
+      invoiceId: r.invoice?.id ?? null,
       invoiceNumber: r.invoice?.invoiceNumber ?? null,
       invoiceTotal: r.invoice ? r.invoice.total.toString() : null,
       invoiceStatus: r.invoice?.status ?? null,

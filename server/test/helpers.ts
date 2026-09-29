@@ -188,6 +188,21 @@ export function undoShipment(c: Client, o: any) {
 export function cancel(c: Client, o: any, reason = "test") {
   return c.post(`${so(o)}/cancel`, { version: o.version, reason });
 }
+// Accounting's step since sprint 2: issue the draft invoice a shipment left
+// (the most recent draft for the order), or the draft credit memo for an RA.
+export async function issueInvoiceFor(c: Client, soNumber: string | number) {
+  const list = ok(await c.get(`/api/invoices?soNumber=${soNumber}&status=DRAFT`));
+  const draft = list.rows.at(-1);
+  if (!draft) throw new Error(`no draft invoice for S.O. ${soNumber}`);
+  return ok(await c.post(`/api/invoices/${draft.id}/issue`, { version: draft.version }));
+}
+export async function issueMemoFor(c: Client, raNumber: string) {
+  const list = ok(await c.get(`/api/invoices/credit-memos?q=${raNumber}&status=DRAFT`));
+  const draft = list.rows.find((m: any) => m.raNumber === raNumber);
+  if (!draft) throw new Error(`no draft credit memo for ${raNumber}`);
+  return ok(await c.post(`/api/invoices/credit-memos/${draft.id}/issue`, { version: draft.version }));
+}
+
 export async function getOrder(c: Client, soNumber: string | number) {
   return ok(await c.get(`/api/sales-orders/${soNumber}`));
 }

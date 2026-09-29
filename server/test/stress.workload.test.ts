@@ -255,7 +255,8 @@ describe("randomized concurrent workload", () => {
     for (const rec of shipments) {
       const inv = byShipment.get(rec.id);
       expect(inv, `shipment ${rec.id} has no invoice`).toBeTruthy();
-      expect(inv!.status).toBe("ISSUED");
+      // Drafts until Accounting issues them; the workload has no reviewer.
+      expect(inv!.status).toBe("DRAFT");
       const shippedLines = (rec.lines as { lineItemId: string; qty: number }[]).filter((l) => l.qty > 0);
       expect(inv!.lines.map((l) => [l.salesOrderLineId, l.qty]).sort()).toEqual(shippedLines.map((l) => [l.lineItemId, l.qty]).sort());
       const sum = inv!.lines.reduce((s, l) => s + Number(l.amount), 0);
@@ -264,7 +265,7 @@ describe("randomized concurrent workload", () => {
     for (const inv of invoices) if (!inv.shipmentRecordId) expect(inv.status, `${inv.invoiceNumber} orphaned but live`).toBe("VOID");
     const receivedRas = await prisma.returnAuthorization.findMany({ where: { status: "RECEIVED" } });
     for (const ra of receivedRas) expect(await prisma.creditMemo.count({ where: { raNumber: ra.raNumber } }), `${ra.raNumber} has no credit memo`).toBe(1);
-    for (const inv of invoices) expect(await prisma.syncOutbox.count({ where: { entityType: "invoice", entityId: inv.invoiceNumber } }), `${inv.invoiceNumber} never queued`).toBeGreaterThan(0);
+    for (const inv of invoices) if (inv.invoiceNumber) expect(await prisma.syncOutbox.count({ where: { entityType: "invoice", entityId: inv.invoiceNumber } }), `${inv.invoiceNumber} never queued`).toBeGreaterThan(0);
     // And the bridge drains without a single failure against the fake.
     const drained = await processOutbox({ limit: 10_000 });
     expect(drained.failed + drained.dead, JSON.stringify(drained)).toBe(0);

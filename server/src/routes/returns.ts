@@ -367,7 +367,7 @@ router.post("/:raNumber/receive", requireAnyPermission(RETURN_RECEIVE_PAGES, "ed
     logAudit(req.account!, "RETURN_RECEIVED", "return", raNumber, raNumber, {
       unitsRestocked: restocked,
       unitsScrapped: lines.reduce((sum, l) => sum + l.qty, 0) - restocked,
-      creditMemo: memo.creditMemoNumber,
+      creditMemoDraft: memo.id,
       creditTotal: memo.total.toString(),
     });
   });

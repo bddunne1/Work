@@ -6,7 +6,7 @@ import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { invoicesForOrder, money } from "../lib/invoiceStore";
+import { invoicePath, invoicesForOrder, money } from "../lib/invoiceStore";
 import { cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
 import { canView, canEdit as canEditPath } from "../lib/permissions";
 import type { Invoice, PurchaseOrder } from "../types";
@@ -484,13 +484,13 @@ function OrderDetailInner() {
             </thead>
             <tbody>
               {invoices.map((inv) => (
-                <tr key={inv.invoiceNumber}>
+                <tr key={inv.id}>
                   <td>
-                    <Link to={`/invoices/${inv.invoiceNumber}`}>{inv.invoiceNumber}</Link>
+                    <Link to={invoicePath(inv)}>{inv.invoiceNumber ?? "Draft"}</Link>
                   </td>
                   <td>{inv.invoiceDate}</td>
                   <td>{money(inv.total)}</td>
-                  <td>{inv.status === "VOID" ? <span className="danger-link">Void</span> : "Issued"}</td>
+                  <td>{inv.status === "VOID" ? <span className="danger-link">Void</span> : inv.status === "DRAFT" ? <span className="muted">Draft - awaiting review</span> : "Issued"}</td>
                 </tr>
               ))}
             </tbody>

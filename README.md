@@ -51,13 +51,21 @@ machine running the API - set it at build time for anyone else on the network.
 
 ## Invoicing and QuickBooks
 
-An invoice is raised for every confirmed shipment and a credit memo for every
-received return (`server/src/lib/documents.ts`), at the prices on the order,
-in integer cents. They are pushed to QuickBooks Online by the sync worker
+A draft invoice is raised for every confirmed shipment and a draft credit
+memo for every received return (`server/src/lib/documents.ts`), at the prices
+on the order, in integer cents. Accounting works the review queue under
+Invoices (drafts, oldest first): check the prices, add freight, handling or
+other charges (each with its own taxable flag; a deduction on a credit
+memo), write a note, then approve and issue. Issuing assigns the number
+(INV-20001, CM-30001) and queues the push; a draft never reaches QuickBooks,
+and undoing a shipment while its invoice is still a draft removes the draft
+without burning a number. Issued documents can only be voided.
+
+Issued documents are pushed to QuickBooks Online by the sync worker
 (`server/src/integrations/sync.ts`): an outbox row is written in the same
-transaction as the document, and the worker retries with backoff until it
-lands, creating the customer and items (as non-inventory) in QuickBooks as
-needed. QuickBooks stays the record for receivables, payments, tax filing and
+transaction as the issue, and the worker retries with backoff until it
+lands, creating the customer and items (as non-inventory; charge lines as
+items named FREIGHT, HANDLING, OTHER) in QuickBooks as needed. QuickBooks stays the record for receivables, payments, tax filing and
 the ledger; this system stays the record for stock. See Settings > QuickBooks
 for status, retries and a reconciliation of a date range.
 

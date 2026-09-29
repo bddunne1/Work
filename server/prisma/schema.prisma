@@ -527,17 +527,30 @@ model SavedReport {
 // to it through the outbox below; nothing financial is computed here beyond
 // the document totals.
 
+// A document is a Draft from the moment its shipment or return creates it
+// until Accounting reviews and issues it (sprint 2): only then does it get
+// its number and go to QuickBooks.
 enum InvoiceStatus {
+  DRAFT
   ISSUED
   VOID
+}
+
+// An ITEM line comes from the shipment or the return; a CHARGE line is
+// added at review: freight, handling, a restocking deduction.
+enum DocLineKind {
+  ITEM
+  CHARGE
 }
 
 // One invoice per shipment, raised inside the ship transaction from the
 // order's lines and prices as they stood at that moment. Money is stored to
 // the cent; the totals are computed in integer cents (lib/money.ts).
 model Invoice {
-  // "INV-20001" - from the shared Counter table like every other document.
-  invoiceNumber    String          @id
+  id               String          @id @default(uuid())
+  // "INV-20001" - from the shared Counter table, assigned when the draft is
+  // issued, so a draft that is undone never burns a number.
+  invoiceNumber    String?         @unique
   soNumber         Int
   salesOrder       SalesOrder      @relation(fields: [soNumber], references: [soNumber])
   shipmentRecordId String?         @unique
@@ -556,11 +569,15 @@ model Invoice {
   taxRate          Decimal         @default(0) @db.Decimal(6, 3)
   tax              Decimal         @db.Decimal(14, 2)
   total            Decimal         @db.Decimal(14, 2)
-  status           InvoiceStatus   @default(ISSUED)
+  status           InvoiceStatus   @default(DRAFT)
+  approvedAt       DateTime?
+  approvedBy       String?
   voidedAt         DateTime?
   voidedBy         String?
   voidReason       String?
   notes            String          @default("")
+  // Optimistic concurrency for draft edits - see Item.version.
+  version          Int             @default(1)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @default(now()) @updatedAt
 
@@ -573,9 +590,13 @@ model Invoice {
 }
 
 model InvoiceLine {
-  id               String  @id @default(uuid())
-  invoiceNumber    String
-  invoice          Invoice @relation(fields: [invoiceNumber], references: [invoiceNumber], onDelete: Cascade)
+  id               String      @id @default(uuid())
+  invoiceId        String
+  invoice          Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  kind             DocLineKind @default(ITEM)
+  // Tax applies to the line (charges such as freight may be exempt).
+  taxable          Boolean     @default(true)
+  position         Int         @default(0)
   salesOrderLineId String?
   itemId           String?
   catalogItem      Item?   @relation(fields: [itemId], references: [id], onDelete: SetNull)
@@ -586,15 +607,16 @@ model InvoiceLine {
   rate             Decimal @db.Decimal(12, 4)
   amount           Decimal @db.Decimal(14, 2)
 
-  @@index([invoiceNumber])
+  @@index([invoiceId])
   @@index([itemId])
 }
 
 // One credit memo per received return, priced from the invoice that billed
 // the goods when one can be found, else from the RA line.
 model CreditMemo {
-  // "CM-30001"
-  creditMemoNumber String              @id
+  id               String              @id @default(uuid())
+  // "CM-30001", assigned when the draft is issued.
+  creditMemoNumber String?             @unique
   raNumber         String              @unique
   returnAuth       ReturnAuthorization @relation(fields: [raNumber], references: [raNumber])
   customerId       String?
@@ -608,11 +630,14 @@ model CreditMemo {
   taxRate          Decimal             @default(0) @db.Decimal(6, 3)
   tax              Decimal             @db.Decimal(14, 2)
   total            Decimal             @db.Decimal(14, 2)
-  status           InvoiceStatus       @default(ISSUED)
+  status           InvoiceStatus       @default(DRAFT)
+  approvedAt       DateTime?
+  approvedBy       String?
   voidedAt         DateTime?
   voidedBy         String?
   voidReason       String?
   reason           String              @default("")
+  version          Int                 @default(1)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @default(now()) @updatedAt
 
@@ -623,9 +648,12 @@ model CreditMemo {
 }
 
 model CreditMemoLine {
-  id               String     @id @default(uuid())
-  creditMemoNumber String
-  creditMemo       CreditMemo @relation(fields: [creditMemoNumber], references: [creditMemoNumber], onDelete: Cascade)
+  id               String      @id @default(uuid())
+  creditMemoId     String
+  creditMemo       CreditMemo  @relation(fields: [creditMemoId], references: [id], onDelete: Cascade)
+  kind             DocLineKind @default(ITEM)
+  taxable          Boolean     @default(true)
+  position         Int         @default(0)
   returnLineId     String?
   // The invoice line whose price this credit reverses, when found.
   invoiceNumber    String?
@@ -638,7 +666,7 @@ model CreditMemoLine {
   rate             Decimal    @db.Decimal(12, 4)
   amount           Decimal    @db.Decimal(14, 2)
 
-  @@index([creditMemoNumber])
+  @@index([creditMemoId])
 }
 
 // The id an outside system (QuickBooks) knows one of our records by. Ids,
