@@ -1,0 +1,335 @@
+<title>Aamstrand ERP Sprint Plan</title>
+<meta name="description" content="Sprints 0 to 3 from the master review expanded into tasks, each with the file it touches, the test that proves it, a size, the decisions needed before starting and the order to do them in.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1; --surface: #ffffff; --ink: #16202a; --ink-2: #3c4753; --muted: #5d6772;
+    --rule: #d6dad2; --rule-strong: #b8beb4; --accent: #2f5fdb; --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a; --high: #b9620f; --med: #7d6c0c; --low: #5d6772; --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08); --high-bg: rgba(185, 98, 15, 0.09); --med-bg: rgba(125, 108, 12, 0.1); --ok-bg: rgba(43, 122, 75, 0.09); --info-bg: rgba(47, 95, 219, 0.08);
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519; --surface: #181d23; --ink: #e8ebef; --ink-2: #c3cad2; --muted: #97a1ab;
+      --rule: #2a3139; --rule-strong: #3b444e; --accent: #7b98f2; --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62; --high: #f0a24e; --med: #d6c35c; --low: #97a1ab; --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12); --high-bg: rgba(240, 162, 78, 0.12); --med-bg: rgba(214, 195, 92, 0.12); --ok-bg: rgba(95, 196, 141, 0.12); --info-bg: rgba(123, 152, 242, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519; --surface: #181d23; --ink: #e8ebef; --ink-2: #c3cad2; --muted: #97a1ab;
+    --rule: #2a3139; --rule-strong: #3b444e; --accent: #7b98f2; --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62; --high: #f0a24e; --med: #d6c35c; --low: #97a1ab; --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12); --high-bg: rgba(240, 162, 78, 0.12); --med-bg: rgba(214, 195, 92, 0.12); --ok-bg: rgba(95, 196, 141, 0.12); --info-bg: rgba(123, 152, 242, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; padding-inline: 16px; padding-block: 32px 64px; }
+  .wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.2rem; font-weight: 600; }
+  p { margin: 0; max-width: 72ch; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+  .prose ul, .prose ol, .panel ul, .panel ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 76ch; }
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; margin: 0; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 72ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+  .verdict { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.1rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); } .verdict .big.warn { color: var(--high); } .verdict .big.good { color: var(--ok); }
+  @media (max-width: 900px) { .verdict { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .verdict { grid-template-columns: 1fr; } }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc a { font-family: var(--display); font-weight: 600; font-size: 0.92rem; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.good { color: var(--ok); font-weight: 600; } td.bad { color: var(--crit); font-weight: 600; }
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 820px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  .callout.warn { border-left-color: var(--high); background: var(--high-bg); }
+  .callout.info { border-left-color: var(--accent); background: var(--info-bg); }
+  .callout p { max-width: 80ch; }
+  /* master table */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filters .sep { width: 1px; height: 22px; background: var(--rule-strong); margin: 0 4px; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-left: 8px; }
+  tr.theme-row td { background: var(--paper); font-family: var(--display); font-weight: 700; font-size: 1.05rem; border-top: 2px solid var(--rule-strong); }
+  tr.theme-row .eyebrow { color: var(--accent); margin-right: 6px; }
+  td.ids { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  td.next { min-width: 24ch; max-width: 42ch; color: var(--ink-2); }
+  .ftitle { font-weight: 600; }
+  .fdetail { color: var(--ink-2); font-size: 0.9rem; margin-top: 3px; max-width: 60ch; }
+  .sev { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+  .sev-crit { color: var(--crit); } .sev-high { color: var(--high); } .sev-med { color: var(--med); } .sev-low { color: var(--low); } .sev-none { color: var(--muted); }
+  .st { display: inline-block; font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 7px; white-space: nowrap; }
+  .st-closed, .st-delivered { color: var(--ok); } .st-partial { color: var(--high); } .st-open { color: var(--crit); } .st-decision { color: var(--accent); }
+  .closed-in { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
+  tr.item.hidden { display: none; }
+  .plan { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 12px; }
+  .plan li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; }
+  .plan li::before { content: counter(step); font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1; color: var(--accent); }
+  .plan li > div { display: flex; flex-direction: column; gap: 6px; }
+  .plan b.t { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
+  .plan .why { font-size: 0.9rem; color: var(--muted); }
+  .plan ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; }
+  .check { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; max-width: 80ch; }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  .sprint-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 24px; align-items: end; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .sprint-head h2 { margin: 0; }
+  .sprint-head .weeks { font-family: var(--display); font-weight: 700; font-size: 1.4rem; color: var(--accent); white-space: nowrap; }
+  .goal { max-width: 76ch; margin: 0; }
+  .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .facts > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .facts ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; }
+  table.tasks th:nth-child(1) { width: 4.5em; }
+  table.tasks td:nth-child(2) { min-width: 26ch; }
+  table.tasks td:nth-child(3), table.tasks td:nth-child(4) { min-width: 22ch; color: var(--ink-2); font-size: 0.93rem; }
+  table.tasks td:nth-child(5) { white-space: nowrap; font-family: var(--mono); font-size: 0.85rem; text-align: center; }
+  .size-S { color: var(--ok); } .size-M { color: var(--med); } .size-L { color: var(--high); }
+  .stream { font-family: var(--display); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.8rem; color: var(--muted); background: var(--paper); }
+  .seq { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 6px 14px; margin: 0; max-width: 80ch; }
+  .seq dt { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); padding-top: 2px; }
+  .seq dd { margin: 0; }
+  .new { display: inline-block; font-family: var(--display); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 5px; margin-left: 6px; vertical-align: middle; }
+  @media (max-width: 760px) { .facts { grid-template-columns: 1fr; } .sprint-head { grid-template-columns: 1fr; } .seq { grid-template-columns: 1fr; } .seq dt { padding-top: 6px; } }
+</style>
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="eyebrow">Aamstrand ERP · master review section 05, expanded</div>
+      <h1>Aamstrand ERP Sprint Plan</h1>
+      <p class="lede">The four sprints in the master review's work plan, each broken into tasks with where the change goes, what proves it, a size, and the order to do them in. Item numbers are the master list's. Sizes: S is up to half a day, M one to two days, L three days or more, for one developer who knows the codebase. Rows marked new came out of the invoicing walkthrough after the master review was written.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Date</dt><dd>2026-09-29</dd>
+      <dt>Source</dt><dd>master review, section 05</dd>
+      <dt>Code state</dt><dd>main at 50f7b6d (round 5 merged)</dd>
+      <dt>Sprints</dt><dd>0 to 3, then later</dd>
+    </dl>
+  </header>
+
+  <section>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Sprint</th><th>Goal</th><th>Length</th><th>Items</th><th>Structural change</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#s0">0</a></td><td>Round-5 build in production, baseline re-run, QuickBooks sandbox proven</td><td>½ week</td><td>F-03, F-04, E-08, E-09, B-17</td><td>None</td></tr>
+        <tr><td><a href="#s1">1</a></td><td>Last integrity holes closed; the quick wins that cost the most time</td><td>1½–2 weeks</td><td>25 items, 3 new</td><td><code>Customer.active</code>, RESTRICT on two foreign keys, idempotency table</td></tr>
+        <tr><td><a href="#s2">2</a></td><td>Reservation table; read exposure and audit; the medium screen and performance items</td><td>2½–3 weeks</td><td>28 items</td><td><code>Allocation</code> table and <code>Item.qtyReserved</code>; <code>lastShippedAt</code>; trigram index</td></tr>
+        <tr><td><a href="#s3">3</a></td><td>Throughput part one: measure, auto-allocate, release and print, claim, grid</td><td>3–4 weeks</td><td>9 items</td><td>Claim lease and carrier fields on orders; customer opt-out</td></tr>
+        <tr><td><a href="#later">Later</a></td><td>Throughput part two and the model gaps</td><td>after measuring</td><td>11 items</td><td>Cost on items; possibly decimal quantities</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout warn" style="margin-top:16px">
+      <p><b>How each sprint runs.</b> One branch from main per sprint, a pull request per workstream where it helps review (sprint 2's reservation table goes in on its own). Every server change lands with a test in <code>server/test/</code>; every screen change lands with a screenshot under <code>docs/review/screens/</code>. CI must be green before merge. At the end of sprints 1 to 3 the day simulation is re-run and compared with the sprint 0 baseline, and the master list is regenerated with the closed items.</p>
+    </div>
+  </section>
+  
+  <section id="s0">
+    <div class="sprint-head">
+      <div><span class="eyebrow">Sprint 0</span><h2>Put the round-5 build into use</h2></div>
+      <span class="weeks">½ week</span>
+    </div>
+    <p class="goal">The pull request is merged, so this sprint is the operational half: get main running on the production host, re-establish the simulation baseline against the new code, and prove the QuickBooks bridge against Intuit's sandbox before any real invoice leaves the building.</p>
+    <div class="facts">
+      <div><span class="eyebrow">What changes for the business</span><ul><li>Staff sign in to the hardened build: ten-character passwords, forced change after a reset, 45-minute idle sign-out.</li><li>Every shipment produces an invoice and every received return a credit memo, visible under Invoices.</li><li>The QuickBooks sandbox company receives test invoices; production stays disconnected until reconciliation matches.</li></ul></div>
+      <div><span class="eyebrow">Done means</span><ul><li><code>sim/day.mjs</code> re-run on the new code: zero stock drift, no 500s, queue depths recorded as the new baseline (F-03).</li><li>A sandbox invoice and credit memo reconcile from Settings with no differences.</li><li>Second admin exists (B-17). Presets re-applied so Customer Service, Sales Manager and Director see Invoices.</li></ul></div>
+      <div><span class="eyebrow">Decisions needed first</span><ul><li>Who holds the second admin account.</li><li>Which QuickBooks company is the sandbox, and who owns the Intuit developer account.</li></ul></div>
+    </div>
+    <div><span class="eyebrow">Tasks</span></div>
+    <div class="table-wrap"><table class="tasks"><thead><tr><th>Item</th><th>Task</th><th>Where</th><th>Proof</th><th>Size</th></tr></thead><tbody>
+<tr><td class="stream" colspan="5">Deploy (section 06 of the master review, in order)</td></tr>
+<tr><td class="mono">F-04</td><td>Back up production: <code>pg_dump -Fc erp_prod &gt; before-round5.dump</code>. Check for item numbers that differ only by case; the new unique index refuses them.</td><td>host</td><td>Restore the dump into a scratch database once.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">F-04</td><td>Environment: keep <code>DATABASE_URL</code> and <code>JWT_SECRET</code>; add <code>TOKEN_TTL=10h</code>, <code>TRUST_PROXY=1</code> behind a proxy, <code>CORS_ORIGIN</code>, <code>TOKEN_ENCRYPTION_KEY</code> from <code>openssl rand -hex 32</code>. Leave the five <code>QBO_*</code> variables unset and <code>QBO_SYNC_INTERVAL_MS=0</code> until the sandbox step.</td><td><code>server/.env</code></td><td>API starts; <code>/api/health</code> answers; sign-in works.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">F-04</td><td>Migrate and restart: <code>npx prisma migrate deploy</code> (two additive migrations), rebuild the frontend with <code>VITE_API_URL</code>, restart the API.</td><td>host</td><td><code>prisma migrate status</code> clean; Activity Log shows sign-ins.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">F-04</td><td>Accounts: reset the admin password from Accounts, re-apply presets to the three roles that gain Invoices, create the second admin.</td><td>Accounts page</td><td>Each role signs in and sees the pages its preset lists.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">F-04</td><td>Walk one order per role end to end on production data and confirm <code>ORDER_SHIPPED</code> in the Activity Log carries the invoice number.</td><td>app</td><td>One invoice under Invoices with the right totals.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Baseline</td></tr>
+<tr><td class="mono">F-03</td><td>Restore the round-2 simulation snapshot on a scratch database, restart the API, run <code>SIM_MINUTES=12 node sim/day.mjs</code>. Compare with round 2: 0 drift, 0 500s, 91 waiting at close.</td><td><code>sim/</code></td><td>Result file committed under <code>docs/review/data/round6/</code>.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">QuickBooks sandbox</td></tr>
+<tr><td class="mono">E-08</td><td>Create the Intuit app (Accounting scope, redirect URI = <code>QBO_REDIRECT_URI</code>). Set the <code>QBO_*</code> variables, <code>QBO_ENVIRONMENT=sandbox</code>, restart, connect from Settings.</td><td>Intuit developer portal, <code>server/.env</code></td><td>Settings shows the sandbox company name.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">E-08</td><td>Ship one test order, receive one return, run Sync now, open both documents in QuickBooks, then Compare with QuickBooks over the date range. Turn off inventory tracking on the items QuickBooks created.</td><td>Settings › QuickBooks</td><td>Reconcile reports no differences; sync log has no failures.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">E-09</td><td>Note how QuickBooks treated the tax figure (accepted our TotalTax, or recomputed it with Automated Sales Tax). This feeds the tax decision before production is connected.</td><td>QuickBooks sandbox</td><td>One line in the decisions log.</td><td class="size-S">S</td></tr>
+</tbody></table></div>
+    <div><span class="eyebrow">Sequence</span></div>
+    <dl class="seq"><dt>Day 1</dt><dd>Back up, environment, migrate, accounts, walk-through.</dd><dt>Day 2</dt><dd>Simulation re-run and comparison; Intuit app and sandbox connection.</dd><dt>Day 3</dt><dd>Sandbox invoice, credit memo, reconcile; write down the tax observation.</dd></dl>
+  </section>
+  
+  <section id="s1">
+    <div class="sprint-head">
+      <div><span class="eyebrow">Sprint 1</span><h2>Close the integrity holes and take the quick wins</h2></div>
+      <span class="weeks">1½–2 weeks</span>
+    </div>
+    <p class="goal">Every item here is a small change with a test. Together they remove the last known ways to lose stock or money, take the two daily irritations that cost the most time (queue order, the end-of-day report), and fix the three things the invoicing walkthrough turned up. Nothing here changes the data model except one flag and one foreign-key change on customers.</p>
+    <div class="facts">
+      <div><span class="eyebrow">What changes for the business</span><ul><li>A return can no longer be credited twice; a customer with history cannot be deleted, only made inactive.</li><li>Undo Last Shipment refuses when the units have already come back on a return.</li><li>Validation and Allocation work oldest-first with a Skip button; Logistics gets a shipped-today report with partial shipments.</li><li>Receiving and the Back Order Queue stop downloading every PO ever written; a report with an impossible item filter no longer downloads the year.</li></ul></div>
+      <div><span class="eyebrow">Done means</span><ul><li>Every row below has a passing test in <code>server/test/</code> or a Playwright check where the change is only on screen.</li><li>CI green; <code>sim/day.mjs</code> re-run with no regression against the sprint 0 baseline.</li><li>Master list updated: A-13, A-14, A-15, A-16, A-17, A-18, A-20, A-21, B-07, B-18, C-03, C-05, C-08 (first half), C-09, C-10, C-11, C-15, D-05, D-06, D-07, D-09, E-01 closed; B-06, D-02 partial.</li></ul></div>
+      <div><span class="eyebrow">Decisions needed first</span><ul><li>B-06: when do prices lock? Proposed: from Allocated onward only Order Entry or Sales Order View edit may change a rate; from Released onward nobody.</li><li>A-15: once an invoice has reached QuickBooks, refuse Undo Last Shipment outright (proposed), or allow it with a reason?</li><li>B-07: Import creates orders only, never edits (proposed yes).</li><li>C-05: must every order have a linked customer? Walk-in orders still invoice, so proposed: required in Order Entry, optional on import.</li></ul></div>
+    </div>
+    <div><span class="eyebrow">Tasks</span></div>
+    <div class="table-wrap"><table class="tasks"><thead><tr><th>Item</th><th>Task</th><th>Where</th><th>Proof</th><th>Size</th></tr></thead><tbody>
+<tr><td class="stream" colspan="5">Integrity</td></tr>
+<tr><td class="mono">A-13</td><td>Count every received RA against the shipped total. Replace <code>status: { not: "CLOSED" }</code> with: <code>receivedAt</code> set, or status Issued. An RA closed without receipt is the only one excluded.</td><td><code>server/src/routes/returns.ts</code> <code>assertWithinShipped</code></td><td>Ship 20; RA 20 received and closed; second RA for 1 unit → 409.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">A-14</td><td>Refuse the delete when any order, RA, invoice or credit memo references the customer (409 naming the count). Add <code>Customer.active</code> with a filter on the Customers list and exclusion from the Order Entry picker. Migrate <code>SalesOrder.customerId</code> and <code>ReturnAuthorization.customerId</code> from <code>SetNull</code> to <code>Restrict</code>.</td><td><code>routes/customers.ts</code> DELETE; <code>schema.prisma</code> + migration; <code>Customers.tsx</code>, <code>OrderEntry.tsx</code></td><td>Delete with one order → 409; inactive customer absent from the picker; delete of a customer with no history still works.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">A-15</td><td>Refuse Undo Last Shipment when a received RA references the order (409 naming the RA). Per the decision, also refuse when the shipment's invoice has an <code>ExternalRef</code> (it reached QuickBooks); the Void Invoice action stays the path for that case.</td><td><code>routes/salesOrders.ts</code> undo-shipment</td><td>Ship, receive RA, undo → 409; ship, sync, undo → 409; ship, undo → 200 and stock restored.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">A-16</td><td>In the RA PUT: refuse any status change except Issued→Closed and Received→Closed; freeze item, qty, rate and restock once the RA is not Issued; take Received out of the dropdown.</td><td><code>routes/returns.ts</code> PUT; <code>ReturnDetail.tsx</code></td><td>Closed→Received by save → 409; changing a received line's qty → 409.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">A-17</td><td>Write an <code>OPENING</code> stock movement inside the item create transaction (and for each imported item) when <code>qtyOnHand</code> is non-zero.</td><td><code>routes/items.ts</code> POST, import path; <code>lib/inventory.ts</code></td><td><code>expectLedgerReconciles</code> on a freshly created item with 500 on hand.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">A-18</td><td>Wrap each order in the bulk release loop in try/catch; record the failure in <code>results</code> and continue; keep the 200.</td><td><code>routes/salesOrders.ts</code> <code>/release</code></td><td>Batch of three with one stale version → two released, one error row.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">A-21</td><td>Saving guard on the PO and RA forms (as Order Entry has). Server: accept an <code>Idempotency-Key</code> header on the three create endpoints; store key, account, status and body for 24 hours in a small table; return the stored response on a repeat.</td><td><code>PurchaseOrderForm.tsx</code>, <code>ReturnForm.tsx</code>; new <code>lib/idempotency.ts</code>, <code>schema.prisma</code></td><td>Same key twice → same <code>soNumber</code>, one row; different accounts, same key → two rows.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">Permissions and pricing</td></tr>
+<tr><td class="mono">B-07</td><td>Remove <code>import</code> from <code>ORDER_EDIT_PAGES</code>; it stays on <code>ORDER_CREATE_PAGES</code>.</td><td><code>routes/salesOrders.ts</code></td><td>Permission matrix test: Import-only account gets 403 on PUT.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">B-06</td><td>Apply the lock point decided above: rate, tax and customer edits refused past the chosen status unless the account holds the chosen page edit; keep the old→new audit row.</td><td><code>routes/salesOrders.ts</code> PUT</td><td>Rate change on an Allocated order by Validation → 403; by Order Entry → 200 and audited; on Released → 409.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">B-18</td><td>Give the Open Sales Orders, Open POs and Open Returns presets a default status filter; add a multi-select status filter to the report runner.</td><td><code>routes/savedReports.ts</code> presets; <code>ReportRunner.tsx</code></td><td>Preset run returns no Shipped or Closed rows.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Screens</td></tr>
+<tr><td class="mono">C-08</td><td>Validation and Allocation queues sorted by due date then order date ascending on the server; a Skip button that hides the order for this session and moves to the next. (The ten-minute server-side claim is sprint 3.)</td><td><code>routes/salesOrders.ts</code> GET ordering; <code>Validation.tsx</code>, <code>Allocation.tsx</code></td><td>Two orders, later due first in creation order → earlier due shown first; Skip advances.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">C-09</td><td>Shipment History as one row per shipment: new <code>GET /api/shipments?from&amp;to</code> reading <code>ShipmentRecord</code> with order, customer, lines, units, weight and invoice number; default filter today; totals row; CSV export; Undo on the row when it is the order's last shipment.</td><td>new <code>routes/shipments.ts</code>; <code>ShipmentHistory.tsx</code></td><td>Partial then final shipment on one order → two rows; totals equal the sum; export matches the table.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">C-10</td><td>Schedule Shipments: save the date on blur or Enter, only when complete.</td><td><code>ScheduleShipments.tsx</code></td><td>Typing a year digit by digit sends one request.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-03</td><td>Vendors: draft in local state; save on blur or a Save button; version conflict shown once.</td><td><code>Vendors.tsx</code></td><td>Ten keystrokes → one PUT.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-04</td><td>Customer notes apply to the last saved record, not the draft; Settings lead time validates before saving on blur.</td><td><code>Customers.tsx</code>, <code>Settings.tsx</code></td><td>Blank lead time keeps the old value and shows a message.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-05</td><td>Enter picks the highlighted option or moves to the next cell on the Order, PO and RA forms; the Save button is the only submit. Require a customer and one complete line in Order Entry per the decision.</td><td><code>OrderEntry.tsx</code>, <code>PurchaseOrderForm.tsx</code>, <code>ReturnForm.tsx</code></td><td>Enter in an item cell never submits; Save with no customer shows the field.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">C-11</td><td>Bulk confirm on Open Picks: per-order results as Release Orders shows; button locked while running; list reloads after every run.</td><td><code>OpenPicks.tsx</code></td><td>Two orders, one stale → one shipped, one error, list refreshed.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-15</td><td>Validate <code>orderDate</code>, <code>dueDate</code>, <code>requestDate</code>, <code>expectedDate</code> server-side (zod refine, ISO date, sane range); whole-number quantity inputs on screen (<code>step=1</code>, <code>min=1</code>).</td><td><code>routes/*.ts</code> schemas; the four forms</td><td>Blank due date → 400 with a field error, not 500.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">A-20</td><td>Drop blank line rows in Order Entry before the request.</td><td><code>OrderEntry.tsx</code></td><td>Order with a trailing empty row saves with only the real lines.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Performance one-liners</td></tr>
+<tr><td class="mono">D-06</td><td>Receiving and the Back Order Queue use <code>?open=1</code> (<code>listOpen</code> already exists); page the PO and RA lists.</td><td><code>Receiving.tsx</code>, <code>BackOrderQueue.tsx</code>; <code>routes/vendorPurchaseOrders.ts</code>, <code>routes/returns.ts</code></td><td>Network panel: one request under 100 KB at 40 open POs.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">D-07</td><td>Open-orders query filters with <code>status IN (open statuses)</code> instead of <code>NOT IN</code>; migration drops the duplicate <code>Item_itemNumber_idx</code> left beside the unique index.</td><td><code>routes/salesOrders.ts</code> GET, <code>routes/salesOrderSearch.ts</code>; migration</td><td><code>EXPLAIN</code> shows the status index; drift check passes.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">D-05</td><td>Reports: an item filter that matches nothing returns no rows; order reports require a date range (default last 90 days); no auto-run on open.</td><td><code>routes/savedReports.ts</code> or report data route; <code>ReportRunner.tsx</code></td><td>Unknown item → empty result in one small response; opening a preset shows Run, not a download.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">D-02</td><td>Cap the capacity lookback at 90 days in Settings validation and on the server. (Server-side throughput and dwell computation moves to sprint 2 with D-08.)</td><td><code>routes/settings.ts</code>, <code>WarehouseCapacity.tsx</code></td><td>Setting 365 → refused with a message.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">D-09</td><td>Debounce the stock-ledger item filter (helper exists) and filter by item id.</td><td><code>Inventory.tsx</code> ledger, <code>routes/stockMovements.ts</code></td><td>Typing five characters sends one request.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">From the invoicing walkthrough</td></tr>
+<tr><td class="mono">E-01</td><td>Order screens compute line, subtotal, tax and total in integer cents with a client copy of <code>lib/money.ts</code>, so the order page and its invoice agree to the cent (order 10004 showed $933.04 against invoice $933.05). <span class="new">new</span></td><td>new <code>src/lib/money.ts</code>; <code>OrderDetail.tsx</code>, <code>OrderEntry.tsx</code>, <code>OpenPicksDetail.tsx</code></td><td>Unit test: 878.16 at 6.25% → 54.89; page and invoice match on the demo order.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">F-02</td><td>Validate the environment at startup: <code>TOKEN_ENCRYPTION_KEY</code> shape, <code>JWT_SECRET</code> length, <code>TOKEN_TTL</code> format. Refuse to boot with a clear message instead of failing per request. <span class="new">new</span></td><td><code>server/src/index.ts</code>, <code>integrations/secrets.ts</code></td><td>Start with a malformed key → exits with the message.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">E-08</td><td>Sync worker: a not-found response to a void counts as done (nothing to void) rather than a dead row. <span class="new">new</span></td><td><code>integrations/sync.ts</code> VOID branch</td><td>FakeQuickBooks void of an unknown id → outbox row DONE with the reason logged.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Process, no code</td></tr>
+<tr><td class="mono">G-02</td><td>Split analyst duties: one validates and handles exceptions, the other allocates, releases and works back orders. Give the Analyst preset pick-pack edit so analysts print what they release.</td><td>Accounts page; <code>src/lib/permissions.ts</code> preset</td><td>Queue collisions in the Activity Log drop; Order Entry no longer prints.</td><td class="size-S">S</td></tr>
+</tbody></table></div>
+    <div><span class="eyebrow">Sequence</span></div>
+    <dl class="seq"><dt>Days 1–2</dt><dd>Integrity first: A-13, A-15, A-16, A-17, A-18, then B-07, D-07, D-06, D-09, E-01, the startup check and the void fix. Each one is a commit with its test.</dd><dt>Days 3–4</dt><dd>A-14 (flag, refusal, migration) and A-21 (idempotency table and guards).</dd><dt>Days 5–6</dt><dd>D-05, C-09 (new shipments endpoint and page), C-08 first half.</dd><dt>Days 7–8</dt><dd>C-05, C-10, C-03, C-04, C-11, C-15, A-20, B-18, B-06, D-02.</dd><dt>Days 9–10</dt><dd>Buffer, simulation re-run, screenshots of the changed screens, master list update, pull request.</dd></dl>
+  </section>
+  
+  <section id="s2">
+    <div class="sprint-head">
+      <div><span class="eyebrow">Sprint 2</span><h2>Reservation table, read exposure, audit in the transaction</h2></div>
+      <span class="weeks">2½–3 weeks</span>
+    </div>
+    <p class="goal">One structural change, the reservation table, and the medium items that either depend on it or were waiting for a quieter sprint. After this the server holds every number that matters (on hand, reserved, available) and the browser stops recomputing any of them.</p>
+    <div class="facts">
+      <div><span class="eyebrow">What changes for the business</span><ul><li>Availability is a column, not a scan: the allocation pages, Inventory and the capacity banner open in under a second at a year of data.</li><li>A partly released order releases the reservation on what it did not ship (A-07), and the on-PO figure is exact (A-06).</li><li>A Checked order that is changed goes back for checking; cancelling a printed order leaves a pull-from-floor task instead of vanishing.</li><li>Prices are visible only to roles that need them; every price-sheet change is logged row by row.</li><li>A browser test walks the five core flows on every push.</li></ul></div>
+      <div><span class="eyebrow">Done means</span><ul><li>Invariant in the workload test: for every item, the sum of open <code>Allocation.qty</code> equals <code>Item.qtyReserved</code>, and reserved never exceeds on hand.</li><li>No page under <code>src/</code> computes availability or reservations from order JSON (grep for <code>allocatedQty</code> outside the order stores returns nothing).</li><li>Playwright smoke green in CI; master list updated: A-06, A-07, A-22, A-23, A-25, B-08, B-10, B-11, C-01, C-06, C-07, C-12–C-17, D-02, D-08, D-10–D-13, E-03, F-01 closed.</li></ul></div>
+      <div><span class="eyebrow">Decisions needed first</span><ul><li>A-07: when a partial shipment leaves a line back-ordered, keep its reservation (holds stock for the customer) or release it (frees stock for the queue)? Proposed: keep, and show it on the Back Order Queue.</li><li>B-10: which roles see prices? Proposed: Order Entry, Sales Order View, Customer Service, Sales Manager, Director, Admin; warehouse and receiving roles see none.</li><li>C-17: rename the status Pick &amp; Packed to Released.</li></ul></div>
+    </div>
+    <div><span class="eyebrow">Tasks</span></div>
+    <div class="table-wrap"><table class="tasks"><thead><tr><th>Item</th><th>Task</th><th>Where</th><th>Proof</th><th>Size</th></tr></thead><tbody>
+<tr><td class="stream" colspan="5">A-25 · Reservation table (do this first; everything else in the sprint builds on it)</td></tr>
+<tr><td class="mono">A-25</td><td>Schema: <code>Allocation { id, soNumber, lineItemId @unique, itemId, qty, createdAt, updatedAt }</code> and <code>Item.qtyReserved Int @default(0)</code>. Migration backfills rows from each open order's line <code>allocatedQty</code> and sets <code>qtyReserved</code> per item; a verification query in the migration test compares both totals.</td><td><code>schema.prisma</code>, migration + <code>test/migration.allocation.test.ts</code></td><td>Backfill on the round-2 snapshot equals the JSON totals for every item.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">A-25</td><td>Maintain the table inside the existing commands: allocate and revise (upsert rows, apply the delta to <code>qtyReserved</code>), unallocate and cancel (delete rows, subtract), ship (subtract reserved and on hand together for the shipped qty), undo-shipment (restore both), release at 0 and the A-07 rule for partial shipments. Lock the Item rows <code>FOR UPDATE</code> in item-id order; the advisory lock stays until the workload test proves it is no longer needed.</td><td><code>routes/salesOrders.ts</code> commands; <code>lib/inventory.ts</code></td><td>Every existing race test still passes; new invariant assertions in <code>stress.workload.test.ts</code> after every step.</td><td class="size-L">L</td></tr>
+<tr><td class="mono">A-25</td><td>Availability from the row: <code>available = qtyOnHand - qtyReserved</code> on the item endpoints; the allocation candidates endpoint returns lines with available-now per item. The on-PO figure totals by item id under the same lock (A-06).</td><td><code>routes/items.ts</code>, <code>routes/salesOrders.ts</code> allocation list, <code>routes/vendorPurchaseOrders.ts</code></td><td>Allocation page for a 20-line order makes one request.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">A-25</td><td>Delete the client-side reservation math: allocation pages, Back Order Queue, Inventory, Warehouse Capacity banner, Order Entry availability all read the server figures. Remove the helpers that scan open orders.</td><td><code>src/lib/orderStore.ts</code>, <code>Allocation*.tsx</code>, <code>BackOrderQueue.tsx</code>, <code>Inventory.tsx</code>, <code>WarehouseCapacity.tsx</code></td><td>grep for reservation helpers returns nothing; pages render the same numbers as before on the demo data.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">D-02</td><td>Throughput and dwell computed on the server for the capacity banner and Warehouse Capacity (<code>GET /api/analytics/capacity?days=</code>), lookback already capped.</td><td><code>routes/analytics.ts</code>; <code>WarehouseCapacity.tsx</code>, <code>ReleaseOrders</code> banner</td><td>Banner request under 5 KB at a year of data.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Permissions, exposure and audit</td></tr>
+<tr><td class="mono">B-10</td><td>Dashboard summary endpoint returning counts only; the full order list requires an order-view page; <code>rate</code>, subtotal and totals stripped from order responses for accounts without a pricing page per the decision.</td><td>new <code>routes/dashboard.ts</code>; <code>routes/salesOrders.ts</code> response shaping; <code>Dashboard.tsx</code></td><td>Warehouse preset: Dashboard loads, order GET has no <code>rate</code> fields, list without the page → 403.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">B-11</td><td><code>logAudit</code> takes the transaction client and writes inside it; settings accept only whitelisted keys with a zod validator per key; customer and item PUTs record field diffs like orders do.</td><td><code>lib/audit.ts</code>, <code>routes/settings.ts</code>, <code>routes/customers.ts</code>, <code>routes/items.ts</code></td><td>A failed transaction leaves no audit row; unknown setting key → 400; customer terms change shows old→new.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">B-08</td><td>Separate endpoints <code>PUT /api/customers/:id/prices</code> and <code>/routing-guide</code> gated by the pricing and routing-guide pages; each price row change logged with item, old and new; the customer PUT ignores those fields.</td><td><code>routes/customers.ts</code>; <code>CustomerPricing.tsx</code>, <code>RoutingGuideDetail.tsx</code></td><td>Pricing-edit-only account can change a price; Customers-edit-only cannot; audit row per price.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">Screens</td></tr>
+<tr><td class="mono">A-22</td><td>A line, quantity, price or customer edit after Checked sets the order back to Entered and clears the checker stamp (server-side, in the PUT). Order Detail uses Order Entry's price lookup for added lines.</td><td><code>routes/salesOrders.ts</code> PUT; <code>OrderDetail.tsx</code></td><td>Edit qty on a Checked order → status Entered, <code>checkedBy</code> null, audit row.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">A-23</td><td>Cancelling a Released or Printed order keeps it on Open Picks under a Pull from floor list until Logistics acknowledges (<code>pullAcknowledgedAt</code>); a warning before cancelling a printed order.</td><td><code>schema.prisma</code> (one column), <code>routes/salesOrders.ts</code> cancel + acknowledge; <code>OpenPicks.tsx</code>, <code>OrderDetail.tsx</code></td><td>Cancel a printed order → appears under Pull from floor; acknowledge → gone.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">C-07</td><td>Order Detail: read-only lines after Checked (edit goes through A-22's path with an explicit Re-open button); the draft survives a refusal; a Revise back order action for analysts that calls the allocate command with new quantities.</td><td><code>OrderDetail.tsx</code></td><td>Refused save keeps the typed values; revise on a back-ordered line changes allocation.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">C-06</td><td>BOL for several destinations prints each order's ship-to in its row; address comparison ignores case and spacing.</td><td><code>GenerateBOL.tsx</code></td><td>Two orders, same address different case → one destination block; different addresses → per-row addresses.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-01</td><td>Error boundary around the router outlet with a Reload action; toasts replace <code>alert()</code>; a visible failed-load state on every list page.</td><td><code>App.tsx</code>, new <code>components/Toast.tsx</code>, list pages</td><td>Throw in a page → boundary shows; failed fetch → inline message, not a blank table.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">C-12</td><td>Reports reset the running state and show the server's message when a data source is refused; hide sources the role cannot use.</td><td><code>ReportRunner.tsx</code>, <code>Reports.tsx</code></td><td>403 on a source → error shown, button enabled.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-13</td><td>Import preview flags unknown items and renders <code>fieldErrors</code>; drop the On PO column from the template.</td><td><code>Import.tsx</code>, <code>lib/importParsers.ts</code></td><td>Unknown item shows as an error row before Import is pressed.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-14</td><td>Show links only where the account has access; base the returns queue on Receiving edit.</td><td><code>Dashboard.tsx</code>, <code>Layout.tsx</code>, <code>lib/permissions.ts</code></td><td>Warehouse preset sees no Access Denied link.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-16</td><td>Find-an-order guards on the current query; analytics and capacity group by local date; item responses include the preferred vendor name.</td><td><code>Dashboard.tsx</code>, <code>routes/analytics.ts</code>, <code>routes/items.ts</code></td><td>Grouping test at a UTC midnight boundary.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">C-17</td><td>Rename Pick &amp; Packed to Released in labels (status key unchanged); scroll new lines into view; split the Release Orders badge; fix the top bar and wide tables at 400 px.</td><td><code>types.ts</code> labels, <code>OrderEntry.tsx</code>, <code>Layout.tsx</code>, <code>index.css</code></td><td>Playwright at 400 px: no horizontal scroll on the five core pages.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Performance</td></tr>
+<tr><td class="mono">D-08</td><td>Order search filters by item id; a <code>lastShippedAt</code> column on <code>SalesOrder</code> maintained by the ship and undo commands; <code>pg_trgm</code> index on customer name and P.O. number.</td><td><code>routes/salesOrderSearch.ts</code>, <code>schema.prisma</code> + migration</td><td>Search by item at a year of data under 100 ms in the workload test's timing log.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">D-10</td><td>Small endpoints: an item's order lines (<code>GET /api/items/:id/order-lines</code>), a customer's purchased items; Item Quick Report and Product Labels use them.</td><td><code>routes/items.ts</code>, <code>routes/customers.ts</code>; <code>ItemQuickReport.tsx</code>, <code>ProductLabels.tsx</code></td><td>Quick Report request under 50 KB.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">D-11</td><td>Tag requests and ignore stale answers on Reports and Warehouse Capacity, as the paged lists do.</td><td><code>ReportRunner.tsx</code>, <code>WarehouseCapacity.tsx</code></td><td>Slow first response cannot overwrite a fast second one (mocked).</td><td class="size-S">S</td></tr>
+<tr><td class="mono">D-12</td><td><code>compression</code> middleware; lazy-load Reports, Analytics, BOL, Labels, Import; README serves the built files.</td><td><code>server/src/app.ts</code>, <code>App.tsx</code>, <code>README.md</code></td><td>Main bundle under 300 KB; gzip on <code>/api/sales-orders</code>.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">D-13</td><td>Analytics revenue from invoices and credit memos (E-03), computed once per request with a monthly roll-up and a bounded cache that serves stale while refreshing.</td><td><code>routes/analytics.ts</code></td><td>Revenue equals the sum of issued invoices minus credit memos for the month.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">Tests</td></tr>
+<tr><td class="mono">F-01</td><td>Playwright smoke over the five core flows against the dev servers with a seeded database: sign in and forced password change; enter an order; validate, allocate, release; ship and see the invoice; issue and receive a return and see the credit memo. Runs in CI after the server suite.</td><td>new <code>e2e/</code> with <code>playwright.config.ts</code>; <code>.github/workflows/ci.yml</code></td><td>Five green specs in CI; the screenshot driver from the walkthrough becomes the seed step.</td><td class="size-L">L</td></tr>
+</tbody></table></div>
+    <div><span class="eyebrow">Sequence</span></div>
+    <dl class="seq"><dt>Week 1</dt><dd>A-25 schema and migration, command maintenance, invariant tests until the workload test is clean at 12 workers.</dd><dt>Week 1½</dt><dd>A-25 availability endpoints and client cleanup; D-02 server figures. Pull request for the reservation table alone.</dd><dt>Week 2</dt><dd>B-11, B-08, B-10; A-22, C-07, A-23 (they share the order PUT and Open Picks).</dd><dt>Week 2½</dt><dd>C-01, C-06, C-12 to C-17; D-08, D-10 to D-13.</dd><dt>Week 3</dt><dd>F-01 Playwright and CI; simulation re-run; master list update; pull request.</dd></dl>
+  </section>
+  
+  <section id="s3">
+    <div class="sprint-head">
+      <div><span class="eyebrow">Sprint 3</span><h2>Throughput, part one</h2></div>
+      <span class="weeks">3–4 weeks</span>
+    </div>
+    <p class="goal">The first automation that changes what the business ships in a day. It starts with a week of measurement, because every minute-saving in the master review is modelled, not observed. Then auto-allocation of the mechanical cases, release and print as one step, the order-claim that ends queue collisions, and the Order Entry grid.</p>
+    <div class="facts">
+      <div><span class="eyebrow">What changes for the business</span><ul><li>Roughly three quarters of allocations happen without an analyst; the Dashboard lists what was auto-allocated and lets an analyst undo one.</li><li>Release prints the pick list in the same click; the packing slip prints at ship confirm from actual quantities, so shorts never need a reprint.</li><li>Two analysts never open the same order; stock that arrives on a PO fills back orders by itself.</li><li>Order Entry takes two touches per line instead of four.</li></ul></div>
+      <div><span class="eyebrow">Done means</span><ul><li>Timing sheet from twenty real orders per step, before and after, committed under <code>docs/review/data/</code>.</li><li>Auto-allocation covered by tests for every rule and a kill switch in Settings; the workload test runs with the allocator on.</li><li>Master list updated: G-01 measured, G-03, G-05, G-06 (first half), G-07, G-08, G-11, C-08 closed.</li></ul></div>
+      <div><span class="eyebrow">Decisions needed first</span><ul><li>G-03 rules: which orders are mechanical? Proposed: Checked, customer linked, no $0 line, every line fully available now (or ship-complete satisfied), order total under a configurable limit, customer not opted out.</li><li>G-05: print the packing slip only at ship confirm, or both at release and at confirm?</li><li>G-07: which carrier fields must be saved on the order for Customer Service to quote (proposed: carrier, SCAC, PRO, pickup date).</li></ul></div>
+    </div>
+    <div><span class="eyebrow">Tasks</span></div>
+    <div class="table-wrap"><table class="tasks"><thead><tr><th>Item</th><th>Task</th><th>Where</th><th>Proof</th><th>Size</th></tr></thead><tbody>
+<tr><td class="stream" colspan="5">Measure first (G-01)</td></tr>
+<tr><td class="mono">G-01</td><td>Time twenty real orders at validation, allocation and release with a one-page sheet (order, lines, start, end, exceptions). Record pass rates for the proposed G-03 and G-04 rules on the same orders.</td><td>paper or a sheet; <code>docs/review/data/timing/</code></td><td>Sheet filled; the sprint's rules tuned to the observed pass rate.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">G-03 · Auto-allocate the mechanical cases</td></tr>
+<tr><td class="mono">G-03</td><td>Allocator engine: <code>lib/autoAllocate.ts</code> selects Checked orders oldest by due date, applies the rules from the decision, and calls the allocate command as a system actor <code>auto</code>. Runs every ten minutes on the sync scheduler pattern; <code>AUTO_ALLOCATE=0</code> and a Settings switch stop it. Audit <code>ORDER_AUTO_ALLOCATED</code> with the rule results.</td><td>new <code>server/src/lib/autoAllocate.ts</code>, <code>index.ts</code>, <code>routes/settings.ts</code></td><td>Rule tests: each disqualifier holds the order; a qualifying order allocates; the workload test with the allocator on keeps every invariant.</td><td class="size-L">L</td></tr>
+<tr><td class="mono">G-03</td><td>Dashboard: Auto-allocated today list with the customer, total and a one-click Unallocate for analysts; per-customer opt-out flag on the customer editor.</td><td><code>Dashboard.tsx</code>, <code>Customers.tsx</code>, <code>schema.prisma</code> (<code>Customer.autoAllocate</code>)</td><td>Opted-out customer's order waits for an analyst.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">C-08 · Order claim (second half)</td></tr>
+<tr><td class="mono">C-08</td><td><code>POST /:so/claim</code> takes a ten-minute lease (<code>claimedBy</code>, <code>claimedUntil</code>); the validation and allocation queues skip orders claimed by someone else and show who has them; Skip and Next use the claim.</td><td><code>routes/salesOrders.ts</code>, <code>schema.prisma</code>; <code>Validation.tsx</code>, <code>Allocation.tsx</code></td><td>Two clients call Next → different orders; expired lease reappears.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">G-05 · Release and print in one step</td></tr>
+<tr><td class="mono">G-05</td><td>The release command accepts <code>print: true</code> and marks the pick list printed in the same transaction; Release Orders gets a Release and print button that opens the pick list view for the released set.</td><td><code>routes/salesOrders.ts</code> <code>/release</code>; <code>ReleaseOrders.tsx</code></td><td>One click → status Printed, <code>printedAt</code> set, pick list rendered.</td><td class="size-M">M</td></tr>
+<tr><td class="mono">G-05</td><td>Packing slip at confirm: after Mark Shipped, Open Picks opens the slip built from the <code>ShipmentRecord</code> (actual quantities, invoice number); Release no longer prints a slip unless the decision says both.</td><td><code>OpenPicksDetail.tsx</code>, slip print view</td><td>Short-shipped order's slip shows shipped quantities only.</td><td class="size-S">S</td></tr>
+<tr><td class="stream" colspan="5">Receiving and back orders</td></tr>
+<tr><td class="mono">G-08</td><td>Receive all outstanding: one button fills every line with its outstanding quantity; exceptions edited before Receive.</td><td><code>Receiving.tsx</code></td><td>PO with three lines → all three filled; one edited to 0 → two received.</td><td class="size-S">S</td></tr>
+<tr><td class="mono">G-06</td><td>After a receipt commits, run the allocator over Back-ordered orders that contain the received items, oldest first, using G-03's engine; the Back Order Queue splits into fillable now, covered by a PO, uncovered.</td><td><code>routes/vendorPurchaseOrders.ts</code> receive; <code>lib/autoAllocate.ts</code>; <code>BackOrderQueue.tsx</code></td><td>Receive 100 of an item with two back orders → both allocated in queue order.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">G-07 · BOL and label from the order</td></tr>
+<tr><td class="mono">G-07</td><td>Prefill the BOL and shipping label from item weights times quantity, a handling-units setting and the routing guide; save carrier, SCAC, PRO and pickup date on the order through the set-bol command; show them on Order Detail for Customer Service.</td><td><code>routes/salesOrders.ts</code> set-bol, <code>schema.prisma</code>; <code>GenerateBOL.tsx</code>, <code>ShippingLabelCreate.tsx</code>, <code>OrderDetail.tsx</code></td><td>Order with two items → BOL weight equals the sum; PRO visible on Order Detail after save.</td><td class="size-M">M</td></tr>
+<tr><td class="stream" colspan="5">G-11 · Order Entry as a keyboard grid</td></tr>
+<tr><td class="mono">G-11</td><td>Grid behaviour: Enter in the last cell adds a row; customer part numbers resolve to items (table exists); paste of item and quantity lines; per-line available-now from the reservation table and the price source (override or catalog); duplicate P.O. warning from <code>GET /api/sales-orders?poNumber=&amp;customerId=</code>; due date from lead time; a side panel with routing-guide notes.</td><td><code>OrderEntry.tsx</code> (split into grid, line and side-panel components), <code>routes/salesOrders.ts</code> search</td><td>Playwright: enter a five-line order with the keyboard only; duplicate P.O. shows a warning.</td><td class="size-L">L</td></tr>
+</tbody></table></div>
+    <div><span class="eyebrow">Sequence</span></div>
+    <dl class="seq"><dt>Week 1</dt><dd>Timing study runs in the background all sprint. Code: G-03 engine and tests, then the Dashboard list and opt-out.</dd><dt>Week 2</dt><dd>C-08 claim; G-05 release and print, slip at confirm; G-08.</dd><dt>Week 3</dt><dd>G-06 fill on receipt and the split queue; G-07 BOL prefill and saved carrier fields.</dd><dt>Week 4</dt><dd>G-11 grid (largest item; it can slip to the next sprint without blocking anything). Timing after; master list update; pull request.</dd></dl>
+  </section>
+
+  <section id="later">
+    <div class="section-head"><span class="eyebrow">Later</span><h2>Throughput part two and the model gaps</h2>
+      <p>Scoped after sprint 3's timing shows the real pass rates and the effect of auto-allocation. Listed in the order the master review suggests.</p>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Item</th><th>Scope</th></tr></thead><tbody><tr><td class='mono'>G-04</td><td>Validate by exception: server rules (customer linked, saved ship-to, prices match, quantity in range, P.O. not duplicated, total under a limit); passing orders auto-Checked and logged; one Order Review screen for the rest. Built after the sprint 3 timing shows the real pass rate. Also closes A-22's re-check case.</td></tr><tr><td class='mono'>G-09</td><td>Dock tablet: a Warehouse preset and a tablet view of Open Picks that defaults to what was packed, takes shorts by tap, posts the shipment and prints slip and label; large shorts need Logistics approval.</td></tr><tr><td class='mono'>G-06</td><td>Second half: create a PO from a selection of the uncovered shortage list.</td></tr><tr><td class='mono'>G-10</td><td>Customer Service validates its own phone orders under a maker-not-checker rule (the writer is stamped server-side, so the rule is one condition in the check command); a narrow request-change on allocated orders.</td></tr><tr><td class='mono'>E-05</td><td>Item cost: <code>unitCost</code> on items, snapshotted on invoice lines, updated from PO receipts; margin by customer and item; inventory value at cost.</td></tr><tr><td class='mono'>E-06</td><td>Decide whether anything is sold by the foot. Yes: Decimal quantities and a U/M table. No: document it and remove the per-foot fields.</td></tr><tr><td class='mono'>E-10</td><td>A shared package for page definitions imported by client and server; split the BOL form from its print view.</td></tr><tr><td class='mono'>F-02</td><td>pino-http with request ids; a one-page runbook: TLS front, environment, nightly <code>pg_dump</code>, a tested restore.</td></tr><tr><td class='mono'>B-15</td><td>Serve the built frontend and the API from one origin behind TLS (Caddy).</td></tr><tr><td class='mono'>E-11</td><td>Leads, quotes and follow-ups for sales managers; scope after the throughput work.</td></tr><tr><td class='mono'>—</td><td>Release Orders waves, once bins and pickup times exist.</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="eyebrow">Sources</span><h2>Where this comes from</h2></div>
+    <p class="goal">Sections 04 to 07 of <code>erp-master-review.html</code> (the item list, the work plan, the deploy checklist and the decisions), the round 4 order-flow analysis for the throughput items, and the round 5 redesign steps for the reservation table and the read-exposure work. Three rows marked new are from the invoicing walkthrough of 28 September. Where a task's mechanism differs from the one-line next step in the master list, this page is the more specific and should be followed.</p>
+  </section>
+</div>

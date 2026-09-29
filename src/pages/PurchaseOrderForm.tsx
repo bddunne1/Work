@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { moveOnEnter } from "../lib/formKeys";
 import { Link, useNavigate } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
@@ -61,9 +62,16 @@ export default function PurchaseOrderForm() {
   const validLines = lines.filter((l) => l.itemNumber.trim() && l.orderedQty > 0);
   const canSave = Boolean(selectedVendor) && validLines.length > 0;
 
+  // A double-click used to create two POs (R4-16): the button is locked
+  // while a save is in flight, and the request carries a key so a retry of
+  // the same draft returns the same PO.
+  const [submitting, setSubmitting] = useState(false);
+  const submitKey = useRef(crypto.randomUUID());
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canSave || !selectedVendor) return;
+    if (!canSave || !selectedVendor || submitting) return;
+    setSubmitting(true);
     const po: Omit<VendorPurchaseOrder, "poNumber"> = {
       vendorId: selectedVendor.id,
       vendorName: selectedVendor.name,
@@ -74,8 +82,12 @@ export default function PurchaseOrderForm() {
       notes,
       createdAt: new Date().toISOString(),
     };
-    const saved = await saveVendorPo(po);
-    navigate(`/purchase-orders/${saved.poNumber}`);
+    try {
+      const saved = await saveVendorPo(po, submitKey.current);
+      navigate(`/purchase-orders/${saved.poNumber}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -88,7 +100,7 @@ export default function PurchaseOrderForm() {
         </p>
       </div>
 
-      <form className="sales-order" onSubmit={handleSubmit}>
+      <form className="sales-order" onSubmit={handleSubmit} onKeyDown={moveOnEnter}>
         <div className="customer-picker">
           <label htmlFor="po-vendor-search">Vendor</label>
           <SearchSelect
@@ -162,6 +174,8 @@ export default function PurchaseOrderForm() {
                   <td>
                     <input
                       type="number"
+                      min={1}
+                      step={1}
                       className="num-input"
                       value={l.orderedQty}
                       onChange={(e) => updateLine(l.id, { orderedQty: Number(e.target.value) })}

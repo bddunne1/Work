@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { enqueueIfSynced } from "../integrations/sync.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -27,12 +29,12 @@ const linkSchema = z.object({
 const itemSchema = z.object({
   itemNumber: z.string().min(1),
   description: z.string().min(1),
-  um: z.string().default("EA"),
-  rate: z.number().default(0),
+  um: z.string().max(20).default("EA"),
+  rate: z.number().finite().nonnegative().default(0),
   qtyOnHand: z.number().int().default(0),
-  reorderPoint: z.number().int().nullish(),
-  countryOfOrigin: z.string().nullish(),
-  weight: z.number().nullish(),
+  reorderPoint: z.number().int().nonnegative().nullish(),
+  countryOfOrigin: z.string().max(100).nullish(),
+  weight: z.number().finite().nonnegative().nullish(),
   notes: z.string().nullish(),
   preferredVendorId: z.string().nullish(),
   components: z.array(componentSchema).default([]),
@@ -100,22 +102,42 @@ router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest
     res.status(409).json({ error: `Item number "${data.itemNumber}" already exists` });
     return;
   }
-  const item = await prisma.item.create({
-    data: {
-      itemNumber: data.itemNumber,
-      description: data.description,
-      um: data.um,
-      rate: data.rate,
-      qtyOnHand: data.qtyOnHand,
-      reorderPoint: data.reorderPoint,
-      countryOfOrigin: data.countryOfOrigin,
-      weight: data.weight,
-      notes: data.notes,
-      preferredVendorId: data.preferredVendorId,
-      components: { create: data.components.map((c) => ({ partNumber: c.partNumber, description: c.description })) },
-      links: { create: data.links.map((l) => ({ label: l.label, url: l.url })) },
-    },
-    include,
+  const item = await prisma.$transaction(async (tx) => {
+    const created = await tx.item.create({
+      data: {
+        itemNumber: data.itemNumber,
+        description: data.description,
+        um: data.um,
+        rate: data.rate,
+        qtyOnHand: data.qtyOnHand,
+        reorderPoint: data.reorderPoint,
+        countryOfOrigin: data.countryOfOrigin,
+        weight: data.weight,
+        notes: data.notes,
+        preferredVendorId: data.preferredVendorId,
+        components: { create: data.components.map((c) => ({ partNumber: c.partNumber, description: c.description })) },
+        links: { create: data.links.map((l) => ({ label: l.label, url: l.url })) },
+      },
+      include,
+    });
+    // Opening stock is a movement like any other, so the ledger starts at
+    // zero for every item and start-plus-movements always equals on hand (R4-26).
+    if (created.qtyOnHand !== 0) {
+      await tx.stockMovement.create({
+        data: {
+          itemId: created.id,
+          itemNumber: created.itemNumber,
+          delta: created.qtyOnHand,
+          qtyAfter: created.qtyOnHand,
+          reason: "OPENING",
+          refType: "item",
+          refId: created.id,
+          actorId: req.account!.id,
+          actorUsername: req.account!.username,
+        },
+      });
+    }
+    return created;
   });
   logAudit(req.account!, "ITEM_CREATED", "item", item.id, item.itemNumber, { qtyOnHand: item.qtyOnHand });
   res.status(201).json(item);
@@ -155,6 +177,10 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
         },
       });
       if (result.count === 0) throw new ConflictError();
+      // A renamed, repriced or redescribed item that QuickBooks knows gets updated there too.
+      if (data.itemNumber !== existing.itemNumber || !existing.rate.equals(new Prisma.Decimal(data.rate)) || data.description !== existing.description) {
+        await enqueueIfSynced(tx, "item", id);
+      }
       await syncChildren(tx.itemComponent, id, "itemId", data.components, (c) => ({
         partNumber: c.partNumber,
         description: c.description,
@@ -186,6 +212,7 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
         await tx.salesOrderLine.updateMany({ where: { itemId: id }, data: { item: data.itemNumber } });
         await tx.vendorPoLine.updateMany({ where: { itemId: id }, data: { itemNumber: data.itemNumber } });
         await tx.returnLine.updateMany({ where: { itemId: id }, data: { itemNumber: data.itemNumber } });
+        await tx.stockMovement.updateMany({ where: { itemId: id }, data: { itemNumber: data.itemNumber } });
         await tx.customerPriceOverride.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
         await tx.customerPartMapping.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
       }

@@ -58,6 +58,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   const body = await res.json().catch(() => null);
+  // The account has to choose a new password before the API will do
+  // anything else for it - go there rather than showing a bare error.
+  if (res.status === 403 && body?.code === "PASSWORD_CHANGE_REQUIRED" && typeof window !== "undefined") {
+    if (!window.location.hash.startsWith("#/change-password")) window.location.assign("#/change-password");
+  }
   if (!res.ok) {
     const message =
       body && typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
@@ -68,8 +73,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   get: <T>(path: string): Promise<T> => request<T>(path),
-  post: <T>(path: string, data?: unknown): Promise<T> =>
-    request<T>(path, { method: "POST", body: JSON.stringify(data) }),
+  // `idempotencyKey` makes a create safe to repeat: the server answers a
+  // second request carrying the same key with the first result.
+  post: <T>(path: string, data?: unknown, opts: { idempotencyKey?: string } = {}): Promise<T> =>
+    request<T>(path, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: opts.idempotencyKey ? { "Idempotency-Key": opts.idempotencyKey } : undefined,
+    }),
   put: <T>(path: string, data?: unknown): Promise<T> =>
     request<T>(path, { method: "PUT", body: JSON.stringify(data) }),
   patch: <T>(path: string, data?: unknown): Promise<T> =>

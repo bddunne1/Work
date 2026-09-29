@@ -17,6 +17,9 @@ export interface Account {
   // A deactivated account can't log in or use an existing session -
   // reversible, unlike deleting the account outright.
   active: boolean;
+  // Set after seeding or an admin password reset: the person can sign in
+  // but must pick their own password before doing anything else.
+  mustChangePassword: boolean;
   createdAt?: string;
 }
 
@@ -27,7 +30,8 @@ interface ApiAccount {
   permissions: Record<string, AccessLevel> | null;
   initials: string;
   color: string;
-  active: boolean;
+  active?: boolean;
+  mustChangePassword?: boolean;
   createdAt?: string;
 }
 
@@ -39,9 +43,18 @@ function mapAccount(a: ApiAccount): Account {
     permissions: a.permissions ?? undefined,
     initials: a.initials,
     color: a.color,
-    active: a.active,
+    active: a.active ?? true,
+    mustChangePassword: a.mustChangePassword ?? false,
     createdAt: a.createdAt,
   };
+}
+
+// Self-service password change. The server ends every other session for the
+// account and hands back a fresh token for this one.
+export async function changePassword(currentPassword: string, newPassword: string): Promise<Account> {
+  const res = await api.post<{ token: string; account: ApiAccount }>("/api/auth/change-password", { currentPassword, newPassword });
+  setToken(res.token);
+  return mapAccount(res.account);
 }
 
 // On failure, `error` carries the server's message (e.g. wrong credentials

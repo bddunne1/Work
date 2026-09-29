@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import StockLedger from "../components/StockLedger";
 import type { AuditLogEntry } from "../lib/auditStore";
 import { listAuditLog } from "../lib/auditStore";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
 
 function humanizeAction(action: string): string {
   return action
@@ -69,6 +70,9 @@ export default function AuditLog() {
     error: "",
   });
   const [item, setItem] = useState("");
+  // The ledger query waits for typing to pause; each keystroke used to be a
+  // full scan of the movements table (PF-06).
+  const itemQuery = useDebouncedValue(item.trim(), 300);
   const [reason, setReason] = useState("");
 
   const filterKey = JSON.stringify({ area, actor: actor.trim(), from, to });
@@ -199,7 +203,7 @@ export default function AuditLog() {
               To <input id="ledger-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </label>
           </div>
-          <StockLedger showItem filters={{ item: item.trim() || undefined, reason: reason || undefined, from: from || undefined, to: to || undefined }} />
+          <StockLedger showItem filters={{ item: itemQuery || undefined, reason: reason || undefined, from: from || undefined, to: to || undefined }} />
         </>
       )}
     </div>

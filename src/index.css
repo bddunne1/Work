@@ -3728,3 +3728,38 @@ a.dash-lookup-row:focus-visible {
     box-shadow: none;
   }
 }
+
+
+/* Invoices / QuickBooks sync */
+.sync-pill {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.sync-pill-synced { color: #2b7a4b; border-color: #2b7a4b; background: rgba(43, 122, 75, 0.09); }
+.sync-pill-pending, .sync-pill-processing { color: #7d6c0c; border-color: #b9a30f; background: rgba(185, 163, 15, 0.1); }
+.sync-pill-failed { color: #b9620f; border-color: #b9620f; background: rgba(185, 98, 15, 0.09); }
+.sync-pill-dead { color: #b8322a; border-color: #b8322a; background: rgba(184, 50, 42, 0.08); }
+.row-void td { color: var(--muted); text-decoration: line-through; }
+.row-void td:last-child, .row-void td:nth-last-child(2) { text-decoration: none; }
+.doc-void { position: relative; }
+.doc-void-banner {
+  position: absolute;
+  top: 40px;
+  right: 24px;
+  transform: rotate(-12deg);
+  border: 3px solid #b8322a;
+  color: #b8322a;
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: 0.2em;
+  padding: 4px 14px;
+  border-radius: 6px;
+  opacity: 0.8;
+  pointer-events: none;
+}

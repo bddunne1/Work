@@ -9,7 +9,7 @@
 //  8. every main page loads for each role without console/page errors.
 //   SIM_API=http://localhost:4002 SIM_UI=http://localhost:5173 node sim/ui-check.mjs
 import { chromium } from "playwright";
-import { post, get, put, mapOrder, mapPo } from "./lib.mjs";
+import { post, get, mapOrder, mapPo } from "./lib.mjs";
 
 const UI = process.env.SIM_UI ?? "http://localhost:5173";
 const results = [];
@@ -27,7 +27,7 @@ async function login(page, username, password) {
 }
 
 async function main() {
-  const admin = { token: (await post(null, "/api/auth/login", { username: "admin", password: "123" })).token };
+  const admin = { token: (await post(null, "/api/auth/login", { username: "admin", password: process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026" })).token };
   admin.account = (await get(admin, "/api/auth/me")).account;
 
   // Stage an order at "Pick & Packed, documents printed" through the API.
@@ -37,10 +37,12 @@ async function main() {
   const c = customers[0];
   let o = mapOrder(await post(admin, "/api/sales-orders", { poNumber: "UI-CHECK", orderDate: "2026-09-24", dueDate: "2026-09-30", customerId: c.id, billTo: c.billTo, shipTo: c.billTo, lineItems: [{ item: item.itemNumber, description: "ui", um: "EA", ordered: 7, rate: 1 }] }));
   const li = o.lineItems[0];
-  o = mapOrder(await put(admin, `/api/sales-orders/${o.soNumber}`, { ...o, status: "Checked" }));
-  o = mapOrder(await put(admin, `/api/sales-orders/${o.soNumber}`, { ...o, status: "Allocated", allocation: { lines: [{ lineItemId: li.id, allocatedQty: 7 }], fullyAllocated: true, decidedAt: new Date().toISOString() } }));
-  const now = new Date().toISOString();
-  o = mapOrder(await put(admin, `/api/sales-orders/${o.soNumber}`, { ...o, status: "Pick & Packed", pickPackStatus: "Complete", pickedAt: now, pendingShipment: [{ lineItemId: li.id, qty: 7 }], allocation: { ...o.allocation, lines: [{ lineItemId: li.id, allocatedQty: 0 }] }, pickListPrintedAt: now, packingSlipPrintedAt: now }));
+  // Workflow steps are server commands now (the plain PUT ignores status,
+  // allocation and the staged pick).
+  o = mapOrder(await post(admin, `/api/sales-orders/${o.soNumber}/check`, { version: o.version }));
+  o = mapOrder(await post(admin, `/api/sales-orders/${o.soNumber}/allocate`, { version: o.version, lines: [{ lineItemId: li.id, allocatedQty: 7 }] }));
+  o = mapOrder((await post(admin, "/api/sales-orders/release", { orders: [{ soNumber: o.soNumber, version: o.version }] })).orders[0]);
+  o = mapOrder(await post(admin, `/api/sales-orders/${o.soNumber}/mark-printed`, { version: o.version, pickList: true, packingSlip: true }));
   const before = (await get(admin, `/api/items/${item.id}`)).qtyOnHand;
 
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
@@ -149,7 +151,7 @@ async function main() {
   // 7. Stock ledger on Item Profile.
   {
     const page = await newPage();
-    await login(page, "admin", "123");
+    await login(page, "admin", process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026");
     await page.goto(`${UI}/#/items/${item.id}`);
     await page.getByRole("cell", { name: "Returned to stock", exact: true }).first().waitFor({ timeout: 10_000 }).catch(() => {});
     const shippedRow = await page.getByRole("cell", { name: "Shipped", exact: true }).count();
@@ -170,7 +172,7 @@ async function main() {
   };
   for (const [user, paths] of Object.entries(sweep)) {
     const page = await newPage();
-    await login(page, user, user === "admin" ? "123" : "Sim-pass-1");
+    await login(page, user, user === "admin" ? (process.env.SIM_ADMIN_PASSWORD ?? "Sim-Director-2026") : "Sim-pass-1");
     for (const p of paths) {
       const before = errors.length;
       await page.goto(`${UI}/#${p}`);

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { logAudit } from "../lib/audit.js";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { HttpError } from "../lib/conflictError.js";
 import { prisma } from "../prisma.js";
@@ -8,6 +9,12 @@ const router = Router();
 
 router.use(requireAuth);
 
+// Document counters the server itself knows about. Numbers are assigned
+// inside each document's create transaction (see salesOrders.ts,
+// vendorPurchaseOrders.ts, returns.ts) - the old POST /:key/next that let
+// any signed-in account reserve (and so burn) numbers is gone (R5-17).
+const KNOWN_KEYS = new Set(["salesOrder", "vendorPo", "return"]);
+
 // Read-only peek at the current stored value (the last number actually
 // issued) - for display, e.g. Settings showing "next number" before
 // anyone commits to it. Doesn't reserve or change anything.
@@ -15,15 +22,6 @@ router.get("/:key", async (req, res) => {
   const row = await prisma.counter.findUnique({ where: { key: req.params.key } });
   res.json({ key: req.params.key, value: row?.value ?? null });
 });
-
-const nextSchema = z.object({ start: z.number().int() });
-
-// Atomically reserves and returns the next number for `key`, seeding it at
-// `start` the first time it's ever used. Two concurrent callers can never
-// get the same number back - this is what a document-creating save calls.
-// Only document counters the server itself knows about - otherwise any
-// signed-in account could mint arbitrary counter rows.
-const KNOWN_KEYS = new Set(["salesOrder", "vendorPo", "return"]);
 
 // Highest number already issued for `key`, so an override can't set the
 // counter back onto numbers in use (every later create would then fail its
@@ -42,22 +40,7 @@ async function maxIssued(key: string): Promise<number> {
   return Number(rows[0]?.max ?? 0);
 }
 
-router.post("/:key/next", async (req, res) => {
-  if (!KNOWN_KEYS.has(req.params.key)) throw new HttpError(404, "Unknown counter");
-  const parsed = nextSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten() });
-    return;
-  }
-  const updated = await prisma.counter.upsert({
-    where: { key: req.params.key },
-    create: { key: req.params.key, value: parsed.data.start },
-    update: { value: { increment: 1 } },
-  });
-  res.json({ key: req.params.key, value: updated.value });
-});
-
-const setSchema = z.object({ value: z.number().int() });
+const setSchema = z.object({ value: z.number().int().nonnegative() });
 
 // Admin override (Settings > Document Numbering) - sets the stored value
 // outright, same permission gate as writing a Setting.
@@ -79,11 +62,13 @@ router.put("/:key", async (req: AuthedRequest, res) => {
   if (parsed.data.value < highest) {
     throw new HttpError(400, `Number ${parsed.data.value + 1} is at or below one already in use (highest is ${highest}). Choose ${highest + 1} or higher.`);
   }
+  const previous = await prisma.counter.findUnique({ where: { key: req.params.key } });
   const updated = await prisma.counter.upsert({
     where: { key: req.params.key },
     create: { key: req.params.key, value: parsed.data.value },
     update: { value: parsed.data.value },
   });
+  logAudit(account!, "COUNTER_SET", "counter", req.params.key, req.params.key, { from: previous?.value ?? null, to: updated.value });
   res.json({ key: req.params.key, value: updated.value });
 });
 

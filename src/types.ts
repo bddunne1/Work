@@ -1,3 +1,4 @@
+import { fromCents, lineAmountCents, taxCents } from "./lib/money";
 import { localIsoDate } from "./lib/dateUtils";
 
 export interface Address {
@@ -185,6 +186,12 @@ export interface Customer {
   fob: string;
   rep: string;
   shipCompleteOnly: boolean;
+  // Invoices for an exempt customer (a reseller with a certificate on file)
+  // carry no sales tax whatever the order's rate says.
+  taxExempt?: boolean;
+  // False once the customer is retired: kept for its history, hidden from
+  // the pickers on new orders and returns.
+  active?: boolean;
   // When set, product labels printed for this customer show this brand
   // name instead of ours - for customers who private-label our products.
   privateLabelName?: string;
@@ -294,7 +301,7 @@ export function emptyLineItem(): LineItem {
 }
 
 export function lineAmount(li: LineItem): number {
-  return (li.ordered || 0) * (li.rate || 0);
+  return fromCents(lineAmountCents(li.ordered || 0, li.rate || 0));
 }
 
 export function allocatedQtyFor(order: Pick<PurchaseOrder, "allocation">, lineItemId: string): number {
@@ -459,16 +466,23 @@ export function shipmentRecordWeight(
   }, 0);
 }
 
+// Totals in integer cents, the same arithmetic the server uses for the
+// invoice, so the order page never shows a total one cent off its invoice.
+export function orderSubtotalCents(order: Pick<PurchaseOrder, "lineItems">): number {
+  return order.lineItems.reduce((sum, li) => sum + lineAmountCents(li.ordered || 0, li.rate || 0), 0);
+}
+
 export function orderSubtotal(order: Pick<PurchaseOrder, "lineItems">): number {
-  return order.lineItems.reduce((sum, li) => sum + lineAmount(li), 0);
+  return fromCents(orderSubtotalCents(order));
 }
 
 export function orderTax(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
-  return orderSubtotal(order) * ((order.taxRate || 0) / 100);
+  return fromCents(taxCents(orderSubtotalCents(order), order.taxRate || 0));
 }
 
 export function orderTotal(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
-  return orderSubtotal(order) + orderTax(order);
+  const subtotal = orderSubtotalCents(order);
+  return fromCents(subtotal + taxCents(subtotal, order.taxRate || 0));
 }
 
 // Shared search-box matcher: S.O. #, P.O. #, or customer name, case-insensitive.
@@ -649,4 +663,93 @@ export function matchesReturnQuery(ra: Pick<ReturnAuthorization, "raNumber" | "s
     (ra.soNumber ?? "").toLowerCase().includes(q) ||
     ra.billTo.name.toLowerCase().includes(q)
   );
+}
+
+// --- Invoices and credit memos --------------------------------------------
+// Raised by the server: an invoice per shipment (inside the ship
+// transaction) and a credit memo per received return. This system owns the
+// documents; QuickBooks owns the money (receivables, payments, the ledger) -
+// `sync` says how far along the push to QuickBooks is.
+
+export type DocStatus = "ISSUED" | "VOID";
+
+export interface SyncInfo {
+  // NOT_QUEUED | PENDING | PROCESSING | FAILED | DEAD | SYNCED
+  status: string;
+  externalId: string | null;
+  lastError: string | null;
+}
+
+export interface InvoiceLine {
+  id: string;
+  salesOrderLineId?: string | null;
+  itemId?: string | null;
+  item: string;
+  description: string;
+  um: string;
+  qty: number;
+  rate: number;
+  amount: number;
+}
+
+export interface Invoice {
+  invoiceNumber: string;
+  soNumber: number;
+  shipmentRecordId?: string | null;
+  customerId?: string | null;
+  customerName: string;
+  billTo: Address;
+  shipTo: Address;
+  poNumber: string;
+  terms: string;
+  rep: string;
+  invoiceDate: string;
+  dueDate: string;
+  subtotal: number;
+  taxRate: number;
+  tax: number;
+  total: number;
+  status: DocStatus;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  notes: string;
+  createdAt: string;
+  lines: InvoiceLine[];
+  sync?: SyncInfo | null;
+}
+
+export interface CreditMemoLine {
+  id: string;
+  returnLineId?: string | null;
+  invoiceNumber?: string | null;
+  itemId?: string | null;
+  item: string;
+  description: string;
+  um: string;
+  qty: number;
+  rate: number;
+  amount: number;
+}
+
+export interface CreditMemo {
+  creditMemoNumber: string;
+  raNumber: string;
+  customerId?: string | null;
+  customerName: string;
+  billTo: Address;
+  soNumber?: string | null;
+  memoDate: string;
+  subtotal: number;
+  taxRate: number;
+  tax: number;
+  total: number;
+  status: DocStatus;
+  voidedAt?: string | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
+  reason: string;
+  createdAt: string;
+  lines: CreditMemoLine[];
+  sync?: SyncInfo | null;
 }

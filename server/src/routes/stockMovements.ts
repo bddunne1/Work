@@ -24,7 +24,9 @@ router.get("/", async (req, res) => {
   if (str("from")) createdAt.gte = new Date(str("from")!);
   if (str("to")) createdAt.lt = new Date(new Date(str("to")!).getTime() + 86_400_000);
   if (Object.keys(createdAt).length) where.createdAt = createdAt;
-  const limit = Math.min(Number(req.query.limit) || 200, 1000);
+  // The Activity Log asks for 300; the day simulation reconciles a whole
+  // day (opening movements included) and needs more.
+  const limit = Math.min(Number(req.query.limit) || 200, 10_000);
   const rows = await prisma.stockMovement.findMany({ where, orderBy: { createdAt: "desc" }, take: limit });
   res.json(rows);
 });

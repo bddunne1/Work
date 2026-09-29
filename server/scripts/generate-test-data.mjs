@@ -362,6 +362,16 @@ async function main() {
   if (RESET) {
     console.log("Deleting existing business data (accounts and settings are kept)...");
     await prisma.$transaction([
+      // Accounting documents and the QuickBooks bridge's bookkeeping for the
+      // records being deleted (the connection itself is kept).
+      prisma.creditMemoLine.deleteMany(),
+      prisma.creditMemo.deleteMany(),
+      prisma.invoiceLine.deleteMany(),
+      prisma.invoice.deleteMany(),
+      prisma.syncOutbox.deleteMany(),
+      prisma.syncLog.deleteMany(),
+      prisma.externalRef.deleteMany(),
+      prisma.idempotencyKey.deleteMany(),
       prisma.stockMovement.deleteMany(),
       prisma.returnLine.deleteMany(),
       prisma.returnAuthorization.deleteMany(),
@@ -800,6 +810,69 @@ async function main() {
   const closed = new Set(pos.filter((p) => p.status === "CLOSED").map((p) => p.poNumber));
   for (const l of poLines) if (!closed.has(l.poNumber)) onPo.set(l.itemId, (onPo.get(l.itemId) ?? 0) + Math.max(0, l.orderedQty - l.receivedQty));
 
+  // ---------------------------------------------------- invoices and credit memos
+  // What the API raises itself: an invoice for every shipment (prices from
+  // the order line, whole-cent line amounts, tax at the order's rate unless
+  // the customer is tax exempt, due date from the terms) and a credit memo
+  // for every received return, priced from the invoice that billed the
+  // item. They are NOT queued for QuickBooks - test history should never be
+  // pushed to a connected company file.
+  const cents = (rate, qty) => Math.round(rate * 100) * qty;
+  const taxOf = (subtotalCents, rate) => Math.round((subtotalCents * rate) / 100);
+  const termsDays = (terms) => {
+    const t = terms.trim().toLowerCase();
+    if (!t) return 30;
+    if (/receipt|cod|prepaid|cash|credit card/.test(t)) return 0;
+    const net = /net\s*(\d{1,3})/.exec(t);
+    return net ? Number(net[1]) : 30;
+  };
+  const utcDay = (d) => new Date(d.toISOString().slice(0, 10));
+  const plusDays = (d, n) => new Date(d.getTime() + n * 86400000);
+  const orderBySo = new Map(orders.map((o) => [o.soNumber, o]));
+  const customerById = new Map(customers.map((c) => [c.id, c]));
+  const invoices = [];
+  const invoiceLines = [];
+  const invoicesBySo = new Map();
+  let invoiceNumber = 20000;
+  for (const sh of [...shipments].sort((a, b) => a.shippedAt - b.shippedAt)) {
+    const o = orderBySo.get(sh.soNumber);
+    const c = customerById.get(o.customerId);
+    invoiceNumber++;
+    const inv = `INV-${invoiceNumber}`;
+    let subtotal = 0;
+    for (const sl of sh.lines) {
+      const l = lineById.get(sl.lineItemId);
+      const amount = cents(l.rate, sl.qty);
+      subtotal += amount;
+      invoiceLines.push({ id: randomUUID(), invoiceNumber: inv, salesOrderLineId: l.id, itemId: l.itemId, item: l.item, description: l.description, um: l.um, qty: sl.qty, rate: l.rate, amount: amount / 100 });
+    }
+    const taxRate = c.taxRate === 0 ? 0 : o.taxRate;
+    const tax = taxOf(subtotal, taxRate);
+    const invoiceDate = utcDay(sh.shippedAt);
+    invoices.push({ invoiceNumber: inv, soNumber: o.soNumber, shipmentRecordId: sh.id, customerId: c.id, customerName: o.billTo.name, billTo: o.billTo, shipTo: o.shipTo, poNumber: o.poNumber, terms: o.terms, rep: o.rep, invoiceDate, dueDate: plusDays(invoiceDate, termsDays(o.terms)), subtotal: subtotal / 100, taxRate, tax: tax / 100, total: (subtotal + tax) / 100, status: "ISSUED", createdAt: sh.shippedAt });
+    (invoicesBySo.get(o.soNumber) ?? invoicesBySo.set(o.soNumber, []).get(o.soNumber)).push({ inv, taxRate, lines: invoiceLines.slice(-sh.lines.length) });
+  }
+  const creditMemos = [];
+  const creditMemoLines = [];
+  let creditMemoNumber = 30000;
+  for (const ra of [...returns].filter((r) => r.receivedAt).sort((a, b) => a.receivedAt - b.receivedAt)) {
+    creditMemoNumber++;
+    const cm = `CM-${creditMemoNumber}`;
+    const invs = (invoicesBySo.get(Number(ra.soNumber)) ?? []).slice().reverse();
+    let subtotal = 0;
+    let taxRate;
+    for (const rl of returnLines.filter((x) => x.raNumber === ra.raNumber)) {
+      const billed = invs.map((i) => ({ i, line: i.lines.find((x) => x.item === rl.itemNumber) })).find((x) => x.line);
+      const rate = billed ? billed.line.rate : rl.rate;
+      if (billed && taxRate === undefined) taxRate = billed.i.taxRate;
+      const amount = cents(rate, rl.qty);
+      subtotal += amount;
+      creditMemoLines.push({ id: randomUUID(), creditMemoNumber: cm, returnLineId: rl.id, invoiceNumber: billed?.i.inv ?? null, itemId: rl.itemId, item: rl.itemNumber, description: rl.description, um: rl.um, qty: rl.qty, rate, amount: amount / 100 });
+    }
+    const tax = taxOf(subtotal, taxRate ?? 0);
+    creditMemos.push({ creditMemoNumber: cm, raNumber: ra.raNumber, customerId: ra.customerId, customerName: ra.billTo.name, billTo: ra.billTo, soNumber: ra.soNumber, memoDate: utcDay(ra.receivedAt), subtotal: subtotal / 100, taxRate: taxRate ?? 0, tax: tax / 100, total: (subtotal + tax) / 100, reason: ra.reason, status: "ISSUED", createdAt: ra.receivedAt });
+  }
+
   // ---------------------------------------------------- write
   const chunked = async (label, model, rows, size = 4000) => {
     for (let i = 0; i < rows.length; i += size) await model.createMany({ data: rows.slice(i, i + size) });
@@ -808,7 +881,7 @@ async function main() {
   console.log("Writing...");
   await chunked("vendors", prisma.vendor, vendorRows);
   await chunked("items", prisma.item, items.map((i) => ({ id: i.id, itemNumber: i.itemNumber, description: i.description, um: i.um, rate: i.rate, qtyOnHand: i.qtyOnHand, qtyOnPurchaseOrder: onPo.get(i.id) ?? 0, reorderPoint: i.reorderPoint, countryOfOrigin: i.countryOfOrigin, weight: i.weight, preferredVendorId: i.preferredVendorId, createdAt: atTime(firstDay, 6) })));
-  await chunked("customers", prisma.customer, customers.map((c) => ({ id: c.id, name: c.name, accountNumber: c.accountNumber, billTo: c.billTo, terms: c.terms, shipVia: c.shipVia, fob: c.fob, rep: c.rep, shipCompleteOnly: c.shipCompleteOnly, privateLabelName: c.privateLabelName, routingGuide: c.routingGuide ?? undefined, createdAt: atTime(firstDay, 6) })));
+  await chunked("customers", prisma.customer, customers.map((c) => ({ id: c.id, name: c.name, accountNumber: c.accountNumber, billTo: c.billTo, terms: c.terms, shipVia: c.shipVia, fob: c.fob, rep: c.rep, shipCompleteOnly: c.shipCompleteOnly, taxExempt: c.taxRate === 0, privateLabelName: c.privateLabelName, routingGuide: c.routingGuide ?? undefined, createdAt: atTime(firstDay, 6) })));
   await chunked("ship-to locations", prisma.shippingLocation, customers.flatMap((c) => c.locations.map((l) => ({ id: l.id, customerId: c.id, label: l.label, address: l.address }))));
   await chunked("price overrides", prisma.customerPriceOverride, customers.flatMap((c) => c.overrides.map((o) => ({ id: o.id, customerId: c.id, itemNumber: o.itemNumber, customerPartNumber: o.customerPartNumber, description: o.description, price: o.price, weight: o.weight }))));
   await chunked("part-number mappings", prisma.customerPartMapping, customers.flatMap((c) => c.partMap.map((m) => ({ ...m, customerId: c.id }))));
@@ -822,9 +895,13 @@ async function main() {
   await chunked("returns (RAs)", prisma.returnAuthorization, returns);
   await chunked("return lines", prisma.returnLine, returnLines);
   await chunked("stock movements", prisma.stockMovement, movements);
+  await chunked("invoices", prisma.invoice, invoices);
+  await chunked("invoice lines", prisma.invoiceLine, invoiceLines);
+  await chunked("credit memos", prisma.creditMemo, creditMemos);
+  await chunked("credit memo lines", prisma.creditMemoLine, creditMemoLines);
 
   // Document counters hold the last number issued.
-  for (const [key, value] of [["salesOrder", soNumber], ["vendorPo", poNumber], ["return", raNumber]]) {
+  for (const [key, value] of [["salesOrder", soNumber], ["vendorPo", poNumber], ["return", raNumber], ["invoice", invoiceNumber], ["creditMemo", creditMemoNumber]]) {
     await prisma.counter.upsert({ where: { key }, create: { key, value }, update: { value } });
   }
   await prisma.$executeRawUnsafe(`ANALYZE`);
@@ -839,7 +916,8 @@ async function main() {
   console.log(`  Orders by status: ${Object.entries(byStatus).map(([k, v]) => `${k} ${v}`).join(", ")} (Pick & Packed: ${printed} printed, ${byStatus.PICK_PACKED - printed} not yet)`);
   console.log(`  Entered today: ${todayOrders}; shipped today: ${shippedToday}; short items (no free stock): ${shortItems.size}`);
   console.log(`  Final cycle-count adjustments: ${adjustedUnits.toLocaleString()} units (${((100 * adjustedUnits) / Math.max(1, movedUnits)).toFixed(1)}% of all stock movement)`);
-  console.log(`  Next numbers: S.O. ${soNumber + 1}, ${`PO-${poNumber + 1}`}, RA-${raNumber + 1}`);
+  console.log(`  Next numbers: S.O. ${soNumber + 1}, PO-${poNumber + 1}, RA-${raNumber + 1}, INV-${invoiceNumber + 1}, CM-${creditMemoNumber + 1}`);
+  console.log(`  Invoices: ${invoices.length.toLocaleString()} ($${Math.round(invoices.reduce((a, i) => a + i.total, 0)).toLocaleString()}); credit memos: ${creditMemos.length}. None queued for QuickBooks.`);
   console.log("Restart the API so its caches pick up the new data.");
 }
 

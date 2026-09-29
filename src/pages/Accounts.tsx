@@ -130,6 +130,10 @@ export default function Accounts() {
       setError("Username and password are required.");
       return;
     }
+    if (password.length < 10) {
+      setError("The temporary password must be at least 10 characters. The person picks their own at first sign-in.");
+      return;
+    }
     if (accounts.some((a) => a.username.toLowerCase() === username.trim().toLowerCase())) {
       setError("That username is already taken.");
       return;
@@ -264,8 +268,8 @@ export default function Accounts() {
               <input value={username} onChange={(e) => setUsername(e.target.value)} />
             </label>
             <label className="form-field">
-              Password
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              Temporary password
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={10} placeholder="At least 10 characters" />
             </label>
             <label className="form-field">
               Initials (optional)
@@ -363,7 +367,13 @@ export default function Accounts() {
                   </td>
                   <td>
                     {a.active ? (
-                      "Active"
+                      a.mustChangePassword ? (
+                        <span className="muted" title="Signed in with a temporary password; must choose their own at next sign-in">
+                          Active · temp password
+                        </span>
+                      ) : (
+                        "Active"
+                      )
                     ) : (
                       <span className="danger-link">Deactivated</span>
                     )}
@@ -420,7 +430,8 @@ export default function Accounts() {
                             Reset Password
                             <input
                               type="password"
-                              placeholder="Leave blank to keep current password"
+                              placeholder="Temporary, 10+ characters - they pick their own next sign-in"
+                              minLength={10}
                               value={editPassword}
                               onChange={(e) => setEditPassword(e.target.value)}
                             />

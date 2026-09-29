@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { z } from "zod";
 import { logAudit } from "../lib/audit.js";
+import { passwordProblem } from "../lib/password.js";
 import { requireAdmin, requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { prisma } from "../prisma.js";
 
@@ -17,20 +18,20 @@ function deriveInitials(username: string): string {
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a hex color like #4c6ef5");
 
 const createSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
+  username: z.string().trim().min(2).max(64).regex(/^[A-Za-z0-9._-]+$/, "Letters, digits, dots, dashes and underscores only"),
+  password: z.string().max(200),
   role: z.enum(["ADMIN", "CUSTOM"]),
   permissions: z.record(z.enum(["view", "edit"])).optional(),
-  initials: z.string().optional(),
+  initials: z.string().max(4).optional(),
   color: hexColor.optional(),
 });
 
 const updateSchema = z.object({
   role: z.enum(["ADMIN", "CUSTOM"]).optional(),
   permissions: z.record(z.enum(["view", "edit"])).optional(),
-  initials: z.string().optional(),
+  initials: z.string().max(4).optional(),
   color: hexColor.optional(),
-  password: z.string().min(1).optional(),
+  password: z.string().max(200).optional(),
   active: z.boolean().optional(),
 });
 
@@ -42,6 +43,7 @@ const publicFields = {
   initials: true,
   color: true,
   active: true,
+  mustChangePassword: true,
   createdAt: true,
 };
 
@@ -73,6 +75,11 @@ router.post("/", async (req: AuthedRequest, res) => {
     return;
   }
   const data = parsed.data;
+  const problem = passwordProblem(data.password, data.username);
+  if (problem) {
+    res.status(400).json({ error: problem });
+    return;
+  }
   const existing = await prisma.account.findFirst({
     where: { username: { equals: data.username, mode: "insensitive" } },
   });
@@ -89,6 +96,9 @@ router.post("/", async (req: AuthedRequest, res) => {
       permissions: data.role === "CUSTOM" ? (data.permissions ?? {}) : undefined,
       initials: (data.initials?.trim() || deriveInitials(data.username)).toUpperCase(),
       color: data.color,
+      // An admin chose this password on the person's behalf; they pick
+      // their own at first sign-in.
+      mustChangePassword: true,
     },
     select: publicFields,
   });
@@ -107,6 +117,13 @@ router.put("/:id", async (req: AuthedRequest, res) => {
   if (!target) {
     res.status(404).json({ error: "Account not found" });
     return;
+  }
+  if (data.password !== undefined) {
+    const problem = passwordProblem(data.password, target.username);
+    if (problem) {
+      res.status(400).json({ error: problem });
+      return;
+    }
   }
 
   const demoting = data.role === "CUSTOM" && target.role === "ADMIN";
@@ -135,9 +152,12 @@ router.put("/:id", async (req: AuthedRequest, res) => {
         color: data.color,
         active: data.active,
         passwordHash: data.password ? await bcrypt.hash(data.password, 10) : undefined,
+        // A reset password is a temporary one the admin knows - the person
+        // replaces it at their next sign-in.
+        mustChangePassword: data.password ? true : undefined,
         // A password reset (or deactivation) also ends every existing
         // session - otherwise whoever had the old password stays signed in
-        // for up to 30 days on the token they already hold.
+        // on the token they already hold.
         tokenVersion: data.password || data.active === false ? { increment: 1 } : undefined,
       },
       select: publicFields,

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { logAudit } from "../lib/audit.js";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
 import { prisma } from "../prisma.js";
 
@@ -40,10 +41,15 @@ router.put("/:key", async (req: AuthedRequest, res) => {
     res.status(403).json({ error: "Access denied" });
     return;
   }
+  const previous = await prisma.setting.findUnique({ where: { key: req.params.key } });
   await prisma.setting.upsert({
     where: { key: req.params.key },
     create: { key: req.params.key, value: JSON.stringify(parsed.data.value) },
     update: { value: JSON.stringify(parsed.data.value) },
+  });
+  logAudit(account!, "SETTING_CHANGED", "setting", req.params.key, req.params.key, {
+    from: previous ? JSON.parse(previous.value) : null,
+    to: parsed.data.value,
   });
   res.status(204).end();
 });

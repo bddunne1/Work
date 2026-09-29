@@ -1,21 +1,36 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Pager from "../components/Pager";
 import { useCanEdit } from "../lib/authContext";
-import { listVendorPos } from "../lib/vendorPoStore";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
+import { usePageForFilters } from "../lib/usePagedOrders";
+import { searchVendorPos } from "../lib/vendorPoStore";
 import type { VendorPurchaseOrder } from "../types";
-import { matchesVendorPoQuery, vendorPoCostTotal, vendorPoOutstandingTotal } from "../types";
+import { vendorPoCostTotal, vendorPoOutstandingTotal } from "../types";
 
+// Searched and paged on the server (PF-03) rather than downloading every
+// PO ever written; newest first.
 export default function PurchaseOrders() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [pos, setPos] = useState<VendorPurchaseOrder[]>([]);
+  const [pageSize, setPageSize] = useState(50);
+  const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const [page, setPage] = usePageForFilters(`${debouncedQuery}|${pageSize}`);
+  const requestKey = `${debouncedQuery}|${pageSize}|${page}`;
+  const [result, setResult] = useState<{ key: string; rows: VendorPurchaseOrder[]; total: number } | null>(null);
 
   useEffect(() => {
-    listVendorPos().then(setPos);
-  }, []);
+    let cancelled = false;
+    searchVendorPos({ q: debouncedQuery, page, pageSize }).then((r) => !cancelled && setResult({ key: requestKey, ...r }));
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, page, pageSize, requestKey]);
 
-  const filtered = useMemo(() => pos.filter((p) => matchesVendorPoQuery(p, query)), [pos, query]);
+  const current = result?.key === requestKey ? result : null;
+  const filtered = current?.rows ?? [];
+  const loading = current === null;
 
   return (
     <div className="page">
@@ -41,7 +56,7 @@ export default function PurchaseOrders() {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="muted">No purchase orders yet.</p>
+        <p className="muted">{loading ? "Loading..." : debouncedQuery ? "No purchase orders match your search." : "No purchase orders yet."}</p>
       ) : (
         <table className="data-table">
           <thead>
@@ -72,6 +87,8 @@ export default function PurchaseOrders() {
           </tbody>
         </table>
       )}
+
+      <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

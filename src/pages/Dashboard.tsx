@@ -104,6 +104,13 @@ const LANES: Lane[] = [
     ],
   },
   {
+    lane: "Accounting",
+    color: "#0b7285",
+    modules: [
+      { name: "Invoices", description: "Invoices per shipment, credit memos per return, QuickBooks sync", to: "/invoices", icon: ShipmentHistoryIcon },
+    ],
+  },
+  {
     lane: "Administration",
     color: "#495057",
     modules: [

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listOpenOrders } from "../lib/orderStore";
+import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal } from "../types";
 
-type SortKey = "soNumber" | "customer" | "orderDate" | "total";
+type SortKey = "dueDate" | "soNumber" | "customer" | "orderDate" | "total";
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "dueDate", label: "Due Date (oldest first)" },
   { value: "orderDate", label: "Order Date" },
   { value: "soNumber", label: "S.O. #" },
   { value: "customer", label: "Customer" },
@@ -17,20 +19,27 @@ export default function Allocation() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
-  const [sortBy, setSortBy] = useState<SortKey>("orderDate");
+  const [sortBy, setSortBy] = useState<SortKey>("dueDate");
+  const [showSkipped, setShowSkipped] = useState(false);
+  // Re-read each render: a Skip on the decision page lands in sessionStorage.
+  const skipped = skippedSoNumbers("allocation");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     listOpenOrders().then(setAllOrders);
   }, []);
 
-  const pending = useMemo(() => allOrders.filter((o) => o.status === "Checked"), [allOrders]);
+  const checked = useMemo(() => allOrders.filter((o) => o.status === "Checked"), [allOrders]);
+  const skippedCount = useMemo(() => checked.filter((o) => skipped.has(o.soNumber)).length, [checked, skipped]);
+  const pending = useMemo(() => (showSkipped ? checked : checked.filter((o) => !skipped.has(o.soNumber))), [checked, skipped, showSkipped]);
   const filtered = useMemo(() => pending.filter((o) => matchesOrderQuery(o, query)), [pending, query]);
 
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
+        case "dueDate":
+          return byOldestFirst(a, b) * dir;
         case "soNumber":
           return (Number(a.soNumber) - Number(b.soNumber)) * dir;
         case "customer":
@@ -45,8 +54,8 @@ export default function Allocation() {
   }, [filtered, sortBy, sortDir]);
 
   function startQueue() {
-    if (pending.length === 0) return;
-    const queue = pending.map((o) => o.soNumber);
+    if (sorted.length === 0) return;
+    const queue = sorted.map((o) => o.soNumber);
     navigate(`/allocation/${queue[0]}`, { state: { queue, pos: 0 } });
   }
 
@@ -93,8 +102,16 @@ export default function Allocation() {
           </button>
           <p className="muted">
             {pending.length} order{pending.length === 1 ? "" : "s"} awaiting allocation.
+            {skippedCount > 0 && (
+              <>
+                {" "}
+                <button type="button" className="link-btn" onClick={() => setShowSkipped((v) => !v)}>
+                  {showSkipped ? "Hide" : "Show"} {skippedCount} skipped
+                </button>
+              </>
+            )}
           </p>
-          <button type="button" className="primary-btn" disabled={pending.length === 0} onClick={startQueue}>
+          <button type="button" className="primary-btn" disabled={sorted.length === 0} onClick={startQueue}>
             Review Queue
           </button>
           <Link to="/back-orders" className="secondary-btn">

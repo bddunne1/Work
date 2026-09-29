@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: erp_app
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: erp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://erp_app:erp@localhost:5432/erp_test?schema=public
+      DATABASE_URL: postgresql://erp_app:erp@localhost:5432/erp_test?schema=public
+      SHADOW_DATABASE_URL: postgresql://erp_app:erp@localhost:5432/erp_shadow?schema=public
+      JWT_SECRET: ci-only-secret-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - name: Install
+        run: |
+          npm ci
+          npm --prefix server ci
+      - name: Prisma client
+        run: npm --prefix server run prisma:generate
+      - name: Migrations apply cleanly and match the schema
+        # The drift check replays the migrations into a scratch database and
+        # resets it, so it must not share a database with the test suite.
+        run: |
+          cd server
+          npx prisma migrate deploy
+          PGPASSWORD=erp psql -h localhost -U erp_app -d erp_test -c "CREATE DATABASE erp_shadow;"
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+      - name: Typecheck
+        run: |
+          npx tsc -b
+          cd server && npx tsc --noEmit -p .
+      - name: Lint
+        run: npm run lint
+      - name: Server tests
+        run: npm --prefix server test
+      - name: Frontend build
+        run: npx vite build

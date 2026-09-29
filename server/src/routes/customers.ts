@@ -2,8 +2,9 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { enqueueIfSynced } from "../integrations/sync.js";
 import { logAudit } from "../lib/audit.js";
-import { ConflictError } from "../lib/conflictError.js";
+import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -41,10 +42,10 @@ const priceOverrideSchema = z.object({
   itemNumber: z.string(),
   customerPartNumber: z.string().default(""),
   description: z.string().default(""),
-  price: z.number(),
-  pricePerFt: z.number().nullish(),
-  length: z.number().nullish(),
-  weight: z.number().nullish(),
+  price: z.number().finite().nonnegative(),
+  pricePerFt: z.number().finite().nonnegative().nullish(),
+  length: z.number().finite().nonnegative().nullish(),
+  weight: z.number().finite().nonnegative().nullish(),
 });
 
 const routingGuideSchema = z
@@ -67,6 +68,12 @@ const customerSchema = z.object({
   fob: z.string().default(""),
   rep: z.string().default(""),
   shipCompleteOnly: z.boolean().default(false),
+  // Invoices for an exempt customer (a reseller with a certificate on file)
+  // carry no tax whatever the order's rate says.
+  taxExempt: z.boolean().default(false),
+  // Inactive customers stay on file (their history references them) but are
+  // not offered on new orders or returns.
+  active: z.boolean().default(true),
   // .nullish() not .optional(): Prisma hands back `null` for an unset
   // nullable column, and this same object round-trips through PUT on every
   // save - .optional() alone rejects that `null` with a 400.
@@ -149,6 +156,8 @@ router.post("/", requirePermission("customers", "edit"), async (req: AuthedReque
       fob: data.fob,
       rep: data.rep,
       shipCompleteOnly: data.shipCompleteOnly,
+      taxExempt: data.taxExempt,
+      active: data.active,
       privateLabelName: data.privateLabelName,
       routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
       shipToLocations: { create: data.shipToLocations.map((l) => ({ label: l.label, address: l.address })) },
@@ -205,12 +214,16 @@ router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedReq
           fob: data.fob,
           rep: data.rep,
           shipCompleteOnly: data.shipCompleteOnly,
+          taxExempt: data.taxExempt,
+          active: data.active,
           privateLabelName: data.privateLabelName,
           routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
           version: { increment: 1 },
         },
       });
       if (result.count === 0) throw new ConflictError();
+      // Keep QuickBooks' copy current if it has one.
+      await enqueueIfSynced(tx, "customer", id);
 
       await syncChildren(tx.shippingLocation, id, "customerId", data.shipToLocations, (l) => ({
         label: l.label,
@@ -248,10 +261,29 @@ router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedReq
 });
 
 router.delete("/:id", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {
-  // A missing row is fine (already gone); anything else - notably a
-  // foreign-key violation because orders/POs still reference it - goes to
-  // the error handler as a 409 instead of a false "deleted" 204.
-  const doomed = await prisma.customer.delete({ where: { id: req.params.id } }).catch((err) => {
+  // A customer with history keeps it: orders, returns, invoices and credit
+  // memos all point at the row (the foreign keys are RESTRICT since sprint
+  // 1). Say so, with the counts, and point at the inactive flag (R4-06).
+  const id = req.params.id;
+  const [orders, returns, invoices, creditMemos] = await Promise.all([
+    prisma.salesOrder.count({ where: { customerId: id } }),
+    prisma.returnAuthorization.count({ where: { customerId: id } }),
+    prisma.invoice.count({ where: { customerId: id } }),
+    prisma.creditMemo.count({ where: { customerId: id } }),
+  ]);
+  const history = [
+    [orders, "order"],
+    [returns, "return"],
+    [invoices, "invoice"],
+    [creditMemos, "credit memo"],
+  ].filter(([n]) => Number(n) > 0) as [number, string][];
+  if (history.length > 0) {
+    const parts = history.map(([n, label]) => `${n} ${label}${n === 1 ? "" : "s"}`);
+    throw new HttpError(409, `This customer has ${parts.join(", ")} on file and can't be deleted. Mark it inactive instead - it then disappears from Order Entry and Returns but its history stays.`, { conflict: true });
+  }
+  // A missing row is fine (already gone); anything else goes to the error
+  // handler as a 409 instead of a false "deleted" 204.
+  const doomed = await prisma.customer.delete({ where: { id } }).catch((err) => {
     if (err?.code === "P2025") return null;
     throw err;
   });

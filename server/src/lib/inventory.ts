@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { HttpError } from "./conflictError.js";
 
 type Tx = Prisma.TransactionClient;
@@ -29,17 +29,30 @@ export async function requireItem(tx: Tx, itemNumber: string) {
   return item;
 }
 
+// Takes row locks on a set of items in one fixed order before a transaction
+// touches several of them. Two multi-line operations (a receipt and a
+// shipment, say) that updated items in their own line order could each hold
+// the row the other wanted next - a Postgres deadlock, which aborted one of
+// them with a 500. Locking in id order first means they queue instead.
+export async function lockItems(tx: Tx, itemIds: (string | null | undefined)[]): Promise<void> {
+  const ids = [...new Set(itemIds.filter((id): id is string => Boolean(id)))].sort();
+  if (ids.length < 2) return;
+  await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Item" WHERE "id" = ANY(${ids}::text[]) ORDER BY "id" FOR UPDATE`);
+}
+
 // Moves qtyOnHand by `delta` inside the caller's transaction and writes the
 // matching StockMovement row, so every change to stock is attributable.
 // Pass `itemId` when the line already carries its catalog link; otherwise
 // the item # is resolved (and an unknown item fails the whole transaction).
+// Returns the item row after the move (null when delta is 0) so callers can
+// refuse a result they don't accept - shipping never takes stock below zero.
 export async function adjustOnHand(
   tx: Tx,
   item: { itemId?: string | null; itemNumber: string },
   delta: number,
   ctx: StockContext
-): Promise<void> {
-  if (delta === 0) return;
+): Promise<{ id: string; itemNumber: string; qtyOnHand: number } | null> {
+  if (delta === 0) return null;
   const target = item.itemId
     ? ((await tx.item.findUnique({ where: { id: item.itemId } })) ?? (await requireItem(tx, item.itemNumber)))
     : await requireItem(tx, item.itemNumber);
@@ -60,6 +73,7 @@ export async function adjustOnHand(
       actorUsername: ctx.actor.username,
     },
   });
+  return { id: updated.id, itemNumber: updated.itemNumber, qtyOnHand: updated.qtyOnHand };
 }
 
 // Maps each distinct item # on a set of lines to its catalog id, failing
@@ -158,7 +172,7 @@ export async function assertAllocationAvailable(
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ALLOCATION_LOCK})`;
 
   const others = await tx.salesOrder.findMany({
-    where: { soNumber: { not: soNumber }, status: { notIn: ["SHIPPED", "CANCELLED"] } },
+    where: { soNumber: { not: soNumber }, status: { in: ["ENTERED", "CHECKED", "ALLOCATED", "BACKORDERED", "PICK_PACKED"] } },
     select: { allocation: true, pendingShipment: true, lineItems: { select: { id: true, item: true } } },
   });
   const heldElsewhere = new Map<string, number>();

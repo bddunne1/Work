@@ -8,6 +8,11 @@ const JWT_SECRET: string =
     throw new Error("JWT_SECRET is not set");
   })();
 
+// Sessions used to last 30 days, which on a shared warehouse PC meant a
+// month of someone else's access. A working day plus a margin; the client
+// also signs out after a period of inactivity (see authContext.tsx).
+const TOKEN_TTL = (process.env.TOKEN_TTL ?? "10h") as jwt.SignOptions["expiresIn"];
+
 export type AccessLevel = "view" | "edit";
 
 export interface AuthedAccount {
@@ -17,6 +22,7 @@ export interface AuthedAccount {
   permissions: Record<string, AccessLevel> | null;
   initials: string;
   color: string;
+  mustChangePassword: boolean;
 }
 
 export interface AuthedRequest extends Request {
@@ -24,8 +30,11 @@ export interface AuthedRequest extends Request {
 }
 
 export function signToken(accountId: string, tokenVersion: number): string {
-  return jwt.sign({ sub: accountId, tv: tokenVersion }, JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign({ sub: accountId, tv: tokenVersion }, JWT_SECRET, { expiresIn: TOKEN_TTL });
 }
+
+// The only routes an account that still has to change its password may use.
+const PASSWORD_CHANGE_ALLOWLIST = new Set(["/api/auth/me", "/api/auth/change-password", "/api/auth/logout"]);
 
 export async function requireAuth(req: AuthedRequest, res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
@@ -34,30 +43,36 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
+  let payload: { sub: string; tv?: number };
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { sub: string; tv?: number };
-    const account = await prisma.account.findUnique({ where: { id: payload.sub } });
-    // A token version mismatch means this token was issued before the most
-    // recent Force Logout - treat it exactly like an invalid token. Older
-    // tokens signed before this field existed carry no `tv` claim at all;
-    // those are honored once (tokenVersion starts at 0) rather than mass
-    // logging out every existing session on deploy.
-    if (!account || !account.active || (payload.tv ?? 0) !== account.tokenVersion) {
-      res.status(401).json({ error: !account?.active && account ? "This account has been deactivated." : "Not authenticated" });
-      return;
-    }
-    req.account = {
-      id: account.id,
-      username: account.username,
-      role: account.role,
-      permissions: (account.permissions as Record<string, AccessLevel> | null) ?? null,
-      initials: account.initials,
-      color: account.color,
-    };
-    next();
+    payload = jwt.verify(token, JWT_SECRET) as { sub: string; tv?: number };
   } catch {
     res.status(401).json({ error: "Not authenticated" });
+    return;
   }
+  const account = await prisma.account.findUnique({ where: { id: payload.sub } });
+  // A token version mismatch means this token was issued before the most
+  // recent Force Logout / password change - treat it exactly like an invalid
+  // token. Older tokens signed before this field existed carry no `tv` claim;
+  // those are honored once (tokenVersion starts at 0).
+  if (!account || !account.active || (payload.tv ?? 0) !== account.tokenVersion) {
+    res.status(401).json({ error: account && !account.active ? "This account has been deactivated." : "Not authenticated" });
+    return;
+  }
+  if (account.mustChangePassword && !PASSWORD_CHANGE_ALLOWLIST.has(req.originalUrl.split("?")[0])) {
+    res.status(403).json({ error: "You need to choose a new password before continuing.", code: "PASSWORD_CHANGE_REQUIRED" });
+    return;
+  }
+  req.account = {
+    id: account.id,
+    username: account.username,
+    role: account.role,
+    permissions: (account.permissions as Record<string, AccessLevel> | null) ?? null,
+    initials: account.initials,
+    color: account.color,
+    mustChangePassword: account.mustChangePassword,
+  };
+  next();
 }
 
 export function requireAdmin(req: AuthedRequest, res: Response, next: NextFunction): void {

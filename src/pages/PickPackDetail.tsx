@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { getOrder, listOpenOrders, updateOrder } from "../lib/orderStore";
+import { allocateOrder, getOrder, listOpenOrders, releaseOrders, unallocateOrderCmd } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Item, PurchaseOrder } from "../types";
-import { allocatedQtyFor, availableQty, canUnallocate, qtyAllocatedOnOrders, remainingToShip, unallocateOrder } from "../types";
+import { allocatedQtyFor, availableQty, canUnallocate, qtyAllocatedOnOrders, remainingToShip } from "../types";
 
 export default function PickPackDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -84,18 +84,8 @@ function PickPackDetailInner() {
       lineItemId: li.id,
       allocatedQty: qtys[li.id] ?? allocatedQtyFor(order, li.id),
     }));
-    const fullyAllocated = order.lineItems.every((li) => (qtys[li.id] ?? 0) >= remainingToShip(order, li));
-    const updated: PurchaseOrder = {
-      ...order,
-      allocation: {
-        lines,
-        fullyAllocated,
-        shipCompleteOnly: order.allocation?.shipCompleteOnly,
-        decidedAt: new Date().toISOString(),
-      },
-    };
     try {
-      setOrder(await updateOrder(updated, "Allocated"));
+      setOrder(await allocateOrder(order, lines, order.allocation?.shipCompleteOnly));
       setSaved(true);
     } catch (err) {
       if (isConflictError(err)) {
@@ -112,28 +102,17 @@ function PickPackDetailInner() {
     const releasedLines = order.lineItems.filter((li) => (qtys[li.id] ?? 0) > 0);
     if (releasedLines.length === 0) return;
 
-    const pendingShipment = releasedLines.map((li) => ({ lineItemId: li.id, qty: qtys[li.id] ?? 0 }));
-    const newAllocationLines = order.lineItems.map((li) => ({
-      lineItemId: li.id,
-      allocatedQty: (qtys[li.id] ?? 0) > 0 ? 0 : allocatedQtyFor(order, li.id),
-    }));
-    const pickPackStatus: "Partial" | "Complete" = order.lineItems.every(
-      (li) => remainingToShip(order, li) - (qtys[li.id] ?? 0) <= 0
-    )
-      ? "Complete"
-      : "Partial";
-
+    // Same command the bulk Release Orders list uses: the server stages the
+    // pick, zeroes the released lines' allocation and moves the order on.
+    const lines = order.lineItems.map((li) => ({ lineItemId: li.id, qty: qtys[li.id] ?? 0 }));
     try {
-      await updateOrder({
-        ...order,
-        status: "Pick & Packed",
-        pickPackStatus,
-        pickedAt: new Date().toISOString(),
-        pendingShipment,
-        pickListPrintedAt: undefined,
-        packingSlipPrintedAt: undefined,
-        allocation: order.allocation ? { ...order.allocation, lines: newAllocationLines } : order.allocation,
-      }, "Allocated");
+      const res = await releaseOrders([{ order, lines }]);
+      const failed = res.results.find((r) => !r.ok);
+      if (failed) {
+        alert(failed.error ?? `S.O. #${order.soNumber} didn't release.`);
+        setOrder(await getOrder(order.soNumber));
+        return;
+      }
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -155,7 +134,7 @@ function PickPackDetailInner() {
       return;
     }
     try {
-      await updateOrder(unallocateOrder(order), order.status);
+      await unallocateOrderCmd(order);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);

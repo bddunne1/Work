@@ -1,6 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
-import type { OrderStatus, PurchaseOrder, ShipmentLine } from "../types";
+import type { BolDetails, PurchaseOrder, ShipmentLine } from "../types";
 
 const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
@@ -145,22 +145,76 @@ export async function getOrder(soNumber: string): Promise<PurchaseOrder | undefi
 // Creates a new order - the server assigns the real S.O. # atomically, so
 // this takes everything except that field and returns the saved record
 // (with its real soNumber) to the caller.
-export async function saveOrder(order: Omit<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
-  return mapOrder(await api.post<PurchaseOrder>("/api/sales-orders", order));
+export async function saveOrder(order: Omit<PurchaseOrder, "soNumber">, idempotencyKey?: string): Promise<PurchaseOrder> {
+  return mapOrder(await api.post<PurchaseOrder>("/api/sales-orders", order, { idempotencyKey }));
 }
 
-// Saves the whole order and returns the server's copy, including its new
-// `version` - callers that keep working with the order afterwards must use
-// the returned value, or their next save is a guaranteed 409.
+// Saves an order's header fields and (while it is Entered or Checked) its
+// lines, and returns the server's copy, including its new `version` -
+// callers that keep working with the order afterwards must use the returned
+// value, or their next save is a guaranteed 409.
 //
-// `expectedStatus` is the status the calling page is acting on (e.g.
-// Validation only ever checks an "Entered" order). If the order has moved
-// on since the page loaded it, the server refuses with a 409 instead of
-// dragging it backwards through the workflow.
-export async function updateOrder(order: PurchaseOrder, expectedStatus?: OrderStatus): Promise<PurchaseOrder> {
+// Everything else on the record (status, who checked it, allocation, the
+// staged pick, printed stamps, shipment history) is server-owned and moves
+// only through the command functions below; the server ignores it if sent.
+export async function updateOrder(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return mapOrder(await api.put<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}`, order));
+}
+
+// ---- Workflow commands ------------------------------------------------------
+// Each one sends the order's `version` so a decision made from a stale
+// screen fails with a 409 instead of dragging the order backwards.
+
+async function command(order: PurchaseOrder, name: string, body: Record<string, unknown> = {}): Promise<PurchaseOrder> {
   return mapOrder(
-    await api.put<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}`, { ...order, expectedStatus })
+    await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/${name}`, { version: order.version, ...body })
   );
+}
+
+// Validation: Entered -> Checked. The server stamps who checked it.
+export function checkOrder(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return command(order, "check");
+}
+
+// Validation: Checked -> Entered, for an order that needs correcting first.
+export function uncheckOrder(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return command(order, "uncheck");
+}
+
+// Allocation decision (or a revision of an Allocated order's quantities).
+// The server decides the outcome: every remaining unit -> Allocated; nothing,
+// or a partial for a ship-complete-only customer -> Backordered (held, no
+// stock reserved); a partial otherwise -> Allocated for what's on hand.
+export function allocateOrder(
+  order: PurchaseOrder,
+  lines: { lineItemId: string; allocatedQty: number }[],
+  shipCompleteOnly?: boolean | null
+): Promise<PurchaseOrder> {
+  return command(order, "allocate", { lines, shipCompleteOnly: shipCompleteOnly ?? undefined });
+}
+
+// Frees an order's reserved stock and sends it back to Checked. Refused once
+// a pick's documents have printed (see canUnallocate in types.ts).
+export function unallocateOrderCmd(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return command(order, "unallocate");
+}
+
+// Stamps the pick list and/or packing slip printed; `lines` trims the staged
+// quantities first (a shortfall found on the floor) - never increases them.
+export function markPrinted(
+  order: PurchaseOrder,
+  docs: { pickList?: boolean; packingSlip?: boolean },
+  lines?: ShipmentLine[]
+): Promise<PurchaseOrder> {
+  return command(order, "mark-printed", { pickList: Boolean(docs.pickList), packingSlip: Boolean(docs.packingSlip), lines });
+}
+
+export function setEstimatedShipDate(order: PurchaseOrder, date: string | null): Promise<PurchaseOrder> {
+  return command(order, "set-ship-date", { estimatedShipDate: date || null });
+}
+
+export function setBol(order: PurchaseOrder, bol: BolDetails): Promise<PurchaseOrder> {
+  return command(order, "set-bol", { bol });
 }
 
 // Confirms a shipment of `lines`: the server records it, rolls the order to

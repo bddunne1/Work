@@ -1,21 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Pager from "../components/Pager";
 import { useCanEdit } from "../lib/authContext";
-import { listReturns } from "../lib/returnStore";
+import { searchReturns } from "../lib/returnStore";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
+import { usePageForFilters } from "../lib/usePagedOrders";
 import type { ReturnAuthorization } from "../types";
-import { matchesReturnQuery, returnTotal } from "../types";
+import { returnTotal } from "../types";
 
+// Searched and paged on the server (PF-03); newest first.
 export default function Returns() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
-  const [returns, setReturns] = useState<ReturnAuthorization[]>([]);
+  const [pageSize, setPageSize] = useState(50);
+  const debouncedQuery = useDebouncedValue(query.trim(), 300);
+  const [page, setPage] = usePageForFilters(`${debouncedQuery}|${pageSize}`);
+  const requestKey = `${debouncedQuery}|${pageSize}|${page}`;
+  const [result, setResult] = useState<{ key: string; rows: ReturnAuthorization[]; total: number } | null>(null);
 
   useEffect(() => {
-    listReturns().then(setReturns);
-  }, []);
+    let cancelled = false;
+    searchReturns({ q: debouncedQuery, page, pageSize }).then((r) => !cancelled && setResult({ key: requestKey, ...r }));
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, page, pageSize, requestKey]);
 
-  const filtered = useMemo(() => returns.filter((r) => matchesReturnQuery(r, query)), [returns, query]);
+  const current = result?.key === requestKey ? result : null;
+  const filtered = current?.rows ?? [];
+  const loading = current === null;
 
   return (
     <div className="page">
@@ -41,7 +55,7 @@ export default function Returns() {
       </div>
 
       {filtered.length === 0 ? (
-        <p className="muted">No returns yet.</p>
+        <p className="muted">{loading ? "Loading..." : debouncedQuery ? "No returns match your search." : "No returns yet."}</p>
       ) : (
         <table className="data-table">
           <thead>
@@ -82,6 +96,8 @@ export default function Returns() {
           </tbody>
         </table>
       )}
+
+      <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />
     </div>
   );
 }

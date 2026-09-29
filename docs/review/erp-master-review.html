@@ -1,0 +1,529 @@
+<title>Aamstrand ERP Master Review</title>
+<meta name="description" content="Five review rounds of the Aamstrand ERP synthesized into one working document: where the system stands, every finding reconciled with its current status, a sequenced work plan, the deployment checklist and the decisions still needed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1; --surface: #ffffff; --ink: #16202a; --ink-2: #3c4753; --muted: #5d6772;
+    --rule: #d6dad2; --rule-strong: #b8beb4; --accent: #2f5fdb; --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a; --high: #b9620f; --med: #7d6c0c; --low: #5d6772; --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08); --high-bg: rgba(185, 98, 15, 0.09); --med-bg: rgba(125, 108, 12, 0.1); --ok-bg: rgba(43, 122, 75, 0.09); --info-bg: rgba(47, 95, 219, 0.08);
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519; --surface: #181d23; --ink: #e8ebef; --ink-2: #c3cad2; --muted: #97a1ab;
+      --rule: #2a3139; --rule-strong: #3b444e; --accent: #7b98f2; --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62; --high: #f0a24e; --med: #d6c35c; --low: #97a1ab; --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12); --high-bg: rgba(240, 162, 78, 0.12); --med-bg: rgba(214, 195, 92, 0.12); --ok-bg: rgba(95, 196, 141, 0.12); --info-bg: rgba(123, 152, 242, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519; --surface: #181d23; --ink: #e8ebef; --ink-2: #c3cad2; --muted: #97a1ab;
+    --rule: #2a3139; --rule-strong: #3b444e; --accent: #7b98f2; --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62; --high: #f0a24e; --med: #d6c35c; --low: #97a1ab; --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12); --high-bg: rgba(240, 162, 78, 0.12); --med-bg: rgba(214, 195, 92, 0.12); --ok-bg: rgba(95, 196, 141, 0.12); --info-bg: rgba(123, 152, 242, 0.12);
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55; padding-inline: 16px; padding-block: 32px 64px; }
+  .wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.2rem; font-weight: 600; }
+  p { margin: 0; max-width: 72ch; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+  .prose ul, .prose ol, .panel ul, .panel ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 76ch; }
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; margin: 0; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 72ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+  .verdict { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.1rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); } .verdict .big.warn { color: var(--high); } .verdict .big.good { color: var(--ok); }
+  @media (max-width: 900px) { .verdict { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .verdict { grid-template-columns: 1fr; } }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc a { font-family: var(--display); font-weight: 600; font-size: 0.92rem; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.good { color: var(--ok); font-weight: 600; } td.bad { color: var(--crit); font-weight: 600; }
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 820px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  .callout.warn { border-left-color: var(--high); background: var(--high-bg); }
+  .callout.info { border-left-color: var(--accent); background: var(--info-bg); }
+  .callout p { max-width: 80ch; }
+  /* master table */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filters .sep { width: 1px; height: 22px; background: var(--rule-strong); margin: 0 4px; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-left: 8px; }
+  tr.theme-row td { background: var(--paper); font-family: var(--display); font-weight: 700; font-size: 1.05rem; border-top: 2px solid var(--rule-strong); }
+  tr.theme-row .eyebrow { color: var(--accent); margin-right: 6px; }
+  td.ids { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  td.next { min-width: 24ch; max-width: 42ch; color: var(--ink-2); }
+  .ftitle { font-weight: 600; }
+  .fdetail { color: var(--ink-2); font-size: 0.9rem; margin-top: 3px; max-width: 60ch; }
+  .sev { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+  .sev-crit { color: var(--crit); } .sev-high { color: var(--high); } .sev-med { color: var(--med); } .sev-low { color: var(--low); } .sev-none { color: var(--muted); }
+  .st { display: inline-block; font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 7px; white-space: nowrap; }
+  .st-closed, .st-delivered { color: var(--ok); } .st-partial { color: var(--high); } .st-open { color: var(--crit); } .st-decision { color: var(--accent); }
+  .closed-in { font-family: var(--mono); font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
+  tr.item.hidden { display: none; }
+  .plan { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 12px; }
+  .plan li { counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; }
+  .plan li::before { content: counter(step); font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1; color: var(--accent); }
+  .plan li > div { display: flex; flex-direction: column; gap: 6px; }
+  .plan b.t { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
+  .plan .why { font-size: 0.9rem; color: var(--muted); }
+  .plan ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; }
+  .check { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; max-width: 80ch; }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="eyebrow">Aamstrand ERP · five review rounds · one working document</div>
+      <h1>Aamstrand ERP Master Review</h1>
+      <p class="lede">Everything the five rounds found between 24 and 28 September, reconciled into one list with its current status, plus where the system stands, the work in the order it should happen, how to deploy what is already built, and the decisions only the owner can make. This is the page to work from; the round reports are the record behind it.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Date</dt><dd>2026-09-29 (sprint 1 applied)</dd>
+      <dt>Sources</dt><dd>rounds 1–5, bug log, to-do</dd>
+      <dt>Code state</dt><dd>main 50f7b6d + sprint 1 branch</dd>
+      <dt>Includes main</dt><dd>round 5 merged (#4)</dd>
+      <dt>Items</dt><dd>104 reconciled</dd>
+    </dl>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div><span class="eyebrow">Still open, by severity</span><span class="big warn">1 high</span><span class="muted">17 medium and 15 low still open or partly done. Sprint 1 closed A-13, A-14, B-06 and D-05; the one High item left, F-01, is the frontend half of the test suite (Playwright, sprint 2).</span></div>
+      <div><span class="eyebrow">Closed or delivered</span><span class="big good">54</span><span class="muted">of 104 items, across five rounds. Every Critical and every stock-corruption finding is closed and now guarded by tests.</span></div>
+      <div><span class="eyebrow">Throughput</span><span class="big bad">133%</span><span class="muted">of two analysts' day at 150 orders. The modelled path to about 38% is in section 05; nothing in it has been built yet.</span></div>
+      <div><span class="eyebrow">Accounting</span><span class="big good">Built</span><span class="muted">Invoices, credit memos and the QuickBooks bridge are on the branch. They wait on an Intuit app and a connection from Settings.</span></div>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#short">The short version</a>
+      <a href="#rounds">Five rounds</a>
+      <a href="#today">Where it stands</a>
+      <a href="#list">Master list</a>
+      <a href="#plan">Work plan</a>
+      <a href="#deploy">Deploy the branch</a>
+      <a href="#decisions">Decisions</a>
+      <a href="#watch">Numbers to watch</a>
+      <a href="#method">Sources</a>
+    </nav>
+  </section>
+
+  <section id="short">
+    <div class="section-head"><span class="eyebrow">01</span><h2>The short version</h2></div>
+    <div class="prose">
+      <p>The system started the week as a sound workflow design on a fresh Postgres backend that, as configured, could not ship or receive, corrupted stock when two people worked at once, and stopped responding after a year of orders. Round 1 fixed the corruption by moving every stock change into the transaction that causes it. Round 2 added the seven roles, paging, cancellation, restock, item links, the stock ledger and a reliable import, and a simulated day ended with the books exact. Round 3 rebuilt Release Orders and the Dashboard around how people actually queue work. Round 4 read the whole codebase again and found that the ordinary order save was still a loophole around the step permissions, then mapped where analyst time goes. Round 5 closed the loophole by making every workflow step its own command, hardened sign-in, added a test suite that races the transactions and audits the invariants after a random concurrent workload, and built invoicing with a bridge to QuickBooks.</p>
+      <p>Sprint 1 (29 September) closed the integrity items and the quick wins: 24 items closed and 3 partly done, with 15 new tests, a Postgres deadlock the workload test found and fixed, and the four decisions of 29 September applied (price lock, undo after sync, Import creates only, customer required on Order Entry). What is left falls into three groups. A middle tier of medium screen and performance items, mostly quick, listed in section 04 with the exact next step for each. The throughput redesign from rounds 2 and 4, which is the only thing on this list that changes what the business can do in a day and which has had no code written against it. And a handful of decisions only you can make, in section 07.</p>
+      <p>Recommended order from here: merge and deploy the sprint 1 branch, then sprint 2 (the reservation table, read exposure, audit in the transaction and the remaining medium items), then sprint 3 for the throughput work with the no-code changes and auto-allocation. The sprint plan (<code>erp-sprint-plan.html</code>) has each sprint as tasks. Measure real step times before committing to rules-based validation.</p>
+    </div>
+    <div class="callout ok">
+      <p><b>The two things to do before anything else are done.</b> A-13 (returns counted twice) and A-14 (customer delete) closed in sprint 1 with tests, along with undo after a received return (A-15) and the price lock (B-06). Section 06 still applies to putting the build into use.</p>
+    </div>
+  </section>
+
+  <section id="rounds">
+    <div class="section-head"><span class="eyebrow">02</span><h2>Five rounds in one table</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Round</th><th>Date</th><th>Kind</th><th>Found</th><th>Built</th><th>Evidence</th><th>Where it landed</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td>24 Sep</td><td>Code review, 15-person day simulation, one-year scale test</td><td>34 findings: 3 critical, 10 high, 15 medium, 6 low</td><td>Atomic ship, receive and undo; server-side free-stock check under a lock; order permissions; expectedStatus; changed-rows-only saves; open-only lists; 5 MB body; login throttle</td><td>Run A shipped 0 units; run B drifted 16,250 units and went negative on 15 SKUs; run C: 0 errors. Dashboard at one year: 63.8 s to 0.43 s</td><td>Commits <code>b5a9c4e</code>, <code>cbab33d</code></td></tr>
+          <tr><td><b>2</b></td><td>24 Sep</td><td>Roles redesign, five next steps, re-simulation, scale test</td><td>Two analysts at 98% busy; 91 orders waiting for validation at close; role gaps (floor, accounting, second admin, leads)</td><td>Seven role presets enforced per step; paged search and server analytics; cancel and restock; item ids on lines; stock ledger and activity log; row-by-row import</td><td>0 stock or allocation errors after a day; 482 ledger rows; 73 of 73 browser checks; Closed Orders at one year 67.8 s to 0.13 s</td><td>PR #1 (<code>4ed52f7</code>)</td></tr>
+          <tr><td><b>3</b></td><td>25 Sep</td><td>Change report</td><td>Capacity banner nonsense percentage; a stylesheet brace; badge and status naming leftovers</td><td>Release Orders rebuilt with tabs and bulk release; scroll windows on 15 screens; queue-first Dashboard with a today strip and order lookup; Release Orders design options</td><td>89 of 89 regression checks; 25 of 26 new; Dashboard height 2,796 to 1,212 px</td><td>PR #2 (<code>ac49897</code>)</td></tr>
+          <tr><td><b>4</b></td><td>25 Sep</td><td>Five-pass code review and order-flow analysis; no code</td><td>39 bugs (6 high, 17 medium, 16 low); 14 inefficiencies; 12 waste points; 8 automations, 6 redesigns, 5 role changes</td><td>Nothing (report only)</td><td>Analyst load 133% today, about 38% after automating mechanical decisions; 10-line order 56 touches over 6 pages, 28 after</td><td>PR #3 (<code>d047910</code>)</td></tr>
+          <tr><td><b>5</b></td><td>28 Sep</td><td>Architecture and security review, then implementation</td><td>21 findings (4 high, 7 medium, 10 low); the accounting recommendation</td><td>Command endpoints for every step with server-owned status, attribution and history; ship guards; password policy and forced change; sessions and idle logout; 47 Postgres-backed tests with race and workload invariants; CI; invoices, credit memos, QuickBooks Online bridge with fake, outbox, retry and reconciliation</td><td>47 of 47 tests; workload test clean at 12 workers × 80 steps; end-to-end smoke of ship, invoice, return, credit, sync, reconcile</td><td>Merged to main as #4 (50f7b6d)</td></tr>
+          <tr><td><b>S1</b></td><td>29 Sep</td><td>Sprint 1 of the plan: integrity holes and quick wins</td><td>Four decisions taken; a Postgres deadlock found by the workload test</td><td>Returns counted once; customer inactive flag with RESTRICT keys; undo guards; frozen RA lines; opening stock movements; idempotent creates; price lock; Import creates only; oldest-first queues with Skip; one row per shipment with totals and export; report guards and Open presets; form fixes; paged PO and RA lists; items locked in id order; cents on the order screens; environment checked at start</td><td>61 of 61 tests; workload clean at 12 workers; day simulation re-run (docs/review/data/round6)</td><td>Branch <code>claude/sweet-mccarthy-iug4f3</code> from main</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="today">
+    <div class="section-head"><span class="eyebrow">03</span><h2>Where the system stands</h2>
+      <p>What a new engineer should know is true of the codebase on the branch today, and the numbers that back it.</p>
+    </div>
+    <div class="three-col">
+      <div class="panel">
+        <h3>Stock is a ledger, not a number</h3>
+        <p>Every change to on-hand is a <code>StockMovement</code> written in the same transaction as the document that caused it, with the actor. Ship, undo, receive and return-receive lock the row, check the version and refuse to leave on-hand negative. The randomized workload test asserts start plus movements equals on-hand equals documents for every item after eight workers hammer the API.</p>
+      </div>
+      <div class="panel">
+        <h3>Every step is a command</h3>
+        <p>check, uncheck, allocate, unallocate, release, mark-printed, set-ship-date, set-bol, ship, undo-shipment, cancel. Each is gated by one page permission and stamps who did it from the session. The plain save edits header fields and, while Entered or Checked, lines. A permission-matrix test proves each role can do exactly its own step.</p>
+      </div>
+      <div class="panel">
+        <h3>Money documents exist</h3>
+        <p>An invoice per shipment and a credit memo per received return, in integer cents, priced from the order and the invoice respectively. An outbox row is written with each and a worker pushes it to QuickBooks with backoff, creating customers and non-inventory items first. QuickBooks remains the record for receivables, payments, tax and the ledger.</p>
+      </div>
+      <div class="panel">
+        <h3>Roles</h3>
+        <p>Seven presets: Purchasing, Customer Service, Order Entry, Analyst, Logistics, Sales Manager, Director, plus Admin. Round 5 added an Invoices page key (Customer Service and Sales Manager view, Director edit). Analysts still cannot print what they release (G-02).</p>
+      </div>
+      <div class="panel">
+        <h3>Sign-in</h3>
+        <p>Ten-character passwords with a deny list; a seeded or admin-set password must be replaced at first sign-in; ten-hour tokens; 45-minute idle logout; force-logout and deactivation take effect on the next request; throttled and constant-time sign-in. Still to deploy: one origin behind TLS.</p>
+      </div>
+      <div class="panel">
+        <h3>Scale</h3>
+        <p>Order history is paged everywhere except the capacity banner and the report edge case in D-02 and D-05. At a year of data every page opened for 15 people in under a second except Release Orders at 6.4 s. The reservation model still scans open orders (A-25); fine at hundreds, a bottleneck at thousands.</p>
+      </div>
+    </div>
+    <div class="callout info">
+      <p><b>What the simulations measured and what they assumed.</b> Stock and order integrity results do not depend on hardware or timing assumptions. The throughput results do: they assume validation takes about 1 minute plus 9 seconds per line, allocation 1 minute plus 15 seconds per line, release 1 minute plus 6 seconds per line, and a floor time of 10 minutes plus 1.5 per line. Time twenty real orders per step before sizing staff or committing to the larger automation.</p>
+    </div>
+  </section>
+
+  <section id="list">
+    <div class="section-head"><span class="eyebrow">04</span><h2>The master list</h2>
+      <p>Every finding from the five rounds, merged where two rounds found the same thing, with its status on this branch. Round IDs point into the original reports. The same table is in <code>docs/review/open-bugs.md</code>. Filter by status or theme.</p>
+    </div>
+    <div class="filters" role="group" aria-label="Filters">
+      <button class="chip" type="button" data-status-filter="all" aria-pressed="true">All 104</button>
+      <button class="chip" type="button" data-status-filter="Open" aria-pressed="false">Open 32</button>
+      <button class="chip" type="button" data-status-filter="Partial" aria-pressed="false">Partial 15</button>
+      <button class="chip" type="button" data-status-filter="Decision" aria-pressed="false">Decision 3</button>
+      <button class="chip" type="button" data-status-filter="Closed" aria-pressed="false">Closed 54</button>
+      <span class="sep"></span>
+      <button class="chip" type="button" data-theme-filter="all" aria-pressed="true">Every theme</button>
+      <button class="chip" type="button" data-theme-filter="A" aria-pressed="false">A · Stock and order integrity</button><button class="chip" type="button" data-theme-filter="B" aria-pressed="false">B · Security, permissions and sessions</button><button class="chip" type="button" data-theme-filter="C" aria-pressed="false">C · Screens and workflow</button><button class="chip" type="button" data-theme-filter="D" aria-pressed="false">D · Performance and scale</button><button class="chip" type="button" data-theme-filter="E" aria-pressed="false">E · Data model, money and accounting</button><button class="chip" type="button" data-theme-filter="F" aria-pressed="false">F · Operations, testing and delivery</button><button class="chip" type="button" data-theme-filter="G" aria-pressed="false">G · Throughput and process</button>
+    </div>
+    <div class="table-wrap">
+      <table id="master">
+        <thead><tr><th>#</th><th>Round IDs</th><th>Severity</th><th>Status</th><th>Finding</th><th>Next step</th></tr></thead>
+        <tbody>
+<tr class="theme-row" data-theme="A"><td colspan="6"><span class="eyebrow">A</span> Stock and order integrity <span class="sev-count">26 items</span></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="crit"><td class="mono">A-01</td><td class="ids">C-02</td><td><span class="sev sev-crit">Critical</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Ship, receive and undo moved stock twice after a save conflict</div><div class="fdetail">The browser changed each item&#x27;s quantity, then saved the order; a rejected save left the stock already moved and the retry moved it again. Run B of the round 1 simulation drifted 16,250 units across 66 SKUs in one day.</div></td><td class="next">Stock moves inside the same transaction as the document since round 1; the round 5 suite races three confirmations of one shipment and two receipts of one PO.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="crit"><td class="mono">A-02</td><td class="ids">C-03</td><td><span class="sev sev-crit">Critical</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Two allocators could promise the same stock</div><div class="fdetail">Allocation started every line at the full remaining quantity from a snapshot; two people saving different orders never conflicted. 392 to 916 units double-promised per simulated day.</div></td><td class="next">Every increase in a reservation is checked against free stock under an advisory lock; the suite runs eight concurrent allocations against 25 units and gets exactly four winners.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-03</td><td class="ids">H-01<br>R5 commands</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1, R5</div></td><td><div class="ftitle">Stale queue pages pushed orders back a stage</div><div class="fdetail">Re-allocating an already packed order doubled its reservation; checking an allocated order sent it back to Checked.</div></td><td class="next">Round 1 added expectedStatus; round 5 made every step a command that locks the order and checks both status and version.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-04</td><td class="ids">H-04</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Clearing a field never cleared it on the server</div><div class="fdetail">Unallocate left the allocation in place because undefined fields dropped out of the request.</div></td><td class="next">Fixed in round 1; superseded in round 5 by server-owned fields that the client cannot set at all.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-05</td><td class="ids">H-08</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Inventory Adjust reversed shipments that landed during a count</div><div class="fdetail">The correction was sent as a delta from a stale on-hand figure.</div></td><td class="next">Compare-and-set: the count saves only if on-hand still matches what was on screen.</td></tr>
+<tr class="item" data-theme="A" data-status="Partial" data-sev="med"><td class="mono">A-06</td><td class="ids">M-05<br>R4-27</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R1 part</div></td><td><div class="ftitle">On-PO figure recomputed in the browser; later, keyed by item spelling without a lock</div><div class="fdetail">Round 1 moved the recompute into the PO transaction. Round 4 noted it still totals by item-number text and runs without a row lock.</div></td><td class="next">Case-insensitive uniqueness (round 5) removes the spelling drift. Total by item id and lock the item row when the reservation table lands (A-25).</td></tr>
+<tr class="item" data-theme="A" data-status="Partial" data-sev="med"><td class="mono">A-07</td><td class="ids">M-12<br>M-12b</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R2 part</div></td><td><div class="ftitle">Returns did not restock, orders could not be cancelled; a line released at 0 keeps its allocation</div><div class="fdetail">Restock on receipt and Cancel Order shipped in round 2. A partly released order still holds allocation on the lines it did not release until someone re-allocates.</div></td><td class="next">Release unreleased lines&#x27; allocation when the partial ships, or prompt for it. Falls out of the reservation table (A-25).</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="med"><td class="mono">A-08</td><td class="ids">M-14</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R2</div></td><td><div class="ftitle">Order lines referenced items by text</div><div class="fdetail">Renaming an item cut it off from its history.</div></td><td class="next">Lines carry itemId, backfilled; renames follow; unknown items refused on save.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-09</td><td class="ids">R4-01<br>R4-10<br>R5-03</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Shipment history, PO receipts and PO status could be rewritten by a plain save</div><div class="fdetail">An order saved with an empty history lost its shipment records while stock stayed taken; a PO saved as Received dropped On PO with no stock arriving.</div></td><td class="next">Server-owned since round 5: the PUT ignores them; only ship, undo, receive and return-receive write them; PO status is derived from the lines. Covered by tamper tests.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-10</td><td class="ids">R4-04<br>R5-01</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Confirm Shipped accepted any quantity and could take on-hand negative</div><div class="fdetail">The ship endpoint checked only that the line belonged to the order.</div></td><td class="next">Ships only what was staged, never more than the line still owes, never below zero on hand. Tested, including a count correction between staging and shipping.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="med"><td class="mono">A-11</td><td class="ids">R4-11<br>R5-11</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">A shipped line could be retyped or deleted once the order came back to Checked</div><div class="fdetail">Undo then restocked the wrong item or skipped it.</div></td><td class="next">Lines with shipments keep their item and cannot go below the shipped quantity at any status.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="med"><td class="mono">A-12</td><td class="ids">R4-13<br>R5-10</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Item numbers differing only by case could both exist</div><div class="fdetail">Stock landed on whichever row the lookup returned.</div></td><td class="next">Unique index on lower(trim(itemNumber)); the duplicate is refused with a 409.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-13</td><td class="ids">R4-05</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Closing a received return frees its quantity, so the same units can be returned, restocked and now credited twice</div><div class="fdetail">The returnable total excludes every Closed RA, but the normal life is Issued, Received, Closed. A second RA for the same 20 units passes the check, restocks 20 more, and since round 5 raises a second credit memo. Sprint 1: every received RA counts against the shipped total, closed or not; only an RA closed without receipt is excluded. Test in sprint1.test.ts.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="high"><td class="mono">A-14</td><td class="ids">R4-06</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Deleting a customer detaches its orders and returns and wipes its price sheet</div><div class="fdetail">The constraints are ON DELETE SET NULL for orders and RAs and CASCADE for prices, part numbers, notes and ship-tos. Invoices and credit memos now reference the customer too. Sprint 1: delete refused with the counts when any order, RA, invoice or credit memo references the customer; Customer.active flag hides it from Order Entry and Returns; the four foreign keys are RESTRICT.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="med"><td class="mono">A-15</td><td class="ids">R4-12</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Undo Last Shipment ignores received returns</div><div class="fdetail">Ship 10, receive an RA for 10, undo: stock is 10 too high. With invoicing, an undo also voids an invoice a customer may already have paid. Sprint 1: Undo Last Shipment refuses when a received RA references the order, and when the invoice has reached QuickBooks (void it from Invoices first - decided 29 Sep).</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="med"><td class="mono">A-16</td><td class="ids">R4-09</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R2, R5 part, S1</div></td><td><div class="ftitle">An RA could be marked Received by a save, and received lines stayed editable</div><div class="fdetail">Issued to Received by save was blocked in round 2. Round 5 froze the line count after receipt. Sprint 1: Closed never returns to Received; item, qty, rate and restock are frozen once the RA is not Issued; the dropdown matches.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="low"><td class="mono">A-17</td><td class="ids">R4-26</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Opening stock on a new or imported item is not in the ledger</div><div class="fdetail">Creating an item with 500 on hand writes no movement, so start plus movements never equals on-hand for it. Sprint 1: an OPENING movement is written when an item is created with stock; the ledger helper and the workload invariant now expect on hand to equal the sum of movements from zero.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="low"><td class="mono">A-18</td><td class="ids">R4-28</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">An unexpected error part-way through a bulk release returns a bare error</div><div class="fdetail">Orders before the failure released; the caller cannot tell which. Sprint 1: every failure in a bulk release stays with its own order; the rest still release.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="low"><td class="mono">A-19</td><td class="ids">R4-30</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Undo Shipment worked on a cancelled order</div></td><td class="next">Refused since round 5.</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="low"><td class="mono">A-20</td><td class="ids">R4-14</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5 part, S1</div></td><td><div class="ftitle">A blank line could be saved on an order and later block shipping</div><div class="fdetail">The server now refuses an empty or unknown item, so the save fails with a message instead of storing the row. Sprint 1: blank rows are dropped before the save; the button is disabled until the order has a customer and one complete line.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="med"><td class="mono">A-21</td><td class="ids">R4-16</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">A double-click creates duplicate vendor POs and duplicate RAs</div><div class="fdetail">Only Order Entry has a saving guard. Two RAs sent together can both pass the returnable check. Sprint 1: the PO and RA forms have a saving guard and, like Order Entry, send an Idempotency-Key; the three create endpoints replay the first result for a repeat.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="A" data-status="Open" data-sev="med"><td class="mono">A-22</td><td class="ids">R4-22<br>P-B4<br>W-9</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">A Checked order can be changed without being checked again</div><div class="fdetail">Customer Service changes 10 to 100 after validation; the analyst&#x27;s stamp stays and allocation proceeds unreviewed. Lines added in Order Detail price at $0.</div></td><td class="next">A line, quantity or price edit after Checked sends the order back to Entered (or re-runs the rules once G-04 exists). Use Order Entry&#x27;s price lookup in Order Detail.</td></tr>
+<tr class="item" data-theme="A" data-status="Open" data-sev="med"><td class="mono">A-23</td><td class="ids">R4-23<br>P-B5<br>W-10</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Cancelling a released order makes it vanish while the printed pick is still on the floor</div><div class="fdetail">The pallet gets built with no record on screen.</div></td><td class="next">A pull-from-floor list in Open Picks until logistics acknowledges; warn before cancelling a printed order.</td></tr>
+<tr class="item" data-theme="A" data-status="Open" data-sev="med"><td class="mono">A-24</td><td class="ids">M-13</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Back-order forecast gives every order the whole PO; capacity compares to an average</div><div class="fdetail">Ten back orders show the date of one PO. The banner says over capacity whenever a day is above average.</div></td><td class="next">Allocate incoming supply in queue order; take capacity from a configured maximum.</td></tr>
+<tr class="item" data-theme="A" data-status="Partial" data-sev="med"><td class="mono">A-25</td><td class="ids">R5-12<br>N-05<br>PF-02<br>PF-09<br>PF-11</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">S1 part</div></td><td><div class="ftitle">Reservations live in JSON on the order, so availability means loading every open order</div><div class="fdetail">The server scans all open orders under the allocation lock; the allocation pages, Inventory and the capacity banner download them to redo the math; shipping a 20-line order is about 60 round trips. Sprint 1: the lookback is capped at 90 days in Settings and on the server.</div></td><td class="next">Compute throughput and dwell on the server (sprint 2, with D-08).</td></tr>
+<tr class="item" data-theme="A" data-status="Closed" data-sev="none"><td class="mono">A-26</td><td class="ids">Invariants</td><td><span class="sev sev-none">—</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R2, R5</div></td><td><div class="ftitle">Ledger equals on-hand equals documents under concurrent load</div><div class="fdetail">Verified by the round 2 simulation (0 drift, 500 SKUs) and now asserted by the randomized workload test after every push.</div></td><td class="next">Keep the workload test green; re-run the day simulation before each merge (F-03).</td></tr>
+<tr class="theme-row" data-theme="B"><td colspan="6"><span class="eyebrow">B</span> Security, permissions and sessions <span class="sev-count">18 items</span></td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="crit"><td class="mono">B-01</td><td class="ids">C-01</td><td><span class="sev sev-crit">Critical</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Warehouse and dock staff could not ship or receive</div><div class="fdetail">Presets lacked a permission the stock endpoint required; the 403 was never shown. Zero units shipped in run A.</div></td><td class="next">Ship and receive are their own endpoints gated on the pages that call them.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="high"><td class="mono">B-02</td><td class="ids">H-02</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1, R5</div></td><td><div class="ftitle">Any signed-in account could rewrite any order through the API</div><div class="fdetail">No server-side permission check on sales orders.</div></td><td class="next">Order writes need edit on an order page since round 1; each step needs its own page since round 5.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="high"><td class="mono">B-03</td><td class="ids">H-07<br>R5-04</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Default admin/123, one-character passwords, 30-day tokens, no idle logout</div></td><td class="next">Random seeded password printed once; 10-character minimum with a deny list; forced change after seeding or an admin reset; 10-hour tokens; 45-minute idle logout.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="med"><td class="mono">B-04</td><td class="ids">M-09</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Password reset left old sessions signed in</div></td><td class="next">Reset and deactivation bump the token version.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="high"><td class="mono">B-05</td><td class="ids">R4-02<br>R5-02<br>R5-05</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">A same-status save skipped step permissions; who entered and who checked came from the browser; twelve page keys granted full edit</div><div class="fdetail">Order Entry, Logistics or Purchasing could raise an allocation, stamp any validator or re-point the writer.</div></td><td class="next">Every workflow step is a command gated by one permission and stamped from the token. The PUT edits header fields and lines only. Permission matrix test per role.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="high"><td class="mono">B-06</td><td class="ids">R4-03</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5 part, S1</div></td><td><div class="ftitle">Prices, tax and customer were editable at any status, and the audit could not tell</div><div class="fdetail">Round 5: shipped and cancelled orders cannot be edited at all; header and line edits need Order Entry, Sales Order View or Validation edit (or the order&#x27;s writer); rate, tax and customer changes are logged old to new. Sprint 1 (decided 29 Sep): rate, tax and customer changes need Order Entry or Sales Order View edit once stock is allocated and are refused once the pick is released; audited old to new.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="med"><td class="mono">B-07</td><td class="ids">R4-07</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5 part, S1</div></td><td><div class="ftitle">Import and Labels granted full sales-order edit</div><div class="fdetail">Labels is off the edit list. Import is still on ORDER_EDIT_PAGES, so both buyers can edit any open order&#x27;s header. Sprint 1 (decided 29 Sep): Import is off the edit list; it creates orders only.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="B" data-status="Open" data-sev="med"><td class="mono">B-08</td><td class="ids">R4-08</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Price sheets and routing guides are protected only by Customers edit, and price changes are not logged row by row</div><div class="fdetail">All four Customer Service users (pricing view) can change contract prices; an account with pricing edit alone gets a 403.</div></td><td class="next">Separate endpoints for price overrides and routing guides gated by their own pages; log each price change with item, old and new.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="med"><td class="mono">B-09</td><td class="ids">R5-06<br>R4-39</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Login throttle: shared proxy address, unbounded map, timing oracle</div></td><td class="next">TRUST_PROXY honoured, map pruned, dummy hash compared for unknown users. The 15-minute hard lock per username remains by design; note it for support.</td></tr>
+<tr class="item" data-theme="B" data-status="Open" data-sev="med"><td class="mono">B-10</td><td class="ids">R5-07</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Any signed-in account can read every order with prices, every item and every customer address</div><div class="fdetail">Defensible for 15 trusted staff; not once a kiosk or contractor gets a login.</div></td><td class="next">Dashboard summary endpoint without prices; order-view permission on the full list; strip rates for accounts without a pricing permission.</td></tr>
+<tr class="item" data-theme="B" data-status="Partial" data-sev="med"><td class="mono">B-11</td><td class="ids">R5-08<br>R4-25</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">Audit rows written after commit can be lost; settings accept any key; diffs only on order edits</div><div class="fdetail">Round 5 audits settings and counter overrides and records field and price diffs on order edits.</div></td><td class="next">Write audit rows inside the transaction; whitelist setting keys and validate values; add diffs to customer and item edits.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="low"><td class="mono">B-12</td><td class="ids">R4-24<br>R5-17</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Dead counter endpoint let any account burn or seed document numbers</div></td><td class="next">Route deleted.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="low"><td class="mono">B-13</td><td class="ids">R5-21</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Sign-in revealed whether a username exists</div></td><td class="next">Constant-time compare; same message.</td></tr>
+<tr class="item" data-theme="B" data-status="Partial" data-sev="low"><td class="mono">B-14</td><td class="ids">R4-39</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">Small hardening: security headers, saved-report owner, unreadable filter dates return 500, unbounded arrays</div><div class="fdetail">Array lengths capped in round 5.</div></td><td class="next">Add helmet; an owner column on saved reports; validate filter dates.</td></tr>
+<tr class="item" data-theme="B" data-status="Partial" data-sev="low"><td class="mono">B-15</td><td class="ids">L-03</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">Plain HTTP, CORS *, frontend defaults to localhost:4000</div><div class="fdetail">CORS_ORIGIN and TRUST_PROXY are configurable since round 5.</div></td><td class="next">Serve the built frontend and the API from one origin behind TLS (Caddy); document it in the runbook.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="low"><td class="mono">B-16</td><td class="ids">N-03<br>N-04</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Writer carve-out refused by the server; internal page keys in error messages</div></td><td class="next">Writer may edit header fields; errors name pages.</td></tr>
+<tr class="item" data-theme="B" data-status="Open" data-sev="none"><td class="mono">B-17</td><td class="ids">R2 gap</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Only one Admin account</div><div class="fdetail">A single point of failure for resets and new hires.</div></td><td class="next">Create a second admin account on the Accounts page.</td></tr>
+<tr class="item" data-theme="B" data-status="Closed" data-sev="med"><td class="mono">B-18</td><td class="ids">H-10</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">The Open Sales Orders, Open POs and Open Returns presets include closed records</div><div class="fdetail">Totals overstate the backlog. Sprint 1: every status filter has an Open option covering the open statuses; the three Open presets default to it.</div></td><td class="next"></td></tr>
+<tr class="theme-row" data-theme="C"><td colspan="6"><span class="eyebrow">C</span> Screens and workflow <span class="sev-count">20 items</span></td></tr>
+<tr class="item" data-theme="C" data-status="Partial" data-sev="med"><td class="mono">C-01</td><td class="ids">M-01<br>R5-09</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R1 part</div></td><td><div class="ftitle">Failures looked like empty data; no error boundary</div><div class="fdetail">Round 1: expired sessions return to sign-in and failed writes show the server&#x27;s message. A rendering error still blanks the page and failed page loads are only in the console.</div></td><td class="next">Error boundary around the router outlet, toasts instead of alert(), a visible failed-load state.</td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="med"><td class="mono">C-02</td><td class="ids">M-02<br>M-03<br>M-04<br>L-01</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">Settings cache stuck on defaults, UTC dates, double submit, CSV formula injection</div></td><td class="next">All fixed in round 1.</td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="med"><td class="mono">C-03</td><td class="ids">M-10</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Vendors saves on every keystroke</div><div class="fdetail">False conflict alerts and lost characters. Sprint 1: Vendors drafts locally and saves on blur.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="med"><td class="mono">C-04</td><td class="ids">M-11</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Adding a customer note saves half-finished edits; clearing lead time saves 0</div><div class="fdetail">Sprint 1: a note is added to the last saved customer record; lead time and lookback are validated on blur before saving.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="med"><td class="mono">C-05</td><td class="ids">R4-15</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Enter anywhere on Order Entry saves the order, and no customer is required</div><div class="fdetail">Same on the PO and RA forms. Sprint 1 (decided 29 Sep): Enter moves to the next field on the three forms; Order Entry requires a customer and one complete line; import stays optional.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Open" data-sev="med"><td class="mono">C-06</td><td class="ids">R4-17</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">A BOL for several destinations prints no delivery address</div></td><td class="next">Print each order&#x27;s ship-to in its row; compare addresses ignoring case and spacing.</td></tr>
+<tr class="item" data-theme="C" data-status="Partial" data-sev="med"><td class="mono">C-07</td><td class="ids">R4-18</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">Order Detail offers edits the server refuses, a refusal drops the draft, back-ordered quantities cannot be revised</div><div class="fdetail">The refusal now says why (unallocate first).</div></td><td class="next">Read-only lines after Checked; keep the draft on refusal; a revise-back-order action for analysts.</td></tr>
+<tr class="item" data-theme="C" data-status="Partial" data-sev="med"><td class="mono">C-08</td><td class="ids">R4-19<br>W-2<br>P-B2</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">S1 part</div></td><td><div class="ftitle">Review queues take the newest order first, ignore the sort, have no Skip</div><div class="fdetail">The backlog starves; two analysts collide on the same first order (60 to 150 refusals a day). Sprint 1: Validation and Allocation list oldest due date first; a Skip button parks an order for the session.</div></td><td class="next">The ten-minute server-side claim of the next order (sprint 3).</td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="med"><td class="mono">C-09</td><td class="ids">R4-20<br>W-11<br>P-A7</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Shipment History omits partial shipments; no end-of-day shipped report</div><div class="fdetail">Logistics spends ten minutes a day on a workaround. Sprint 1: Shipment History is one row per shipment from GET /api/shipments - ship-date range (today by default), search, paging, totals over the range, invoice per row, CSV export, Undo on the latest shipment only.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="med"><td class="mono">C-10</td><td class="ids">R4-21</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Schedule Shipments saves on every date change, including while typing the year</div><div class="fdetail">Now through the set-ship-date command; same behaviour. Sprint 1: the ship date saves on blur or Enter, and only when complete.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="low"><td class="mono">C-11</td><td class="ids">R4-31</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Bulk confirm stops at the first error, does not refresh, can be clicked twice</div><div class="fdetail">Sprint 1: per-order results, the button locks while the batch runs, the list always reloads.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Open" data-sev="low"><td class="mono">C-12</td><td class="ids">R4-32</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Reports stay on Running when the server refuses the data source</div></td><td class="next">Reset loading and show the error; hide sources and actions the role cannot use.</td></tr>
+<tr class="item" data-theme="C" data-status="Open" data-sev="low"><td class="mono">C-13</td><td class="ids">R4-33<br>N-01<br>N-02</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Import shows unknown items as Ready and hides the server&#x27;s reason; the On PO column does nothing; 400 details are lost</div></td><td class="next">Flag unknown items in the preview; render fieldErrors; drop the On PO column from the template.</td></tr>
+<tr class="item" data-theme="C" data-status="Open" data-sev="low"><td class="mono">C-14</td><td class="ids">R4-34</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Some links lead to Access Denied; the returns queue is on the wrong role</div></td><td class="next">Show links only with access; base the returns queue on Receiving edit.</td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="low"><td class="mono">C-15</td><td class="ids">R4-35</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5 part, S1</div></td><td><div class="ftitle">Quantity fields accept decimals and negatives; a blank due date returns a 500</div><div class="fdetail">The server rejects non-positive or fractional quantities and out-of-range tax since round 5. Sprint 1: dates are validated server-side (a blank or half-typed date is a 400 with a field error); quantity inputs are whole numbers.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="C" data-status="Open" data-sev="low"><td class="mono">C-16</td><td class="ids">R4-36<br>R4-37<br>R4-38</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Find-an-order Enter opens a stale result; analytics and capacity group by UTC day; preferred vendor hidden from some roles</div></td><td class="next">Guard on the current query; group by local date; return the vendor name with the item.</td></tr>
+<tr class="item" data-theme="C" data-status="Open" data-sev="low"><td class="mono">C-17</td><td class="ids">R3 leftovers</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Status still reads Pick &amp; Packed after release; new lines do not scroll into view; the Release Orders badge sums two queues; phone width scrolls sideways</div></td><td class="next">Rename the status to Released; scrollIntoView on add; split the badge; fix the top bar and wide tables at 400 px.</td></tr>
+<tr class="item" data-theme="C" data-status="Closed" data-sev="low"><td class="mono">C-18</td><td class="ids">L-05</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R2</div></td><td><div class="ftitle">Item Quick Report matched partial item numbers</div></td><td class="next">Exact match since round 2.</td></tr>
+<tr class="item" data-theme="C" data-status="Delivered" data-sev="none"><td class="mono">C-19</td><td class="ids">Round 3</td><td><span class="sev sev-none">—</span></td><td><span class="st st-delivered">Delivered</span><div class="closed-in">R3</div></td><td><div class="ftitle">Release Orders rebuilt with bulk release, scroll windows on 15 screens, role-aware Dashboard</div><div class="fdetail">Dashboard height 2,796 to 1,212 px; 89 of 89 regression checks, 25 of 26 new checks.</div></td><td class="next">Waves (design option B) once items have bin locations and carriers have pickup times.</td></tr>
+<tr class="item" data-theme="C" data-status="Delivered" data-sev="none"><td class="mono">C-20</td><td class="ids">Round 5</td><td><span class="sev sev-none">—</span></td><td><span class="st st-delivered">Delivered</span><div class="closed-in">R5</div></td><td><div class="ftitle">Forced password-change screen, Invoices and Credit Memos pages, QuickBooks panel in Settings, tax-exempt flag on customers</div></td><td class="next">See section 06 for what to check after deploying.</td></tr>
+<tr class="theme-row" data-theme="D"><td colspan="6"><span class="eyebrow">D</span> Performance and scale <span class="sev-count">13 items</span></td></tr>
+<tr class="item" data-theme="D" data-status="Closed" data-sev="high"><td class="mono">D-01</td><td class="ids">H-03</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1, R2</div></td><td><div class="ftitle">About 20 pages downloaded the entire order history; a year of data froze the API</div><div class="fdetail">15 people opening the Dashboard waited 63.8 s and the process reached 8.9 GB. After paging and server analytics: 0.43 s.</div></td><td class="next">Residuals tracked as D-02 and D-03.</td></tr>
+<tr class="item" data-theme="D" data-status="Partial" data-sev="med"><td class="mono">D-02</td><td class="ids">N-05<br>PF-07</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">S1 part</div></td><td><div class="ftitle">The capacity banner downloads 30 days of shipments per person, and the lookback has no upper limit</div><div class="fdetail">6.4 s with 15 people opening Release Orders at a year of data; a Settings typo of 365 pulls 160 MB per open. Sprint 1: the lookback is capped at 90 days in Settings and on the server.</div></td><td class="next">Compute throughput and dwell on the server (sprint 2, with D-08).</td></tr>
+<tr class="item" data-theme="D" data-status="Open" data-sev="low"><td class="mono">D-03</td><td class="ids">N-06</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Customers, Routing Guide and Shipping Labels load every customer with full price sheets</div><div class="fdetail">About 2.3 MB at 200 customers.</div></td><td class="next">Use the summary list and load one customer on selection.</td></tr>
+<tr class="item" data-theme="D" data-status="Closed" data-sev="high"><td class="mono">D-04</td><td class="ids">H-06<br>M-06</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R1</div></td><td><div class="ftitle">100 KB body limit broke key-account saves; a price change rewrote 300 rows</div></td><td class="next">5 MB limit; only changed child rows are written (median save 407 to 38 ms).</td></tr>
+<tr class="item" data-theme="D" data-status="Closed" data-sev="high"><td class="mono">D-05</td><td class="ids">PF-01</td><td><span class="sev sev-high">High</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">A report whose item filter matches nothing downloads the whole order history, and order reports auto-run</div><div class="fdetail">About 163 MB after a year, 490 MB after three, to show nothing. Sprint 1: an item filter that matches nothing returns nothing; an order report with no date range covers the last 90 days and says so; reports never run themselves.</div></td><td class="next">Server-side report rows, later.</td></tr>
+<tr class="item" data-theme="D" data-status="Closed" data-sev="med"><td class="mono">D-06</td><td class="ids">PF-03</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Receiving and the Back Order Queue download every PO ever written</div><div class="fdetail">The open-only list exists and only the Dashboard uses it. Sprint 1: Receiving and the Back Order Queue load open POs only; Purchase Orders and Returns are searched and paged on the server.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="D" data-status="Closed" data-sev="med"><td class="mono">D-07</td><td class="ids">PF-04<br>PF-12<br>R5-16</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5 part, S1</div></td><td><div class="ftitle">The open-orders query cannot use the status index; missing and duplicate indexes</div><div class="fdetail">Round 5 added indexes on createdAt, orderDate, dueDate and shippedAt. Sprint 1: the open-orders query filters with a positive status list; the duplicate item-number index is dropped.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="D" data-status="Open" data-sev="med"><td class="mono">D-08</td><td class="ids">PF-05</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Order search by item, free text or ship date scans full history per page</div></td><td class="next">Filter by item id; keep a last-shipped column; trigram index on customer name and P.O.</td></tr>
+<tr class="item" data-theme="D" data-status="Closed" data-sev="med"><td class="mono">D-09</td><td class="ids">PF-06</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">The stock-ledger item filter searches on every keystroke with a full scan</div><div class="fdetail">Sprint 1: the ledger filter is debounced.</div></td><td class="next">Filter by item id when the ledger moves to ids.</td></tr>
+<tr class="item" data-theme="D" data-status="Open" data-sev="med"><td class="mono">D-10</td><td class="ids">PF-08</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Item Quick Report and Product Labels download thousands of orders for small lists</div></td><td class="next">Small endpoints: an item&#x27;s order lines; a customer&#x27;s purchased items.</td></tr>
+<tr class="item" data-theme="D" data-status="Open" data-sev="low"><td class="mono">D-11</td><td class="ids">PF-10</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">A slow old response can overwrite a newer one on Reports and Warehouse Capacity</div></td><td class="next">Tag requests and ignore stale answers, as the paged lists do.</td></tr>
+<tr class="item" data-theme="D" data-status="Open" data-sev="low"><td class="mono">D-12</td><td class="ids">PF-13</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">No response compression; one 597 KB bundle; README runs the dev server</div></td><td class="next">compression middleware; lazy-load rarely used pages; serve the built files.</td></tr>
+<tr class="item" data-theme="D" data-status="Open" data-sev="low"><td class="mono">D-13</td><td class="ids">PF-14</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Analytics reads all order lines three times per recalculation; cache never forgets</div></td><td class="next">Compute once; monthly roll-up; serve stale while refreshing; bound the cache. Or compute revenue from invoices (E-03).</td></tr>
+<tr class="theme-row" data-theme="E"><td colspan="6"><span class="eyebrow">E</span> Data model, money and accounting <span class="sev-count">11 items</span></td></tr>
+<tr class="item" data-theme="E" data-status="Closed" data-sev="low"><td class="mono">E-01</td><td class="ids">L-04</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5 part, S1</div></td><td><div class="ftitle">Money math in floating point</div><div class="fdetail">Invoices and credit memos are computed in integer cents on the server since round 5; the order screens still use floats. Sprint 1: order screens compute line, subtotal, tax and total in integer cents with the server&#x27;s rounding, so an order page and its invoice agree to the cent.</div></td><td class="next"></td></tr>
+<tr class="item" data-theme="E" data-status="Partial" data-sev="med"><td class="mono">E-02</td><td class="ids">M-15</td><td><span class="sev sev-med">Medium</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">Lines default to $0 without an override; PO cost defaults to the sell price; credit used the catalog price</div><div class="fdetail">Credit memos price from the invoice that billed the item (round 5).</div></td><td class="next">Fall back to the catalog rate on order lines; add item cost (E-05) for PO defaults.</td></tr>
+<tr class="item" data-theme="E" data-status="Open" data-sev="low"><td class="mono">E-03</td><td class="ids">L-02<br>R4-29</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Analytics revenue is bookings with tax and unshipped orders; cancelled partial shipments are dropped</div></td><td class="next">Compute revenue from invoices and credit memos, which now exist, and inventory value from cost once E-05 lands.</td></tr>
+<tr class="item" data-theme="E" data-status="Closed" data-sev="low"><td class="mono">E-04</td><td class="ids">R5-13</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">No table recorded when it was last changed</div></td><td class="next">updatedAt on every business table.</td></tr>
+<tr class="item" data-theme="E" data-status="Open" data-sev="low"><td class="mono">E-05</td><td class="ids">R5-14</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Items have no cost</div><div class="fdetail">No margin by customer or item; inventory value at sell price.</div></td><td class="next">Add unitCost; snapshot it on invoice lines; update from PO receipts.</td></tr>
+<tr class="item" data-theme="E" data-status="Decision" data-sev="low"><td class="mono">E-06</td><td class="ids">R5-15</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-decision">Decision</span></td><td><div class="ftitle">Quantities are integers and U/M is free text</div><div class="fdetail">The price sheet already knows about feet and lengths.</div></td><td class="next">Decide whether anything is sold by the foot. If yes: Decimal quantities and a U/M table. If no: document it and drop the per-foot fields.</td></tr>
+<tr class="item" data-theme="E" data-status="Closed" data-sev="low"><td class="mono">E-07</td><td class="ids">R5-18</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">R5</div></td><td><div class="ftitle">Negative prices, costs and rates were accepted</div></td><td class="next">Bounds on every money and quantity field.</td></tr>
+<tr class="item" data-theme="E" data-status="Delivered" data-sev="high"><td class="mono">E-08</td><td class="ids">R2 gap<br>R5 §05</td><td><span class="sev sev-high">High</span></td><td><span class="st st-delivered">Delivered</span><div class="closed-in">R5</div></td><td><div class="ftitle">No invoicing, credit memos or accounting export</div><div class="fdetail">Round 5 built option B: an invoice per shipment inside the ship transaction, a credit memo per received return priced from the invoice, an outbox to QuickBooks Online with retry, an in-memory fake for tests, and a reconciliation report.</div></td><td class="next">Owner actions: create the Intuit app, set the five environment variables, connect from Settings, turn off QuickBooks inventory tracking for the items, reconcile the first month.</td></tr>
+<tr class="item" data-theme="E" data-status="Decision" data-sev="none"><td class="mono">E-09</td><td class="ids">R5 accounting</td><td><span class="sev sev-none">—</span></td><td><span class="st st-decision">Decision</span></td><td><div class="ftitle">Tax handling on invoices</div><div class="fdetail">Invoices carry the order&#x27;s rate (zero for tax-exempt customers) as TotalTax. A QuickBooks company with Automated Sales Tax may recompute it.</div></td><td class="next">After the first live invoices, decide whether QuickBooks owns tax (send lines only) or this system does. Consider a tax code per customer instead of a rate per order.</td></tr>
+<tr class="item" data-theme="E" data-status="Partial" data-sev="low"><td class="mono">E-10</td><td class="ids">L-06</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">Permissions defined in several places; GenerateBOL is 975 lines</div><div class="fdetail">Three places became two (client PAGE_DEFS, server PAGE_LABELS).</div></td><td class="next">A shared package for page definitions imported by both; split the BOL form from its print view.</td></tr>
+<tr class="item" data-theme="E" data-status="Open" data-sev="none"><td class="mono">E-11</td><td class="ids">R2 gap</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">No leads, quotes or follow-ups for sales managers</div><div class="fdetail">Sales managers can only add a customer once won.</div></td><td class="next">Idea backlog; scope after the throughput work.</td></tr>
+<tr class="theme-row" data-theme="F"><td colspan="6"><span class="eyebrow">F</span> Operations, testing and delivery <span class="sev-count">4 items</span></td></tr>
+<tr class="item" data-theme="F" data-status="Partial" data-sev="high"><td class="mono">F-01</td><td class="ids">R5-19</td><td><span class="sev sev-high">High</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">No automated tests</div><div class="fdetail">Round 5: 47 Vitest tests against Postgres covering auth, every order command and permission, ship, allocate and receipt races, invoicing and the QuickBooks bridge, plus a randomized concurrent workload with ledger and state invariants. GitHub Actions runs it all on every push.</div></td><td class="next">Frontend: a Playwright smoke over the five core flows (the round 2 browser checks in sim/ui-check.mjs are the starting point).</td></tr>
+<tr class="item" data-theme="F" data-status="Partial" data-sev="low"><td class="mono">F-02</td><td class="ids">R5-20</td><td><span class="sev sev-low">Low</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">R5 part</div></td><td><div class="ftitle">No request logging, request ids, deployment or backup runbook</div><div class="fdetail">Node pinned; graceful shutdown added.</div></td><td class="next">pino-http with request ids; a one-page runbook: TLS front, environment, nightly pg_dump, a tested restore.</td></tr>
+<tr class="item" data-theme="F" data-status="Closed" data-sev="none"><td class="mono">F-03</td><td class="ids">R1 next<br>R2 §08</td><td><span class="sev sev-none">—</span></td><td><span class="st st-closed">Closed</span><div class="closed-in">S1</div></td><td><div class="ftitle">Run the day simulation after significant changes</div><div class="fdetail">It found the round 1 class of bug in 12 minutes. Round 5 ported it to the command endpoints but has not re-run it. Sprint 1: sim/day.mjs re-run on the sprint 1 code (see docs/review/data/round6): 203 orders entered and 46,206 units shipped in the compressed day against 204 and 46,209 in round 2; 0 500s, 0 stock drift, 0 negative on hand, 0 over-commitment, 0 over-shipped lines; 409 conflicts down from 60 to 44; 90 orders that arrived before 3 pm still waiting at close (91 in round 2), so the analyst bottleneck is unchanged, as expected before sprint 3. p95 latency 66 ms against 41 (a different machine, plus the invoice and outbox rows now written inside every ship); movements doubled to 960 because the 500 opening stock movements now count.</div></td><td class="next">Re-run at the end of every sprint.</td></tr>
+<tr class="item" data-theme="F" data-status="Open" data-sev="none"><td class="mono">F-04</td><td class="ids">R2 §07<br>R5</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Deploying the current branch</div><div class="fdetail">Two migrations, new permission key, new seed behaviour, new environment variables.</div></td><td class="next">Follow section 06 of the master review.</td></tr>
+<tr class="theme-row" data-theme="G"><td colspan="6"><span class="eyebrow">G</span> Throughput and process <span class="sev-count">12 items</span></td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-01</td><td class="ids">W-1<br>R2 §03</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Analysts are the bottleneck at 133% of two people</div><div class="fdetail">8.5 analyst-minutes per order (validate 2.4, allocate 3.3, release 1.9, switching 0.9) against 150 orders a day. 91 orders that arrived before 3 pm were still waiting at close; three analysts were 99% busy too.</div></td><td class="next">Time 20 real orders per step first. Then G-02 immediately, G-03 and G-05 next, G-04 later. Modelled result: about 38 to 49% of two analysts.</td></tr>
+<tr class="item" data-theme="G" data-status="Partial" data-sev="none"><td class="mono">G-02</td><td class="ids">P-D4<br>P-D1<br>P-A3 short</td><td><span class="sev sev-none">—</span></td><td><span class="st st-partial">Partial</span><div class="closed-in">S1 part</div></td><td><div class="ftitle">Split analyst duties; let analysts print what they release; collate pick list and slip</div><div class="fdetail">One analyst validates and handles exceptions, the other allocates, releases and works back orders. Analysts get pick-pack edit. Sprint 1: the Analyst preset has Release Orders (print) edit, so analysts print what they release.</div></td><td class="next">Splitting the two analysts&#x27; duties is a process change for the owner to make.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-03</td><td class="ids">P-A2</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Allocate automatically when the decision is mechanical</div><div class="fdetail">77% of decisions are mechanical (58% fully in stock, 19% held). A batch every ten minutes, oldest or most urgent first.</div></td><td class="next">Saves about 420 analyst-minutes a day. Build on the allocate command and the reservation table.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-04</td><td class="ids">P-A1<br>P-B1</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Validate by exception with server rules, and one Order Review screen for exceptions</div><div class="fdetail">Customer linked, saved ship-to, prices match, quantity in range, P.O. not duplicated, total under a limit. Passing orders auto-Checked and logged; the rest go to one review screen with the reasons.</div></td><td class="next">Saves about 280 minutes a day at a 70% pass rate. Also closes A-22. Build after measuring real pass rates.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-05</td><td class="ids">P-A3<br>P-A4</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Release and print in one step; print the packing slip at confirm from actual quantities</div><div class="fdetail">Slips printed before picking are wrong on every short (40% of 10-line orders, 72% of 25-line).</div></td><td class="next">Saves about 200 minutes of release and 45 minutes of reprints a day.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-06</td><td class="ids">P-A5<br>P-B6</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Fill back orders automatically when a PO is received; a shortage list for Purchasing</div><div class="fdetail">Nothing happens when stock arrives; 36 to 50 back orders at close. The buyer works shortages out by hand (15 minutes per PO run).</div></td><td class="next">Run the allocator over back orders for the received items; split the queue into fillable now, covered by a PO, uncovered; create PO from selection.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-07</td><td class="ids">P-A6</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Build the BOL and shipping label from the order</div><div class="fdetail">Weight, handling units, carrier and PRO are typed every time; the routing guide is ignored.</div></td><td class="next">Prefill from item weights and the routing guide; save carrier, SCAC, PRO and pickup date on the order so Customer Service can quote them.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-08</td><td class="ids">P-A8</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Receive all outstanding on a PO</div><div class="fdetail">Every Receive Now starts at 0.</div></td><td class="next">One button fills every line with its outstanding quantity; correct the exceptions.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-09</td><td class="ids">P-B3<br>P-D3<br>R2 gap</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Confirm picks at the dock; a Warehouse preset</div><div class="fdetail">Pickers write shorts on paper and the one logistics user re-keys them (71 to 83% busy).</div></td><td class="next">A tablet view of Open Picks defaulting to what was packed; shorts tapped in; posts the shipment and prints slip and label. Large shorts need logistics approval.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-10</td><td class="ids">P-D2<br>P-D5</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Customer Service validates its own phone orders; a narrow request-change on allocated orders</div><div class="fdetail">Customer Service runs 53 to 58% busy. Maker must not equal checker: the writer is now stamped server-side, so the rule can be enforced.</div></td><td class="next">One preset line plus a server rule that the checker is not the writer.</td></tr>
+<tr class="item" data-theme="G" data-status="Open" data-sev="none"><td class="mono">G-11</td><td class="ids">R4 §08</td><td><span class="sev sev-none">—</span></td><td><span class="st st-open">Open</span></td><td><div class="ftitle">Order Entry as a keyboard grid</div><div class="fdetail">Enter in the last cell adds a row; customer part numbers resolve; paste item/qty lines; available-now and price source per line; duplicate P.O. warning; due date from lead time; side panel with routing-guide notes.</div></td><td class="next">About 200 minutes a day across Order Entry and Customer Service; touches per line 4 to 2.</td></tr>
+<tr class="item" data-theme="G" data-status="Decision" data-sev="none"><td class="mono">G-12</td><td class="ids">R2 §03</td><td><span class="sev sev-none">—</span></td><td><span class="st st-decision">Decision</span></td><td><div class="ftitle">Staffing</div><div class="fdetail">The simulation says two analysts cannot keep up and three nearly do at steady state.</div></td><td class="next">Cheapest first: Customer Service validates phone orders; skip separate validation for small repeat orders from key accounts; a third analyst. Measure before hiring.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" id="filter-note"></p>
+  </section>
+
+  <section id="plan">
+    <div class="section-head"><span class="eyebrow">05</span><h2>Work plan</h2>
+      <p>Round 4's roadmap and round 5's six steps merged, minus what round 5 built, in the order that keeps each step safe for the next. Item numbers refer to the master list. Weeks assume one developer who knows the codebase.</p>
+    </div>
+    <ol class="plan">
+      <li><div>
+        <b class="t">Sprint 0 · Deploy the branch and re-run the simulation</b>
+        <span class="why">Half a week. Gets the round 5 hardening, tests and invoicing into use and re-establishes the baseline.</span>
+        <ul>
+          <li>Section 06 checklist: merge by pull request, back up, migrate, re-apply presets, seed or reset the admin password, set the environment.</li>
+          <li>Re-run <code>sim/day.mjs</code> (F-03) and compare with round 2: 0 drift, no 500s, queue depths at close.</li>
+          <li>Create the Intuit app and connect QuickBooks in the sandbox company first (E-08).</li>
+        </ul>
+      </div></li>
+      <li><div>
+        <b class="t">Sprint 1 · Close the last integrity holes and take the quick wins</b>
+        <span class="why">One to two weeks. Small changes, each with a test, that remove the remaining ways to lose money or stock and the daily irritations round 4 counted.</span>
+        <ul>
+          <li>Integrity: A-13 returns count received RAs; A-14 customer delete refused plus inactive flag plus RESTRICT; A-15 undo refused after a received return; A-16 RA closed-to-received and frozen lines; A-17 opening stock movement; A-18 bulk release error handling; A-21 saving guards and idempotency keys.</li>
+          <li>Permissions: B-07 drop Import from the edit list; B-06 lock rates once stock is committed; B-18 report preset filters.</li>
+          <li>Screens: C-08 oldest-first queues with Skip; C-09 end-of-day shipped report with partials; C-10 and C-03 save on blur; C-05 Enter behaviour and required customer; C-11 per-order bulk confirm; C-15 date validation; A-20 drop blank rows.</li>
+          <li>Performance one-liners: D-06 open-only POs on Receiving and Back Orders; D-07 status IN filter; D-05 no-match item filter returns nothing and no auto-run; D-02 cap the lookback; D-09 debounce the ledger filter.</li>
+          <li>Process, no code: G-02 split analyst duties and give analysts pick-pack edit.</li>
+        </ul>
+      </div></li>
+      <li><div>
+        <b class="t">Sprint 2 · Reservation table, read exposure, audit in the transaction</b>
+        <span class="why">Two to three weeks. The last structural change from round 5, and the medium items that depend on it.</span>
+        <ul>
+          <li>A-25: an <code>Allocation</code> table and <code>Item.qtyReserved</code> maintained inside the same transactions; migrate the JSON; delete the client-side reservation math. Closes M-12b, N-05, PF-02, PF-09 and PF-11 and makes A-06 exact.</li>
+          <li>B-10 Dashboard summary endpoint and order-view gating; B-11 audit rows inside the transaction, setting-key whitelist, diffs on customer and item edits; B-08 price sheet and routing guide endpoints with per-price audit.</li>
+          <li>Screens: A-22 change control after Checked; A-23 pull-from-floor list; C-06 BOL addresses; C-07 Order Detail read-only lines and kept drafts; C-12, C-13, C-14, C-16, C-17 in passing; C-01 error boundary and toasts.</li>
+          <li>Performance: D-08 search indexes and last-shipped column; D-10 small endpoints; D-11 stale responses; D-12 compression and lazy pages; D-13 analytics from invoices (E-03).</li>
+          <li>Tests: F-01 Playwright smoke over the five core flows; E-01 cents on the client.</li>
+        </ul>
+      </div></li>
+      <li><div>
+        <b class="t">Sprint 3 · Throughput, part one</b>
+        <span class="why">Three to four weeks, after timing real orders. The first automation that changes what the business ships in a day.</span>
+        <ul>
+          <li>G-03 auto-allocate mechanical cases every ten minutes, oldest first, on the allocate command and the reservation table; a Dashboard list of what was auto-allocated.</li>
+          <li>C-08 second half: the server-side claim of the next order; G-05 release and print in one step, slip printed at confirm from actual quantities.</li>
+          <li>G-11 Order Entry keyboard grid with customer part numbers, paste, availability, price source and duplicate-P.O. warning.</li>
+          <li>G-06 fill back orders on receipt; G-08 receive all outstanding; G-07 BOL and label prefilled from the order with carrier and PRO saved.</li>
+        </ul>
+      </div></li>
+      <li><div>
+        <b class="t">Later · Throughput part two and the model gaps</b>
+        <span class="why">After measuring pass rates and the effect of sprint 3.</span>
+        <ul>
+          <li>G-04 rules-based validation and the Order Review exception screen; G-09 dock tablet and Warehouse preset; G-06 shortage list and create-PO-from-selection; G-10 Customer Service validates its own phone orders under a maker-not-checker rule.</li>
+          <li>E-05 item cost and margin reporting; E-06 the quantity-precision decision; E-10 shared permission package and the BOL split; F-02 logging and runbook; B-15 TLS single origin; the leads and quotes idea; Release Orders waves once bins and pickup times exist.</li>
+        </ul>
+      </div></li>
+    </ol>
+  </section>
+
+  <section id="deploy">
+    <div class="section-head"><span class="eyebrow">06</span><h2>Deploying the current branch</h2>
+      <p>Round 2's four steps, extended for what round 5 changed. Do it once against a copy of production first.</p>
+    </div>
+    <ol class="check">
+      <li><b>Back up.</b> <code>pg_dump -Fc erp_prod > before-round5.dump</code>. Both new migrations are additive, but one adds a unique index that fails if two item numbers differ only by case; resolve those under Items first, or the migration will tell you which.</li>
+      <li><b>Merge by pull request</b> from <code>claude/sweet-mccarthy-iug4f3</code> into <code>main</code>. CI runs the whole suite against a fresh Postgres. The branch already includes main's round 4 report.</li>
+      <li><b>Environment.</b> In <code>server/.env</code> keep <code>DATABASE_URL</code> and <code>JWT_SECRET</code>; add <code>TOKEN_TTL=10h</code>, <code>TRUST_PROXY=1</code> if behind a proxy, <code>CORS_ORIGIN</code> for the web origin, <code>TOKEN_ENCRYPTION_KEY</code> from <code>openssl rand -hex 32</code>, and the five <code>QBO_*</code> variables once the Intuit app exists. <code>QBO_SYNC_INTERVAL_MS=0</code> disables the worker until you are ready.</li>
+      <li><b>Migrate and restart.</b> <code>cd server && npx prisma migrate deploy</code>, then restart the API. The frontend needs <code>VITE_API_URL</code> at build time as before; <code>VITE_IDLE_MINUTES</code> overrides the 45-minute idle logout.</li>
+      <li><b>Accounts.</b> Existing passwords keep working. Reset the admin password from Accounts (the person is then asked to choose their own), or run the seed on an empty database to get a random one. Re-apply a preset to Customer Service, Sales Manager and Director accounts so they gain the Invoices page. Create a second admin (B-17).</li>
+      <li><b>Behaviour your team will notice.</b> Ten-character passwords and a forced change after a reset; sign-out after 45 idle minutes; an invoice appears for every shipment and a credit memo for every received return; the RA and PO forms no longer accept received quantities typed by hand; Release Orders and Open Picks refuse to ship more than was staged.</li>
+      <li><b>QuickBooks.</b> Connect the sandbox company first from Settings, ship a test order, run Sync now, check the invoice in QuickBooks, then reconcile the date range. Turn off inventory tracking for the items QuickBooks creates. Only then connect production.</li>
+      <li><b>Verify.</b> Sign in as each role and walk one order end to end; open the Activity Log and confirm ORDER_SHIPPED carries the invoice number; run <code>sim/day.mjs</code> against a copy if you have the time.</li>
+    </ol>
+  </section>
+
+  <section id="decisions">
+    <div class="section-head"><span class="eyebrow">07</span><h2>Decisions only you can make</h2></div>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Accounting and tax</h3>
+        <ul>
+          <li><b>QuickBooks Online or Desktop?</b> The bridge is built for Online. Desktop needs the Web Connector or a file export instead (round 5, section 05).</li>
+          <li><b>Who owns the tax figure</b> once Automated Sales Tax is on: send our TotalTax, or send lines and let QuickBooks compute (E-09)? Decide after reconciling the first month.</li>
+          <li><b>Invoice per shipment</b> is what is built. Confirm with whoever does collections that partial shipments should bill separately.</li>
+          <li><b>Undo after invoicing.</b> Undoing a shipment voids its invoice. Should that be refused once the invoice has synced, or once it is paid (A-15)?</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Product and policy</h3>
+        <ul>
+          <li><b>Is anything sold by the foot?</b> Decides decimal quantities and a units table (E-06).</li>
+          <li><b>Allocating ahead of a delivery.</b> Since round 1 allocation refuses to reserve more than is free. If you do this on purpose, an override is needed.</li>
+          <li><b>Price lock point.</b> Once released, once shipped, or never for Customer Service (B-06)?</li>
+          <li><b>Should Import edit existing orders</b> or only create (B-07)?</li>
+          <li><b>Rename the status</b> Pick &amp; Packed to Released (C-17)?</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Staffing and process</h3>
+        <ul>
+          <li><b>Time twenty real orders</b> at validation, allocation and release. Every throughput number here depends on it.</li>
+          <li><b>Third analyst, or Customer Service validates phone orders,</b> or skip validation for small repeat orders from key accounts (G-12)?</li>
+          <li><b>Split analyst duties now</b> (one validates, one allocates and releases)? No code needed (G-02).</li>
+          <li><b>A dock tablet</b> for confirming picks, which needs a Warehouse role (G-09)?</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Operations</h3>
+        <ul>
+          <li><b>Where does it run?</b> One origin behind TLS is the recommendation (B-15); who administers the host and the backups (F-02)?</li>
+          <li><b>Read exposure.</b> Is a warehouse kiosk or an outside login likely? If so, B-10 moves up.</li>
+          <li><b>Second admin</b> account holder (B-17).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="watch">
+    <div class="section-head"><span class="eyebrow">08</span><h2>Numbers to keep watching</h2>
+      <p>The controls that have caught every serious problem so far, and the operating figures the simulations said matter.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Measure</th><th>Where</th><th>Healthy</th><th>What it caught</th></tr></thead>
+        <tbody>
+          <tr><td>On-hand equals start plus ledger equals documents, per item</td><td>Workload test; <code>sim/day.mjs</code> audit</td><td class="good">0 drift</td><td>16,250 units of drift in round 1 run B</td></tr>
+          <tr><td>Units reserved above on-hand; negative on-hand</td><td>Allocation race tests; ledger SHIP rows</td><td class="good">0</td><td>916 double-promised units; 15 negative SKUs</td></tr>
+          <tr><td>Server errors (500) per day</td><td>API log; sim summary</td><td class="good">0</td><td>Key-account save failing at 100 KB</td></tr>
+          <tr><td>Refused collisions (409) per day</td><td>Sim summary; audit log</td><td>Some; none after damage</td><td>Stale queues and shared queue tops (60 to 150 a day)</td></tr>
+          <tr><td>Orders waiting for validation at close, arrived before 3 pm</td><td>Dashboard queue ages</td><td class="bad">91 today</td><td>The analyst bottleneck</td></tr>
+          <tr><td>Analyst busy share</td><td>Sim; later, timed orders</td><td class="bad">98 to 99% today</td><td>Two people cannot do three decisions per order</td></tr>
+          <tr><td>Invoices here versus in QuickBooks, by date range</td><td>Settings › QuickBooks › Compare</td><td class="good">No differences</td><td>New control; run weekly for the first quarter</td></tr>
+          <tr><td>Outbox rows FAILED or DEAD</td><td>Settings › QuickBooks</td><td class="good">0</td><td>New control</td></tr>
+          <tr><td>Largest page load with 15 people at a year of data</td><td><code>sim/scale-bench.mjs</code></td><td>Under 1 s</td><td>63.8 s Dashboard; 8.9 GB process</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="section-head"><span class="eyebrow">09</span><h2>Sources and method</h2></div>
+    <div class="prose">
+      <p>This document merges <code>erp-review.html</code> (round 1), <code>erp-review-2.html</code>, <code>erp-review-3.html</code>, <code>erp-review-4.html</code> (from main, commit <code>d047910</code>) and <code>erp-review-5.html</code>, the two versions of <code>open-bugs.md</code>, and the shared to-do page. Where two rounds found the same problem the rows are merged and every ID kept. Statuses were checked against the code on the branch, not taken from the reports: for each round 4 item the relevant file was read again, which is how B-07 (Import still on the edit list), A-13 and A-14 were confirmed open despite the round 5 work nearby.</p>
+      <p>Not re-measured: the simulation and scale figures are from rounds 1 and 2; round 5 changed the API surface and ported the simulation but did not re-run it, which is why it is sprint 0. Throughput figures rest on the time assumptions stated in section 03.</p>
+      <p>Published copies of the round reports are linked from <code>docs/review/README.md</code>. This page is generated from one data set together with <code>open-bugs.md</code>; keep them in step by editing the list once.</p>
+    </div>
+  </section>
+
+  <footer>Aamstrand ERP master review, 28 September 2026, updated 29 September with sprint 1. Synthesizes review rounds 1 to 5. Code state: main at <code>50f7b6d</code> plus the sprint 1 branch.</footer>
+</div>
+
+<script>
+  (function () {
+    var statusChips = document.querySelectorAll("[data-status-filter]");
+    var themeChips = document.querySelectorAll("[data-theme-filter]");
+    var rows = document.querySelectorAll("#master tbody tr.item");
+    var themeRows = document.querySelectorAll("#master tbody tr.theme-row");
+    var note = document.getElementById("filter-note");
+    var status = "all", theme = "all";
+    function apply() {
+      var shown = 0;
+      var perTheme = {};
+      rows.forEach(function (r) {
+        var st = r.getAttribute("data-status");
+        var okStatus = status === "all" || st === status || (status === "Closed" && st === "Delivered");
+        var okTheme = theme === "all" || r.getAttribute("data-theme") === theme;
+        var show = okStatus && okTheme;
+        r.classList.toggle("hidden", !show);
+        if (show) { shown++; perTheme[r.getAttribute("data-theme")] = (perTheme[r.getAttribute("data-theme")] || 0) + 1; }
+      });
+      themeRows.forEach(function (r) { r.style.display = perTheme[r.getAttribute("data-theme")] ? "" : "none"; });
+      note.textContent = shown + " of " + rows.length + " items shown.";
+    }
+    statusChips.forEach(function (c) { c.addEventListener("click", function () {
+      status = c.getAttribute("data-status-filter");
+      statusChips.forEach(function (x) { x.setAttribute("aria-pressed", x === c ? "true" : "false"); });
+      apply();
+    }); });
+    themeChips.forEach(function (c) { c.addEventListener("click", function () {
+      theme = c.getAttribute("data-theme-filter");
+      themeChips.forEach(function (x) { x.setAttribute("aria-pressed", x === c ? "true" : "false"); });
+      apply();
+    }); });
+    apply();
+  })();
+</script>

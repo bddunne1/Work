@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { isConflictError } from "../lib/apiClient";
-import { useAuth } from "../lib/authContext";
-import { getOrder, updateOrder } from "../lib/orderStore";
+import { checkOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
-import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
+import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
 import { orderTotal } from "../types";
 
@@ -20,7 +19,6 @@ function ValidationDecisionInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { account } = useAuth();
   const queueState = location.state as ReviewQueueState | undefined;
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -51,16 +49,20 @@ function ValidationDecisionInner() {
   // leaving its allocation/pick in place.
   const staleStatus = order.status !== "Entered";
 
+  // Park this order for the session and move on (R4-19).
+  function skip() {
+    if (!order) return;
+    skipSoNumber("validation", order.soNumber);
+    const next = nextQueueSoNumber(queueState);
+    if (next) navigate(`/validation/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
+    else navigate("/validation");
+  }
+
   async function markChecked() {
     if (!order || staleStatus) return;
     try {
-      await updateOrder({
-        ...order,
-        status: "Checked",
-        checkedAt: new Date().toISOString(),
-        checkedBy: account?.initials,
-        checkedByColor: account?.color,
-      }, "Entered");
+      // The server stamps who checked it from the session, not from here.
+      await checkOrder(order);
     } catch (err) {
       if (isConflictError(err)) {
         alert(err.message);
@@ -93,6 +95,11 @@ function ValidationDecisionInner() {
           <span className="review-meta-sep">·</span>
           <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
+          {!staleStatus && (
+            <button type="button" className="secondary-btn" onClick={skip} title="Leave this order for later and move to the next one">
+              Skip
+            </button>
+          )}
         </div>
       </div>
 

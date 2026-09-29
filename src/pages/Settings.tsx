@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import QuickBooksPanel from "../components/QuickBooksPanel";
 import type { CompanyInfo } from "../lib/companyStore";
 import { getCompanyInfo, setCompanyInfo } from "../lib/companyStore";
 import { maxExistingSalesOrderNumber, nextSalesOrderNumber, setNextSalesOrderNumber } from "../lib/orderStore";
@@ -39,14 +40,34 @@ export default function Settings() {
     setTimeout(() => setCompanySaved(false), 2000);
   }
 
-  function handleLeadTimeChange(value: number) {
-    if (!Number.isFinite(value) || value < 0) return;
+  // Both numbers are typed into a draft and saved when the field is left,
+  // after validation - clearing the lead time used to save 0 (M-11), and a
+  // lookback of 365 pulled a year of shipments per page open (N-05).
+  const [leadTimeText, setLeadTimeText] = useState(() => String(getLeadTimeDays()));
+  const [lookbackText, setLookbackText] = useState(() => String(getCapacityLookbackDays()));
+  const [defaultsError, setDefaultsError] = useState("");
+  const MAX_LOOKBACK_DAYS = 90;
+
+  function commitLeadTime() {
+    const value = Number(leadTimeText);
+    if (!Number.isInteger(value) || value < 0 || value > 60) {
+      setDefaultsError("Lead time must be a whole number of business days, 0 to 60.");
+      setLeadTimeText(String(leadTime));
+      return;
+    }
+    setDefaultsError("");
     setLeadTime(value);
     setLeadTimeDays(value);
   }
 
-  function handleLookbackChange(value: number) {
-    if (!Number.isFinite(value) || value <= 0) return;
+  function commitLookback() {
+    const value = Number(lookbackText);
+    if (!Number.isInteger(value) || value < 1 || value > MAX_LOOKBACK_DAYS) {
+      setDefaultsError(`The capacity lookback must be a whole number of days, 1 to ${MAX_LOOKBACK_DAYS}.`);
+      setLookbackText(String(lookback));
+      return;
+    }
+    setDefaultsError("");
     setLookback(value);
     setCapacityLookbackDays(value);
   }
@@ -143,22 +164,31 @@ export default function Settings() {
           <label className="form-field">
             Lead Time (business days)
             <input
+              id="setting-lead-time"
               type="number"
               min={0}
-              value={leadTime}
-              onChange={(e) => handleLeadTimeChange(Number(e.target.value))}
+              max={60}
+              step={1}
+              value={leadTimeText}
+              onChange={(e) => setLeadTimeText(e.target.value)}
+              onBlur={commitLeadTime}
             />
           </label>
           <label className="form-field">
             Warehouse Capacity Lookback (days)
             <input
+              id="setting-capacity-lookback"
               type="number"
               min={1}
-              value={lookback}
-              onChange={(e) => handleLookbackChange(Number(e.target.value))}
+              max={MAX_LOOKBACK_DAYS}
+              step={1}
+              value={lookbackText}
+              onChange={(e) => setLookbackText(e.target.value)}
+              onBlur={commitLookback}
             />
           </label>
         </div>
+        {defaultsError && <p className="login-error">{defaultsError}</p>}
         <p className="muted">
           Lead time is applied to every new order at entry - see Order Entry. The capacity lookback
           is the default window Warehouse Capacity uses for throughput and dwell time.
@@ -198,6 +228,8 @@ export default function Settings() {
           </form>
         </div>
       </div>
+
+      <QuickBooksPanel />
     </div>
   );
 }
