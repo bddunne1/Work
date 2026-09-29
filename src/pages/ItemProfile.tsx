@@ -11,7 +11,7 @@ import { OPEN_ORDER_STATUSES, searchAllOrders } from "../lib/orderStore";
 import { usePagedOrders, usePageForFilters } from "../lib/usePagedOrders";
 import { listVendors } from "../lib/vendorStore";
 import type { Item, ItemComponent, ItemLink, PurchaseOrder, Vendor } from "../types";
-import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders, remainingToShip } from "../types";
+import { availableQty, qtyOnOpenSalesOrders, remainingToShip } from "../types";
 
 export default function ItemProfile() {
   const { id } = useParams<{ id: string }>();
@@ -77,7 +77,7 @@ function ItemProfileInner() {
 
   const view = editing && draft ? draft : item;
   const onSalesOrder = qtyOnOpenSalesOrders(item.itemNumber, openOrders);
-  const allocated = qtyAllocatedOnOrders(item.itemNumber, openOrders);
+  const allocated = item.qtyReserved;
   const preferredVendor = vendors.find((v) => v.id === view.preferredVendorId);
 
   function startEdit() {

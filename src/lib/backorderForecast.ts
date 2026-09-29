@@ -4,7 +4,7 @@
 // RP-100, the next PO for it lands the 14th, so that's the earliest we
 // could ship."
 import type { Item, PurchaseOrder, VendorPurchaseOrder } from "../types";
-import { availableQty, qtyAllocatedOnOrders, remainingToShip, vendorPoLineOutstanding } from "../types";
+import { availableQty, remainingToShip, reservedElsewhere, vendorPoLineOutstanding } from "../types";
 
 export interface LineShortfall {
   lineItemId: string;
@@ -27,10 +27,9 @@ export interface BackorderEstimate {
 const OPEN_VENDOR_PO_STATUSES = new Set(["Open", "Partially Received"]);
 
 export function estimateBackorderShipDate(
-  order: Pick<PurchaseOrder, "lineItems" | "shipmentHistory">,
+  order: Pick<PurchaseOrder, "status" | "lineItems" | "shipmentHistory" | "allocation" | "pendingShipment">,
   items: Item[],
-  vendorPos: VendorPurchaseOrder[],
-  allOrders: PurchaseOrder[]
+  vendorPos: VendorPurchaseOrder[]
 ): BackorderEstimate {
   const itemsByNumber = new Map(items.map((i) => [i.itemNumber.trim().toLowerCase(), i]));
   const lines: LineShortfall[] = [];
@@ -42,8 +41,9 @@ export function estimateBackorderShipDate(
     if (remaining <= 0) continue;
 
     const item = itemsByNumber.get(li.item.trim().toLowerCase());
-    const allocated = item ? qtyAllocatedOnOrders(item.itemNumber, allOrders) : 0;
-    const available = item ? availableQty(item, allocated) : 0;
+    // Free stock is what nobody else holds; a backordered order holds nothing
+    // itself, but the rule is the same one the allocation screen uses.
+    const available = item ? availableQty(item, reservedElsewhere(item, order)) : 0;
     const shortfall = Math.max(0, remaining - Math.max(0, available));
     if (shortfall <= 0) continue;
 

@@ -159,7 +159,7 @@ router.post("/", requirePermission("purchase-orders", "edit"), idempotent("vendo
       },
       include,
     });
-    await recomputeQtyOnPurchaseOrder(tx, created.lines.map((l) => l.itemNumber));
+    await recomputeQtyOnPurchaseOrder(tx, created.lines.map((l) => l.itemId));
     return created;
   });
   logAudit(req.account!, "VENDOR_PO_CREATED", "vendor-po", po.poNumber, po.poNumber, { vendor: po.vendorName, lines: po.lines.length });
@@ -228,7 +228,7 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         },
       });
       const itemIds = await resolveItemIds(tx, data.lines.map((l) => l.itemNumber));
-      const beforeItems = existing.lines.map((l) => l.itemNumber);
+      const beforeItems = existing.lines.map((l) => l.itemId);
       await syncChildren(tx.vendorPoLine, poNumber, "poNumber", data.lines, (l) => ({
         itemId: itemIdFor(itemIds, l.itemNumber),
         itemNumber: l.itemNumber,
@@ -238,7 +238,7 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         cost: l.cost,
       }));
       // Items removed from the PO need their on-order total dropped too.
-      await recomputeQtyOnPurchaseOrder(tx, [...beforeItems, ...data.lines.map((l) => l.itemNumber)]);
+      await recomputeQtyOnPurchaseOrder(tx, [...beforeItems, ...data.lines.map((l) => itemIdFor(itemIds, l.itemNumber))]);
     });
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -307,7 +307,7 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       where: { poNumber },
       data: { status: derivedStatus(poLines), version: { increment: 1 } },
     });
-    await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemNumber));
+    await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemId));
     logAudit(req.account!, "VENDOR_PO_RECEIVED", "vendor-po", poNumber, poNumber, {
       units: received.reduce((sum, l) => sum + l.qty, 0),
       lines: received.length,

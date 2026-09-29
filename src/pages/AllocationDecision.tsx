@@ -3,11 +3,11 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { allocateOrder, getOrder, listOpenOrders } from "../lib/orderStore";
+import { allocateOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
-import { availableQty, orderTotal, qtyAllocatedOnOrders, remainingToShip, shippedQtyFor } from "../types";
+import { availableQty, orderTotal, remainingToShip, reservedElsewhere, shippedQtyFor } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -23,7 +23,6 @@ function AllocationDecisionInner() {
   const queueState = location.state as ReviewQueueState | undefined;
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
 
   const [customer, setCustomer] = useState<Customer | undefined>();
   const [qtys, setQtys] = useState<Record<string, number>>({});
@@ -36,14 +35,12 @@ function AllocationDecisionInner() {
     // Loaded together so each line's starting quantity can be capped at what
     // is actually free - it used to default to the full remaining quantity
     // regardless of stock, so one click over-allocated.
-    Promise.all([getOrder(soNumber), listItems(), listOpenOrders()]).then(([o, catalog, open]) => {
+    Promise.all([getOrder(soNumber), listItems()]).then(([o, catalog]) => {
       setItems(catalog);
-      setAllOrders(open);
       setOrder(o);
       setLoading(false);
       if (!o) return;
       const byNumber = itemsIndex(catalog);
-      const others = open.filter((x) => x.soNumber !== o.soNumber);
       const takenHere = new Map<string, number>();
       const saved = new Map(o.allocation?.lines.map((l) => [l.lineItemId, l.allocatedQty]));
       const initial: Record<string, number> = {};
@@ -52,7 +49,7 @@ function AllocationDecisionInner() {
         const key = li.item.trim().toLowerCase();
         const catalogItem = byNumber.get(key);
         const free = catalogItem
-          ? availableQty(catalogItem, qtyAllocatedOnOrders(li.item, others)) - (takenHere.get(key) ?? 0)
+          ? availableQty(catalogItem, reservedElsewhere(catalogItem, o)) - (takenHere.get(key) ?? 0)
           : remaining;
         const qty = Math.max(0, Math.min(saved.get(li.id) ?? remaining, remaining, free));
         initial[li.id] = qty;
@@ -249,11 +246,7 @@ function AllocationDecisionInner() {
                   const qty = qtys[li.id] ?? 0;
                   const short = qty < remaining;
                   const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
-                  const allocatedElsewhere = qtyAllocatedOnOrders(
-                    li.item,
-                    allOrders.filter((o) => o.soNumber !== order.soNumber)
-                  );
-                  const available = catalogItem ? availableQty(catalogItem, allocatedElsewhere) : null;
+                  const available = catalogItem ? availableQty(catalogItem, reservedElsewhere(catalogItem, order)) : null;
                   const overAvailable = available !== null && qty > available;
                   return (
                     <tr key={li.id}>

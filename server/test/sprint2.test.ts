@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/prisma.js";
 import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
 import { processOutbox } from "../src/integrations/sync.js";
-import { admin, as, issueInvoiceFor, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship, so, undoShipment } from "./helpers.js";
+import { readFileSync } from "node:fs";
+import { admin, allocate, as, cancel, check, editItem, getOrder, issueInvoiceFor, itemByNumber, makeCustomer, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, orderReadyToShip, receive, release, resetDb, ship, so, unallocate, undoShipment } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -144,5 +145,154 @@ describe("invoice review queue", () => {
     expect(fakeQuickBooks.creditMemos.size).toBe(1);
     expect([...fakeQuickBooks.creditMemos.values()][0].data.total).toBe(10.2);
     expect(ok(await root.get(so(o))).status).toBe("Shipped");
+  });
+});
+
+describe("reservation table", () => {
+  const reserved = async (itemNumber: string) => (await itemByNumber(itemNumber))!.qtyReserved;
+  const rowsFor = (soNumber: any) => prisma.allocation.findMany({ where: { soNumber: Number(soNumber) }, orderBy: { qty: "asc" } });
+  // The invariant every step must leave true: each item's qtyReserved is the
+  // sum of its Allocation rows, and every row belongs to an order that holds.
+  async function expectConsistent() {
+    const items = await prisma.item.findMany({ include: { allocations: true } });
+    for (const i of items) expect(i.qtyReserved, `${i.itemNumber} qtyReserved`).toBe(i.allocations.reduce((s, a) => s + a.qty, 0));
+    const orders = await prisma.salesOrder.findMany({ include: { allocations: true } });
+    for (const o of orders) if (!["ALLOCATED", "BACKORDERED", "PICK_PACKED"].includes(o.status)) expect(o.allocations, `S.O. ${o.soNumber} ${o.status} holds stock`).toEqual([]);
+  }
+
+  it("keeps Item.qtyReserved in step with every order step, and refuses an allocation the column says is not free", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 10);
+    await makeItem(root, "BR-2002", 3);
+    expect(await reserved("BR-1001")).toBe(0);
+    let a = ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 6 }, { item: "BR-2002", ordered: 2 }])));
+    let b = ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 6 }])));
+    a = ok(await allocate(root, a));
+    expect(await reserved("BR-1001")).toBe(6);
+    expect(await reserved("BR-2002")).toBe(2);
+    expect((await rowsFor(a.soNumber)).map((r) => [r.lineItemId, r.qty])).toEqual([[a.lineItems[1].id, 2], [a.lineItems[0].id, 6]]);
+    // Only 4 left: the check reads the column, not every open order.
+    const short = await allocate(root, b);
+    expect(short.status).toBe(409);
+    expect(short.body.shortages).toEqual(["BR-1001: 4 available, 6 requested"]);
+    b = ok(await allocate(root, b, [4]));
+    expect(await reserved("BR-1001")).toBe(10);
+    // Revising downwards frees the difference; revising back up is checked against everyone else.
+    a = ok(await allocate(root, a, [5, 2]));
+    expect(await reserved("BR-1001")).toBe(9);
+    expect((await allocate(root, a, [6, 2])).status).toBe(200);
+    a = await getOrder(root, a.soNumber);
+    expect(await reserved("BR-1001")).toBe(10);
+    // Release moves the hold from allocated to staged - same total.
+    a = ok(await release(root, a));
+    expect(await reserved("BR-1001")).toBe(10);
+    // Trimming the pick at print time drops what the floor can't fill.
+    a = ok(await markPrinted(root, a, [{ lineItemId: a.lineItems[0].id, qty: 5 }]));
+    expect(await reserved("BR-1001")).toBe(9);
+    expect(await reserved("BR-2002")).toBe(2);
+    // Shipping takes the units out of on hand and out of the hold together.
+    a = ok(await ship(root, a));
+    expect(a.status).toBe("Backordered");
+    expect((await itemByNumber("BR-1001"))!).toMatchObject({ qtyOnHand: 5, qtyReserved: 4 });
+    expect((await itemByNumber("BR-2002"))!).toMatchObject({ qtyOnHand: 1, qtyReserved: 0 });
+    expect(await rowsFor(a.soNumber)).toEqual([]);
+    // Undo puts them back on hand and back on hold, as a staged pick.
+    a = ok(await undoShipment(root, a));
+    expect(a.status).toBe("Pick & Packed");
+    expect((await itemByNumber("BR-1001"))!).toMatchObject({ qtyOnHand: 10, qtyReserved: 9 });
+    expect((await rowsFor(a.soNumber)).map((r) => r.qty)).toEqual([2, 5]);
+    a = ok(await ship(root, a));
+    // Unallocate and cancel both let go of everything the order held.
+    b = ok(await unallocate(root, b));
+    expect(await reserved("BR-1001")).toBe(0);
+    b = ok(await allocate(root, b, [4]));
+    expect(await reserved("BR-1001")).toBe(4);
+    b = ok(await cancel(root, b));
+    expect(await reserved("BR-1001")).toBe(0);
+    // A hold (allocating nothing) reserves nothing.
+    let c = ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 2 }])));
+    c = ok(await allocate(root, c, [0]));
+    expect(c.status).toBe("Backordered");
+    expect(await reserved("BR-1001")).toBe(0);
+    await expectConsistent();
+  });
+
+  it("releases the remainder of a partial shipment back to the queue with nothing held (A-07)", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 10);
+    await makeItem(root, "BR-2002", 5);
+    let a = ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 10 }, { item: "BR-2002", ordered: 5 }])));
+    a = ok(await allocate(root, a));
+    // Release the first line only; the second stays allocated while the pick is out.
+    a = ok(await release(root, a, [10, 0]));
+    expect(a.pickPackStatus).toBe("Partial");
+    expect(await reserved("BR-1001")).toBe(10);
+    expect(await reserved("BR-2002")).toBe(5);
+    a = ok(await markPrinted(root, a));
+    a = ok(await ship(root, a));
+    expect(a.status).toBe("Backordered");
+    expect(a.allocation).toBeNull();
+    expect((await itemByNumber("BR-1001"))!).toMatchObject({ qtyOnHand: 0, qtyReserved: 0 });
+    expect((await itemByNumber("BR-2002"))!).toMatchObject({ qtyOnHand: 5, qtyReserved: 0 });
+    // Those 5 are free for whoever needs them first...
+    let b = ok(await check(root, await makeOrder(root, [{ item: "BR-2002", ordered: 5 }])));
+    b = ok(await allocate(root, b));
+    expect(await reserved("BR-2002")).toBe(5);
+    // ...and the back order is told so when it comes back for a decision.
+    const again = await allocate(root, a, [0, 5]);
+    expect(again.status).toBe(409);
+    expect(again.body.shortages).toEqual(["BR-2002: 0 available, 5 requested"]);
+    await expectConsistent();
+  });
+
+  it("backfills the table from the JSON an upgraded database still carries", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 50);
+    await makeItem(root, "BR-2002", 50);
+    // Three live holds: allocated, released (staged), and a partial release.
+    const allocated = ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 7 }, { item: "BR-2002", ordered: 3 }])))));
+    const staged = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 4 }]);
+    let partial = ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-2002", ordered: 9 }])))));
+    // (Releasing part of a line uses up its allocation: 5 held, not 9.)
+    partial = ok(await release(root, partial, [5]));
+    // And two that hold nothing whatever their JSON says: a shipped order,
+    // and a back order holding after a partial shipment, with a JSON null.
+    const shipped = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }])));
+    await prisma.salesOrder.update({ where: { soNumber: Number(shipped.soNumber) }, data: { allocation: { lines: [{ lineItemId: shipped.lineItems[0].id, allocatedQty: 2 }], fullyAllocated: true, decidedAt: "x" } } });
+    const held = ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-2002", ordered: 1 }]))), [0]));
+    expect(held.status).toBe("Backordered");
+    const before = await prisma.allocation.findMany({ orderBy: { lineItemId: "asc" }, select: { soNumber: true, lineItemId: true, itemId: true, qty: true } });
+    expect(before).toHaveLength(4);
+    expect((await itemByNumber("BR-1001"))!.qtyReserved).toBe(11);
+    expect((await itemByNumber("BR-2002"))!.qtyReserved).toBe(8);
+
+    // Wipe what the API maintained, then run the migration's backfill.
+    await prisma.$executeRawUnsafe('DELETE FROM "Allocation"');
+    await prisma.$executeRawUnsafe('UPDATE "Item" SET "qtyReserved" = 0');
+    const sql = readFileSync(new URL("../prisma/migrations/20260929140000_reservation_table/migration.sql", import.meta.url), "utf8");
+    const backfill = sql.slice(sql.indexOf("-- backfill"));
+    for (const statement of backfill.split(";").map((x) => x.trim()).filter(Boolean)) await prisma.$executeRawUnsafe(statement);
+    const after = await prisma.allocation.findMany({ orderBy: { lineItemId: "asc" }, select: { soNumber: true, lineItemId: true, itemId: true, qty: true } });
+    expect(after).toEqual(before);
+    expect((await itemByNumber("BR-1001"))!.qtyReserved).toBe(11);
+    expect((await itemByNumber("BR-2002"))!.qtyReserved).toBe(8);
+    expect(await prisma.allocation.count({ where: { soNumber: { in: [Number(shipped.soNumber), Number(held.soNumber)] } } })).toBe(0);
+    expect(await prisma.allocation.count({ where: { soNumber: Number(allocated.soNumber) } })).toBe(2);
+    expect(await prisma.allocation.count({ where: { soNumber: Number(staged.soNumber) } })).toBe(1);
+    await expectConsistent();
+  });
+
+  it("keeps on-purchase-order by catalog link, so a renamed item's total survives (A-06)", async () => {
+    const root = await admin();
+    const item = await makeItem(root, "BR-1001", 0);
+    const vendor = await makeVendor(root);
+    // Typed with the wrong case: still this item.
+    let po = await makePo(root, vendor, [{ itemNumber: "br-1001", orderedQty: 7 }]);
+    expect((await itemByNumber("BR-1001"))!.qtyOnPurchaseOrder).toBe(7);
+    ok(await editItem(root, ok(await root.get(`/api/items/${item.id}`)), { itemNumber: "BR-1001-X" }));
+    expect(await prisma.item.findUnique({ where: { itemNumber: "BR-1001" } })).toBeNull();
+    po = ok(await receive(root, ok(await root.get(`/api/vendor-purchase-orders/${po.poNumber}`)), [3]));
+    expect(po.status).toBe("Partially Received");
+    expect((await itemByNumber("BR-1001-X"))!).toMatchObject({ qtyOnHand: 3, qtyOnPurchaseOrder: 4 });
   });
 });

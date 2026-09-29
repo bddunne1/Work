@@ -232,6 +232,7 @@ export function parseItems(csv: ParsedCsv, existing: Item[]): RowResult<Item>[] 
       rate: rate.value ?? 0,
       qtyOnHand: onHand.value ?? 0,
       qtyOnPurchaseOrder: onPo.value ?? 0,
+      qtyReserved: 0,
       weight: weight.value,
       createdAt: new Date().toISOString(),
     };

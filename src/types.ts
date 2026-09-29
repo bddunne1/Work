@@ -234,6 +234,10 @@ export interface Item {
   // hand, though it's still stored here for fast display.
   qtyOnHand: number;
   qtyOnPurchaseOrder: number;
+  // Units held by open orders (allocated or staged for a pick, not yet
+  // shipped), maintained by the server in the same transaction as every
+  // order step. Available = qtyOnHand - qtyReserved.
+  qtyReserved: number;
   preferredVendorId?: string;
   reorderPoint?: number;
   countryOfOrigin?: string;
@@ -285,6 +289,7 @@ export function emptyItem(): Item {
     rate: 0,
     qtyOnHand: 0,
     qtyOnPurchaseOrder: 0,
+    qtyReserved: 0,
     createdAt: new Date().toISOString(),
   };
 }
@@ -365,31 +370,36 @@ export function qtyOnOpenSalesOrders(
   );
 }
 
-// What's free to promise on a new order right now: on hand, less what's
-// actually reserved (allocated or packed) against it - see qtyAllocatedOnOrders.
+// What's free to promise right now: on hand, less what's reserved
+// (allocated or packed) against it. Pass item.qtyReserved, or
+// reservedElsewhere(...) on a screen that is deciding one order's own hold.
 export function availableQty(item: Pick<Item, "qtyOnHand">, qtyReserved: number): number {
   return item.qtyOnHand - qtyReserved;
 }
 
-// Total quantity of `itemNumber` currently reserved against physical stock
-// across every order in `orders` - allocated-not-yet-packed plus
-// packed-not-yet-shipped. Unlike qtyOnOpenSalesOrders (every unit still owed,
-// including orders that haven't been allocated yet), this only counts units
-// actually committed to inventory, which is what "Available" should net
-// against.
-export function qtyAllocatedOnOrders(
+// The statuses in which an order holds stock; in any other its allocation
+// JSON is history, not a hold.
+const HOLDING_STATUSES: ReadonlySet<OrderStatus> = new Set<OrderStatus>(["Allocated", "Backordered", "Pick & Packed"]);
+
+// What `order` itself holds of `itemNumber`: allocated-not-yet-released plus
+// released-not-yet-shipped, the same rule the server keeps Item.qtyReserved by.
+export function reservedOnOrder(
   itemNumber: string,
-  orders: Pick<PurchaseOrder, "lineItems" | "allocation" | "pendingShipment">[]
+  order: Pick<PurchaseOrder, "status" | "lineItems" | "allocation" | "pendingShipment">
 ): number {
+  if (!HOLDING_STATUSES.has(order.status)) return 0;
   const q = itemNumber.trim().toLowerCase();
-  return orders.reduce(
-    (sum, o) =>
-      sum +
-      o.lineItems
-        .filter((li) => li.item.trim().toLowerCase() === q)
-        .reduce((lineSum, li) => lineSum + reservedQtyFor(o, li.id), 0),
-    0
-  );
+  return order.lineItems.filter((li) => li.item.trim().toLowerCase() === q).reduce((sum, li) => sum + reservedQtyFor(order, li.id), 0);
+}
+
+// What every *other* order holds of `item`: the server's total less this
+// order's own hold, so a screen revising this order's allocation nets
+// Available against everyone else without counting itself.
+export function reservedElsewhere(
+  item: Pick<Item, "itemNumber" | "qtyReserved">,
+  order: Pick<PurchaseOrder, "status" | "lineItems" | "allocation" | "pendingShipment">
+): number {
+  return item.qtyReserved - reservedOnOrder(item.itemNumber, order);
 }
 
 // Whether an order's allocation/pack can be released back to Checked without
@@ -409,7 +419,7 @@ export function canUnallocate(
 // Releases an order's allocation and/or pack entirely, freeing whatever it
 // had reserved and sending it back to Checked for a fresh allocation
 // decision. Doesn't touch inventory - nothing was ever decremented from
-// qtyOnHand at allocation/pack time, only reserved via qtyAllocatedOnOrders.
+// qtyOnHand at allocation/pack time, only reserved (Item.qtyReserved).
 export function unallocateOrder(order: PurchaseOrder): PurchaseOrder {
   return {
     ...order,

@@ -87,6 +87,25 @@ off for the items QuickBooks receives, and reconcile the first month's
 invoices against QuickBooks before trusting the tax figure (a company with
 Automated Sales Tax may recompute it).
 
+## Stock reservations
+
+What an open order is holding against stock lives in the `Allocation` table:
+one row per order line that is allocated but not yet released, or released
+(staged for a pick) but not yet shipped. The API rewrites an order's rows at
+the end of every step that can change what it holds (allocate, unallocate,
+release, trim at print, ship, undo, cancel), in the same transaction, and
+keeps `Item.qtyReserved` as the sum. Available on every screen is
+`qtyOnHand - qtyReserved`; the allocation screens subtract the order's own
+hold first (`reservedElsewhere` in `src/types.ts`). An allocation that would
+hold more than is free is refused with 409 under a row lock on the item.
+
+A partial shipment sends the remainder back to Back Orders with nothing held
+(the allocation is released), so the stock can go to whichever order needs
+it first. The migration `20260929140000_reservation_table` backfills the
+table from the `allocation` / `pendingShipment` JSON an upgraded database
+carries, and `qtyOnPurchaseOrder` is recomputed by catalog link rather than
+item number text, so renaming an item no longer leaves its total stale.
+
 ## Development
 
 ```bash

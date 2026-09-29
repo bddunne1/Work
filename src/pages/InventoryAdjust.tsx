@@ -5,7 +5,7 @@ import { isConflictError } from "../lib/apiClient";
 import { listItems, setQtyOnHandIfUnchanged } from "../lib/itemStore";
 import { listOpenOrders } from "../lib/orderStore";
 import type { Item, PurchaseOrder } from "../types";
-import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, qtyOnOpenSalesOrders } from "../types";
 
 export default function InventoryAdjust() {
   const [items, setItems] = useState<Item[]>([]);
@@ -22,7 +22,7 @@ export default function InventoryAdjust() {
 
   const selectedItem = items.find((i) => i.id === itemId);
   const onSalesOrder = selectedItem ? qtyOnOpenSalesOrders(selectedItem.itemNumber, allOrders) : 0;
-  const allocated = selectedItem ? qtyAllocatedOnOrders(selectedItem.itemNumber, allOrders) : 0;
+  const allocated = selectedItem?.qtyReserved ?? 0;
 
   function handleSelect(id: string) {
     const item = items.find((i) => i.id === id);

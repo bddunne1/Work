@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { allocateOrder, getOrder, listOpenOrders, releaseOrders, unallocateOrderCmd } from "../lib/orderStore";
+import { allocateOrder, getOrder, releaseOrders, unallocateOrderCmd } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Item, PurchaseOrder } from "../types";
-import { allocatedQtyFor, availableQty, canUnallocate, qtyAllocatedOnOrders, remainingToShip } from "../types";
+import { allocatedQtyFor, availableQty, canUnallocate, remainingToShip, reservedElsewhere } from "../types";
 
 export default function PickPackDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -23,7 +23,6 @@ function PickPackDetailInner() {
   const queueState = location.state as ReviewQueueState | undefined;
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
 
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [saved, setSaved] = useState(false);
@@ -32,7 +31,6 @@ function PickPackDetailInner() {
 
   useEffect(() => {
     listItems().then(setItems);
-    listOpenOrders().then(setAllOrders);
   }, []);
 
   useEffect(() => {
@@ -197,11 +195,7 @@ function PickPackDetailInner() {
                 {order.lineItems.map((li) => {
                   const remaining = remainingToShip(order, li);
                   const catalogItem = itemsByNumber.get(li.item.trim().toLowerCase());
-                  const reservedElsewhere = qtyAllocatedOnOrders(
-                    li.item,
-                    allOrders.filter((o) => o.soNumber !== order.soNumber)
-                  );
-                  const trueAvailable = catalogItem ? availableQty(catalogItem, reservedElsewhere) : null;
+                  const trueAvailable = catalogItem ? availableQty(catalogItem, reservedElsewhere(catalogItem, order)) : null;
                   const maxQty = trueAvailable !== null ? Math.max(0, Math.min(remaining, trueAvailable)) : remaining;
                   const qty = qtys[li.id] ?? 0;
                   return (

@@ -220,6 +220,10 @@ model Item {
   rate               Decimal  @default(0) @db.Decimal(12, 4)
   qtyOnHand          Int      @default(0)
   qtyOnPurchaseOrder Int      @default(0)
+  // Units held by open orders (allocated or staged, not yet shipped): the
+  // sum of this item's Allocation rows, maintained in the same transaction
+  // as every order step. Available = qtyOnHand - qtyReserved (sprint 2).
+  qtyReserved        Int      @default(0)
   reorderPoint       Int?
   countryOfOrigin    String?
   // Weight per unit (lbs) - drives order/shipment weight for warehouse
@@ -246,6 +250,7 @@ model Item {
   stockMovements  StockMovement[]
   invoiceLines    InvoiceLine[]
   creditMemoLines CreditMemoLine[]
+  allocations     Allocation[]
 
   @@index([preferredVendorId])
 }
@@ -320,6 +325,7 @@ model SalesOrder {
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]
   invoices        Invoice[]
+  allocations     Allocation[]
 
   @@index([customerId])
   @@index([status])
@@ -342,9 +348,32 @@ model SalesOrderLine {
   ordered            Int
   rate               Decimal    @db.Decimal(12, 4)
   customerPartNumber String?
+  // The stock this line is holding, if any (see Allocation).
+  allocation         Allocation?
 
   @@index([soNumber])
   @@index([item])
+  @@index([itemId])
+}
+
+// One row per order line that is holding stock: allocated but not yet
+// released, or released (staged) but not yet shipped. Kept in step with the
+// order's allocation / pendingShipment JSON in the same transaction as every
+// order step, and summed into Item.qtyReserved, so "available" is one
+// column read instead of a walk over every open order (sprint 2, A-25).
+model Allocation {
+  id         String         @id @default(uuid())
+  soNumber   Int
+  salesOrder SalesOrder     @relation(fields: [soNumber], references: [soNumber], onDelete: Cascade)
+  lineItemId String         @unique
+  line       SalesOrderLine @relation(fields: [lineItemId], references: [id], onDelete: Cascade)
+  itemId     String
+  item       Item           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  qty        Int
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @default(now()) @updatedAt
+
+  @@index([soNumber])
   @@index([itemId])
 }
 

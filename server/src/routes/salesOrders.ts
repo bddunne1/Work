@@ -8,7 +8,8 @@ import { idempotent } from "../middleware/idempotency.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
-import { adjustOnHand, assertAllocationAvailable, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
+import { adjustOnHand, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
+import { assertAllocationAvailable, syncReservations } from "../lib/reservations.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -605,13 +606,9 @@ router.post("/:soNumber/allocate", async (req: AuthedRequest, res) => {
       ...(fullyAllocated ? {} : { shipCompleteOnly: shipCompleteOnly ?? false }),
       decidedAt: new Date().toISOString(),
     };
-    await assertAllocationAvailable(
-      tx,
-      soNumber,
-      { lineItems: order.lineItems, allocation: order.allocation, pendingShipment: order.pendingShipment },
-      { lineItems: order.lineItems, allocation, pendingShipment: order.pendingShipment }
-    );
+    await assertAllocationAvailable(tx, soNumber, { status, lineItems: order.lineItems, allocation, pendingShipment: order.pendingShipment });
     await tx.salesOrder.update({ where: { soNumber }, data: { status, allocation, version: { increment: 1 } } });
+    await syncReservations(tx, soNumber);
     return { from: STATUS_OUT[order.status], to: STATUS_OUT[status], units: hold ? 0 : total, fullyAllocated };
   });
   logAudit(account, outcome.from === outcome.to ? "ORDER_ALLOCATION_REVISED" : "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, outcome);
@@ -647,6 +644,7 @@ router.post("/:soNumber/unallocate", requireAnyPermission(UNALLOCATE_PAGES, "edi
         version: { increment: 1 },
       },
     });
+    await syncReservations(tx, soNumber);
     return STATUS_OUT[order.status];
   });
   logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from, to: "Checked", unallocated: true });
@@ -688,6 +686,7 @@ router.post("/:soNumber/mark-printed", requireAnyPermission(PRINT_PAGES, "edit")
       data.pendingShipment = next;
     }
     await tx.salesOrder.update({ where: { soNumber }, data });
+    if (lines) await syncReservations(tx, soNumber);
   });
   logAudit(req.account!, "ORDER_PRINTED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { pickList, packingSlip, trimmed: Boolean(lines) });
   res.json(await reload(soNumber));
@@ -792,10 +791,17 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     const history = await tx.shipmentRecord.findMany({ where: { soNumber } });
     const totals = shippedByLine({ shipmentHistory: history });
     const fullyShipped = order.lineItems.every((li) => (totals.get(li.id) ?? 0) >= li.ordered);
+    // A partial shipment sends the remainder back to the back-order queue
+    // with nothing held: whatever was still allocated is released for a
+    // fresh decision, so it can go to another order if that is the better
+    // call (A-07, decided 29 Sep).
     await tx.salesOrder.update({
       where: { soNumber },
-      data: { status: fullyShipped ? "SHIPPED" : "BACKORDERED", pendingShipment: [], version: { increment: 1 } },
+      data: fullyShipped
+        ? { status: "SHIPPED", pendingShipment: [], version: { increment: 1 } }
+        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, version: { increment: 1 } },
     });
+    await syncReservations(tx, soNumber);
     logAudit(account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: shipped.reduce((sum, l) => sum + l.qty, 0),
       result: fullyShipped ? "Shipped" : "Backordered",
@@ -875,6 +881,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
       where: { soNumber },
       data: { status: "PICK_PACKED", pendingShipment: lines, version: { increment: 1 } },
     });
+    await syncReservations(tx, soNumber);
     logAudit(req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
       ...(voided ? (voided.status === "DELETED" ? { invoiceDraftRemoved: true } : { invoiceVoided: voided.invoiceNumber }) : {}),
@@ -911,6 +918,7 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
         version: { increment: 1 },
       },
     });
+    await syncReservations(tx, soNumber);
   });
   logAudit(req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason });
   res.json(await reload(soNumber));
@@ -978,6 +986,7 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
             version: { increment: 1 },
           },
         });
+        await syncReservations(tx, soNumber);
         return { lines: pending.length, units: pending.reduce((sum, p) => sum + p.qty, 0), complete };
       });
       logAudit(req.account!, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {

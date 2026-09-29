@@ -11,7 +11,6 @@ import {
   availableQty,
   lineAmount,
   orderTotal,
-  qtyAllocatedOnOrders,
   qtyOnOpenSalesOrders,
   remainingToShip,
   returnTotal,
@@ -367,7 +366,7 @@ const inventory: ReportDataSource = {
     return items
       .filter((i) => includesText(`${i.itemNumber} ${i.description}`, filters.item ?? ""))
       .map((i) => {
-        const allocated = qtyAllocatedOnOrders(i.itemNumber, orders);
+        const allocated = i.qtyReserved;
         return {
           item: i.itemNumber,
           description: i.description,
@@ -503,7 +502,7 @@ export async function itemQuickReportData(itemNumber: string) {
     getItemByNumber(itemNumber),
   ]);
   const orders = open.orders;
-  const allocated = qtyAllocatedOnOrders(itemNumber, orders);
+  const allocated = catalogItem?.qtyReserved ?? 0;
 
   const soLines = salesOrderLineRows(history.orders, {}, itemNumber).slice(0, REPORT_ROW_CAP);
   const poLines: ReportRow[] = [];

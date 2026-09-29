@@ -31,10 +31,10 @@ export default function BackOrderQueue() {
   const estimates = useMemo(() => {
     const map = new Map<string, ReturnType<typeof estimateBackorderShipDate>>();
     for (const o of filtered) {
-      map.set(o.soNumber, estimateBackorderShipDate(o, items, vendorPos, allOrders));
+      map.set(o.soNumber, estimateBackorderShipDate(o, items, vendorPos));
     }
     return map;
-  }, [filtered, items, vendorPos, allOrders]);
+  }, [filtered, items, vendorPos]);
 
   async function applyEstimate(order: PurchaseOrder, date: string) {
     setApplyingFor(order.soNumber);
