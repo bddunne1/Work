@@ -16,6 +16,9 @@ interface Props {
   // auto-fill from these instead of leaving the operator to enter them.
   customerPartMap?: CustomerPartMapping[];
   customerPriceOverrides?: CustomerPriceOverride[];
+  // The server left the prices out for this login (B-10): no Rate or
+  // Amount columns rather than a row of zeros.
+  pricesHidden?: boolean;
 }
 
 const ITEM_DATALIST_ID = "item-catalog-options";
@@ -27,6 +30,7 @@ export default function LineItemsTable({
   shipmentHistory,
   customerPartMap,
   customerPriceOverrides,
+  pricesHidden,
 }: Props) {
   const [catalog, setCatalog] = useState<Item[]>([]);
   const showShipped = Boolean(shipmentHistory && shipmentHistory.length > 0);
@@ -102,8 +106,8 @@ export default function LineItemsTable({
               <th className="col-qty">Ordered</th>
               {showShipped && <th className="col-qty">Shipped</th>}
               {showShipped && <th className="col-qty">Open</th>}
-              <th className="col-rate">Rate</th>
-              <th className="col-amount">Amount</th>
+              {!pricesHidden && <th className="col-rate">Rate</th>}
+              {!pricesHidden && <th className="col-amount">Amount</th>}
               {!readOnly && <th className="col-remove" />}
             </tr>
           </thead>
@@ -162,17 +166,19 @@ export default function LineItemsTable({
                       </>
                     );
                   })()}
-                <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="num-input"
-                    value={li.rate}
-                    disabled={readOnly}
-                    onChange={(e) => update(li.id, { rate: Number(e.target.value) })}
-                  />
-                </td>
-                <td className="amount-cell">${lineAmount(li).toFixed(2)}</td>
+                {!pricesHidden && (
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="num-input"
+                      value={li.rate}
+                      disabled={readOnly}
+                      onChange={(e) => update(li.id, { rate: Number(e.target.value) })}
+                    />
+                  </td>
+                )}
+                {!pricesHidden && <td className="amount-cell">${lineAmount(li).toFixed(2)}</td>}
                 {!readOnly && (
                   <td>
                     <button

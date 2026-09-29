@@ -158,7 +158,7 @@ function ValidationDecisionInner() {
           </tbody>
         </table>
 
-        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly />
+        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly pricesHidden={order.pricesHidden} />
 
         <div className="decision-outcome outcome-success">
           <div className="decision-outcome-label">Looks good?</div>

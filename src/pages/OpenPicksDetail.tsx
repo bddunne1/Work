@@ -203,6 +203,7 @@ function OpenPicksDetailInner() {
           onChange={() => {}}
           readOnly
           shipmentHistory={order.shipmentHistory}
+          pricesHidden={order.pricesHidden}
         />
 
         <div className="so-footer">
@@ -210,7 +211,8 @@ function OpenPicksDetailInner() {
             <div className="so-notes-label muted">Notes</div>
             <div className="so-notes-text">{order.notes || "—"}</div>
           </div>
-          <table className="totals-table">
+          {!order.pricesHidden && (
+            <table className="totals-table">
             <tbody>
               <tr>
                 <td>Subtotal</td>
@@ -226,6 +228,7 @@ function OpenPicksDetailInner() {
               </tr>
             </tbody>
           </table>
+          )}
         </div>
 
         <div className="line-items">

@@ -461,6 +461,7 @@ function OrderDetailInner() {
           shipmentHistory={view.shipmentHistory}
           customerPartMap={customer?.partNumberMap}
           customerPriceOverrides={customer?.priceOverrides}
+          pricesHidden={view.pricesHidden}
         />
 
         {view.shipmentHistory && view.shipmentHistory.length > 0 && (
@@ -505,7 +506,7 @@ function OrderDetailInner() {
             <tbody>
               <tr>
                 <td>Subtotal</td>
-                <td>${orderSubtotal(view).toFixed(2)}</td>
+                <td>{view.pricesHidden ? "—" : `$${orderSubtotal(view).toFixed(2)}`}</td>
               </tr>
               <tr>
                 <td>
@@ -519,11 +520,11 @@ function OrderDetailInner() {
                       onChange={(e) => setField("taxRate", Number(e.target.value))}
                     />
                   ) : (
-                    view.taxRate
+                    view.pricesHidden ? "—" : view.taxRate
                   )}
                   %)
                 </td>
-                <td>${orderTax(view).toFixed(2)}</td>
+                <td>{view.pricesHidden ? "—" : `$${orderTax(view).toFixed(2)}`}</td>
               </tr>
               <tr className="total-row">
                 <td>Total</td>
