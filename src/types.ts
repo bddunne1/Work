@@ -36,6 +36,12 @@ export type OrderStatus =
   | "Cancelled";
 
 // Statuses that are finished - nothing left to pick, ship or hold stock for.
+// What a status is called on screen. "Pick & Packed" is the stored name of
+// the stage between release and shipment; it reads as Released (C-17).
+export function statusLabel(status: OrderStatus | string): string {
+  return status === "Pick & Packed" ? "Released" : status;
+}
+
 export function isClosedStatus(status: OrderStatus): boolean {
   return status === "Shipped" || status === "Cancelled";
 }
@@ -112,6 +118,9 @@ export interface PurchaseOrder {
   // the checked stamp.
   checkedByColor?: string;
   allocation?: AllocationDecision;
+  // Set by the server when this login may not see prices (B-10): every
+  // line's rate and the tax rate are left out, and totals show a dash.
+  pricesHidden?: boolean;
   labelPrintedAt?: string;
   pickedAt?: string;
   pendingShipment?: ShipmentLine[];
@@ -125,6 +134,10 @@ export interface PurchaseOrder {
   cancelledAt?: string | null;
   cancelledBy?: string | null;
   cancelReason?: string | null;
+  // Cancelled after its pick documents printed: the floor has a pick to pull
+  // back, acknowledged from Open Picks (A-23).
+  pullRequestedAt?: string | null;
+  pullAcknowledgedAt?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -234,7 +247,13 @@ export interface Item {
   // hand, though it's still stored here for fast display.
   qtyOnHand: number;
   qtyOnPurchaseOrder: number;
+  // Units held by open orders (allocated or staged for a pick, not yet
+  // shipped), maintained by the server in the same transaction as every
+  // order step. Available = qtyOnHand - qtyReserved.
+  qtyReserved: number;
   preferredVendorId?: string;
+  // Read-only, from the server: the preferred vendor's name (C-16).
+  preferredVendor?: { name: string } | null;
   reorderPoint?: number;
   countryOfOrigin?: string;
   // Weight per unit (lbs) - drives order/shipment weight for warehouse
@@ -285,6 +304,7 @@ export function emptyItem(): Item {
     rate: 0,
     qtyOnHand: 0,
     qtyOnPurchaseOrder: 0,
+    qtyReserved: 0,
     createdAt: new Date().toISOString(),
   };
 }
@@ -365,31 +385,36 @@ export function qtyOnOpenSalesOrders(
   );
 }
 
-// What's free to promise on a new order right now: on hand, less what's
-// actually reserved (allocated or packed) against it - see qtyAllocatedOnOrders.
+// What's free to promise right now: on hand, less what's reserved
+// (allocated or packed) against it. Pass item.qtyReserved, or
+// reservedElsewhere(...) on a screen that is deciding one order's own hold.
 export function availableQty(item: Pick<Item, "qtyOnHand">, qtyReserved: number): number {
   return item.qtyOnHand - qtyReserved;
 }
 
-// Total quantity of `itemNumber` currently reserved against physical stock
-// across every order in `orders` - allocated-not-yet-packed plus
-// packed-not-yet-shipped. Unlike qtyOnOpenSalesOrders (every unit still owed,
-// including orders that haven't been allocated yet), this only counts units
-// actually committed to inventory, which is what "Available" should net
-// against.
-export function qtyAllocatedOnOrders(
+// The statuses in which an order holds stock; in any other its allocation
+// JSON is history, not a hold.
+const HOLDING_STATUSES: ReadonlySet<OrderStatus> = new Set<OrderStatus>(["Allocated", "Backordered", "Pick & Packed"]);
+
+// What `order` itself holds of `itemNumber`: allocated-not-yet-released plus
+// released-not-yet-shipped, the same rule the server keeps Item.qtyReserved by.
+export function reservedOnOrder(
   itemNumber: string,
-  orders: Pick<PurchaseOrder, "lineItems" | "allocation" | "pendingShipment">[]
+  order: Pick<PurchaseOrder, "status" | "lineItems" | "allocation" | "pendingShipment">
 ): number {
+  if (!HOLDING_STATUSES.has(order.status)) return 0;
   const q = itemNumber.trim().toLowerCase();
-  return orders.reduce(
-    (sum, o) =>
-      sum +
-      o.lineItems
-        .filter((li) => li.item.trim().toLowerCase() === q)
-        .reduce((lineSum, li) => lineSum + reservedQtyFor(o, li.id), 0),
-    0
-  );
+  return order.lineItems.filter((li) => li.item.trim().toLowerCase() === q).reduce((sum, li) => sum + reservedQtyFor(order, li.id), 0);
+}
+
+// What every *other* order holds of `item`: the server's total less this
+// order's own hold, so a screen revising this order's allocation nets
+// Available against everyone else without counting itself.
+export function reservedElsewhere(
+  item: Pick<Item, "itemNumber" | "qtyReserved">,
+  order: Pick<PurchaseOrder, "status" | "lineItems" | "allocation" | "pendingShipment">
+): number {
+  return item.qtyReserved - reservedOnOrder(item.itemNumber, order);
 }
 
 // Whether an order's allocation/pack can be released back to Checked without
@@ -409,7 +434,7 @@ export function canUnallocate(
 // Releases an order's allocation and/or pack entirely, freeing whatever it
 // had reserved and sending it back to Checked for a fresh allocation
 // decision. Doesn't touch inventory - nothing was ever decremented from
-// qtyOnHand at allocation/pack time, only reserved via qtyAllocatedOnOrders.
+// qtyOnHand at allocation/pack time, only reserved (Item.qtyReserved).
 export function unallocateOrder(order: PurchaseOrder): PurchaseOrder {
   return {
     ...order,
@@ -483,6 +508,12 @@ export function orderTax(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): n
 export function orderTotal(order: Pick<PurchaseOrder, "lineItems" | "taxRate">): number {
   const subtotal = orderSubtotalCents(order);
   return fromCents(subtotal + taxCents(subtotal, order.taxRate || 0));
+}
+
+// The order total as a list shows it, or a dash for a login that may not
+// see prices.
+export function orderTotalLabel(order: Pick<PurchaseOrder, "lineItems" | "taxRate" | "pricesHidden">): string {
+  return order.pricesHidden ? "—" : `$${orderTotal(order).toFixed(2)}`;
 }
 
 // Shared search-box matcher: S.O. #, P.O. #, or customer name, case-insensitive.
@@ -671,7 +702,13 @@ export function matchesReturnQuery(ra: Pick<ReturnAuthorization, "raNumber" | "s
 // documents; QuickBooks owns the money (receivables, payments, the ledger) -
 // `sync` says how far along the push to QuickBooks is.
 
-export type DocStatus = "ISSUED" | "VOID";
+// A document is a Draft until Accounting reviews and issues it; only an
+// issued document has a number and goes to QuickBooks.
+export type DocStatus = "DRAFT" | "ISSUED" | "VOID";
+export type DocLineKind = "ITEM" | "CHARGE";
+// Charge lines a reviewer may add. DEDUCTION is for credit memos (negative).
+export const CHARGE_CODES = ["FREIGHT", "HANDLING", "OTHER", "DEDUCTION"] as const;
+export type ChargeCode = (typeof CHARGE_CODES)[number];
 
 export interface SyncInfo {
   // NOT_QUEUED | PENDING | PROCESSING | FAILED | DEAD | SYNCED
@@ -682,6 +719,9 @@ export interface SyncInfo {
 
 export interface InvoiceLine {
   id: string;
+  kind: DocLineKind;
+  taxable: boolean;
+  position?: number;
   salesOrderLineId?: string | null;
   itemId?: string | null;
   item: string;
@@ -693,7 +733,9 @@ export interface InvoiceLine {
 }
 
 export interface Invoice {
-  invoiceNumber: string;
+  id: string;
+  // Null while a draft.
+  invoiceNumber: string | null;
   soNumber: number;
   shipmentRecordId?: string | null;
   customerId?: string | null;
@@ -710,10 +752,13 @@ export interface Invoice {
   tax: number;
   total: number;
   status: DocStatus;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
   voidedAt?: string | null;
   voidedBy?: string | null;
   voidReason?: string | null;
   notes: string;
+  version: number;
   createdAt: string;
   lines: InvoiceLine[];
   sync?: SyncInfo | null;
@@ -721,6 +766,9 @@ export interface Invoice {
 
 export interface CreditMemoLine {
   id: string;
+  kind: DocLineKind;
+  taxable: boolean;
+  position?: number;
   returnLineId?: string | null;
   invoiceNumber?: string | null;
   itemId?: string | null;
@@ -733,7 +781,8 @@ export interface CreditMemoLine {
 }
 
 export interface CreditMemo {
-  creditMemoNumber: string;
+  id: string;
+  creditMemoNumber: string | null;
   raNumber: string;
   customerId?: string | null;
   customerName: string;
@@ -745,10 +794,13 @@ export interface CreditMemo {
   tax: number;
   total: number;
   status: DocStatus;
+  approvedAt?: string | null;
+  approvedBy?: string | null;
   voidedAt?: string | null;
   voidedBy?: string | null;
   voidReason?: string | null;
   reason: string;
+  version: number;
   createdAt: string;
   lines: CreditMemoLine[];
   sync?: SyncInfo | null;

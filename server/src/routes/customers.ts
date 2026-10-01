@@ -3,7 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { enqueueIfSynced } from "../integrations/sync.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn, diffFields, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -87,6 +87,13 @@ const customerSchema = z.object({
 
 // Required on PUT (every fetched record has one), absent on POST.
 const updateSchema = customerSchema.extend({ version: z.number().int() });
+// The price sheet and the routing guide have their own endpoints and pages
+// (B-08): the customer PUT accepts these fields for compatibility but does
+// not apply them.
+const pricesSchema = z.object({ version: z.number().int(), priceOverrides: z.array(priceOverrideSchema), partNumberMap: z.array(partMappingSchema).optional() });
+const routingGuidePutSchema = z.object({ version: z.number().int(), routingGuide: routingGuideSchema });
+// The header fields whose changes are recorded field by field.
+const CUSTOMER_FIELDS = ["name", "accountNumber", "billTo", "terms", "shipVia", "fob", "rep", "shipCompleteOnly", "taxExempt", "active", "privateLabelName"];
 
 const include = {
   shipToLocations: true,
@@ -137,6 +144,25 @@ router.get("/:id", requireAnyPermission(CUSTOMER_VIEW_PAGES, "view"), async (req
     return;
   }
   res.json(customer);
+});
+
+// What this customer has bought, one row per catalog item, most recently
+// ordered first - for Product Labels (D-10), instead of its order history.
+router.get("/:id/purchased-items", requireAnyPermission([...CUSTOMER_VIEW_PAGES, "labels"], "view"), async (req, res) => {
+  const rows = await prisma.$queryRaw<{ itemNumber: string; description: string; um: string; lastOrdered: Date; qty: number }[]>`
+    SELECT COALESCE(i."itemNumber", l."item") AS "itemNumber",
+           COALESCE(i."description", MAX(l."description")) AS "description",
+           COALESCE(i."um", MAX(l."um")) AS "um",
+           MAX(so."orderDate") AS "lastOrdered",
+           SUM(l."ordered")::int AS "qty"
+    FROM "SalesOrderLine" l
+    JOIN "SalesOrder" so ON so."soNumber" = l."soNumber"
+    LEFT JOIN "Item" i ON i."id" = l."itemId"
+    WHERE so."customerId" = ${req.params.id} AND so."status" <> 'CANCELLED'
+    GROUP BY COALESCE(i."itemNumber", l."item"), i."description", i."um"
+    ORDER BY MAX(so."orderDate") DESC, 1 ASC
+    LIMIT 2000`;
+  res.json(rows.map((r) => ({ ...r, lastOrdered: r.lastOrdered.toISOString().slice(0, 10) })));
 });
 
 router.post("/", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {
@@ -217,7 +243,6 @@ router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedReq
           taxExempt: data.taxExempt,
           active: data.active,
           privateLabelName: data.privateLabelName,
-          routingGuide: data.routingGuide === undefined ? undefined : (data.routingGuide ?? Prisma.JsonNull),
           version: { increment: 1 },
         },
       });
@@ -234,15 +259,11 @@ router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedReq
         itemNumber: m.itemNumber,
         customerPartNumber: m.customerPartNumber,
       }));
-      await syncChildren(tx.customerPriceOverride, id, "customerId", data.priceOverrides, (p) => ({
-        itemNumber: p.itemNumber,
-        customerPartNumber: p.customerPartNumber,
-        description: p.description,
-        price: p.price,
-        pricePerFt: p.pricePerFt ?? null,
-        length: p.length ?? null,
-        weight: p.weight ?? null,
-      }));
+      // What changed, field by field (B-11): "who changed the terms on
+      // this account" is answered from the log, not by guessing.
+      const changes: Record<string, unknown> = diffFields(existing, data, CUSTOMER_FIELDS);
+      if (existing.name !== data.name) changes.renamedFrom = existing.name;
+      await auditIn(tx, req.account!, "CUSTOMER_UPDATED", "customer", id, data.name, changes);
     });
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -253,11 +274,110 @@ router.put("/:id", requirePermission("customers", "edit"), async (req: AuthedReq
   }
 
   const updated = await prisma.customer.findUnique({ where: { id }, include });
-  logAudit(req.account!, "CUSTOMER_UPDATED", "customer", id, data.name, {
-    ...(existing.name !== data.name ? { renamedFrom: existing.name } : {}),
-    priceOverrides: data.priceOverrides.length,
-  });
   res.json(updated);
+});
+
+const priceKey = (itemNumber: string) => itemNumber.trim().toLowerCase();
+const priceRow = (p: { price: unknown; pricePerFt?: unknown; length?: unknown }) => ({
+  price: Number(p.price),
+  pricePerFt: p.pricePerFt == null ? null : Number(p.pricePerFt),
+  length: p.length == null ? null : Number(p.length),
+});
+
+// The customer's price sheet (and the part numbers it is keyed by), from
+// the Customer Pricing page only (B-08). Every row whose price changed,
+// appeared or went is its own audit entry, so a pricing question is
+// answered per item.
+router.put("/:id/prices", requirePermission("customer-pricing", "edit"), async (req: AuthedRequest, res) => {
+  const parsed = pricesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const data = parsed.data;
+  const id = req.params.id;
+  const existing = await prisma.customer.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Customer not found" });
+    return;
+  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.customer.updateMany({ where: { id, version: data.version }, data: { version: { increment: 1 } } });
+      if (result.count === 0) throw new ConflictError();
+      const before = new Map((await tx.customerPriceOverride.findMany({ where: { customerId: id } })).map((p) => [priceKey(p.itemNumber), p]));
+      await syncChildren(tx.customerPriceOverride, id, "customerId", data.priceOverrides, (p) => ({
+        itemNumber: p.itemNumber,
+        customerPartNumber: p.customerPartNumber,
+        description: p.description,
+        price: p.price,
+        pricePerFt: p.pricePerFt ?? null,
+        length: p.length ?? null,
+        weight: p.weight ?? null,
+      }));
+      if (data.partNumberMap) {
+        await syncChildren(tx.customerPartMapping, id, "customerId", data.partNumberMap, (m) => ({
+          itemNumber: m.itemNumber,
+          customerPartNumber: m.customerPartNumber,
+        }));
+      }
+      const after = new Map(data.priceOverrides.filter((p) => p.itemNumber.trim()).map((p) => [priceKey(p.itemNumber), p]));
+      for (const [key, now] of after) {
+        const was = before.get(key);
+        const from = was ? priceRow(was) : null;
+        const to = priceRow(now);
+        if (JSON.stringify(from) === JSON.stringify(to)) continue;
+        await auditIn(tx, req.account!, "CUSTOMER_PRICE_CHANGED", "customer", id, `${existing.name} - ${now.itemNumber.trim()}`, { itemNumber: now.itemNumber.trim(), from, to });
+      }
+      for (const [key, was] of before) {
+        if (after.has(key)) continue;
+        await auditIn(tx, req.account!, "CUSTOMER_PRICE_CHANGED", "customer", id, `${existing.name} - ${was.itemNumber}`, { itemNumber: was.itemNumber, from: priceRow(was), to: null });
+      }
+    });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
+  res.json(await prisma.customer.findUnique({ where: { id }, include }));
+});
+
+// The routing guide, from the Routing Guide page only (B-08).
+router.put("/:id/routing-guide", requirePermission("routing-guide", "edit"), async (req: AuthedRequest, res) => {
+  const parsed = routingGuidePutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { version, routingGuide } = parsed.data;
+  const id = req.params.id;
+  const existing = await prisma.customer.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ error: "Customer not found" });
+    return;
+  }
+  try {
+    await prisma.$transaction(async (tx) => {
+      const result = await tx.customer.updateMany({
+        where: { id, version },
+        data: { routingGuide: routingGuide ?? Prisma.JsonNull, version: { increment: 1 } },
+      });
+      if (result.count === 0) throw new ConflictError();
+      const was = (existing.routingGuide ?? {}) as Record<string, unknown>;
+      const now = (routingGuide ?? {}) as Record<string, unknown>;
+      const changes = diffFields(was, now, [...new Set([...Object.keys(was), ...Object.keys(now)])]);
+      await auditIn(tx, req.account!, "CUSTOMER_ROUTING_GUIDE_CHANGED", "customer", id, existing.name, changes);
+    });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ error: err.message, conflict: true });
+      return;
+    }
+    throw err;
+  }
+  res.json(await prisma.customer.findUnique({ where: { id }, include }));
 });
 
 router.delete("/:id", requirePermission("customers", "edit"), async (req: AuthedRequest, res) => {

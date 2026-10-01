@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
@@ -5,7 +6,7 @@ import { isConflictError } from "../lib/apiClient";
 import { listItems, setQtyOnHandIfUnchanged } from "../lib/itemStore";
 import { listOpenOrders } from "../lib/orderStore";
 import type { Item, PurchaseOrder } from "../types";
-import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, qtyOnOpenSalesOrders } from "../types";
 
 export default function InventoryAdjust() {
   const [items, setItems] = useState<Item[]>([]);
@@ -22,7 +23,7 @@ export default function InventoryAdjust() {
 
   const selectedItem = items.find((i) => i.id === itemId);
   const onSalesOrder = selectedItem ? qtyOnOpenSalesOrders(selectedItem.itemNumber, allOrders) : 0;
-  const allocated = selectedItem ? qtyAllocatedOnOrders(selectedItem.itemNumber, allOrders) : 0;
+  const allocated = selectedItem?.qtyReserved ?? 0;
 
   function handleSelect(id: string) {
     const item = items.find((i) => i.id === id);
@@ -43,7 +44,7 @@ export default function InventoryAdjust() {
       updated = await setQtyOnHandIfUnchanged(selectedItem.itemNumber, selectedItem.qtyOnHand, newQty);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setItems(await listItems());
         return;
       }

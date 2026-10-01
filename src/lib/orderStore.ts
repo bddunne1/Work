@@ -127,6 +127,12 @@ export async function listOpenOrdersShippedSince(since: Date): Promise<PurchaseO
   return orders.map(mapOrder);
 }
 
+// Cancelled orders whose printed pick is still on the floor, oldest first (A-23).
+export async function listPendingPulls(): Promise<PurchaseOrder[]> {
+  const orders = await api.get<PurchaseOrder[]>("/api/sales-orders?pulls=1");
+  return orders.map(mapOrder);
+}
+
 // The `limit` most recently entered orders, any status.
 export async function listRecentOrders(limit: number): Promise<PurchaseOrder[]> {
   const orders = await api.get<PurchaseOrder[]>(`/api/sales-orders?limit=${limit}`);
@@ -207,6 +213,11 @@ export function markPrinted(
   lines?: ShipmentLine[]
 ): Promise<PurchaseOrder> {
   return command(order, "mark-printed", { pickList: Boolean(docs.pickList), packingSlip: Boolean(docs.packingSlip), lines });
+}
+
+// The warehouse has pulled a cancelled order's pick back off the floor.
+export function acknowledgePull(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return command(order, "acknowledge-pull");
 }
 
 export function setEstimatedShipDate(order: PurchaseOrder, date: string | null): Promise<PurchaseOrder> {

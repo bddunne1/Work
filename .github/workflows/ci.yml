@@ -59,3 +59,56 @@ jobs:
         run: npm --prefix server test
       - name: Frontend build
         run: npx vite build
+
+  e2e:
+    # Browser smoke over the five core flows (F-01), after the server suite.
+    needs: check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: erp_app
+          POSTGRES_PASSWORD: erp
+          POSTGRES_DB: erp_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U erp_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      E2E_DATABASE_URL: postgresql://erp_app:erp@localhost:5432/erp_e2e?schema=public
+      DATABASE_URL: postgresql://erp_app:erp@localhost:5432/erp_e2e?schema=public
+      JWT_SECRET: ci-only-secret-0123456789abcdef
+      TOKEN_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+      E2E_ADMIN_PASSWORD: E2E-Director-2026
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - name: Install
+        run: |
+          npm ci
+          npm --prefix server ci
+          npx playwright install --with-deps chromium
+      - name: Database
+        run: |
+          npm --prefix server run prisma:generate
+          cd server && npx prisma migrate deploy
+          ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD npm run seed
+      - name: Smoke tests
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

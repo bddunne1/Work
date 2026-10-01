@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
@@ -7,7 +8,7 @@ import { isConflictError } from "../lib/apiClient";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getOrder, markPrinted, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { orderSubtotal, orderTax, orderTotal, remainingToShip } from "../types";
+import { orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -70,7 +71,7 @@ function OpenPicksDetailInner() {
       await shipOrder(order, lines);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -97,7 +98,7 @@ function OpenPicksDetailInner() {
       );
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -202,6 +203,7 @@ function OpenPicksDetailInner() {
           onChange={() => {}}
           readOnly
           shipmentHistory={order.shipmentHistory}
+          pricesHidden={order.pricesHidden}
         />
 
         <div className="so-footer">
@@ -209,7 +211,8 @@ function OpenPicksDetailInner() {
             <div className="so-notes-label muted">Notes</div>
             <div className="so-notes-text">{order.notes || "—"}</div>
           </div>
-          <table className="totals-table">
+          {!order.pricesHidden && (
+            <table className="totals-table">
             <tbody>
               <tr>
                 <td>Subtotal</td>
@@ -221,10 +224,11 @@ function OpenPicksDetailInner() {
               </tr>
               <tr className="total-row">
                 <td>Total</td>
-                <td>${orderTotal(order).toFixed(2)}</td>
+                <td>{orderTotalLabel(order)}</td>
               </tr>
             </tbody>
           </table>
+          )}
         </div>
 
         <div className="line-items">

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import LoadFailed from "../components/LoadFailed";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 // Orders waiting to be checked, oldest first by due date (R4-19), so the
 // backlog is worked in the order it will hurt. Skipped orders (from the
@@ -14,8 +15,14 @@ export default function Validation() {
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
   const [showSkipped, setShowSkipped] = useState(false);
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const load = () => listOpenOrders().then(setAllOrders).catch(() => setLoadFailed(true));
+  const retry = () => {
+    setLoadFailed(false);
+    void load();
+  };
   useEffect(() => {
-    listOpenOrders().then(setAllOrders);
+    void load();
   }, []);
 
   // Re-read each render: a Skip on the decision page lands in sessionStorage.
@@ -37,6 +44,7 @@ export default function Validation() {
         <h1>Validation</h1>
         <p className="muted">Review each order for accuracy, then mark it checked to send it to allocation. Oldest due date first.</p>
       </div>
+      {loadFailed && <LoadFailed what="the validation queue" onRetry={retry} />}
 
       <div className="toolbar">
         <input
@@ -94,7 +102,7 @@ export default function Validation() {
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>
                 <td>{o.dueDate}</td>
-                <td>${orderTotal(o).toFixed(2)}</td>
+                <td>{orderTotalLabel(o)}</td>
               </tr>
             ))}
           </tbody>

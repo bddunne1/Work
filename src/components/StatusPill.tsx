@@ -1,4 +1,5 @@
 import type { PurchaseOrder } from "../types";
+import { statusLabel } from "../types";
 
 // "Pick & Packed" -> "pick-packed", for a stable per-status CSS hook.
 function statusSlug(status: string): string {
@@ -16,7 +17,7 @@ export default function StatusPill({
 }) {
   return (
     <span className="status-pill-group">
-      <span className={`status-pill status-pill-${statusSlug(order.status)}`}>{order.status}</span>
+      <span className={`status-pill status-pill-${statusSlug(order.status)}`}>{statusLabel(order.status)}</span>
       {order.status === "Pick & Packed" && order.pickPackStatus && (
         <span className={`pickpack-flag pickpack-flag-${order.pickPackStatus.toLowerCase()}`}>
           {order.pickPackStatus}

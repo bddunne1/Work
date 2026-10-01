@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { itemQuickReportData } from "../lib/reports/dataSources";
-import { getItem } from "../lib/itemStore";
+import { getItem, getItemQuickReport } from "../lib/itemStore";
 import type { ReportRow } from "../lib/reports/types";
 import type { Item } from "../types";
 
@@ -83,11 +82,12 @@ export default function ItemQuickReport() {
     });
   }, [id]);
 
+  // One request for the whole report (D-10).
   useEffect(() => {
     if (!item) return;
-    itemQuickReportData(item.itemNumber).then(setData);
+    getItemQuickReport(item.id).then(setData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item?.itemNumber]);
+  }, [item?.id]);
 
   if (loadingItem) {
     return (

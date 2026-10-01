@@ -1,5 +1,4 @@
-import type { Item, PurchaseOrder } from "../types";
-import { pendingShipmentWeight, shipmentRecordWeight, weightIndex } from "../types";
+import { api } from "./apiClient";
 
 export interface DailyThroughputPoint {
   date: string;
@@ -30,102 +29,15 @@ export interface CapacityMetrics {
   utilizationPct: number | null;
   dailyThroughput: DailyThroughputPoint[];
   agingPicks: AgingPick[];
+  // Catalog items with no weight - their picks count as 0 lb.
+  itemsMissingWeight: number;
 }
 
-function daysBetween(fromIso: string, toIso: string): number {
-  return (new Date(toIso).getTime() - new Date(fromIso).getTime()) / 86_400_000;
-}
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-export function computeCapacityMetrics(
-  orders: PurchaseOrder[],
-  items: Item[],
-  lookbackDays: number
-): CapacityMetrics {
-  const weights = weightIndex(items);
-  const now = new Date();
-  const windowStartIso = new Date(now.getTime() - lookbackDays * 86_400_000).toISOString();
-
-  // Current load: staged for shipment (packed, released to the floor) but
-  // not yet confirmed shipped - i.e. physically sitting in the warehouse.
-  const inWarehouse = orders.filter(
-    (o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0
-  );
-  const currentLoadWeight = inWarehouse.reduce((sum, o) => sum + pendingShipmentWeight(o, weights), 0);
-
-  const agingPicks: AgingPick[] = inWarehouse
-    .filter((o): o is PurchaseOrder & { pickedAt: string } => Boolean(o.pickedAt))
-    .map((o) => ({
-      soNumber: o.soNumber,
-      poNumber: o.poNumber,
-      customer: o.billTo.name,
-      pickedAt: o.pickedAt,
-      daysInWarehouse: daysBetween(o.pickedAt, now.toISOString()),
-      weight: pendingShipmentWeight(o, weights),
-    }))
-    .sort((a, b) => b.daysInWarehouse - a.daysInWarehouse);
-
-  // Every shipment within the lookback window, paired with the dwell time
-  // from release-to-floor (pickedAt) to actual ship - the throughput and
-  // cycle-time samples Little's Law needs.
-  const dwellSamples: number[] = [];
-  const throughputByDate = new Map<string, number>();
-  for (const o of orders) {
-    for (const rec of o.shipmentHistory ?? []) {
-      if (rec.shippedAt < windowStartIso) continue;
-      const weight = shipmentRecordWeight(o, rec, weights);
-      const dateKey = rec.shippedAt.slice(0, 10);
-      throughputByDate.set(dateKey, (throughputByDate.get(dateKey) ?? 0) + weight);
-      if (o.pickedAt && o.pickedAt < rec.shippedAt) {
-        dwellSamples.push(daysBetween(o.pickedAt, rec.shippedAt));
-      }
-    }
-  }
-
-  const dailyThroughput: DailyThroughputPoint[] = [];
-  for (let i = lookbackDays - 1; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 86_400_000);
-    const key = isoDate(d);
-    dailyThroughput.push({ date: key, weight: throughputByDate.get(key) ?? 0 });
-  }
-
-  const totalThroughputWeight = dailyThroughput.reduce((s, p) => s + p.weight, 0);
-  const avgDailyThroughputWeight = lookbackDays > 0 ? totalThroughputWeight / lookbackDays : null;
-  const avgDwellDays =
-    dwellSamples.length > 0 ? dwellSamples.reduce((s, d) => s + d, 0) / dwellSamples.length : null;
-
-  const estimatedCapacityWeight =
-    avgDailyThroughputWeight !== null &&
-    avgDwellDays !== null &&
-    avgDailyThroughputWeight > 0 &&
-    avgDwellDays > 0
-      ? avgDailyThroughputWeight * avgDwellDays
-      : null;
-
-  // The estimate is only meaningful with some history behind it: on a new
-  // system (or right after a quiet spell) a day or two of shipments made the
-  // banner read "22,469,342% of capacity". Below this, show no percentage.
-  const shippingDays = dailyThroughput.filter((p) => p.weight > 0).length;
-  const enoughHistory = shippingDays >= 5 && dwellSamples.length >= 20;
-  const utilizationPct =
-    enoughHistory && estimatedCapacityWeight && estimatedCapacityWeight > 0
-      ? Math.min(999, (currentLoadWeight / estimatedCapacityWeight) * 100)
-      : null;
-
-  return {
-    lookbackDays,
-    currentLoadWeight,
-    currentLoadOrders: inWarehouse.length,
-    avgDwellDays,
-    avgDailyThroughputWeight,
-    estimatedCapacityWeight,
-    utilizationPct,
-    dailyThroughput,
-    agingPicks,
-  };
+// Computed on the server from the staged picks and the window's shipments
+// (GET /api/analytics/capacity, D-02); days are the browser's local days.
+export async function getCapacityMetrics(lookbackDays: number): Promise<CapacityMetrics> {
+  const qs = new URLSearchParams({ days: String(lookbackDays), tzOffset: String(new Date().getTimezoneOffset()) });
+  return api.get<CapacityMetrics>(`/api/analytics/capacity?${qs.toString()}`);
 }
 
 export type UtilizationLevel = "unknown" | "low" | "healthy" | "near" | "over";

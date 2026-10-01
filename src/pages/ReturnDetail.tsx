@@ -1,9 +1,10 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
-import { creditMemoForReturn, money } from "../lib/invoiceStore";
+import { creditMemoForReturn, creditMemoPath, money } from "../lib/invoiceStore";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listItems } from "../lib/itemStore";
 import { canEdit as canEditPath } from "../lib/permissions";
@@ -108,7 +109,7 @@ function ReturnDetailInner() {
       creditMemoForReturn(ra.raNumber).then(setCreditMemo);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setRa(await getReturn(ra.raNumber));
         return;
       }
@@ -124,7 +125,7 @@ function ReturnDetailInner() {
       setEditing(false);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setRa(await getReturn(draft.raNumber));
         setDraft(undefined);
         setEditing(false);
@@ -445,8 +446,9 @@ function ReturnDetailInner() {
       </div>
       {creditMemo && (
         <p className="stale-status-notice no-print">
-          Credit memo <Link to={`/invoices/credit-memos/${creditMemo.creditMemoNumber}`}>{creditMemo.creditMemoNumber}</Link> for {money(creditMemo.total)}
-          {creditMemo.status === "VOID" ? " (void)" : ""} was raised when this return was received.
+          {creditMemo.status === "DRAFT" ? "A draft credit memo" : "Credit memo"}{" "}
+          <Link to={creditMemoPath(creditMemo)}>{creditMemo.creditMemoNumber ?? "(awaiting review)"}</Link> for {money(creditMemo.total)}
+          {creditMemo.status === "VOID" ? " (void)" : ""} was raised when this return was received{creditMemo.status === "DRAFT" ? "; Accounting issues it from Invoices" : ""}.
         </p>
       )}
     </div>

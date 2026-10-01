@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
@@ -8,7 +9,7 @@ import { listItems } from "../lib/itemStore";
 import { listOpenOrders, setEstimatedShipDate } from "../lib/orderStore";
 import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { Item, PurchaseOrder, VendorPurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 export default function BackOrderQueue() {
   const navigate = useNavigate();
@@ -31,10 +32,10 @@ export default function BackOrderQueue() {
   const estimates = useMemo(() => {
     const map = new Map<string, ReturnType<typeof estimateBackorderShipDate>>();
     for (const o of filtered) {
-      map.set(o.soNumber, estimateBackorderShipDate(o, items, vendorPos, allOrders));
+      map.set(o.soNumber, estimateBackorderShipDate(o, items, vendorPos));
     }
     return map;
-  }, [filtered, items, vendorPos, allOrders]);
+  }, [filtered, items, vendorPos]);
 
   async function applyEstimate(order: PurchaseOrder, date: string) {
     setApplyingFor(order.soNumber);
@@ -43,7 +44,7 @@ export default function BackOrderQueue() {
       setAllOrders(await listOpenOrders());
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setAllOrders(await listOpenOrders());
         return;
       }
@@ -102,7 +103,7 @@ export default function BackOrderQueue() {
                   <td>
                     <StatusPill order={o} />
                   </td>
-                  <td>${orderTotal(o).toFixed(2)}</td>
+                  <td>{orderTotalLabel(o)}</td>
                   <td>
                     {estimate?.estimatedShipDate ? (
                       <span className="schedule-ship-date">{estimate.estimatedShipDate}</span>

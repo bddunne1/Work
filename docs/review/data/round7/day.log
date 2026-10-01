@@ -1,0 +1,202 @@
+backlog of 60 orders entered; starting 12-minute compressed day with 15 people
+  t+30s calls=250 {"order-checked":4,"order-entered":4,"status-call":2,"conflict-409":3,"account-updated":1,"order-allocated":2,"account-reviewed":2,"pick-released":2}
+  t+60s calls=399 {"order-checked":10,"order-entered":12,"status-call":5,"conflict-409":6,"account-updated":3,"order-allocated":5,"account-reviewed":3,"pick-released":4,"po-received":2,"cycle-count":1,"quote":2}
+  t+90s calls=553 {"order-checked":12,"order-entered":16,"status-call":7,"conflict-409":9,"account-updated":4,"order-allocated":11,"account-reviewed":4,"pick-released":10,"po-received":3,"cycle-count":1,"quote":4,"pick-printed":8}
+  t+120s calls=708 {"order-checked":16,"order-entered":22,"status-call":9,"conflict-409":10,"account-updated":5,"order-allocated":16,"account-reviewed":6,"pick-released":14,"po-received":3,"cycle-count":1,"quote":5,"pick-printed":10,"order-shipped":6,"vendor-po-created":1}
+  t+150s calls=889 {"order-checked":21,"order-entered":31,"status-call":11,"conflict-409":18,"account-updated":6,"order-allocated":20,"account-reviewed":7,"pick-released":18,"po-received":4,"cycle-count":1,"quote":6,"pick-printed":18,"order-shipped":9,"vendor-po-created":1}
+  t+180s calls=1037 {"order-checked":24,"order-entered":37,"status-call":13,"conflict-409":20,"account-updated":8,"order-allocated":23,"account-reviewed":8,"pick-released":22,"po-received":5,"cycle-count":2,"quote":7,"pick-printed":21,"order-shipped":14,"vendor-po-created":1,"return-issued":1,"order-cancelled":1,"return-received":1}
+  t+210s calls=1154 {"order-checked":25,"order-entered":42,"status-call":18,"conflict-409":21,"account-updated":11,"order-allocated":25,"account-reviewed":10,"pick-released":23,"po-received":5,"cycle-count":2,"quote":8,"pick-printed":23,"order-shipped":20,"vendor-po-created":2,"return-issued":1,"order-cancelled":1,"return-received":1}
+  t+240s calls=1311 {"order-checked":29,"order-entered":47,"status-call":21,"conflict-409":25,"account-updated":12,"order-allocated":29,"account-reviewed":11,"pick-released":27,"po-received":5,"cycle-count":2,"quote":11,"pick-printed":25,"order-shipped":21,"vendor-po-created":2,"return-issued":1,"order-cancelled":1,"return-received":1}
+  t+270s calls=1418 {"order-checked":30,"order-entered":55,"status-call":22,"conflict-409":27,"account-updated":12,"order-allocated":30,"account-reviewed":15,"pick-released":28,"po-received":5,"cycle-count":2,"quote":12,"pick-printed":27,"order-shipped":24,"vendor-po-created":2,"return-issued":1,"order-cancelled":1,"return-received":1}
+  t+300s calls=1556 {"order-checked":35,"order-entered":57,"status-call":25,"conflict-409":28,"account-updated":13,"order-allocated":34,"account-reviewed":16,"pick-released":30,"po-received":5,"cycle-count":3,"quote":14,"pick-printed":29,"order-shipped":26,"vendor-po-created":3,"return-issued":1,"order-cancelled":1,"return-received":1}
+  t+330s calls=1714 {"order-checked":38,"order-entered":67,"status-call":28,"conflict-409":31,"account-updated":14,"order-allocated":41,"account-reviewed":18,"pick-released":33,"po-received":5,"cycle-count":3,"quote":15,"pick-printed":31,"order-shipped":28,"vendor-po-created":3,"return-issued":1,"order-cancelled":1,"return-received":1,"bol-generated":1}
+  t+360s calls=1903 {"order-checked":42,"order-entered":71,"status-call":31,"conflict-409":36,"account-updated":14,"order-allocated":44,"account-reviewed":19,"pick-released":38,"po-received":5,"cycle-count":4,"quote":18,"pick-printed":37,"order-shipped":31,"vendor-po-created":3,"return-issued":1,"order-cancelled":1,"return-received":1,"bol-generated":1}
+  t+390s calls=2038 {"order-checked":45,"order-entered":77,"status-call":33,"conflict-409":38,"account-updated":17,"order-allocated":47,"account-reviewed":21,"pick-released":40,"po-received":5,"cycle-count":5,"quote":20,"pick-printed":39,"order-shipped":34,"vendor-po-created":3,"return-issued":1,"order-cancelled":1,"return-received":1,"bol-generated":1}
+  t+420s calls=2218 {"order-checked":51,"order-entered":83,"status-call":37,"conflict-409":40,"account-updated":19,"order-allocated":52,"account-reviewed":22,"pick-released":46,"po-received":5,"cycle-count":6,"quote":20,"pick-printed":43,"order-shipped":37,"vendor-po-created":3,"return-issued":2,"order-cancelled":1,"return-received":2,"bol-generated":2}
+  t+450s calls=2387 {"order-checked":53,"order-entered":89,"status-call":41,"conflict-409":44,"account-updated":19,"order-allocated":56,"account-reviewed":26,"pick-released":49,"po-received":5,"cycle-count":6,"quote":20,"pick-printed":48,"order-shipped":42,"vendor-po-created":3,"return-issued":4,"order-cancelled":2,"return-received":3,"bol-generated":2}
+  t+480s calls=2540 {"order-checked":57,"order-entered":94,"status-call":42,"conflict-409":46,"account-updated":21,"order-allocated":59,"account-reviewed":26,"pick-released":52,"po-received":5,"cycle-count":6,"quote":21,"pick-printed":52,"order-shipped":47,"vendor-po-created":3,"return-issued":4,"order-cancelled":2,"return-received":4,"bol-generated":2}
+  t+510s calls=2715 {"order-checked":62,"order-entered":101,"status-call":45,"conflict-409":48,"account-updated":23,"order-allocated":66,"account-reviewed":27,"pick-released":56,"po-received":5,"cycle-count":8,"quote":23,"pick-printed":55,"order-shipped":51,"vendor-po-created":4,"return-issued":4,"order-cancelled":2,"return-received":4,"bol-generated":2}
+  t+540s calls=2855 {"order-checked":66,"order-entered":106,"status-call":47,"conflict-409":50,"account-updated":25,"order-allocated":69,"account-reviewed":28,"pick-released":58,"po-received":6,"cycle-count":10,"quote":24,"pick-printed":58,"order-shipped":54,"vendor-po-created":4,"return-issued":4,"order-cancelled":3,"return-received":4,"bol-generated":2,"vendor-updated":1}
+  t+570s calls=2975 {"order-checked":69,"order-entered":114,"status-call":49,"conflict-409":51,"account-updated":28,"order-allocated":72,"account-reviewed":28,"pick-released":58,"po-received":6,"cycle-count":10,"quote":25,"pick-printed":58,"order-shipped":57,"vendor-po-created":4,"return-issued":4,"order-cancelled":3,"return-received":4,"bol-generated":2,"vendor-updated":2}
+  t+600s calls=3088 {"order-checked":71,"order-entered":118,"status-call":52,"conflict-409":52,"account-updated":28,"order-allocated":75,"account-reviewed":28,"pick-released":59,"po-received":6,"cycle-count":11,"quote":27,"pick-printed":59,"order-shipped":58,"vendor-po-created":4,"return-issued":4,"order-cancelled":3,"return-received":4,"bol-generated":2,"vendor-updated":2,"customer-created":1}
+  t+630s calls=3235 {"order-checked":76,"order-entered":125,"status-call":54,"conflict-409":56,"account-updated":28,"order-allocated":77,"account-reviewed":30,"pick-released":62,"po-received":6,"cycle-count":11,"quote":29,"pick-printed":62,"order-shipped":59,"vendor-po-created":4,"return-issued":4,"order-cancelled":3,"return-received":4,"bol-generated":2,"vendor-updated":3,"customer-created":2}
+  t+660s calls=3371 {"order-checked":78,"order-entered":130,"status-call":58,"conflict-409":59,"account-updated":29,"order-allocated":80,"account-reviewed":33,"pick-released":66,"po-received":6,"cycle-count":11,"quote":29,"pick-printed":64,"order-shipped":60,"vendor-po-created":4,"return-issued":5,"order-cancelled":3,"return-received":4,"bol-generated":2,"vendor-updated":3,"customer-created":2}
+  t+690s calls=3505 {"order-checked":80,"order-entered":136,"status-call":63,"conflict-409":62,"account-updated":30,"order-allocated":84,"account-reviewed":35,"pick-released":68,"po-received":6,"cycle-count":11,"quote":29,"pick-printed":68,"order-shipped":61,"vendor-po-created":5,"return-issued":6,"order-cancelled":3,"return-received":6,"bol-generated":2,"vendor-updated":3,"customer-created":2}
+  t+720s calls=3601 {"order-checked":83,"order-entered":142,"status-call":63,"conflict-409":62,"account-updated":31,"order-allocated":86,"account-reviewed":37,"pick-released":70,"po-received":7,"cycle-count":11,"quote":31,"pick-printed":70,"order-shipped":64,"vendor-po-created":5,"return-issued":6,"order-cancelled":3,"return-received":6,"bol-generated":2,"vendor-updated":3,"customer-created":2,"eod-report":1}
+{
+ "statusTotals": {
+  "200": 3403,
+  "201": 156,
+  "409": 47
+ },
+ "overall": {
+  "p50": 28,
+  "p95": 82,
+  "p99": 875,
+  "max": 2223
+ },
+ "people": {
+  "pur.dan": {
+   "role": "Purchasing",
+   "busyPct": 54,
+   "idlePct": 47,
+   "busyOfTracked": 54
+  },
+  "pur.ali": {
+   "role": "Purchasing",
+   "busyPct": 38,
+   "idlePct": 62,
+   "busyOfTracked": 38
+  },
+  "cs.linda": {
+   "role": "Customer Service",
+   "busyPct": 54,
+   "idlePct": 46,
+   "busyOfTracked": 54
+  },
+  "cs.maria": {
+   "role": "Customer Service",
+   "busyPct": 54,
+   "idlePct": 47,
+   "busyOfTracked": 53
+  },
+  "cs.james": {
+   "role": "Customer Service",
+   "busyPct": 62,
+   "idlePct": 38,
+   "busyOfTracked": 62
+  },
+  "cs.priya": {
+   "role": "Customer Service",
+   "busyPct": 58,
+   "idlePct": 41,
+   "busyOfTracked": 59
+  },
+  "sm.grace": {
+   "role": "Sales Manager",
+   "busyPct": 31,
+   "idlePct": 72,
+   "busyOfTracked": 30
+  },
+  "log.marcus": {
+   "role": "Logistics",
+   "busyPct": 35,
+   "idlePct": 63,
+   "busyOfTracked": 36
+  },
+  "sm.helen": {
+   "role": "Sales Manager",
+   "busyPct": 30,
+   "idlePct": 71,
+   "busyOfTracked": 30
+  },
+  "oe.tom": {
+   "role": "Order Entry",
+   "busyPct": 83,
+   "idlePct": 17,
+   "busyOfTracked": 83
+  },
+  "sm.kenji": {
+   "role": "Sales Manager",
+   "busyPct": 37,
+   "idlePct": 64,
+   "busyOfTracked": 37
+  },
+  "oe.rosa": {
+   "role": "Order Entry",
+   "busyPct": 76,
+   "idlePct": 23,
+   "busyOfTracked": 77
+  },
+  "dir.sam": {
+   "role": "Director",
+   "busyPct": 43,
+   "idlePct": 56,
+   "busyOfTracked": 43
+  },
+  "an.derek": {
+   "role": "Analyst",
+   "busyPct": 97,
+   "idlePct": 0,
+   "busyOfTracked": 100
+  },
+  "an.sofia": {
+   "role": "Analyst",
+   "busyPct": 97,
+   "idlePct": 0,
+   "busyOfTracked": 100
+  }
+ },
+ "lead": {
+  "entryToChecked": {
+   "n": 24,
+   "p50": 358,
+   "p90": 397
+  },
+  "checkedToAllocated": {
+   "n": 82,
+   "p50": 5,
+   "p90": 13
+  },
+  "allocatedToReleased": {
+   "n": 71,
+   "p50": 4,
+   "p90": 12
+  },
+  "releasedToShipped": {
+   "n": 64,
+   "p50": 30,
+   "p90": 45
+  },
+  "entryToShipped": {
+   "n": 10,
+   "p50": 383,
+   "p90": 418
+  }
+ },
+ "audit": {
+  "orders": {
+   "total": 203,
+   "enteredToday": 203,
+   "byStatus": {
+    "Entered": 116,
+    "Cancelled": 3,
+    "Checked": 2,
+    "Backordered": 37,
+    "Pick & Packed": 7,
+    "Shipped": 38
+   },
+   "orderedUnitsToday": 370788,
+   "shippedUnitsToday": 46168
+  },
+  "inventory": {
+   "docDriftItems": 0,
+   "docDriftUnits": 0,
+   "ledgerDriftItems": 0,
+   "negative": 0,
+   "overcommittedItems": 0,
+   "overcommittedUnits": 0,
+   "qtyOnPurchaseOrderMismatches": 0,
+   "movementsToday": 953,
+   "sampleDrifts": []
+  },
+  "overShippedLines": 0,
+  "cancelledHoldingStock": 0,
+  "waitingValidation": {
+   "total": 116,
+   "fromYesterday": 0,
+   "arrivedBefore3pm": 98,
+   "arrivedAfter3pm": 18
+  },
+  "vendorPos": {
+   "total": 45,
+   "received": 5,
+   "partial": 0
+  },
+  "returns": {
+   "issued": 0,
+   "received": 6
+  }
+ }
+}
+wrote /home/user/Work/docs/review/data/round7/results.json

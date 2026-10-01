@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -6,7 +7,7 @@ import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listOpenOrders, setBol } from "../lib/orderStore";
 import { localIsoDate } from "../lib/dateUtils";
 import type { Address, BolDetails, PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel, statusLabel } from "../types";
 
 interface BolInput {
   weight: string;
@@ -49,16 +50,20 @@ function today(): string {
   return localIsoDate();
 }
 
+// Two ways of typing the same dock are the same destination: case and
+// spacing don't count (C-06).
+const norm = (s: string | undefined) => (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 function addressesMatch(a: Address, b: Address): boolean {
   return (
-    a.name === b.name &&
-    a.addressLine1 === b.addressLine1 &&
-    (a.addressLine2 ?? "") === (b.addressLine2 ?? "") &&
-    a.city === b.city &&
-    a.state === b.state &&
-    a.zip === b.zip
+    norm(a.name) === norm(b.name) &&
+    norm(a.addressLine1) === norm(b.addressLine1) &&
+    norm(a.addressLine2) === norm(b.addressLine2) &&
+    norm(a.city) === norm(b.city) &&
+    norm(a.state) === norm(b.state) &&
+    norm(a.zip) === norm(b.zip)
   );
 }
+const oneLine = (a: Address) => [a.name, a.addressLine1, a.addressLine2, `${a.city}, ${a.state} ${a.zip}`].filter((x) => x && x.trim()).join(", ");
 
 export default function GenerateBOL() {
   const canEdit = useCanEdit();
@@ -161,7 +166,7 @@ export default function GenerateBOL() {
       }
     } catch (err) {
       if (isConflictError(err)) {
-        alert(`${err.message} No BOL was generated for the remaining selected orders - review and try again.`);
+        showToast(`${err.message} No BOL was generated for the remaining selected orders - review and try again.`);
         setOrders(await listOpenOrders());
         return;
       }
@@ -238,8 +243,8 @@ export default function GenerateBOL() {
                     </td>
                     <td>{o.poNumber}</td>
                     <td>{o.billTo.name}</td>
-                    <td>{o.status}</td>
-                    <td>${orderTotal(o).toFixed(2)}</td>
+                    <td>{statusLabel(o.status)}</td>
+                    <td>{orderTotalLabel(o)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -705,7 +710,7 @@ export default function GenerateBOL() {
                     </div>
                   </>
                 ) : (
-                  <p className="muted">Multiple destinations - see Customer Order Information below.</p>
+                  <p className="muted">Multiple destinations - each order's ship-to is listed under Customer Order Information below.</p>
                 )}
                 <div className="bol-field-row">
                   <span className="bol-field-label">CID#:</span>
@@ -802,6 +807,7 @@ export default function GenerateBOL() {
             <thead>
               <tr>
                 <th>Customer Order Number</th>
+                {!commonShipTo && <th>Ship To</th>}
                 <th># PKGS</th>
                 <th>Weight</th>
                 <th>Pallet/Slip</th>
@@ -814,6 +820,7 @@ export default function GenerateBOL() {
                 return (
                   <tr key={o.soNumber}>
                     <td>{o.poNumber || o.soNumber}</td>
+                    {!commonShipTo && <td className="bol-row-shipto">{oneLine(o.shipTo)}</td>}
                     <td>{d.packageCount || "—"}</td>
                     <td className="amount-cell">{d.weight ? `${d.weight} lbs` : "—"}</td>
                     <td>{d.palletSlip}</td>
@@ -826,6 +833,7 @@ export default function GenerateBOL() {
               })}
               <tr className="bol-grand-total-row">
                 <td>Grand Total</td>
+                {!commonShipTo && <td></td>}
                 <td>{totalPackages || "—"}</td>
                 <td className="amount-cell">{totalWeight} lbs</td>
                 <td colSpan={2}></td>

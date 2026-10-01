@@ -41,6 +41,10 @@ export interface ReportDataSource {
   columns: ReportColumn[];
   filterFields: ReportFilterField[];
   defaultColumns: string[];
+  // Pages any one of which lets an account use this source - the server
+  // gates the data the same way, so a source the account can't read is not
+  // offered (C-12).
+  viewPaths: string[];
   buildRows(filters: ReportFilterValues): Promise<ReportRow[] | ReportRowsResult>;
 }
 

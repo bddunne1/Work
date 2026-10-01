@@ -1,7 +1,11 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { listItems } from "../lib/itemStore";
-import { listOpenOrders, shipOrder } from "../lib/orderStore";
+import LoadFailed from "../components/LoadFailed";
+import { isConflictError } from "../lib/apiClient";
+import { useCanEdit } from "../lib/authContext";
+import { acknowledgePull, listOpenOrders, listPendingPulls, shipOrder } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
 import { pendingShipmentWeight, weightIndex } from "../types";
 
@@ -21,14 +25,44 @@ function daysInWarehouse(pickedAt: string): number {
 
 export default function OpenPicks() {
   const navigate = useNavigate();
+  const canEdit = useCanEdit();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [pulls, setPulls] = useState<PurchaseOrder[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [weights, setWeights] = useState<Map<string, number>>(new Map());
+  const [pulling, setPulling] = useState<string | null>(null);
 
-  useEffect(() => {
-    listItems().then((items) => setWeights(weightIndex(items)));
-    listOpenOrders().then((os) => setOrders(openPickOrders(os)));
-  }, []);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const load = () => {
+    listItems().then((items) => setWeights(weightIndex(items))).catch(() => {});
+    listOpenOrders().then((os) => setOrders(openPickOrders(os))).catch(() => setLoadFailed(true));
+    listPendingPulls().then(setPulls).catch(() => {});
+  };
+  const retry = () => {
+    setLoadFailed(false);
+    load();
+  };
+  useEffect(load, []);
+
+  // Cancelled after its pick list printed: the goods are staged on the floor
+  // and have to go back on the shelf (A-23).
+  async function markPulled(o: PurchaseOrder) {
+    if (pulling) return;
+    setPulling(o.soNumber);
+    try {
+      await acknowledgePull(o);
+      setPulls((ps) => ps.filter((p) => p.soNumber !== o.soNumber));
+    } catch (err) {
+      if (isConflictError(err)) {
+        showToast(err.message);
+        setPulls(await listPendingPulls());
+      } else {
+        throw err;
+      }
+    } finally {
+      setPulling(null);
+    }
+  }
 
   const selectedOrders = orders.filter((o) => selected[o.soNumber]);
 
@@ -71,7 +105,7 @@ export default function OpenPicks() {
       setConfirming(false);
     }
     if (failures.length > 0) {
-      alert(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`);
+      showToast(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`);
     }
   }
 
@@ -84,6 +118,58 @@ export default function OpenPicks() {
           logistics can confirm what actually shipped.
         </p>
       </div>
+
+      {loadFailed && <LoadFailed what="open picks" onRetry={retry} />}
+
+      {pulls.length > 0 && (
+        <section className="pull-list" aria-label="Pull from floor">
+          <h2 className="pull-list-title">Pull from floor</h2>
+          <p className="muted">
+            These orders were cancelled after their pick list printed. The staged goods go back on the shelf; mark each one pulled once it is.
+          </p>
+          <div className="scroll-window">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>S.O. #</th>
+                  <th>P.O. #</th>
+                  <th>Customer</th>
+                  <th>Cancelled</th>
+                  <th>Reason</th>
+                  <th>Staged</th>
+                  {canEdit && <th></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {pulls.map((o) => (
+                  <tr key={o.soNumber} className="pull-row">
+                    <td>
+                      <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+                        {o.soNumber}
+                      </Link>
+                    </td>
+                    <td>{o.poNumber}</td>
+                    <td>{o.billTo.name}</td>
+                    <td>
+                      {o.cancelledAt ? new Date(o.cancelledAt).toLocaleString() : "—"}
+                      {o.cancelledBy ? <span className="muted"> by {o.cancelledBy}</span> : null}
+                    </td>
+                    <td>{o.cancelReason || "—"}</td>
+                    <td>{(o.pendingShipment ?? []).map((l) => `${o.lineItems.find((li) => li.id === l.lineItemId)?.item ?? "?"} × ${l.qty}`).join(", ") || "—"}</td>
+                    {canEdit && (
+                      <td>
+                        <button type="button" className="secondary-btn" disabled={pulling !== null} onClick={() => markPulled(o)}>
+                          {pulling === o.soNumber ? "Saving…" : "Pulled"}
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {orders.length === 0 ? (
         <p className="muted">Nothing staged right now.</p>

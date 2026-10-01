@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listItems } from "../lib/itemStore";
 import type { CustomerPartMapping, CustomerPriceOverride, Item, LineItem, ShipmentRecord } from "../types";
 import { lineAmount, emptyLineItem, shippedQtyFor } from "../types";
@@ -16,6 +16,9 @@ interface Props {
   // auto-fill from these instead of leaving the operator to enter them.
   customerPartMap?: CustomerPartMapping[];
   customerPriceOverrides?: CustomerPriceOverride[];
+  // The server left the prices out for this login (B-10): no Rate or
+  // Amount columns rather than a row of zeros.
+  pricesHidden?: boolean;
 }
 
 const ITEM_DATALIST_ID = "item-catalog-options";
@@ -27,9 +30,21 @@ export default function LineItemsTable({
   shipmentHistory,
   customerPartMap,
   customerPriceOverrides,
+  pricesHidden,
 }: Props) {
   const [catalog, setCatalog] = useState<Item[]>([]);
   const showShipped = Boolean(shipmentHistory && shipmentHistory.length > 0);
+  // A new line is scrolled into view and gets focus, so a long order's
+  // "+ Add Line" doesn't leave the person hunting below the fold (C-17).
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const focusLast = useRef(false);
+  useEffect(() => {
+    if (!focusLast.current) return;
+    focusLast.current = false;
+    const row = bodyRef.current?.lastElementChild as HTMLElement | null;
+    row?.scrollIntoView({ block: "nearest" });
+    row?.querySelector("input")?.focus();
+  }, [items.length]);
 
   useEffect(() => {
     listItems().then(setCatalog);
@@ -45,6 +60,7 @@ export default function LineItemsTable({
 
   function addRow() {
     onChange([...items, emptyLineItem()]);
+    focusLast.current = true;
   }
 
   function applyItemLookup(id: string, itemNumber: string) {
@@ -55,11 +71,15 @@ export default function LineItemsTable({
       (m) => m.itemNumber.trim().toLowerCase() === q
     )?.customerPartNumber;
     const priceOverride = customerPriceOverrides?.find((p) => p.itemNumber.trim().toLowerCase() === q)?.price;
+    // The customer's price if they have one, else the catalog rate - but a
+    // rate someone already typed on the line is left alone.
+    const current = items.find((li) => li.id === id);
+    const rate = priceOverride ?? (current && current.rate > 0 ? undefined : match.rate);
     update(id, {
       item: match.itemNumber,
       description: match.description,
       um: match.um,
-      ...(priceOverride !== undefined ? { rate: priceOverride } : {}),
+      ...(rate !== undefined ? { rate } : {}),
       ...(customerPartNumber ? { customerPartNumber } : {}),
     });
   }
@@ -86,12 +106,12 @@ export default function LineItemsTable({
               <th className="col-qty">Ordered</th>
               {showShipped && <th className="col-qty">Shipped</th>}
               {showShipped && <th className="col-qty">Open</th>}
-              <th className="col-rate">Rate</th>
-              <th className="col-amount">Amount</th>
+              {!pricesHidden && <th className="col-rate">Rate</th>}
+              {!pricesHidden && <th className="col-amount">Amount</th>}
               {!readOnly && <th className="col-remove" />}
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={bodyRef}>
             {items.map((li) => (
               <tr key={li.id}>
                 <td>
@@ -146,17 +166,19 @@ export default function LineItemsTable({
                       </>
                     );
                   })()}
-                <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="num-input"
-                    value={li.rate}
-                    disabled={readOnly}
-                    onChange={(e) => update(li.id, { rate: Number(e.target.value) })}
-                  />
-                </td>
-                <td className="amount-cell">${lineAmount(li).toFixed(2)}</td>
+                {!pricesHidden && (
+                  <td>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="num-input"
+                      value={li.rate}
+                      disabled={readOnly}
+                      onChange={(e) => update(li.id, { rate: Number(e.target.value) })}
+                    />
+                  </td>
+                )}
+                {!pricesHidden && <td className="amount-cell">${lineAmount(li).toFixed(2)}</td>}
                 {!readOnly && (
                   <td>
                     <button

@@ -220,20 +220,42 @@ describe("randomized concurrent workload", () => {
           for (const l of staged) expect(l.qty).toBeLessThanOrEqual(remaining(o.lineItems.find((x) => x.id === l.lineItemId)!));
           break;
         case "BACKORDERED":
-          // Either a hold (nothing reserved) or the remainder of a partial
-          // shipment, whose unshipped lines keep their reservation.
-          for (const l of alloc) expect(l.allocatedQty).toBeLessThanOrEqual(remaining(o.lineItems.find((x) => x.id === l.lineItemId)!));
+          // A hold (allocated nothing) or the remainder of a partial
+          // shipment (allocation released, A-07): either way nothing is held.
+          expect(alloc.reduce((s: number, l: any) => s + l.allocatedQty, 0), `S.O. ${o.soNumber} backordered but holding`).toBe(0);
           expect(staged).toEqual([]);
           break;
         case "CANCELLED":
           expect(o.allocation).toBeNull();
-          expect(staged).toEqual([]);
+          // The staged lines stay listed while the floor has a pick to pull back.
+          if (!(o.pullRequestedAt && !o.pullAcknowledgedAt)) expect(staged).toEqual([]);
           break;
         case "CHECKED":
         case "ENTERED":
           expect(o.allocation).toBeNull();
           break;
       }
+    }
+
+    // 5b. The reservation table agrees with the orders' JSON and with the
+    // per-item total every screen reads Available from.
+    const rows = await prisma.allocation.findMany();
+    const rowsByLine = new Map(rows.map((r) => [r.lineItemId, r]));
+    for (const o of all) {
+      const holding = ["ALLOCATED", "BACKORDERED", "PICK_PACKED"].includes(o.status);
+      const held = new Map<string, number>();
+      if (holding) {
+        for (const l of (o.allocation as any)?.lines ?? []) if (l.allocatedQty > 0) held.set(l.lineItemId, (held.get(l.lineItemId) ?? 0) + l.allocatedQty);
+        for (const l of (o.pendingShipment as any[]) ?? []) if (l.qty > 0) held.set(l.lineItemId, (held.get(l.lineItemId) ?? 0) + l.qty);
+      }
+      for (const li of o.lineItems) {
+        expect(rowsByLine.get(li.id)?.qty ?? 0, `S.O. ${o.soNumber} ${li.item} reservation row`).toBe(held.get(li.id) ?? 0);
+        if (rowsByLine.has(li.id)) expect(rowsByLine.get(li.id)!.itemId).toBe(li.itemId);
+      }
+    }
+    for (const n of ITEMS) {
+      const item = await prisma.item.findUniqueOrThrow({ where: { itemNumber: n }, include: { allocations: true } });
+      expect(item.qtyReserved, `${n}: qtyReserved`).toBe(item.allocations.reduce((s, a) => s + a.qty, 0));
     }
 
     // 6. POs: line receipts equal their receiving records; status is derived.
@@ -255,7 +277,8 @@ describe("randomized concurrent workload", () => {
     for (const rec of shipments) {
       const inv = byShipment.get(rec.id);
       expect(inv, `shipment ${rec.id} has no invoice`).toBeTruthy();
-      expect(inv!.status).toBe("ISSUED");
+      // Drafts until Accounting issues them; the workload has no reviewer.
+      expect(inv!.status).toBe("DRAFT");
       const shippedLines = (rec.lines as { lineItemId: string; qty: number }[]).filter((l) => l.qty > 0);
       expect(inv!.lines.map((l) => [l.salesOrderLineId, l.qty]).sort()).toEqual(shippedLines.map((l) => [l.lineItemId, l.qty]).sort());
       const sum = inv!.lines.reduce((s, l) => s + Number(l.amount), 0);
@@ -264,7 +287,7 @@ describe("randomized concurrent workload", () => {
     for (const inv of invoices) if (!inv.shipmentRecordId) expect(inv.status, `${inv.invoiceNumber} orphaned but live`).toBe("VOID");
     const receivedRas = await prisma.returnAuthorization.findMany({ where: { status: "RECEIVED" } });
     for (const ra of receivedRas) expect(await prisma.creditMemo.count({ where: { raNumber: ra.raNumber } }), `${ra.raNumber} has no credit memo`).toBe(1);
-    for (const inv of invoices) expect(await prisma.syncOutbox.count({ where: { entityType: "invoice", entityId: inv.invoiceNumber } }), `${inv.invoiceNumber} never queued`).toBeGreaterThan(0);
+    for (const inv of invoices) if (inv.invoiceNumber) expect(await prisma.syncOutbox.count({ where: { entityType: "invoice", entityId: inv.invoiceNumber } }), `${inv.invoiceNumber} never queued`).toBeGreaterThan(0);
     // And the bridge drains without a single failure against the fake.
     const drained = await processOutbox({ limit: 10_000 });
     expect(drained.failed + drained.dead, JSON.stringify(drained)).toBe(0);

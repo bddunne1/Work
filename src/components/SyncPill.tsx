@@ -9,6 +9,7 @@ const LABELS: Record<string, string> = {
   FAILED: "Retrying",
   DEAD: "Failed",
   NOT_QUEUED: "Not queued",
+  DRAFT: "Not issued",
 };
 
 export default function SyncPill({ sync }: { sync?: SyncInfo | null }) {

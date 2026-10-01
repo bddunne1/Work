@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
@@ -70,7 +71,7 @@ export default function ShipmentHistory() {
       await undoShipment(order);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setReloadTick((t) => t + 1);
         return;
       }
@@ -89,7 +90,7 @@ export default function ShipmentHistory() {
       `${r.shipTo.city}, ${r.shipTo.state}`,
       r.lines.map((l) => `${l.item} x ${l.qty}`).join("; "),
       String(r.units),
-      r.invoiceNumber ?? "",
+      r.invoiceNumber ?? (r.invoiceId ? "Draft" : ""),
       r.invoiceTotal ?? "",
     ]);
     const blob = new Blob(["﻿" + toCsvTable(headers, body)], { type: "text/csv;charset=utf-8" });
@@ -143,7 +144,11 @@ export default function ShipmentHistory() {
       {totals && (
         <p className="muted">
           <b>{totals.shipments.toLocaleString()}</b> shipment{totals.shipments === 1 ? "" : "s"} · <b>{totals.units.toLocaleString()}</b> units ·{" "}
-          <b>${Number(totals.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> invoiced
+          {totals.amount !== null && (
+            <>
+              <b>${Number(totals.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> invoiced
+            </>
+          )}
           {!totals.complete && " (totals cover the most recent 5,000 shipments in this range)"}
         </p>
       )}
@@ -186,9 +191,9 @@ export default function ShipmentHistory() {
                 <td>{r.lines.map((l) => `${l.item} × ${l.qty}`).join(", ")}</td>
                 <td className="amount-cell">{r.units.toLocaleString()}</td>
                 <td onClick={(e) => e.stopPropagation()}>
-                  {r.invoiceNumber ? (
-                    <Link to={`/invoices/${r.invoiceNumber}`} className={r.invoiceStatus === "VOID" ? "muted" : undefined}>
-                      {r.invoiceNumber}
+                  {r.invoiceId ? (
+                    <Link to={`/invoices/${encodeURIComponent(r.invoiceNumber ?? r.invoiceId)}`} className={r.invoiceStatus === "VOID" ? "muted" : undefined}>
+                      {r.invoiceNumber ?? "Draft"}
                       {r.invoiceStatus === "VOID" ? " (void)" : ""}
                     </Link>
                   ) : (

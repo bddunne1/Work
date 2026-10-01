@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useRef, useState } from "react";
 import { moveOnEnter } from "../lib/formKeys";
 import { Link, useNavigate } from "react-router-dom";
@@ -137,7 +138,7 @@ export default function OrderEntry() {
       setOrder(saved);
       setSaved(true);
     } catch (err) {
-      alert(`The order was not saved: ${err instanceof Error ? err.message : String(err)}`);
+      showToast(`The order was not saved: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setSubmitting(false);
     }

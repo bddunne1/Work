@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import StatusPill from "../components/StatusPill";
@@ -5,7 +6,7 @@ import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listOpenOrders, setEstimatedShipDate as setShipDate } from "../lib/orderStore";
 import type { OrderStatus, PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotalLabel } from "../types";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "Entered",
@@ -73,7 +74,7 @@ export default function ScheduleShipments() {
       setOrders((os) => os.map((o) => (o.soNumber === soNumber ? saved : o)));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrders(await listOpenOrders());
         return;
       }
@@ -189,7 +190,7 @@ export default function ScheduleShipments() {
                   <td>
                     <StatusPill order={o} />
                   </td>
-                  <td>${orderTotal(o).toFixed(2)}</td>
+                  <td>{orderTotalLabel(o)}</td>
                   <td onClick={(e) => e.stopPropagation()}>
                     {canEdit ? (
                       <input

@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
@@ -6,7 +7,7 @@ import { checkOrder, getOrder } from "../lib/orderStore";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
-import { orderTotal } from "../types";
+import { orderTotalLabel, statusLabel } from "../types";
 
 export default function ValidationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -65,7 +66,7 @@ function ValidationDecisionInner() {
       await checkOrder(order);
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -93,7 +94,7 @@ function ValidationDecisionInner() {
           <span className="review-meta-sep">·</span>
           <strong>{order.billTo.name}</strong>
           <span className="review-meta-sep">·</span>
-          <span className="review-meta-total">${orderTotal(order).toFixed(2)}</span>
+          <span className="review-meta-total">{orderTotalLabel(order)}</span>
           {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
           {!staleStatus && (
             <button type="button" className="secondary-btn" onClick={skip} title="Leave this order for later and move to the next one">
@@ -105,7 +106,7 @@ function ValidationDecisionInner() {
 
       {staleStatus && (
         <p className="stale-status-notice">
-          This order is already {order.status} - it has moved past validation since this queue was loaded.
+          This order is already {statusLabel(order.status)} - it has moved past validation since this queue was loaded.
         </p>
       )}
 
@@ -157,7 +158,7 @@ function ValidationDecisionInner() {
           </tbody>
         </table>
 
-        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly />
+        <LineItemsTable items={order.lineItems} onChange={() => {}} readOnly pricesHidden={order.pricesHidden} />
 
         <div className="decision-outcome outcome-success">
           <div className="decision-outcome-label">Looks good?</div>

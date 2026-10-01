@@ -209,13 +209,12 @@ export function parseItems(csv: ParsedCsv, existing: Item[]): RowResult<Item>[] 
 
     const rateStr = field(row, "Rate", "Price", "Unit Price");
     const onHandStr = field(row, "On Hand", "Qty On Hand", "Quantity On Hand");
-    const onPoStr = field(row, "On Purchase Order", "Qty On PO", "On Order");
     const weightStr = field(row, "Weight", "Weight (lbs)", "Unit Weight");
     const rate = rateStr ? money("Rate", rateStr) : { value: 0 };
     const onHand = onHandStr ? wholeNumber("On Hand", onHandStr, 0) : { value: 0 };
-    const onPo = onPoStr ? wholeNumber("On Purchase Order", onPoStr, 0) : { value: 0 };
     const weight = weightStr ? decimal("Weight", weightStr) : { value: undefined };
-    for (const c of [rate, onHand, onPo, weight]) if (c.error) errors.push(c.error);
+    // On purchase order is derived from open vendor POs; a column for it is ignored (C-13).
+    for (const c of [rate, onHand, weight]) if (c.error) errors.push(c.error);
     if (errors.length > 0) return { ...base, label, errors };
 
     let duplicateReason: string | undefined;
@@ -231,7 +230,8 @@ export function parseItems(csv: ParsedCsv, existing: Item[]): RowResult<Item>[] 
       um: field(row, "U/M", "UOM", "Unit", "Unit of Measure") || "EA",
       rate: rate.value ?? 0,
       qtyOnHand: onHand.value ?? 0,
-      qtyOnPurchaseOrder: onPo.value ?? 0,
+      qtyOnPurchaseOrder: 0,
+      qtyReserved: 0,
       weight: weight.value,
       createdAt: new Date().toISOString(),
     };
@@ -333,6 +333,12 @@ export function parseSalesOrders(
         return;
       }
       const catalogItem = itemsByNumber.get(key(itemNumber));
+      // The server refuses a line for an item that isn't in the catalog;
+      // say so in the preview instead of at import time (C-13).
+      if (!catalogItem) {
+        errors.push(`${at(i)}Item "${itemNumber}" is not in the catalog - add it under Items first`);
+        return;
+      }
       const rateStr = field(row, "Rate", "Price", "Unit Price");
       const rate = rateStr ? money("Rate", rateStr, { allowNegative: true }) : { value: catalogItem?.rate ?? 0 };
       if (rate.error) {
@@ -474,10 +480,10 @@ export async function markExistingOrders(
 // ---------------------------------------------------------------------------
 // Inventory
 
-// Updates stock levels on EXISTING catalog items (matched by Item Number);
+// Updates on-hand counts on EXISTING catalog items (matched by Item Number);
 // it never creates new items, since inventory needs a catalog entry first.
-// A blank On Hand or On Purchase Order cell leaves that field unchanged,
-// so a feed reporting only one of the two doesn't zero out the other.
+// On purchase order is derived from open vendor POs, so a column for it is
+// ignored (C-13).
 export function parseInventory(csv: ParsedCsv, items: Item[]): RowResult<Item>[] {
   const itemsByNumber = itemsIndex(items);
   const seen = new Map<string, number>();
@@ -499,18 +505,15 @@ export function parseInventory(csv: ParsedCsv, items: Item[]): RowResult<Item>[]
     seen.set(key(itemNumber), rowNumber);
 
     const onHandStr = field(row, "On Hand", "Qty On Hand", "Quantity On Hand", "On-Hand");
-    const onPoStr = field(row, "On Purchase Order", "Qty On PO", "On Order", "On PO", "On-Order");
-    if (!onHandStr && !onPoStr) return { ...base, label, errors: ["No On Hand or On Purchase Order value"] };
-    const onHand = onHandStr ? wholeNumber("On Hand", onHandStr, 0) : { value: existing.qtyOnHand };
-    const onPo = onPoStr ? wholeNumber("On Purchase Order", onPoStr, 0) : { value: existing.qtyOnPurchaseOrder };
-    const errors = [onHand.error, onPo.error].filter((e): e is string => !!e);
-    if (errors.length > 0) return { ...base, label, errors };
+    if (!onHandStr) return { ...base, label, errors: ["No On Hand value"] };
+    const onHand = wholeNumber("On Hand", onHandStr, 0);
+    if (onHand.error) return { ...base, label, errors: [onHand.error] };
 
     return {
       ...base,
       label,
       errors: [],
-      data: { ...existing, qtyOnHand: onHand.value!, qtyOnPurchaseOrder: onPo.value! },
+      data: { ...existing, qtyOnHand: onHand.value! },
     };
   });
 }

@@ -34,9 +34,11 @@ export async function requireItem(tx: Tx, itemNumber: string) {
 // shipment, say) that updated items in their own line order could each hold
 // the row the other wanted next - a Postgres deadlock, which aborted one of
 // them with a 500. Locking in id order first means they queue instead.
+// A single item is locked too: the availability check needs two
+// allocations of the same item to queue, not race.
 export async function lockItems(tx: Tx, itemIds: (string | null | undefined)[]): Promise<void> {
   const ids = [...new Set(itemIds.filter((id): id is string => Boolean(id)))].sort();
-  if (ids.length < 2) return;
+  if (ids.length === 0) return;
   await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Item" WHERE "id" = ANY(${ids}::text[]) ORDER BY "id" FOR UPDATE`);
 }
 
@@ -105,95 +107,25 @@ export const itemIdFor = (ids: Map<string, string>, itemNumber: string) => ids.g
 // qtyOnPurchaseOrder is a cached total of what's still outstanding on every
 // non-closed vendor PO. Recomputed here, in the same transaction as whatever
 // changed a PO, instead of by the browser after the fact (which raced and
-// cost two full-table fetches per item).
-export async function recomputeQtyOnPurchaseOrder(tx: Tx, itemNumbers: string[]): Promise<void> {
-  const unique = [...new Set(itemNumbers.filter(Boolean))];
+// cost two full-table fetches per item). Matched on the line's catalog link,
+// not its item # text, so a renamed item or a differently-cased entry can't
+// leave the total stale (A-06).
+export async function recomputeQtyOnPurchaseOrder(tx: Tx, itemIds: (string | null | undefined)[]): Promise<void> {
+  const unique = [...new Set(itemIds.filter((id): id is string => Boolean(id)))];
   if (unique.length === 0) return;
   const lines = await tx.vendorPoLine.findMany({
-    where: { itemNumber: { in: unique }, vendorPo: { status: { not: "CLOSED" } } },
-    select: { itemNumber: true, orderedQty: true, receivedQty: true },
+    where: { itemId: { in: unique }, vendorPo: { status: { not: "CLOSED" } } },
+    select: { itemId: true, orderedQty: true, receivedQty: true },
   });
-  const outstanding = new Map<string, number>(unique.map((n) => [n, 0]));
+  const outstanding = new Map<string, number>(unique.map((id) => [id, 0]));
   for (const l of lines) {
-    outstanding.set(l.itemNumber, (outstanding.get(l.itemNumber) ?? 0) + Math.max(0, l.orderedQty - l.receivedQty));
+    if (!l.itemId) continue;
+    outstanding.set(l.itemId, (outstanding.get(l.itemId) ?? 0) + Math.max(0, l.orderedQty - l.receivedQty));
   }
-  for (const [itemNumber, qty] of outstanding) {
-    const item = await findItemByNumber(tx, itemNumber);
+  for (const [itemId, qty] of outstanding) {
+    const item = await tx.item.findUnique({ where: { id: itemId }, select: { qtyOnPurchaseOrder: true } });
     if (item && item.qtyOnPurchaseOrder !== qty) {
-      await tx.item.update({ where: { id: item.id }, data: { qtyOnPurchaseOrder: qty, version: { increment: 1 } } });
+      await tx.item.update({ where: { id: itemId }, data: { qtyOnPurchaseOrder: qty, version: { increment: 1 } } });
     }
-  }
-}
-
-interface ReservingOrder {
-  lineItems: { id: string; item: string }[];
-  allocation: unknown;
-  pendingShipment: unknown;
-}
-
-// Units an order is holding against stock, per item # (lowercased):
-// allocated-not-yet-packed plus packed-not-yet-shipped - the same rule as
-// the frontend's reservedQtyFor/qtyAllocatedOnOrders in src/types.ts.
-export function reservedByItem(order: ReservingOrder): Map<string, number> {
-  const itemOf = new Map(order.lineItems.map((l) => [l.id, l.item.trim().toLowerCase()]));
-  const out = new Map<string, number>();
-  const add = (lineItemId: string, qty: number) => {
-    const item = itemOf.get(lineItemId);
-    if (!item || !(qty > 0)) return;
-    out.set(item, (out.get(item) ?? 0) + qty);
-  };
-  const allocation = order.allocation as { lines?: { lineItemId: string; allocatedQty: number }[] } | null;
-  for (const l of allocation?.lines ?? []) add(l.lineItemId, l.allocatedQty);
-  for (const l of (order.pendingShipment as { lineItemId: string; qty: number }[] | null) ?? []) add(l.lineItemId, l.qty);
-  return out;
-}
-
-// Advisory lock key serializing every save that *increases* an order's
-// reservation, so two people allocating the same scarce item at the same
-// moment can't both be told it's available.
-const ALLOCATION_LOCK = 7_310_001;
-
-// Rejects a save that would reserve more of an item than is actually free
-// (on hand, less what every other open order already holds). Only checks
-// items whose reservation this save increases, so re-saving an order that
-// was already over-committed for some other reason (e.g. a stock count
-// correction) isn't blocked by unrelated edits.
-export async function assertAllocationAvailable(
-  tx: Tx,
-  soNumber: number,
-  before: ReservingOrder,
-  after: ReservingOrder
-): Promise<void> {
-  const prev = reservedByItem(before);
-  const next = reservedByItem(after);
-  const increased = [...next.entries()].filter(([item, qty]) => qty > (prev.get(item) ?? 0));
-  if (increased.length === 0) return;
-
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ALLOCATION_LOCK})`;
-
-  const others = await tx.salesOrder.findMany({
-    where: { soNumber: { not: soNumber }, status: { in: ["ENTERED", "CHECKED", "ALLOCATED", "BACKORDERED", "PICK_PACKED"] } },
-    select: { allocation: true, pendingShipment: true, lineItems: { select: { id: true, item: true } } },
-  });
-  const heldElsewhere = new Map<string, number>();
-  for (const o of others) {
-    for (const [item, qty] of reservedByItem(o)) heldElsewhere.set(item, (heldElsewhere.get(item) ?? 0) + qty);
-  }
-
-  const shortages: string[] = [];
-  for (const [item, qty] of increased) {
-    const catalogItem = await findItemByNumber(tx, item);
-    const onHand = catalogItem?.qtyOnHand ?? 0;
-    const available = onHand - (heldElsewhere.get(item) ?? 0);
-    if (qty > available) {
-      shortages.push(`${catalogItem?.itemNumber ?? item}: ${Math.max(0, available)} available, ${qty} requested`);
-    }
-  }
-  if (shortages.length > 0) {
-    throw new HttpError(
-      409,
-      `Not enough stock to allocate - someone else may have just allocated it. ${shortages.join("; ")}. Reload and try again.`,
-      { conflict: true, shortages }
-    );
   }
 }

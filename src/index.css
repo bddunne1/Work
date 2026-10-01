@@ -2713,6 +2713,35 @@ a.dash-lookup-row:focus-visible {
   padding-top: 10px;
 }
 
+/* Order notes and shipping notes on the pick list and packing slip: the
+   floor reads these before touching the pallet, so they are boxed and set
+   larger than the line table, not tucked into the footer. */
+.doc-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.doc-notes-block { display: flex; gap: 10px; align-items: baseline; }
+.doc-notes-label {
+  flex: 0 0 auto;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 2px;
+}
+.doc-notes-text { white-space: pre-wrap; font-weight: 600; color: var(--text-h); }
+
+.pref-group { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pref-group legend { padding: 0 0 6px; }
+.pref-option { align-items: flex-start; }
+
 .pick-list-notes {
   border-top: none;
   border-bottom: 1px solid var(--border);
@@ -3748,6 +3777,17 @@ a.dash-lookup-row:focus-visible {
 .row-void td { color: var(--muted); text-decoration: line-through; }
 .row-void td:last-child, .row-void td:nth-last-child(2) { text-decoration: none; }
 .doc-void { position: relative; }
+.doc-draft { position: relative; }
+.doc-draft-banner { color: #7d6c0c; border-color: #b9a30f; opacity: 0.85; }
+.doc-draft-notice {
+  border-left: 4px solid #b9a30f;
+  background: rgba(185, 163, 15, 0.1);
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 12px;
+}
+.doc-charge-row td { background: var(--accent-bg); }
+.doc-charge-row input, .doc-charge-row select { max-width: 100%; }
 .doc-void-banner {
   position: absolute;
   top: 40px;
@@ -3762,4 +3802,88 @@ a.dash-lookup-row:focus-visible {
   border-radius: 6px;
   opacity: 0.8;
   pointer-events: none;
+}
+
+/* Open Picks: cancelled orders whose pick is still on the floor (A-23). */
+.pull-list {
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem 1rem;
+  border: 1px solid var(--danger, #e03131);
+  border-radius: 8px;
+}
+.pull-list-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  color: var(--danger, #e03131);
+}
+
+/* An inline refusal under a form's actions: the typed values stay put. */
+.form-error {
+  margin: 0.5rem 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-radius: 4px;
+}
+
+/* ---- Toasts (C-01): brief messages, bottom right, in place of alert() ---- */
+.toast-host {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  max-width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent, #4c6ef5);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-size: 14px;
+  white-space: pre-line;
+}
+.toast-error { border-left-color: var(--danger); }
+.toast-success { border-left-color: #12b886; }
+.toast-text { flex: 1; }
+.toast-close {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.load-failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-radius: 4px;
+}
+.error-boundary .button-row { justify-content: center; }
+.bol-row-shipto { font-size: 12px; }
+
+/* ---- Phone width (C-17): the top bar wraps and wide tables scroll ---- */
+@media (max-width: 480px) {
+  .topbar { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  .topbar-username { display: none; }
+  .page { padding-left: 4px; padding-right: 4px; }
+  .content { overflow-x: hidden; }
+  .data-table { font-size: 13px; }
+  .scroll-window { max-width: calc(100vw - 24px); }
+  .toolbar { flex-wrap: wrap; }
 }

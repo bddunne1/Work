@@ -58,12 +58,12 @@ const TEMPLATES: Record<ImportType, { headers: string[]; sample: string[] }> = {
     ],
   },
   items: {
-    headers: ["Item Number", "Description", "U/M", "Rate", "On Hand", "On Purchase Order", "Weight"],
-    sample: ["RP-100", "1/2in Twisted Rope, 600ft coil", "EA", "42.50", "120", "0", "24.5"],
+    headers: ["Item Number", "Description", "U/M", "Rate", "On Hand", "Weight"],
+    sample: ["RP-100", "1/2in Twisted Rope, 600ft coil", "EA", "42.50", "120", "24.5"],
   },
   inventory: {
-    headers: ["Item Number", "On Hand", "On Purchase Order"],
-    sample: ["RP-100", "120", "0"],
+    headers: ["Item Number", "On Hand"],
+    sample: ["RP-100", "120"],
   },
   orders: {
     headers: [
@@ -124,7 +124,7 @@ function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     // Validation failures come back as a structured object rather than a
     // message, which apiClient turns into "Request failed (400)".
-    if (err.status === 400) return "The server rejected this row as invalid (400) - check its values";
+    if (err.status === 400) return `The server rejected this row: ${err.message}`;
     if (err.status === 403) return "You don't have permission to create these records";
     return err.message;
   }

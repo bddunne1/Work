@@ -1,6 +1,6 @@
 import { listCustomers } from "../customerStore";
-import { getItemByNumber, listItems } from "../itemStore";
-import { listOpenOrders, OPEN_ORDER_STATUSES, searchAllOrders, searchOrders } from "../orderStore";
+import { listItems } from "../itemStore";
+import { listOpenOrders, OPEN_ORDER_STATUSES, searchOrders } from "../orderStore";
 import type { OrderSearchParams } from "../orderStore";
 import { listReturns } from "../returnStore";
 import { listVendorPos } from "../vendorPoStore";
@@ -11,7 +11,6 @@ import {
   availableQty,
   lineAmount,
   orderTotal,
-  qtyAllocatedOnOrders,
   qtyOnOpenSalesOrders,
   remainingToShip,
   returnTotal,
@@ -141,6 +140,7 @@ async function buildOrderReport(
 
 const salesOrders: ReportDataSource = {
   key: "sales-orders",
+  viewPaths: ["/open-orders", "/closed-orders", "/storage", "/order-entry", "/validation", "/allocation", "/back-orders", "/pick-pack", "/open-picks", "/schedule", "/bol", "/shipment-history"],
   label: "Sales Orders",
   description: "One row per sales order.",
   columns: [
@@ -216,6 +216,7 @@ function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues
 
 const salesOrderLines: ReportDataSource = {
   key: "sales-order-lines",
+  viewPaths: ["/open-orders", "/closed-orders", "/storage", "/order-entry", "/validation", "/allocation", "/back-orders", "/pick-pack", "/open-picks", "/schedule", "/bol", "/shipment-history"],
   label: "Sales Order Lines",
   description: "One row per item line across every sales order - which orders an item is on, and how much of it.",
   columns: [
@@ -247,6 +248,7 @@ const salesOrderLines: ReportDataSource = {
 
 const purchaseOrders: ReportDataSource = {
   key: "purchase-orders",
+  viewPaths: ["/purchase-orders", "/receiving"],
   label: "Purchase Orders",
   description: "One row per outbound purchase order to a vendor.",
   columns: [
@@ -289,6 +291,7 @@ const purchaseOrders: ReportDataSource = {
 
 const purchaseOrderLines: ReportDataSource = {
   key: "purchase-order-lines",
+  viewPaths: ["/purchase-orders", "/receiving"],
   label: "Purchase Order Lines",
   description: "One row per item line across every purchase order - which POs an item is on, and how much is outstanding.",
   columns: [
@@ -344,6 +347,7 @@ const purchaseOrderLines: ReportDataSource = {
 
 const inventory: ReportDataSource = {
   key: "inventory",
+  viewPaths: ["/inventory", "/items", "/open-orders", "/allocation"],
   label: "Inventory Stock Status",
   description: "Every catalog item with on hand, on sales order, allocated, on purchase order, and available.",
   columns: [
@@ -367,7 +371,7 @@ const inventory: ReportDataSource = {
     return items
       .filter((i) => includesText(`${i.itemNumber} ${i.description}`, filters.item ?? ""))
       .map((i) => {
-        const allocated = qtyAllocatedOnOrders(i.itemNumber, orders);
+        const allocated = i.qtyReserved;
         return {
           item: i.itemNumber,
           description: i.description,
@@ -385,6 +389,7 @@ const inventory: ReportDataSource = {
 
 const customers: ReportDataSource = {
   key: "customers",
+  viewPaths: ["/customers/all", "/order-entry", "/customers/pricing", "/customers/routing-guide"],
   label: "Customers",
   description: "One row per customer.",
   columns: [
@@ -416,6 +421,7 @@ const customers: ReportDataSource = {
 
 const vendors: ReportDataSource = {
   key: "vendors",
+  viewPaths: ["/vendors", "/purchase-orders"],
   label: "Vendors",
   description: "One row per vendor.",
   columns: [
@@ -441,6 +447,7 @@ const vendors: ReportDataSource = {
 
 const returns: ReportDataSource = {
   key: "returns",
+  viewPaths: ["/returns"],
   label: "Returns",
   description: "One row per Return Authorization.",
   columns: [
@@ -489,53 +496,3 @@ export function getDataSource(key: string): ReportDataSource | undefined {
   return DATA_SOURCES.find((d) => d.key === key);
 }
 
-// The Item Quick Report (see ItemQuickReport.tsx) reuses the sales-order-line
-// and purchase-order-line builders directly, scoped to one item number,
-// rather than going through the generic filter UI.
-export async function itemQuickReportData(itemNumber: string) {
-  const [history, open, pos, catalogItem] = await Promise.all([
-    // Every order with this item, most recent first, up to the cap...
-    collectOrders({ item: itemNumber, sort: "soNumber", dir: "desc" }, (os) => salesOrderLineRows(os, {}, itemNumber), REPORT_ROW_CAP),
-    // ...and, separately and uncapped, the unshipped ones the stock
-    // figures are computed from.
-    searchAllOrders({ item: itemNumber, status: OPEN_ORDER_STATUSES }, Number.MAX_SAFE_INTEGER),
-    listVendorPos(),
-    getItemByNumber(itemNumber),
-  ]);
-  const orders = open.orders;
-  const allocated = qtyAllocatedOnOrders(itemNumber, orders);
-
-  const soLines = salesOrderLineRows(history.orders, {}, itemNumber).slice(0, REPORT_ROW_CAP);
-  const poLines: ReportRow[] = [];
-  for (const p of pos) {
-    for (const l of p.lines) {
-      if (l.itemNumber.trim().toLowerCase() !== itemNumber.trim().toLowerCase()) continue;
-      poLines.push({
-        poNumber: p.poNumber,
-        vendor: p.vendorName,
-        orderDate: p.orderDate,
-        status: p.status,
-        orderedQty: l.orderedQty,
-        receivedQty: l.receivedQty,
-        outstanding: vendorPoLineOutstanding(l),
-        cost: l.cost,
-      });
-    }
-  }
-
-  return {
-    item: catalogItem,
-    summary: catalogItem
-      ? {
-          onHand: catalogItem.qtyOnHand,
-          onSalesOrder: qtyOnOpenSalesOrders(itemNumber, orders),
-          allocated,
-          onPurchaseOrder: catalogItem.qtyOnPurchaseOrder,
-          available: availableQty(catalogItem, allocated),
-        }
-      : null,
-    soLines,
-    poLines,
-    notice: history.truncated ? ROW_CAP_NOTICE : undefined,
-  };
-}

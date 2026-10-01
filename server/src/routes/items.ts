@@ -3,7 +3,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { enqueueIfSynced } from "../integrations/sync.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn, diffFields, logAudit } from "../lib/audit.js";
+import { canSeePrices } from "../lib/orderView.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -56,7 +57,8 @@ const adjustQtySchema = z.object({
   expectedQtyOnHand: z.number().int().optional(),
 });
 
-const include = { components: true, links: true };
+// The preferred vendor's name rides along so lists don't fetch every vendor to show it (C-16).
+const include = { components: true, links: true, preferredVendor: { select: { name: true } } };
 
 router.use(requireAuth);
 
@@ -143,6 +145,9 @@ router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest
   res.status(201).json(item);
 });
 
+// The catalog fields whose changes are recorded field by field.
+const ITEM_FIELDS = ["itemNumber", "description", "um", "rate", "qtyOnHand", "reorderPoint", "countryOfOrigin", "weight", "notes", "preferredVendorId"];
+
 router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedRequest, res) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -216,6 +221,10 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
         await tx.customerPriceOverride.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
         await tx.customerPartMapping.updateMany({ where: { itemNumber: existing.itemNumber }, data: { itemNumber: data.itemNumber } });
       }
+      // Field by field, in the transaction (B-11).
+      const changes: Record<string, unknown> = diffFields(existing, data, ITEM_FIELDS);
+      if (data.itemNumber !== existing.itemNumber) changes.renamedFrom = existing.itemNumber;
+      await auditIn(tx, req.account!, "ITEM_UPDATED", "item", id, data.itemNumber, changes);
     });
   } catch (err) {
     if (err instanceof ConflictError) {
@@ -225,10 +234,6 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
     throw err;
   }
 
-  logAudit(req.account!, "ITEM_UPDATED", "item", id, data.itemNumber, {
-    ...(data.itemNumber !== existing.itemNumber ? { renamedFrom: existing.itemNumber } : {}),
-    ...(data.qtyOnHand !== existing.qtyOnHand ? { qtyOnHand: { from: existing.qtyOnHand, to: data.qtyOnHand } } : {}),
-  });
   const updated = await prisma.item.findUnique({ where: { id }, include });
   res.json(updated);
 });
@@ -296,6 +301,7 @@ router.patch("/by-number/:itemNumber/qty", requireAnyPermission(["catalog", "inv
     if (qtyOnPurchaseOrder !== undefined) {
       await tx.item.update({ where: { id: current.id }, data: { qtyOnPurchaseOrder, version: { increment: 1 } } });
     }
+    if (changedBy !== 0) await auditIn(tx, req.account!, "STOCK_ADJUSTED", "item", current.id, current.itemNumber, { delta: changedBy });
     return undefined;
   });
   if (conflictAt !== undefined) {
@@ -306,10 +312,89 @@ router.patch("/by-number/:itemNumber/qty", requireAnyPermission(["catalog", "inv
     });
     return;
   }
-  if (changedBy !== 0) {
-    logAudit(req.account!, "STOCK_ADJUSTED", "item", current.id, current.itemNumber, { delta: changedBy });
-  }
   res.json(await prisma.item.findUnique({ where: { id: current.id }, include }));
+});
+
+const STATUS_LABEL: Record<string, string> = { ENTERED: "Entered", CHECKED: "Checked", ALLOCATED: "Allocated", BACKORDERED: "Backordered", PICK_PACKED: "Pick & Packed", SHIPPED: "Shipped", CANCELLED: "Cancelled" };
+const PO_STATUS_LABEL: Record<string, string> = { OPEN: "Open", PARTIALLY_RECEIVED: "Partially Received", RECEIVED: "Received", CLOSED: "Closed" };
+const QUICK_REPORT_CAP = 500;
+
+// Everything the Item Quick Report shows, in one small response (D-10):
+// the stock summary, the item's order lines (newest first, capped) and its
+// vendor PO lines. Prices ride along only for an office login (B-10).
+router.get("/:id/quick-report", async (req: AuthedRequest, res) => {
+  const item = await prisma.item.findUnique({ where: { id: req.params.id }, include });
+  if (!item) {
+    res.status(404).json({ error: "Item not found" });
+    return;
+  }
+  const showPrices = canSeePrices(req.account!);
+  const [lines, total, openLines, poLines] = await Promise.all([
+    prisma.salesOrderLine.findMany({
+      where: { itemId: item.id },
+      orderBy: { soNumber: "desc" },
+      take: QUICK_REPORT_CAP,
+      include: { salesOrder: { select: { soNumber: true, poNumber: true, billTo: true, orderDate: true, status: true, allocation: true, shipmentHistory: { select: { lines: true } } } } },
+    }),
+    prisma.salesOrderLine.count({ where: { itemId: item.id } }),
+    prisma.salesOrderLine.findMany({
+      where: { itemId: item.id, salesOrder: { status: { in: ["ENTERED", "CHECKED", "ALLOCATED", "BACKORDERED", "PICK_PACKED"] } } },
+      select: { id: true, ordered: true, salesOrder: { select: { shipmentHistory: { select: { lines: true } } } } },
+    }),
+    prisma.vendorPoLine.findMany({
+      where: { itemId: item.id },
+      orderBy: { vendorPo: { orderDate: "desc" } },
+      take: QUICK_REPORT_CAP,
+      include: { vendorPo: { select: { poNumber: true, vendorName: true, orderDate: true, status: true } } },
+    }),
+  ]);
+  const shippedOn = (history: { lines: unknown }[], lineId: string) =>
+    history.reduce((sum, rec) => sum + ((rec.lines as { lineItemId: string; qty: number }[]).find((l) => l.lineItemId === lineId)?.qty ?? 0), 0);
+  const soLines = lines.map((l) => {
+    const o = l.salesOrder;
+    const shipped = shippedOn(o.shipmentHistory, l.id);
+    const allocated = (o.allocation as { lines?: { lineItemId: string; allocatedQty: number }[] } | null)?.lines?.find((a) => a.lineItemId === l.id)?.allocatedQty ?? 0;
+    const rate = Number(l.rate);
+    return {
+      soNumber: String(o.soNumber),
+      poNumber: o.poNumber,
+      customer: (o.billTo as { name?: string }).name ?? "",
+      orderDate: o.orderDate.toISOString().slice(0, 10),
+      status: STATUS_LABEL[o.status] ?? o.status,
+      item: l.item,
+      description: l.description,
+      um: l.um,
+      ordered: l.ordered,
+      shipped,
+      remaining: Math.max(0, l.ordered - shipped),
+      allocated: ["ALLOCATED", "BACKORDERED", "PICK_PACKED"].includes(o.status) ? allocated : 0,
+      ...(showPrices ? { rate, amount: Math.round(l.ordered * rate * 100) / 100 } : {}),
+    };
+  });
+  const onSalesOrder = openLines.reduce((sum, l) => sum + Math.max(0, l.ordered - shippedOn(l.salesOrder.shipmentHistory, l.id)), 0);
+  res.json({
+    item,
+    summary: {
+      onHand: item.qtyOnHand,
+      onSalesOrder,
+      allocated: item.qtyReserved,
+      onPurchaseOrder: item.qtyOnPurchaseOrder,
+      available: item.qtyOnHand - item.qtyReserved,
+    },
+    soLines,
+    poLines: poLines.map((l) => ({
+      poNumber: l.vendorPo.poNumber,
+      vendor: l.vendorPo.vendorName,
+      orderDate: l.vendorPo.orderDate.toISOString().slice(0, 10),
+      status: PO_STATUS_LABEL[l.vendorPo.status] ?? l.vendorPo.status,
+      orderedQty: l.orderedQty,
+      receivedQty: l.receivedQty,
+      outstanding: Math.max(0, l.orderedQty - l.receivedQty),
+      ...(showPrices ? { cost: Number(l.cost) } : {}),
+    })),
+    notice: total > lines.length ? `Showing the most recent ${lines.length} of ${total} order lines.` : undefined,
+    pricesHidden: !showPrices,
+  });
 });
 
 // Stock ledger for one item, newest first: every ship, receipt, return,

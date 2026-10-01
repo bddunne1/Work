@@ -148,8 +148,9 @@ function goneIsVoided(err: unknown): null {
 }
 
 async function pushInvoice(api: QuickBooksApi, invoiceNumber: string, action: Action): Promise<string> {
-  const inv = await prisma.invoice.findUnique({ where: { invoiceNumber }, include: { lines: true } });
+  const inv = await prisma.invoice.findUnique({ where: { invoiceNumber }, include: { lines: { orderBy: { position: "asc" } } } });
   if (!inv) throw new QuickBooksError(`Invoice ${invoiceNumber} no longer exists`, 404, undefined, true);
+  if (inv.status === "DRAFT") throw new QuickBooksError(`Invoice ${invoiceNumber} is still a draft`, 409, undefined, true);
   const existing = await getRef("invoice", invoiceNumber);
   if (action === "VOID" || inv.status === "VOID") {
     if (!existing) return "never reached QuickBooks - nothing to void";
@@ -160,7 +161,7 @@ async function pushInvoice(api: QuickBooksApi, invoiceNumber: string, action: Ac
   }
   const customerRefId = inv.customerId ? await pushCustomer(api, inv.customerId) : await pushAdHocCustomer(api, inv.customerName, inv.billTo);
   const ref = await api.createInvoice({
-    docNumber: inv.invoiceNumber,
+    docNumber: inv.invoiceNumber!,
     customerRefId,
     txnDate: inv.invoiceDate.toISOString().slice(0, 10),
     dueDate: inv.dueDate.toISOString().slice(0, 10),
@@ -178,8 +179,9 @@ async function pushInvoice(api: QuickBooksApi, invoiceNumber: string, action: Ac
 }
 
 async function pushCreditMemo(api: QuickBooksApi, creditMemoNumber: string, action: Action): Promise<string> {
-  const memo = await prisma.creditMemo.findUnique({ where: { creditMemoNumber }, include: { lines: true } });
+  const memo = await prisma.creditMemo.findUnique({ where: { creditMemoNumber }, include: { lines: { orderBy: { position: "asc" } } } });
   if (!memo) throw new QuickBooksError(`Credit memo ${creditMemoNumber} no longer exists`, 404, undefined, true);
+  if (memo.status === "DRAFT") throw new QuickBooksError(`Credit memo ${creditMemoNumber} is still a draft`, 409, undefined, true);
   const existing = await getRef("credit-memo", creditMemoNumber);
   if (action === "VOID" || memo.status === "VOID") {
     if (!existing) return "never reached QuickBooks - nothing to void";
@@ -190,7 +192,7 @@ async function pushCreditMemo(api: QuickBooksApi, creditMemoNumber: string, acti
   }
   const customerRefId = memo.customerId ? await pushCustomer(api, memo.customerId) : await pushAdHocCustomer(api, memo.customerName, memo.billTo);
   const ref = await api.createCreditMemo({
-    docNumber: memo.creditMemoNumber,
+    docNumber: memo.creditMemoNumber!,
     customerRefId,
     txnDate: memo.memoDate.toISOString().slice(0, 10),
     customerMemo: memo.reason || undefined,
@@ -319,11 +321,13 @@ export interface ReconcileReport {
 }
 
 export async function reconcileInvoices(from: string, to: string): Promise<ReconcileReport> {
-  const [ours, theirs, outbox] = await Promise.all([
-    prisma.invoice.findMany({ where: { invoiceDate: { gte: new Date(from), lte: new Date(to) } } }),
+  const [oursRows, theirs, outbox] = await Promise.all([
+    prisma.invoice.findMany({ where: { invoiceDate: { gte: new Date(from), lte: new Date(to) }, status: { not: "DRAFT" } } }),
     quickBooks().listInvoices(from, to),
     prisma.syncOutbox.findMany({ where: { system: SYSTEM, entityType: "invoice" }, orderBy: { createdAt: "desc" } }),
   ]);
+  // Drafts are excluded above, so every row here carries its number.
+  const ours = oursRows.map((o) => ({ ...o, invoiceNumber: o.invoiceNumber! }));
   const theirsByDoc = new Map(theirs.map((t) => [t.docNumber, t]));
   const oursByDoc = new Map(ours.map((o) => [o.invoiceNumber, o]));
   const syncStatus = (n: string) => outbox.find((r) => r.entityId === n)?.status ?? "not queued";

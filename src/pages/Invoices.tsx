@@ -2,23 +2,34 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Pager from "../components/Pager";
 import SyncPill from "../components/SyncPill";
-import { money, searchCreditMemos, searchInvoices } from "../lib/invoiceStore";
+import { creditMemoPath, invoicePath, money, searchCreditMemos, searchInvoices } from "../lib/invoiceStore";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { usePageForFilters } from "../lib/usePagedOrders";
-import type { CreditMemo, Invoice } from "../types";
+import type { CreditMemo, DocStatus, Invoice } from "../types";
 
-// Invoices (one per shipment) and credit memos (one per received return),
-// raised automatically by the server. This page is where accounting checks
-// what was billed and whether it reached QuickBooks.
+// Invoices (one per shipment) and credit memos (one per received return).
+// Both start as drafts: this page opens on the review queue, oldest first,
+// where Accounting checks prices, adds freight and other charges, and
+// issues each document, which assigns its number and sends it to
+// QuickBooks. Issued and void documents are the history behind it.
 type Tab = "invoices" | "credit-memos";
-type StatusFilter = "" | "ISSUED" | "VOID";
+type StatusFilter = "" | DocStatus;
+
+function StatusPill({ status }: { status: DocStatus }) {
+  const cls = status === "VOID" ? "status-pill-cancelled" : status === "DRAFT" ? "status-pill-entered" : "status-pill-shipped";
+  const label = status === "VOID" ? "Void" : status === "DRAFT" ? "Draft" : "Issued";
+  return <span className={`status-pill ${cls}`}>{label}</span>;
+}
 
 export default function Invoices() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get("tab") === "credit-memos" ? "credit-memos" : "invoices";
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("ISSUED");
+  const [status, setStatus] = useState<StatusFilter>(() => {
+    const s = params.get("status");
+    return s === "ISSUED" || s === "VOID" || s === "" ? (s as StatusFilter) : "DRAFT";
+  });
   const [pageSize, setPageSize] = useState(50);
   const debounced = useDebouncedValue(query.trim(), 300);
   const [page, setPage] = usePageForFilters(`${tab}|${debounced}|${status}|${pageSize}`);
@@ -47,14 +58,16 @@ export default function Invoices() {
   }
 
   const total = tab === "invoices" ? invoices?.total ?? 0 : memos?.total ?? 0;
+  const emptyText = (what: string) =>
+    debounced ? `No ${what} match your search.` : status === "DRAFT" ? `Nothing to review - every ${what.replace(/s$/, "")} has been issued.` : `No ${what} yet.`;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Invoices</h1>
         <p className="muted">
-          An invoice is raised for every shipment and a credit memo for every received return, at the prices on the order.
-          QuickBooks holds the receivables; the sync column shows whether each document has reached it.
+          A draft invoice is raised for every shipment and a draft credit memo for every received return. Review each one here: check the
+          prices, add freight or other charges, then approve and issue it. Only an issued document has a number and goes to QuickBooks.
         </p>
       </div>
 
@@ -76,6 +89,7 @@ export default function Invoices() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <select id="invoice-status" value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}>
+          <option value="DRAFT">To review (drafts)</option>
           <option value="ISSUED">Issued</option>
           <option value="VOID">Void</option>
           <option value="">All</option>
@@ -86,14 +100,14 @@ export default function Invoices() {
         !invoices ? (
           <p className="muted">Loading...</p>
         ) : invoices.rows.length === 0 ? (
-          <p className="muted">{debounced ? "No invoices match your search." : "No invoices yet - one is raised each time a shipment is confirmed."}</p>
+          <p className="muted">{emptyText("invoices")}</p>
         ) : (
           <div className="scroll-window">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Invoice #</th>
-                  <th>Date</th>
+                  <th>{status === "DRAFT" ? "Shipped" : "Date"}</th>
                   <th>Due</th>
                   <th>Customer</th>
                   <th>S.O. #</th>
@@ -105,8 +119,8 @@ export default function Invoices() {
               </thead>
               <tbody>
                 {invoices.rows.map((inv) => (
-                  <tr key={inv.invoiceNumber} className={`clickable-row${inv.status === "VOID" ? " row-void" : ""}`} onClick={() => navigate(`/invoices/${inv.invoiceNumber}`)}>
-                    <td>{inv.invoiceNumber}</td>
+                  <tr key={inv.id} className={`clickable-row${inv.status === "VOID" ? " row-void" : ""}`} onClick={() => navigate(invoicePath(inv))}>
+                    <td>{inv.invoiceNumber ?? <span className="muted">Draft</span>}</td>
                     <td>{inv.invoiceDate}</td>
                     <td>{inv.dueDate}</td>
                     <td>{inv.customerName}</td>
@@ -118,7 +132,7 @@ export default function Invoices() {
                     <td>{inv.poNumber || "—"}</td>
                     <td className="amount-cell">{money(inv.total)}</td>
                     <td>
-                      <span className={`status-pill ${inv.status === "VOID" ? "status-pill-cancelled" : "status-pill-shipped"}`}>{inv.status === "VOID" ? "Void" : "Issued"}</span>
+                      <StatusPill status={inv.status} />
                     </td>
                     <td>
                       <SyncPill sync={inv.sync} />
@@ -132,14 +146,14 @@ export default function Invoices() {
       ) : !memos ? (
         <p className="muted">Loading...</p>
       ) : memos.rows.length === 0 ? (
-        <p className="muted">{debounced ? "No credit memos match your search." : "No credit memos yet - one is raised each time a return is received."}</p>
+        <p className="muted">{emptyText("credit memos")}</p>
       ) : (
         <div className="scroll-window">
           <table className="data-table">
             <thead>
               <tr>
                 <th>Credit Memo #</th>
-                <th>Date</th>
+                <th>{status === "DRAFT" ? "Received" : "Date"}</th>
                 <th>Customer</th>
                 <th>RA #</th>
                 <th>S.O. #</th>
@@ -150,8 +164,8 @@ export default function Invoices() {
             </thead>
             <tbody>
               {memos.rows.map((m) => (
-                <tr key={m.creditMemoNumber} className={`clickable-row${m.status === "VOID" ? " row-void" : ""}`} onClick={() => navigate(`/invoices/credit-memos/${m.creditMemoNumber}`)}>
-                  <td>{m.creditMemoNumber}</td>
+                <tr key={m.id} className={`clickable-row${m.status === "VOID" ? " row-void" : ""}`} onClick={() => navigate(creditMemoPath(m))}>
+                  <td>{m.creditMemoNumber ?? <span className="muted">Draft</span>}</td>
                   <td>{m.memoDate}</td>
                   <td>{m.customerName}</td>
                   <td onClick={(e) => e.stopPropagation()}>
@@ -162,7 +176,7 @@ export default function Invoices() {
                   <td>{m.soNumber || "—"}</td>
                   <td className="amount-cell">{money(m.total)}</td>
                   <td>
-                    <span className={`status-pill ${m.status === "VOID" ? "status-pill-cancelled" : "status-pill-shipped"}`}>{m.status === "VOID" ? "Void" : "Issued"}</span>
+                    <StatusPill status={m.status} />
                   </td>
                   <td>
                     <SyncPill sync={m.sync} />

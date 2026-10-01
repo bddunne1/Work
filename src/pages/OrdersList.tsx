@@ -5,7 +5,7 @@ import StatusPill from "../components/StatusPill";
 import { CLOSED_ORDER_STATUSES, OPEN_ORDER_STATUSES } from "../lib/orderStore";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { usePagedOrders, usePageForFilters } from "../lib/usePagedOrders";
-import { orderTotal } from "../types";
+import { orderTotalLabel } from "../types";
 
 interface Props {
   closed: boolean;
@@ -95,7 +95,7 @@ function OrdersListInner({ closed }: Props) {
                 <td>
                   <StatusPill order={o} />
                 </td>
-                <td>${orderTotal(o).toFixed(2)}</td>
+                <td>{orderTotalLabel(o)}</td>
               </tr>
             ))}
           </tbody>

@@ -99,13 +99,21 @@ Restart the API afterwards. It takes about a minute to run. What you get:
 
 ## Invoicing and QuickBooks
 
-An invoice is raised for every confirmed shipment and a credit memo for every
-received return (`server/src/lib/documents.ts`), at the prices on the order,
-in integer cents. They are pushed to QuickBooks Online by the sync worker
+A draft invoice is raised for every confirmed shipment and a draft credit
+memo for every received return (`server/src/lib/documents.ts`), at the prices
+on the order, in integer cents. Accounting works the review queue under
+Invoices (drafts, oldest first): check the prices, add freight, handling or
+other charges (each with its own taxable flag; a deduction on a credit
+memo), write a note, then approve and issue. Issuing assigns the number
+(INV-20001, CM-30001) and queues the push; a draft never reaches QuickBooks,
+and undoing a shipment while its invoice is still a draft removes the draft
+without burning a number. Issued documents can only be voided.
+
+Issued documents are pushed to QuickBooks Online by the sync worker
 (`server/src/integrations/sync.ts`): an outbox row is written in the same
-transaction as the document, and the worker retries with backoff until it
-lands, creating the customer and items (as non-inventory) in QuickBooks as
-needed. QuickBooks stays the record for receivables, payments, tax filing and
+transaction as the issue, and the worker retries with backoff until it
+lands, creating the customer and items (as non-inventory; charge lines as
+items named FREIGHT, HANDLING, OTHER) in QuickBooks as needed. QuickBooks stays the record for receivables, payments, tax filing and
 the ledger; this system stays the record for stock. See Settings > QuickBooks
 for status, retries and a reconciliation of a date range.
 
@@ -127,6 +135,81 @@ off for the items QuickBooks receives, and reconcile the first month's
 invoices against QuickBooks before trusting the tax figure (a company with
 Automated Sales Tax may recompute it).
 
+## Stock reservations
+
+What an open order is holding against stock lives in the `Allocation` table:
+one row per order line that is allocated but not yet released, or released
+(staged for a pick) but not yet shipped. The API rewrites an order's rows at
+the end of every step that can change what it holds (allocate, unallocate,
+release, trim at print, ship, undo, cancel), in the same transaction, and
+keeps `Item.qtyReserved` as the sum. Available on every screen is
+`qtyOnHand - qtyReserved`; the allocation screens subtract the order's own
+hold first (`reservedElsewhere` in `src/types.ts`). An allocation that would
+hold more than is free is refused with 409 under a row lock on the item.
+
+A partial shipment sends the remainder back to Back Orders with nothing held
+(the allocation is released), so the stock can go to whichever order needs
+it first. The migration `20260929140000_reservation_table` backfills the
+table from the `allocation` / `pendingShipment` JSON an upgraded database
+carries, and `qtyOnPurchaseOrder` is recomputed by catalog link rather than
+item number text, so renaming an item no longer leaves its total stale.
+
+## Who sees what, and the activity log
+
+Orders can be read by any login with an order page (Order Entry through
+Shipment History, Inventory, Reports, Analytics, Invoices). Prices are shown
+only to the office: Order Entry, Sales Order View, Customer Pricing and
+Invoices. Any other login gets each order without its rates and tax rate and
+with `pricesHidden: true`, lists show a dash for the total, and a save from
+such a login leaves the prices as they were. Shipment History withholds
+invoice amounts the same way. The Dashboard reads its counts from
+`GET /api/dashboard/summary`, so a receiving-only login still sees the day
+without reading the order list.
+
+The customer price sheet is saved through `PUT /api/customers/:id/prices`
+(Customer Pricing page) and the routing guide through
+`PUT /api/customers/:id/routing-guide` (Routing Guide page); the customer PUT
+ignores both. Every price that changes, appears or is removed is its own
+activity-log entry with the item, the old and the new price. Customer and
+item edits are logged field by field, and steps that run in a transaction
+(shipping, receiving, stock adjustments, these edits) write their log entry
+inside it, so a step that rolls back leaves no entry. Settings accept only
+the keys the app knows (`lead_time_days`, `capacity_lookback_days`,
+`company_info`), each with its own validation.
+
+## Corrections after checking, and cancelled picks
+
+A change to a Checked order's items, quantities, prices or customer sends it
+back to Entered and takes the checker's stamp off, so it is validated again;
+header corrections (P.O. number, notes, addresses) keep the stamp. On Sales
+Order View the lines of a Checked order are read-only until Re-open lines is
+pressed, a refused save keeps the typed values on screen, and analysts can
+revise a Backordered or Allocated order's allocation from the same page.
+
+Cancelling an order whose pick list or packing slip has printed leaves its
+staged lines listed under Pull from floor on Open Picks (and a count on the
+Dashboard) until Logistics marks it pulled; nothing is held in the meantime.
+`GET /api/sales-orders?pulls=1` lists them and `POST
+/api/sales-orders/:soNumber/acknowledge-pull` clears one.
+
+## Screens: errors, messages and small fixes
+
+A page that fails to render shows a Reload / Try again panel inside the app
+shell instead of a blank window; messages that used to be browser alerts are
+toasts at the bottom right; the queue pages say when their list did not
+load. The BOL compares ship-to addresses ignoring case and spacing and, for
+several destinations, prints each order's ship-to in its row. Reports offer
+only the data sources the account can read, show the server's refusal, and
+ignore a slow answer that arrives after a later run. The import preview
+flags order lines whose item is not in the catalog, shows the server's field
+errors, and no longer takes an On Purchase Order column (that figure comes
+from open vendor POs). Sidebar links appear only where the account has
+access; the returns queue counts as Receiving's work. Warehouse capacity
+groups shipments by local calendar day, and item responses carry the
+preferred vendor's name. The stage between release and shipment reads as
+Released on screen (its stored status name is unchanged); a new order line
+scrolls into view; the Release Orders tile shows "to release · to print".
+
 ## Development
 
 ```bash
@@ -136,6 +219,12 @@ npm run lint     # oxlint
 cd server && npx tsc --noEmit -p .   # typecheck the API
 npm test         # server test suite against Postgres (TEST_DATABASE_URL, default erp_test)
 ```
+
+In production the API serves gzip-compressed JSON (`compression`); serve the
+built client from `dist/` with any static server (nginx, Caddy, `npx serve
+dist`) and point it at the API, or put both behind one host with `/api`
+proxied to the API port. The client's heavy pages (Analytics, Reports, BOL,
+Labels, Import) load on first visit rather than in the main bundle.
 
 The tests (`server/test/`) drive the real Express app against a throwaway
 database: authentication and the password policy, every order command and

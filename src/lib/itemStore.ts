@@ -1,4 +1,5 @@
 import { api } from "./apiClient";
+import type { ReportRow } from "./reports/types";
 import type { Item } from "../types";
 
 // Prisma serializes Decimal fields as strings over JSON - convert rate and
@@ -39,6 +40,21 @@ export async function getItem(id: string): Promise<Item | undefined> {
 // the full list and finding by number client-side is simpler than adding
 // one, and callers that need this in a loop should fetch listItems() once
 // and build their own Map instead of calling this repeatedly.
+// Everything the Item Quick Report shows, in one response (D-10). Rates and
+// amounts are present only for an office login.
+export interface ItemQuickReport {
+  item: Item;
+  summary: { onHand: number; onSalesOrder: number; allocated: number; onPurchaseOrder: number; available: number };
+  soLines: ReportRow[];
+  poLines: ReportRow[];
+  notice?: string;
+  pricesHidden: boolean;
+}
+
+export async function getItemQuickReport(id: string): Promise<ItemQuickReport> {
+  return api.get<ItemQuickReport>(`/api/items/${encodeURIComponent(id)}/quick-report`);
+}
+
 export async function getItemByNumber(itemNumber: string): Promise<Item | undefined> {
   const q = itemNumber.trim().toLowerCase();
   if (!q) return undefined;

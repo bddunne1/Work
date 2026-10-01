@@ -4,7 +4,7 @@ import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
 import { listOpenOrders } from "../lib/orderStore";
 import type { Item, PurchaseOrder } from "../types";
-import { availableQty, qtyAllocatedOnOrders, qtyOnOpenSalesOrders } from "../types";
+import { availableQty, qtyOnOpenSalesOrders } from "../types";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -82,7 +82,7 @@ export default function Inventory() {
           <tbody>
             {filtered.map((i) => {
               const onSalesOrder = qtyOnOpenSalesOrders(i.itemNumber, orders);
-              const allocated = qtyAllocatedOnOrders(i.itemNumber, orders);
+              const allocated = i.qtyReserved;
               const available = availableQty(i, allocated);
               return (
                 <tr key={i.id} className="clickable-row" onClick={() => navigate(`/items/${i.id}`)}>

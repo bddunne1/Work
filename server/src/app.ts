@@ -6,6 +6,7 @@
 // rejection that crashes the whole process - must be imported before any
 // router is defined. Express 4 doesn't do this on its own.
 import "express-async-errors";
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 import { Prisma } from "@prisma/client";
@@ -16,6 +17,7 @@ import auditLogRouter from "./routes/auditLog.js";
 import authRouter from "./routes/auth.js";
 import countersRouter from "./routes/counters.js";
 import customersRouter from "./routes/customers.js";
+import dashboardRouter from "./routes/dashboard.js";
 import integrationsRouter from "./routes/integrations.js";
 import invoicesRouter from "./routes/invoices.js";
 import shipmentsRouter from "./routes/shipments.js";
@@ -30,7 +32,12 @@ import vendorPurchaseOrdersRouter from "./routes/vendorPurchaseOrders.js";
 import vendorsRouter from "./routes/vendors.js";
 
 function isDeadlock(err: unknown): boolean {
-  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2034") return true;
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2034") return true;
+    // A raw query (the item row locks) reports the Postgres code in meta.
+    const meta = err.meta as { code?: string; message?: string } | undefined;
+    return meta?.code === "40P01" || /40P01|deadlock detected/i.test(`${meta?.message ?? ""} ${err.message}`);
+  }
   return err instanceof Prisma.PrismaClientUnknownRequestError && /40P01|deadlock detected/i.test(err.message);
 }
 
@@ -55,12 +62,15 @@ export function createApp(): express.Express {
   // The default 100 KB limit was hit in simulation by a key account's
   // customer record (300 price overrides + notes): every save of that
   // customer failed with a 500 and it could never be edited again.
+  // Order lists and search pages are large JSON; gzip cuts them 5-10x (D-12).
+  app.use(compression());
   app.use(express.json({ limit: "5mb" }));
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
   app.use("/api/auth", authRouter);
   app.use("/api/customers", customersRouter);
+  app.use("/api/dashboard", dashboardRouter);
   app.use("/api/items", itemsRouter);
   app.use("/api/vendors", vendorsRouter);
   app.use("/api/accounts", accountsRouter);

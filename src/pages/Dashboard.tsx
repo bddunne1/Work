@@ -27,14 +27,14 @@ import {
 } from "../components/SidebarIcons";
 import { useAuth } from "../lib/authContext";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
-import { listItems } from "../lib/itemStore";
-import { listOpenOrdersShippedSince, listRecentOrders, searchOrders } from "../lib/orderStore";
+import { reviewQueueCounts, type ReviewQueueCounts } from "../lib/invoiceStore";
+import { dashboardSummary, type DashboardSummary, type QueueSummary } from "../lib/dashboardStore";
+import { listRecentOrders, searchOrders } from "../lib/orderStore";
 import { getAccessLevel } from "../lib/permissions";
 import { listOpenReturns } from "../lib/returnStore";
 import { getLeadTimeDays } from "../lib/settingsStore";
 import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { PurchaseOrder, ReturnAuthorization, VendorPurchaseOrder } from "../types";
-import { allocatedQtyFor, pendingShipmentWeight, shipmentRecordWeight, weightIndex } from "../types";
 import type { ComponentType, CSSProperties, SVGProps } from "react";
 
 interface Module {
@@ -107,7 +107,7 @@ const LANES: Lane[] = [
     lane: "Accounting",
     color: "#0b7285",
     modules: [
-      { name: "Invoices", description: "Invoices per shipment, credit memos per return, QuickBooks sync", to: "/invoices", icon: ShipmentHistoryIcon },
+      { name: "Invoices", description: "Review and issue invoices and credit memos; QuickBooks sync", to: "/invoices", icon: ShipmentHistoryIcon },
     ],
   },
   {
@@ -125,13 +125,6 @@ const LANES: Lane[] = [
 // One card per workflow queue. A person sees the queues they can work (edit
 // access on `workPath`) first; anyone who works none of them - sales, say -
 // sees the whole pipeline read-only instead.
-
-interface QueueEntry {
-  // When it entered this queue (for "oldest"), if known.
-  since?: string;
-  // Past its ship-by / expected date.
-  late: boolean;
-}
 
 interface QueueDef {
   key: string;
@@ -154,8 +147,9 @@ const QUEUES: QueueDef[] = [
   { key: "release", label: "To release", to: "/pick-pack?tab=ready", tile: "/pick-pack", workPath: "/pick-pack/review", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "print", label: "To print", to: "/pick-pack?tab=print", tile: "/pick-pack", workPath: "/pick-pack", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "ship", label: "To confirm shipped", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
+  { key: "pull", label: "To pull from floor", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#f06595", lateLabel: "", note: "cancelled after printing" },
   { key: "receive", label: "POs to receive", to: "/receiving", tile: "/receiving", workPath: "/receiving", viewPath: "/receiving", color: "#1c7ed6", lateLabel: "past expected date" },
-  { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/returns", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
+  { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/receiving", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
 ];
 
 // The queues an order passes through (the rest are stock coming in).
@@ -179,33 +173,23 @@ function ageLabel(ms: number): string {
 
 const nf = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
-function isPrinted(o: PurchaseOrder): boolean {
-  return Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
+// The order queues come counted from the server; POs and returns are
+// summarised here from the lists their pages already load.
+function summarize(entries: { since?: string; late: boolean }[]): QueueSummary {
+  const times = entries.map((e) => (e.since ? new Date(e.since).getTime() : NaN)).filter((t) => Number.isFinite(t));
+  return { count: entries.length, late: entries.filter((e) => e.late).length, oldest: times.length ? new Date(Math.min(...times)).toISOString() : null };
 }
 
 function buildQueues(
-  orders: PurchaseOrder[],
+  summary: DashboardSummary | null,
   pos: VendorPurchaseOrder[] | null,
   ras: ReturnAuthorization[] | null,
   today: string
-): Record<string, QueueEntry[] | null> {
-  const open = orders.filter((o) => !["Shipped", "Cancelled"].includes(o.status));
-  const late = (o: PurchaseOrder) => shipBy(o) < today;
-  const entry = (o: PurchaseOrder, since?: string): QueueEntry => ({ since, late: late(o) });
-  const staged = (o: PurchaseOrder) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0;
+): Record<string, QueueSummary | null> {
   return {
-    validate: open.filter((o) => o.status === "Entered").map((o) => entry(o, o.createdAt)),
-    allocate: open.filter((o) => o.status === "Checked").map((o) => entry(o, o.checkedAt ?? o.createdAt)),
-    backorder: open.filter((o) => o.status === "Backordered").map((o) => entry(o)),
-    release: open
-      .filter((o) => o.status === "Allocated" && o.lineItems.some((li) => allocatedQtyFor(o, li.id) > 0))
-      .map((o) => entry(o, o.allocation?.decidedAt)),
-    print: open.filter((o) => staged(o) && !isPrinted(o)).map((o) => entry(o, o.pickedAt)),
-    ship: open
-      .filter((o) => staged(o) && isPrinted(o))
-      .map((o) => entry(o, [o.pickListPrintedAt, o.packingSlipPrintedAt].filter(Boolean).sort().pop())),
-    receive: pos ? pos.map((p) => ({ since: p.createdAt, late: Boolean(p.expectedDate && p.expectedDate.slice(0, 10) < today) })) : null,
-    returns: ras ? ras.map((r) => ({ since: r.createdAt, late: false })) : null,
+    ...(summary?.queues ?? {}),
+    receive: pos ? summarize(pos.map((p) => ({ since: p.createdAt, late: Boolean(p.expectedDate && p.expectedDate.slice(0, 10) < today) }))) : null,
+    returns: ras ? summarize(ras.map((r) => ({ since: r.createdAt, late: false }))) : null,
   };
 }
 
@@ -320,27 +304,29 @@ export default function Dashboard() {
   const { account } = useAuth();
   const [loadedAt] = useState(() => Date.now());
   const today = isoDay(new Date(loadedAt));
-  const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [reviewQueue, setReviewQueue] = useState<ReviewQueueCounts | null>(null);
   const [pos, setPos] = useState<VendorPurchaseOrder[] | null>(null);
   const [ras, setRas] = useState<ReturnAuthorization[] | null>(null);
-  const [weights, setWeights] = useState<Map<string, number>>(new Map());
   const leadTime = getLeadTimeDays();
   const access = (path: string) => getAccessLevel(path, account!);
   const canSeePos = ["/receiving", "/purchase-orders"].some((p) => access(p) !== "none");
   const canSeeReturns = access("/returns") !== "none";
+  const canSeeInvoices = access("/invoices") !== "none";
+  // Finding an order needs a page that may read orders.
+  const canFindOrders = ["/storage", "/open-orders", "/closed-orders", "/validation", "/allocation", "/back-orders", "/pick-pack", "/open-picks", "/schedule", "/bol", "/shipment-history"].some((p) => access(p) !== "none");
 
   useEffect(() => {
     const midnight = new Date(loadedAt);
     midnight.setHours(0, 0, 0, 0);
-    // Open orders (every queue) plus anything shipped since midnight, in one
-    // request - not the whole order history.
-    listOpenOrdersShippedSince(midnight).then(setOrders);
-    listItems().then((items) => setWeights(weightIndex(items)));
+    // The counts, computed on the server - not the order list.
+    dashboardSummary(today, midnight).then(setSummary);
+    if (canSeeInvoices) reviewQueueCounts().then(setReviewQueue);
     if (canSeePos) listOpenVendorPos().then(setPos);
     if (canSeeReturns) listOpenReturns().then(setRas);
-  }, [loadedAt, canSeePos, canSeeReturns]);
+  }, [loadedAt, today, canSeePos, canSeeReturns, canSeeInvoices]);
 
-  const queueData = useMemo(() => buildQueues(orders ?? [], pos, ras, today), [orders, pos, ras, today]);
+  const queueData = useMemo(() => buildQueues(summary, pos, ras, today), [summary, pos, ras, today]);
 
   const visibleQueues = QUEUES.filter((qd) => access(qd.viewPath) !== "none" && queueData[qd.key] !== null);
   const workQueues = visibleQueues.filter((qd) => access(qd.workPath) === "edit");
@@ -352,13 +338,10 @@ export default function Dashboard() {
   const showPipeline = !workQueues.some((qd) => ORDER_QUEUE_KEYS.includes(qd.key));
 
   function renderQueue(qd: QueueDef, linkable: boolean) {
-    const entries = queueData[qd.key];
-    const count = entries?.length ?? 0;
-    const lateCount = entries?.filter((e) => e.late).length ?? 0;
-    const oldest = entries
-      ?.map((e) => (e.since ? new Date(e.since).getTime() : NaN))
-      .filter((t) => Number.isFinite(t))
-      .sort((a, b) => a - b)[0];
+    const q = queueData[qd.key];
+    const count = q?.count ?? 0;
+    const lateCount = q?.late ?? 0;
+    const oldest = q?.oldest ? new Date(q.oldest).getTime() : undefined;
     const body = (
       <>
         <span className="dash-queue-label">{qd.label}</span>
@@ -394,46 +377,39 @@ export default function Dashboard() {
   }
 
   // Tile badges: how many are waiting in the queue(s) behind each tile.
-  const tileCounts = new Map<string, { count: number; late: number }>();
+  // A tile behind two queues (Release Orders: to release and to print)
+  // shows both figures rather than one sum (C-17).
+  const tileCounts = new Map<string, { count: number; late: number; parts: string[] }>();
   for (const qd of visibleQueues) {
-    const entries = queueData[qd.key] ?? [];
-    const cur = tileCounts.get(qd.tile) ?? { count: 0, late: 0 };
-    tileCounts.set(qd.tile, { count: cur.count + entries.length, late: cur.late + entries.filter((e) => e.late).length });
+    const q = queueData[qd.key];
+    const cur = tileCounts.get(qd.tile) ?? { count: 0, late: 0, parts: [] };
+    tileCounts.set(qd.tile, {
+      count: cur.count + (q?.count ?? 0),
+      late: cur.late + (q?.late ?? 0),
+      parts: q && q.count > 0 ? [...cur.parts, `${q.count} ${qd.label.toLowerCase()}`] : cur.parts,
+    });
   }
 
-  // Today strip.
+  // Drafts waiting for Accounting, on the Invoices tile.
+  if (reviewQueue && reviewQueue.invoices + reviewQueue.creditMemos > 0) {
+    const oldest = reviewQueue.oldestDraftAt ? loadedAt - new Date(reviewQueue.oldestDraftAt).getTime() : 0;
+    tileCounts.set("/invoices", { count: reviewQueue.invoices + reviewQueue.creditMemos, late: oldest > 2 * 86_400_000 ? 1 : 0, parts: [] });
+  }
+
+  // Today strip: the order figures from the server, the PO figures from the list.
   const todayStats = useMemo(() => {
-    const all = orders ?? [];
-    const open = all.filter((o) => !["Shipped", "Cancelled"].includes(o.status));
-    const due = open.filter((o) => shipBy(o) === today);
-    const late = open.filter((o) => shipBy(o) < today);
-    const midnight = new Date(loadedAt);
-    midnight.setHours(0, 0, 0, 0);
-    let shippedOrders = 0;
-    let shippedUnits = 0;
-    let shippedWeight = 0;
-    for (const o of all) {
-      const recs = (o.shipmentHistory ?? []).filter((r) => new Date(r.shippedAt).getTime() >= midnight.getTime());
-      if (recs.length === 0) continue;
-      shippedOrders += 1;
-      for (const r of recs) {
-        shippedUnits += r.lines.reduce((s, l) => s + l.qty, 0);
-        shippedWeight += shipmentRecordWeight(o, r, weights);
-      }
-    }
-    const floor = open.filter((o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0);
-    const floorWeight = floor.reduce((s, o) => s + pendingShipmentWeight(o, weights), 0);
+    const s = summary?.todayStats ?? { due: 0, late: 0, shippedOrders: 0, shippedUnits: 0, shippedWeight: 0, floor: 0, floorWeight: 0 };
     const posDue = (pos ?? []).filter((p) => p.expectedDate?.slice(0, 10) === today).length;
     const posLate = (pos ?? []).filter((p) => p.expectedDate && p.expectedDate.slice(0, 10) < today).length;
-    return { due: due.length, late: late.length, shippedOrders, shippedUnits, shippedWeight, floor: floor.length, floorWeight, posDue, posLate };
-  }, [orders, pos, weights, today, loadedAt]);
+    return { ...s, posDue, posLate };
+  }, [summary, pos, today]);
 
   const visibleLanes = LANES.map((lane) => ({
     ...lane,
     modules: lane.modules.filter((m) => access(m.to) !== "none"),
   })).filter((lane) => lane.modules.length > 0);
 
-  const loading = orders === null;
+  const loading = summary === null;
   const dateLabel = new Date(loadedAt).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   return (
@@ -451,7 +427,7 @@ export default function Dashboard() {
             )}
           </p>
         </div>
-        <OrderLookup canOpen={access("/storage") !== "none"} />
+        {canFindOrders && <OrderLookup canOpen={access("/storage") !== "none"} />}
       </div>
 
       <section className="dash-today" aria-label="Today">
@@ -526,9 +502,9 @@ export default function Dashboard() {
                       {badge && badge.count > 0 && (
                         <span
                           className={`dash-tile-badge${badge.late > 0 ? " is-late" : ""}`}
-                          title={badge.late > 0 ? `${badge.count} waiting, ${badge.late} late` : `${badge.count} waiting`}
+                          title={`${badge.parts.length > 1 ? badge.parts.join(", ") : `${badge.count} waiting`}${badge.late > 0 ? `, ${badge.late} late` : ""}`}
                         >
-                          {badge.count}
+                          {badge.parts.length > 1 ? badge.parts.map((p) => p.split(" ")[0]).join(" · ") : badge.count}
                         </span>
                       )}
                     </Link>

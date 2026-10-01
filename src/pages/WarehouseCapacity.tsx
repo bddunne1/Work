@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import LineChart from "../components/charts/LineChart";
-import { listItems } from "../lib/itemStore";
-import { listCapacityOrders } from "../lib/orderStore";
 import { getCapacityLookbackDays } from "../lib/settingsStore";
-import type { Item, PurchaseOrder } from "../types";
-import { computeCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
+import type { CapacityMetrics } from "../lib/warehouseCapacity";
+import { getCapacityMetrics, UTILIZATION_MESSAGES, utilizationLevel } from "../lib/warehouseCapacity";
 
 const LOOKBACK_OPTIONS = [14, 30, 60, 90];
 
@@ -24,27 +22,32 @@ function monthDay(iso: string): string {
 
 export default function WarehouseCapacity() {
   const [lookbackDays, setLookbackDays] = useState(() => getCapacityLookbackDays());
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
-
+  const [metrics, setMetrics] = useState<CapacityMetrics | null>(null);
+  // The figures come from the server (D-02); only the latest request's
+  // answer lands, so changing the window twice quickly can't show the first
+  // window's numbers (D-11).
+  const requestId = useRef(0);
   useEffect(() => {
-    listItems().then(setItems);
-  }, []);
-
-  // Only open orders plus the lookback window's shipments - not the whole
-  // order history.
-  useEffect(() => {
-    listCapacityOrders(lookbackDays).then(setOrders);
+    const id = ++requestId.current;
+    getCapacityMetrics(lookbackDays).then((m) => {
+      if (id === requestId.current) setMetrics(m);
+    });
   }, [lookbackDays]);
 
-  const metrics = useMemo(
-    () => computeCapacityMetrics(orders, items, lookbackDays),
-    [orders, items, lookbackDays]
-  );
+  if (!metrics) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <h1>Warehouse Capacity</h1>
+        </div>
+        <p className="muted">Loading...</p>
+      </div>
+    );
+  }
   const level = utilizationLevel(metrics.utilizationPct);
 
   const throughputPoints = metrics.dailyThroughput.map((p) => ({ label: monthDay(p.date), value: p.weight }));
-  const itemsMissingWeight = items.filter((i) => !i.weight).length;
+  const itemsMissingWeight = metrics.itemsMissingWeight;
 
   return (
     <div className="page">

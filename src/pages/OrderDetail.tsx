@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -6,11 +7,12 @@ import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { invoicesForOrder, money } from "../lib/invoiceStore";
-import { cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
+import { invoicePath, invoicesForOrder, money } from "../lib/invoiceStore";
+import { getCustomer } from "../lib/customerStore";
+import { allocateOrder, cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
 import { canView, canEdit as canEditPath } from "../lib/permissions";
-import type { Invoice, PurchaseOrder } from "../types";
-import { itemLabel, orderSubtotal, orderTax, orderTotal } from "../types";
+import type { Customer, Invoice, PurchaseOrder } from "../types";
+import { allocatedQtyFor, itemLabel, orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
 
 // Where "continue working this order" should go next, based on its current
 // stage - so a Sales Order view can drop you straight into whatever screen
@@ -50,6 +52,16 @@ function OrderDetailInner() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PurchaseOrder | undefined>(undefined);
+  // Lines and prices open for editing. Always on an Entered order; on a
+  // Checked order only after an explicit Re-open, since saving such a change
+  // sends the order back to Validation (A-22). Later stages are read-only.
+  const [linesOpen, setLinesOpen] = useState(false);
+  // A refused save keeps the typed values on screen (C-07).
+  const [saveError, setSaveError] = useState<{ message: string; stale: boolean } | null>(null);
+  const [customer, setCustomer] = useState<Customer | undefined>(undefined);
+  const [revising, setRevising] = useState(false);
+  const [reviseQtys, setReviseQtys] = useState<Record<string, number>>({});
+  const [reviseError, setReviseError] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
@@ -97,15 +109,56 @@ function OrderDetailInner() {
   const canEditOrder = canEdit || isWriter;
   const view = editing && draft ? draft : order;
   const company = getCompanyInfo();
+  const linesEditable = editing && (order.status === "Entered" || (order.status === "Checked" && linesOpen));
+  // Analysts revise what is allocated to an Allocated or Backordered order
+  // from here too (C-07), through the same allocate command as the queue.
+  const canRevise =
+    Boolean(account && (canEditPath("/allocation", account) || canEditPath("/back-orders", account))) &&
+    (order.status === "Allocated" || order.status === "Backordered");
+  const onFloor = order.status === "Pick & Packed" && Boolean(order.pickListPrintedAt || order.packingSlipPrintedAt);
 
   function startEdit() {
+    if (!order) return;
     setDraft(order);
+    setLinesOpen(false);
+    setSaveError(null);
     setEditing(true);
+    // The customer's price sheet and part numbers, so an added line prices
+    // the way Order Entry would.
+    if (order.customerId) getCustomer(order.customerId).then(setCustomer);
   }
 
   function cancelEdit() {
     setDraft(undefined);
     setEditing(false);
+    setSaveError(null);
+  }
+
+  async function reloadAfterConflict() {
+    if (!order) return;
+    setOrder(await getOrder(order.soNumber));
+    cancelEdit();
+  }
+
+  function startRevise() {
+    if (!order) return;
+    const qtys: Record<string, number> = {};
+    for (const li of order.lineItems) qtys[li.id] = allocatedQtyFor(order, li.id);
+    setReviseQtys(qtys);
+    setReviseError(null);
+    setRevising(true);
+  }
+
+  async function applyRevision() {
+    if (!order) return;
+    try {
+      const lines = order.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: Math.max(0, Math.min(reviseQtys[li.id] ?? 0, remainingToShip(order, li))) }));
+      setOrder(await allocateOrder(order, lines));
+      setRevising(false);
+    } catch (err) {
+      setReviseError(err instanceof Error ? err.message : String(err));
+      if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
+    }
   }
 
   function setField<K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) {
@@ -114,19 +167,18 @@ function OrderDetailInner() {
 
   async function saveEdit() {
     if (!draft) return;
+    setSaveError(null);
     try {
-      setOrder(await updateOrder(draft));
+      const saved = await updateOrder(draft);
+      setOrder(saved);
       setDraft(undefined);
       setEditing(false);
-    } catch (err) {
-      if (isConflictError(err)) {
-        alert(err.message);
-        setOrder(await getOrder(draft.soNumber));
-        setDraft(undefined);
-        setEditing(false);
-        return;
+      if (order?.status === "Checked" && saved.status === "Entered") {
+        showToast(`S.O. #${saved.soNumber} goes back to Validation: its lines, prices or customer changed after it was checked.`);
       }
-      throw err;
+    } catch (err) {
+      // The typed values stay on screen; a stale copy needs a reload first.
+      setSaveError({ message: err instanceof Error ? err.message : String(err), stale: isConflictError(err) });
     }
   }
 
@@ -135,18 +187,18 @@ function OrderDetailInner() {
     const reason = prompt(
       `Cancel S.O. #${order.soNumber}? Any allocated or packed stock is released and the order leaves every queue.${
         (order.shipmentHistory?.length ?? 0) > 0 ? " Units already shipped stay shipped." : ""
-      }\n\nReason (required):`
+      }${onFloor ? "\n\nIts pick list has printed: the warehouse will be asked, on Open Picks, to pull the staged goods back off the floor." : ""}\n\nReason (required):`
     );
     if (reason === null) return;
     if (!reason.trim()) {
-      alert("A reason is required to cancel an order.");
+      showToast("A reason is required to cancel an order.");
       return;
     }
     try {
       setOrder(await cancelOrder(order, reason.trim()));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -170,7 +222,7 @@ function OrderDetailInner() {
       setOrder(await undoShipment(order));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
       }
@@ -192,6 +244,11 @@ function OrderDetailInner() {
           )}
           {editing && (
             <>
+              {order.status === "Checked" && !linesOpen && (
+                <button type="button" className="secondary-btn" onClick={() => setLinesOpen(true)} title="Saving a change to lines, prices or the customer sends the order back to Validation">
+                  Re-open lines
+                </button>
+              )}
               <button type="button" className="primary-btn" onClick={saveEdit}>
                 Save Changes
               </button>
@@ -207,6 +264,31 @@ function OrderDetailInner() {
           )}
         </div>
       </div>
+
+      {saveError && (
+        <div className="form-error no-print" role="alert">
+          {saveError.message}
+          {saveError.stale && (
+            <>
+              {" "}
+              <button type="button" className="link-btn" onClick={reloadAfterConflict}>
+                Reload the order
+              </button>{" "}
+              (your changes are discarded).
+            </>
+          )}
+        </div>
+      )}
+      {editing && order.status === "Checked" && (
+        <p className="muted no-print">
+          {linesOpen
+            ? "Lines re-opened: saving a change to items, quantities, prices or the customer sends this order back to Validation."
+            : "This order is checked. Header fields can be corrected; use Re-open lines to change items, quantities or prices."}
+        </p>
+      )}
+      {editing && !["Entered", "Checked"].includes(order.status) && (
+        <p className="muted no-print">Stock is committed to this order: items and quantities are fixed. Unallocate it to change them.</p>
+      )}
 
       <div className="sales-order">
         <div className="so-header">
@@ -375,8 +457,11 @@ function OrderDetailInner() {
         <LineItemsTable
           items={view.lineItems}
           onChange={(items) => setField("lineItems", items)}
-          readOnly={!editing}
+          readOnly={!linesEditable}
           shipmentHistory={view.shipmentHistory}
+          customerPartMap={customer?.partNumberMap}
+          customerPriceOverrides={customer?.priceOverrides}
+          pricesHidden={view.pricesHidden}
         />
 
         {view.shipmentHistory && view.shipmentHistory.length > 0 && (
@@ -421,12 +506,12 @@ function OrderDetailInner() {
             <tbody>
               <tr>
                 <td>Subtotal</td>
-                <td>${orderSubtotal(view).toFixed(2)}</td>
+                <td>{view.pricesHidden ? "—" : `$${orderSubtotal(view).toFixed(2)}`}</td>
               </tr>
               <tr>
                 <td>
                   Sales Tax (
-                  {editing ? (
+                  {linesEditable ? (
                     <input
                       type="number"
                       step="0.1"
@@ -435,15 +520,15 @@ function OrderDetailInner() {
                       onChange={(e) => setField("taxRate", Number(e.target.value))}
                     />
                   ) : (
-                    view.taxRate
+                    view.pricesHidden ? "—" : view.taxRate
                   )}
                   %)
                 </td>
-                <td>${orderTax(view).toFixed(2)}</td>
+                <td>{view.pricesHidden ? "—" : `$${orderTax(view).toFixed(2)}`}</td>
               </tr>
               <tr className="total-row">
                 <td>Total</td>
-                <td>${orderTotal(view).toFixed(2)}</td>
+                <td>{orderTotalLabel(view)}</td>
               </tr>
             </tbody>
           </table>
@@ -484,13 +569,13 @@ function OrderDetailInner() {
             </thead>
             <tbody>
               {invoices.map((inv) => (
-                <tr key={inv.invoiceNumber}>
+                <tr key={inv.id}>
                   <td>
-                    <Link to={`/invoices/${inv.invoiceNumber}`}>{inv.invoiceNumber}</Link>
+                    <Link to={invoicePath(inv)}>{inv.invoiceNumber ?? "Draft"}</Link>
                   </td>
                   <td>{inv.invoiceDate}</td>
                   <td>{money(inv.total)}</td>
-                  <td>{inv.status === "VOID" ? <span className="danger-link">Void</span> : "Issued"}</td>
+                  <td>{inv.status === "VOID" ? <span className="danger-link">Void</span> : inv.status === "DRAFT" ? <span className="muted">Draft - awaiting review</span> : "Issued"}</td>
                 </tr>
               ))}
             </tbody>
@@ -503,7 +588,70 @@ function OrderDetailInner() {
           Cancelled{order.cancelledBy ? ` by ${order.cancelledBy}` : ""}
           {order.cancelledAt ? ` on ${new Date(order.cancelledAt).toLocaleDateString()}` : ""}
           {order.cancelReason ? ` - ${order.cancelReason}` : ""}
+          {order.pullRequestedAt && !order.pullAcknowledgedAt && " · Its pick is still on the floor, waiting to be pulled (see Open Picks)."}
+          {order.pullAcknowledgedAt && ` · Pulled from the floor ${new Date(order.pullAcknowledgedAt).toLocaleDateString()}.`}
         </p>
+      )}
+
+      {!editing && canRevise && (
+        <div className="shipment-history no-print">
+          <div className="so-notes-label muted">Allocation</div>
+          {!revising ? (
+            <div className="button-row">
+              <button type="button" className="secondary-btn" onClick={startRevise}>
+                {order.status === "Backordered" ? "Allocate stock now" : "Revise allocation"}
+              </button>
+              <Link to={`/allocation/${order.soNumber}`} className="link-btn">
+                Open in Allocation
+              </Link>
+            </div>
+          ) : (
+            <>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th className="col-qty">Remaining</th>
+                    <th className="col-qty">Allocated</th>
+                    <th className="col-qty">Allocate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.lineItems.map((li) => {
+                    const remaining = remainingToShip(order, li);
+                    return (
+                      <tr key={li.id}>
+                        <td>{li.item}</td>
+                        <td className="amount-cell">{remaining}</td>
+                        <td className="amount-cell">{allocatedQtyFor(order, li.id)}</td>
+                        <td>
+                          <input
+                            type="number"
+                            className="num-input allocate-qty-input"
+                            min={0}
+                            max={remaining}
+                            value={reviseQtys[li.id] ?? 0}
+                            onChange={(e) => setReviseQtys((q) => ({ ...q, [li.id]: Math.max(0, Math.min(remaining, Number(e.target.value) || 0)) }))}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {reviseError && <div className="form-error" role="alert">{reviseError}</div>}
+              <div className="button-row">
+                <button type="button" className="primary-btn" onClick={applyRevision}>
+                  Apply
+                </button>
+                <button type="button" className="secondary-btn" onClick={() => setRevising(false)}>
+                  Cancel
+                </button>
+                <span className="muted">Checked against free stock the same way the Allocation page is.</span>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {!editing && canCancel && (

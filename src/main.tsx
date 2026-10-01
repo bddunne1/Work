@@ -1,8 +1,13 @@
+import { showToast } from './lib/toast'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ApiError } from './lib/apiClient'
+import { applyTheme, getThemePreference } from './lib/theme'
+
+// The saved theme goes on <html> before the first paint.
+applyTheme(getThemePreference())
 
 // Most pages handle a 409 conflict themselves and rethrow everything else,
 // which used to end as a silent unhandled rejection - a Save/Ship/Receive
@@ -13,7 +18,7 @@ window.addEventListener('unhandledrejection', (event) => {
   const err = event.reason
   if (err instanceof ApiError && err.status !== 401 && err.method !== 'GET') {
     event.preventDefault()
-    alert(err.status === 403 ? `You don't have permission to do that. (${err.message})` : err.message)
+    showToast(err.status === 403 ? `You don't have permission to do that. (${err.message})` : err.message, 'error')
   }
 })
 

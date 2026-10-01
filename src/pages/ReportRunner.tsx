@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ApiError } from "../lib/apiClient";
+import { useAuth } from "../lib/authContext";
 import { csvCell } from "../lib/csv";
+import { canView } from "../lib/permissions";
 import { DATA_SOURCES, getDataSource } from "../lib/reports/dataSources";
 import { getPreset } from "../lib/reports/presets";
 import type { ReportDataSource, ReportFilterValues, ReportRow, SavedReport } from "../lib/reports/types";
@@ -38,6 +41,13 @@ export default function ReportRunner() {
   // history is fetched up to a cap) - shown above the results.
   const [notice, setNotice] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
+  // The server's refusal or failure, shown in place of the rows (C-12).
+  const [error, setError] = useState<string | undefined>();
+  // Only the latest run's answer lands: a slow first run can't overwrite a
+  // faster second one (D-11).
+  const runId = useRef(0);
+  const { account } = useAuth();
+  const sources = DATA_SOURCES.filter((d) => !account || d.viewPaths.some((p) => canView(p, account)));
   const [saveName, setSaveName] = useState(preset?.label ?? "");
   const [savedMessage, setSavedMessage] = useState(false);
 
@@ -58,18 +68,38 @@ export default function ReportRunner() {
     setVisibleColumns(next?.defaultColumns ?? []);
     setRows([]);
     setNotice(undefined);
+    setError(undefined);
     setHasRun(false);
   }
 
   function runReport() {
     if (!dataSource) return;
+    const id = ++runId.current;
     setLoading(true);
     setHasRun(true);
-    dataSource.buildRows(filters).then((r) => {
-      setRows(Array.isArray(r) ? r : r.rows);
-      setNotice(Array.isArray(r) ? undefined : r.notice);
-      setLoading(false);
-    });
+    setError(undefined);
+    dataSource
+      .buildRows(filters)
+      .then((r) => {
+        if (id !== runId.current) return;
+        setRows(Array.isArray(r) ? r : r.rows);
+        setNotice(Array.isArray(r) ? undefined : r.notice);
+      })
+      .catch((err) => {
+        if (id !== runId.current) return;
+        setRows([]);
+        setNotice(undefined);
+        setError(
+          err instanceof ApiError && err.status === 403
+            ? `Your account can't read this data: ${err.message}`
+            : err instanceof Error
+              ? err.message
+              : String(err)
+        );
+      })
+      .finally(() => {
+        if (id === runId.current) setLoading(false);
+      });
   }
 
   // Reports never run themselves (PF-01): opening a preset or a memorized
@@ -124,7 +154,7 @@ export default function ReportRunner() {
             <option value="" disabled>
               Choose a data source...
             </option>
-            {DATA_SOURCES.map((d) => (
+            {sources.map((d) => (
               <option key={d.key} value={d.key}>
                 {d.label}
               </option>
@@ -224,6 +254,11 @@ export default function ReportRunner() {
             {rows.length} row{rows.length === 1 ? "" : "s"}.
           </p>
           {notice && <p className="muted">{notice}</p>}
+          {error && (
+            <div className="form-error" role="alert">
+              {error}
+            </div>
+          )}
           {rows.length === 0 ? (
             <p className="muted">{hasRun ? "No results for the current filters." : "Set the filters and press Run to build the report."}</p>
           ) : (

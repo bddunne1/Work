@@ -1,3 +1,4 @@
+import { showToast } from "../lib/toast";
 import { useEffect, useRef, useState } from "react";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
@@ -52,7 +53,7 @@ export default function Vendors() {
       setVendors((vs) => vs.map((x) => (x.id === id ? saved : x)));
     } catch (err) {
       if (isConflictError(err)) {
-        alert(err.message);
+        showToast(err.message);
         refresh();
         return;
       }

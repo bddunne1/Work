@@ -14,9 +14,10 @@ export interface ShipmentRow {
   orderVersion: number;
   lines: { lineItemId: string; item: string; description: string; um: string; qty: number }[];
   units: number;
+  invoiceId: string | null;
   invoiceNumber: string | null;
   invoiceTotal: string | null;
-  invoiceStatus: "ISSUED" | "VOID" | null;
+  invoiceStatus: "DRAFT" | "ISSUED" | "VOID" | null;
   // True when this is the order's most recent shipment - the only one
   // Undo Last Shipment can take back.
   isLatest: boolean;
@@ -25,7 +26,8 @@ export interface ShipmentRow {
 export interface ShipmentTotals {
   shipments: number;
   units: number;
-  amount: string;
+  // Null for a login that may not see prices (B-10).
+  amount: string | null;
   // False when the range held more shipments than the totals were summed over.
   complete: boolean;
 }

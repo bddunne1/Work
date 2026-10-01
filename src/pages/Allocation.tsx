@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import LoadFailed from "../components/LoadFailed";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotal } from "../types";
+import { matchesOrderQuery, orderTotal, orderTotalLabel } from "../types";
 
 type SortKey = "dueDate" | "soNumber" | "customer" | "orderDate" | "total";
 
@@ -25,8 +26,14 @@ export default function Allocation() {
   const skipped = skippedSoNumbers("allocation");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  const [loadFailed, setLoadFailed] = useState(false);
+  const load = () => listOpenOrders().then(setAllOrders).catch(() => setLoadFailed(true));
+  const retry = () => {
+    setLoadFailed(false);
+    void load();
+  };
   useEffect(() => {
-    listOpenOrders().then(setAllOrders);
+    void load();
   }, []);
 
   const checked = useMemo(() => allOrders.filter((o) => o.status === "Checked"), [allOrders]);
@@ -68,6 +75,7 @@ export default function Allocation() {
           customer's shipping rules.
         </p>
       </div>
+      {loadFailed && <LoadFailed what="the allocation queue" onRetry={retry} />}
 
       <div className="toolbar">
         <input
@@ -148,7 +156,7 @@ export default function Allocation() {
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>
                 <td>{o.orderDate}</td>
-                <td>${orderTotal(o).toFixed(2)}</td>
+                <td>{orderTotalLabel(o)}</td>
               </tr>
             ))}
           </tbody>
