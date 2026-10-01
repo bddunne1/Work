@@ -3,14 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { moveOnEnter } from "../lib/formKeys";
 import { Link, useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
-import LineItemsTable from "../components/LineItemsTable";
+import OrderEntrySidePanel from "../components/OrderEntrySidePanel";
+import OrderLineGrid from "../components/OrderLineGrid";
 import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getCustomer, listCustomerSummaries } from "../lib/customerStore";
 import { addBusinessDays, localIsoDate } from "../lib/dateUtils";
-import { nextSalesOrderNumber, saveOrder } from "../lib/orderStore";
+import { nextSalesOrderNumber, saveOrder, searchOrders } from "../lib/orderStore";
 import { getLeadTimeDays } from "../lib/settingsStore";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
 import type { Account } from "../lib/authStore";
 import type { Customer, PurchaseOrder } from "../types";
 import { emptyAddress, emptyLineItem, orderSubtotal, orderTax, orderTotal } from "../types";
@@ -24,7 +26,9 @@ function blankOrder(soNumber: string, account: Account | null): PurchaseOrder {
     soNumber,
     poNumber: "",
     orderDate: today(),
-    dueDate: today(),
+    // Due date starts from the lead time (G-11); typed over when the
+    // customer asked for a date.
+    dueDate: addBusinessDays(today(), getLeadTimeDays()),
     billTo: emptyAddress(),
     shipTo: emptyAddress(),
     fob: "",
@@ -59,14 +63,43 @@ export default function OrderEntry() {
   const [fullCustomer, setFullCustomer] = useState<Customer | undefined>();
   const requestedCustomerId = useRef<string | undefined>(undefined);
   const [customerQuery, setCustomerQuery] = useState("");
+  // Until the due date is typed, it follows the order date plus lead time.
+  const [dueDateTouched, setDueDateTouched] = useState(false);
+  // Orders already entered under this P.O. for this customer (G-11): a
+  // warning beside the form, never a block - a split shipment may well
+  // carry the same P.O. twice.
+  const [duplicateCheck, setDuplicateCheck] = useState<{ poNumber: string; customerId: string; rows: PurchaseOrder[] }>({ poNumber: "", customerId: "", rows: [] });
+  const poNumberToCheck = useDebouncedValue(order.poNumber.trim(), 400);
 
   useEffect(() => {
     listCustomerSummaries().then(setCustomers);
     nextSalesOrderNumber().then((n) => setOrder((o) => (o.soNumber ? o : { ...o, soNumber: n })));
   }, []);
 
+  const customerIdToCheck = order.customerId ?? "";
+  useEffect(() => {
+    if (!poNumberToCheck || !customerIdToCheck) return;
+    let cancelled = false;
+    searchOrders({ customerId: customerIdToCheck, poNumber: poNumberToCheck, pageSize: 10 })
+      .then((r) => {
+        if (cancelled) return;
+        const wanted = poNumberToCheck.toLowerCase();
+        setDuplicateCheck({ poNumber: poNumberToCheck, customerId: customerIdToCheck, rows: r.rows.filter((o) => o.poNumber.trim().toLowerCase() === wanted && o.status !== "Cancelled") });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [poNumberToCheck, customerIdToCheck]);
+  // Only a check for what is in the field right now counts.
+  const duplicates = duplicateCheck.poNumber === poNumberToCheck && duplicateCheck.customerId === customerIdToCheck ? duplicateCheck.rows : [];
+
   function set<K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) {
     setOrder((o) => ({ ...o, [key]: value }));
+  }
+
+  function setOrderDate(date: string) {
+    setOrder((o) => ({ ...o, orderDate: date, dueDate: dueDateTouched || !date ? o.dueDate : addBusinessDays(date, getLeadTimeDays()) }));
   }
 
   const selectedCustomer =
@@ -148,6 +181,8 @@ export default function OrderEntry() {
     submitKey.current = crypto.randomUUID();
     setOrder(blankOrder("", account));
     setSameAsBillTo(false);
+    setDueDateTouched(false);
+    setDuplicateCheck({ poNumber: "", customerId: "", rows: [] });
     setSaved(false);
     setCustomerQuery("");
     requestedCustomerId.current = undefined;
@@ -185,6 +220,7 @@ export default function OrderEntry() {
         <p className="muted">Enter a customer purchase order to generate a new sales order.</p>
       </div>
 
+      <div className="order-entry-layout">
       <form className="sales-order" onSubmit={handleSubmit} onKeyDown={moveOnEnter}>
         <div className="customer-picker">
           <label htmlFor="customer-search">Customer</label>
@@ -245,7 +281,7 @@ export default function OrderEntry() {
                     <input
                       type="date"
                       value={order.orderDate}
-                      onChange={(e) => set("orderDate", e.target.value)}
+                      onChange={(e) => setOrderDate(e.target.value)}
                       required
                     />
                   </td>
@@ -253,7 +289,10 @@ export default function OrderEntry() {
                     <input
                       type="date"
                       value={order.dueDate}
-                      onChange={(e) => set("dueDate", e.target.value)}
+                      onChange={(e) => {
+                        setDueDateTouched(true);
+                        set("dueDate", e.target.value);
+                      }}
                     />
                   </td>
                   <td className="muted">
@@ -304,8 +343,15 @@ export default function OrderEntry() {
                 <input
                   value={order.poNumber}
                   onChange={(e) => set("poNumber", e.target.value)}
+                  aria-label="P.O. No."
+                  className={duplicates.length > 0 ? "input-warning" : undefined}
                   required
                 />
+                {duplicates.length > 0 && (
+                  <div className="field-warning" role="status">
+                    Already entered as S.O. #{duplicates.map((o) => o.soNumber).join(", #")}
+                  </div>
+                )}
               </td>
               <td>
                 <input value={order.terms} onChange={(e) => set("terms", e.target.value)} />
@@ -323,12 +369,7 @@ export default function OrderEntry() {
           </tbody>
         </table>
 
-        <LineItemsTable
-          items={order.lineItems}
-          onChange={(items) => set("lineItems", items)}
-          customerPartMap={selectedCustomer?.partNumberMap}
-          customerPriceOverrides={selectedCustomer?.priceOverrides}
-        />
+        <OrderLineGrid items={order.lineItems} onChange={(items) => set("lineItems", items)} customer={selectedCustomer} />
 
         <div className="so-footer">
           <div className="so-notes">
@@ -374,6 +415,8 @@ export default function OrderEntry() {
           )}
         </div>
       </form>
+      <OrderEntrySidePanel customer={selectedCustomer} duplicates={duplicates} poNumber={order.poNumber.trim()} />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { listItems } from "../lib/itemStore";
+import { findCatalogItem, lineFromItem } from "../lib/lineLookup";
 import type { CustomerPartMapping, CustomerPriceOverride, Item, LineItem, ShipmentRecord } from "../types";
 import { lineAmount, emptyLineItem, shippedQtyFor } from "../types";
 
@@ -63,25 +64,14 @@ export default function LineItemsTable({
     focusLast.current = true;
   }
 
+  // Our item # or the customer's part # (shared with the Order Entry grid):
+  // the customer's price if they have one, else the catalog rate, but a
+  // rate someone already typed on the line is left alone.
   function applyItemLookup(id: string, itemNumber: string) {
-    const q = itemNumber.trim().toLowerCase();
-    const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
+    const ctx = { catalog, partMap: customerPartMap, priceOverrides: customerPriceOverrides };
+    const match = findCatalogItem(ctx, itemNumber);
     if (!match) return;
-    const customerPartNumber = customerPartMap?.find(
-      (m) => m.itemNumber.trim().toLowerCase() === q
-    )?.customerPartNumber;
-    const priceOverride = customerPriceOverrides?.find((p) => p.itemNumber.trim().toLowerCase() === q)?.price;
-    // The customer's price if they have one, else the catalog rate - but a
-    // rate someone already typed on the line is left alone.
-    const current = items.find((li) => li.id === id);
-    const rate = priceOverride ?? (current && current.rate > 0 ? undefined : match.rate);
-    update(id, {
-      item: match.itemNumber,
-      description: match.description,
-      um: match.um,
-      ...(rate !== undefined ? { rate } : {}),
-      ...(customerPartNumber ? { customerPartNumber } : {}),
-    });
+    update(id, lineFromItem(ctx, match, items.find((li) => li.id === id)));
   }
 
   return (

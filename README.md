@@ -283,6 +283,21 @@ on-hand value at cost and the gross margin on issued invoices (lines
 whose item has no cost yet are counted in revenue and reported as
 uncosted).
 
+### Order Entry as a keyboard grid
+
+The line grid on Order Entry is worked without the mouse: Enter in the
+Item cell resolves it (our item number or the customer's own part number)
+and jumps to Ordered, Enter again goes to Rate, and Enter on a complete
+line adds the next one. Pasting "item, qty" lines from a customer's PO or
+a spreadsheet into an Item cell fills a row per line. Each line shows what
+is available now (on hand less what other open orders hold, red when the
+order exceeds it) and whether the price came from the customer's sheet or
+the catalog. The due date starts from the order date plus the lead time
+until it is typed over. A P.O. number already entered for the customer
+shows a warning (not a block) beside the field and in the side panel,
+which also carries the customer's terms and flags, routing guide and
+latest notes.
+
 ## Development
 
 ```bash
