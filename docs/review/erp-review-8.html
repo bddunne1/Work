@@ -1,0 +1,785 @@
+<title>Aamstrand ERP Round 8</title>
+<meta name="description" content="Round 8: a code review of main after sprint 2 (reservation table, invoice review queue, QuickBooks outbox, price hiding), with 43 findings, status corrections to the known list, and what was checked and found sound.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --paper: #f3f4f1;
+    --surface: #ffffff;
+    --ink: #16202a;
+    --ink-2: #3c4753;
+    --muted: #5d6772;
+    --rule: #d6dad2;
+    --rule-strong: #b8beb4;
+    --accent: #2f5fdb;
+    --accent-soft: rgba(47, 95, 219, 0.08);
+    --crit: #b8322a;
+    --high: #b9620f;
+    --med: #7d6c0c;
+    --low: #5d6772;
+    --ok: #2b7a4b;
+    --crit-bg: rgba(184, 50, 42, 0.08);
+    --ok-bg: rgba(43, 122, 75, 0.09);
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --s3: #1baf7a;
+    --display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #111519;
+      --surface: #181d23;
+      --ink: #e8ebef;
+      --ink-2: #c3cad2;
+      --muted: #97a1ab;
+      --rule: #2a3139;
+      --rule-strong: #3b444e;
+      --accent: #7b98f2;
+      --accent-soft: rgba(123, 152, 242, 0.12);
+      --crit: #ef6e62;
+      --high: #f0a24e;
+      --med: #d6c35c;
+      --low: #97a1ab;
+      --ok: #5fc48d;
+      --crit-bg: rgba(239, 110, 98, 0.12);
+      --ok-bg: rgba(95, 196, 141, 0.12);
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #111519;
+    --surface: #181d23;
+    --ink: #e8ebef;
+    --ink-2: #c3cad2;
+    --muted: #97a1ab;
+    --rule: #2a3139;
+    --rule-strong: #3b444e;
+    --accent: #7b98f2;
+    --accent-soft: rgba(123, 152, 242, 0.12);
+    --crit: #ef6e62;
+    --high: #f0a24e;
+    --med: #d6c35c;
+    --low: #97a1ab;
+    --ok: #5fc48d;
+    --crit-bg: rgba(239, 110, 98, 0.12);
+    --ok-bg: rgba(95, 196, 141, 0.12);
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.12; margin: 0; }
+  h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.85rem; font-weight: 700; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  p { margin: 0; max-width: 68ch; }
+  a { color: var(--accent); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  code { background: var(--accent-soft); padding: 0.05em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .eyebrow { font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  section { display: flex; flex-direction: column; gap: 20px; }
+  .section-head { display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .prose { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Document header, laid out like the app's own printed forms */
+  .doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+  .doc-meta { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 0.9rem; }
+  .doc-meta dt { color: var(--muted); font-family: var(--display); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.78rem; padding-top: 2px; }
+  .doc-meta dd { margin: 0; font-family: var(--mono); font-size: 0.84rem; }
+  .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 70ch; }
+  @media (max-width: 720px) { .doc-head { grid-template-columns: 1fr; } }
+
+  /* Verdict */
+  .verdict { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .verdict > div { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .verdict .big { font-family: var(--display); font-size: 2.3rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .verdict .big.bad { color: var(--crit); }
+  .verdict .big.good { color: var(--ok); }
+  @media (max-width: 760px) { .verdict { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; font-size: 0.86rem; color: var(--ink-2); background: var(--paper); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-family: var(--mono); font-size: 0.84rem; }
+  td.bad { color: var(--crit); font-weight: 600; }
+  td.good { color: var(--ok); font-weight: 600; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  /* Bar charts */
+  .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.86rem; color: var(--ink-2); }
+  .metric { display: grid; grid-template-columns: minmax(150px, 220px) 1fr; gap: 6px 16px; align-items: start; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .metric:first-of-type { border-top: 0; padding-top: 0; }
+  .metric-name { font-weight: 600; font-size: 0.93rem; }
+  .metric-name small { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+  .bars { display: flex; flex-direction: column; gap: 3px; }
+  .bar-row { display: grid; grid-template-columns: 1fr 88px; gap: 8px; align-items: center; position: relative; }
+  .track { height: 14px; position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .fill.zero { width: 2px !important; border-radius: 0; opacity: 0.8; }
+  .bar-val { font-family: var(--mono); font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; white-space: nowrap; }
+  .bar-row:hover .track { background: var(--accent-soft); }
+  .bar-row[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 2;
+    background: var(--ink); color: var(--paper); font-size: 0.78rem; padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none;
+  }
+  @media (max-width: 620px) { .metric { grid-template-columns: 1fr; } }
+
+  /* Findings */
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { font: inherit; font-size: 0.86rem; border: 1px solid var(--rule-strong); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .findings { display: flex; flex-direction: column; gap: 10px; }
+  details.finding { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--sev); border-radius: 6px; }
+  details.finding[data-sev="critical"] { --sev: var(--crit); }
+  details.finding[data-sev="high"] { --sev: var(--high); }
+  details.finding[data-sev="medium"] { --sev: var(--med); }
+  details.finding[data-sev="low"] { --sev: var(--low); }
+  details.finding summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: baseline; }
+  details.finding summary::-webkit-details-marker { display: none; }
+  .fid { font-family: var(--mono); font-size: 0.8rem; color: var(--sev); font-weight: 600; }
+  .ftitle { font-weight: 600; }
+  .ftitle small { display: block; font-weight: 400; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+  .stamp { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; transform: rotate(-3deg); white-space: nowrap; }
+  .stamp.fixed { color: var(--ok); }
+  .stamp.partial { color: var(--high); }
+  .stamp.open { color: var(--muted); }
+  .fbody { padding: 0 14px 14px 84px; display: flex; flex-direction: column; gap: 8px; font-size: 0.95rem; }
+  .fbody dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0; }
+  .fbody dt { color: var(--muted); font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 3px; }
+  .fbody dd { margin: 0; }
+  @media (max-width: 620px) {
+    details.finding summary { grid-template-columns: 1fr auto; }
+    .fid { grid-column: 1 / -1; }
+    .fbody { padding-left: 14px; }
+    .fbody dl { grid-template-columns: 1fr; }
+  }
+  .sev-count { font-family: var(--mono); font-size: 0.8rem; }
+
+  .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .panel ul, .prose ul, .prose ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+  pre { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.6; }
+  .callout { border-left: 4px solid var(--crit); background: var(--crit-bg); padding: 12px 14px; border-radius: 0 6px 6px 0; }
+  .callout.ok { border-left-color: var(--ok); background: var(--ok-bg); }
+  footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 0.86rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<style>
+  .sevtag { font-family: var(--display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; border: 2px solid currentColor; border-radius: 4px; padding: 1px 7px; white-space: nowrap; }
+  .sevtag.sev-high { color: var(--crit); }
+  .sevtag.sev-medium { color: var(--high); }
+  .sevtag.sev-low { color: var(--low); }
+  details.finding[data-sev="high"] { --sev: var(--crit); }
+  details.finding[data-sev="medium"] { --sev: var(--high); }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc a { font-family: var(--display); font-weight: 600; font-size: 0.92rem; text-decoration: none; color: var(--ink); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 3px 12px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent); }
+  .top10 { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 8px; max-width: 80ch; }
+  .findings [hidden] { display: none; }
+  .fbody ul { margin: 6px 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+  .sound { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .sound .panel h3 { font-size: 1.02rem; }
+  .sound .panel p { font-size: 0.93rem; }
+</style>
+
+<div class="wrap">
+  <header class="doc-head">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="eyebrow">Aamstrand ERP · review round 8</div>
+      <h1>Code review after sprint 2</h1>
+      <p class="lede">A review of main as of PR #8 (about 27,000 lines). It focuses on the sprint 2 code, which hasn't been reviewed before: the reservation table, the invoice review queue, the QuickBooks outbox, price hiding and audit inside the transaction. The rest of the codebase was also in scope. Findings already on the known list are left out unless this round found something new about them. No application code was changed.</p>
+    </div>
+    <dl class="doc-meta">
+      <dt>Date</dt><dd>2026-10-01</dd>
+      <dt>Commit</dt><dd>59c2a9f (main)</dd>
+      <dt>Scope</dt><dd>server + frontend + ops</dd>
+      <dt>Method</dt><dd>5 review passes + probe tests</dd>
+    </dl>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <div><span class="eyebrow">Findings</span><span class="big bad">1 high</span><span class="muted">16 medium and 26 low, 43 in all. 37 of them are small fixes (under an hour). Nothing found loses stock in normal use.</span></div>
+      <div><span class="eyebrow">Where they cluster</span><span class="big">Invoices</span><span class="muted">The new draft → issue → QuickBooks path has the High and five of the Mediums: races on issue, undo reaching past the review step, and outbox rows that can get stuck or be pushed twice.</span></div>
+      <div><span class="eyebrow">Known list</span><span class="big">14 corrections</span><span class="muted">Items marked Closed that this round found only partly done. All server tests pass (79/79), the typecheck is clean, and the schema has no drift.</span></div>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#first">Do these first</a><a href="#findings">Findings</a><a href="#status">Known-list corrections</a>
+      <a href="#sound">Checked and sound</a><a href="#tests">Tests run</a><a href="#method">Method</a>
+    </nav>
+  </section>
+
+  <section id="first">
+    <div class="section-head"><span class="eyebrow">01</span><h2>Do these first</h2></div>
+    
+<ol class="top10">
+  <li><b>Lock invoice and credit memo rows when issuing and saving drafts</b> (<a href="#R8-01">R8-01</a>). This is the one High. Two people (or two tabs) on the review queue can issue an invoice whose total doesn't match its lines, or burn a number. It's a small, contained change in <code>lib/documents.ts</code> and the two draft-save routes.</li>
+  <li><b>Before connecting QuickBooks for real</b>, close the four undo and outbox gaps (<a href="#R8-02">R8-02</a>, <a href="#R8-03">R8-03</a>, <a href="#R8-04">R8-04</a>, <a href="#R8-05">R8-05</a>): undo names the shipment it reverses, undo refuses when the invoice is issued, a void with no link looks the invoice up first, and stuck PROCESSING rows are requeued and claimed atomically.</li>
+  <li><b>Finish price hiding</b> (<a href="#R8-06">R8-06</a>, <a href="#R8-07">R8-07</a>): six endpoints still return rates, costs or contract prices, and the Item Quick Report has no page check at all.</li>
+  <li><b>Before deploying sprint 2 to production</b>: refuse the example JWT secret (<a href="#R8-10">R8-10</a>), add the follow-up migration that clears legacy back-order holds (<a href="#R8-11">R8-11</a>), and add <code>pg_trgm</code> to the deploy checklist (<a href="#R8-13">R8-13</a>).</li>
+  <li><b>Fix the two silent order-editing bugs</b>: Est. Ship is thrown away on save (<a href="#R8-14">R8-14</a>), and correcting a line's item keeps the old price (<a href="#R8-16">R8-16</a>).</li>
+  <li><b>Fix the test-data generator</b> (<a href="#R8-12">R8-12</a>). It crashes on the sprint 2 invoice schema, and your local database is half-loaded because of it.</li>
+</ol>
+
+  </section>
+
+  <section id="findings">
+    <div class="section-head"><span class="eyebrow">02</span><h2>Findings</h2>
+      <p class="muted">Each finding cites file and line and gives a concrete failure case. Where several passes found the same problem it appears once, and 'Found by' lists them all. Findings marked 'reproduced' or 'confirmed' were demonstrated with probe tests against the real app on throwaway databases. Severity is for this setup: an internal network with about 15 users.</p></div>
+    <div class="callout"><b>The common thread:</b> sprint 2 added a review step between shipping and invoicing, but older paths still act as if the invoice is finished when the shipment is confirmed. Undo deletes or voids invoices without asking Accounting, the outbox assumes a push either succeeds or fails cleanly, and issue reads before it locks. Fix it in one place: an issued document can only change through the Invoices commands, and each command claims the row before it acts.</div>
+    <div class="filters" role="group" aria-label="Filter findings">
+<button type="button" class="chip" data-filter="all" aria-pressed="true">All (43)</button>
+<button type="button" class="chip" data-filter="sev:high" aria-pressed="false">High (1)</button>
+<button type="button" class="chip" data-filter="sev:medium" aria-pressed="false">Medium (16)</button>
+<button type="button" class="chip" data-filter="sev:low" aria-pressed="false">Low (26)</button>
+<button type="button" class="chip" data-filter="area:stock" aria-pressed="false">Stock (6)</button>
+<button type="button" class="chip" data-filter="area:money" aria-pressed="false">Invoices &amp; money (11)</button>
+<button type="button" class="chip" data-filter="area:security" aria-pressed="false">Security (8)</button>
+<button type="button" class="chip" data-filter="area:screens" aria-pressed="false">Screens (12)</button>
+<button type="button" class="chip" data-filter="area:ops" aria-pressed="false">Deploy &amp; tests (6)</button>
+    </div>
+    <div class="findings" id="bug-list">
+<details class="finding" data-sev="high" data-area="money" id="R8-01">
+  <summary><span class="fid">R8-01</span><span class="ftitle">Saving and issuing the same draft at the same moment can issue an invoice whose total doesn't match its lines, or skip a number<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-high">High</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/documents.ts:245-266 (issueInvoice), :353-376 (issueCreditMemo); server/src/routes/invoices.ts:175-195, :243-270 (draft saves)</code></dd>
+    <dt>What happens</dt><dd>Issuing and saving a draft each read the document, check its status and version without locking the row, then write keyed only on the id. Under Postgres's default isolation, two requests that arrive together both pass the check. Probe tests against the real app reproduced it:<ul><li><b>Two issues together</b> (3 of 3 rounds): both return 200, and the two users are told different numbers (INV-20001 and INV-20002). The invoice ends up as INV-20002. INV-20001 is burned, and its queued QuickBooks push later fails as 'no longer exists'.</li><li><b>Save + issue together</b> (adding $100 freight while approving; 12 of 12 rounds): both return 200. Either the issued invoice is changed after approval (the approver confirmed $25, and $125 is stored and pushed), or the issued total stays $25 while its lines add to $125.</li></ul>Credit memos use the same code. All it takes is two tabs open on the review queue, or two people working it.</dd>
+    <dt>Fix</dt><dd>Lock the document row (<code>SELECT … FOR UPDATE</code>) at the start of issue and of both draft saves, then re-check status and version. Or claim it with <code>updateMany({ where: { id, status: 'DRAFT', version } })</code> and treat a count of 0 as a 409. Only draw the number after the claim succeeds. Add issue+issue and save+issue race tests for invoices and credit memos.</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-01, ACC-02, OPS-01</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="stock" id="R8-02">
+  <summary><span class="fid">R8-02</span><span class="ftitle">Undo on Shipment History can reverse a newer shipment than the row you clicked<small>Stock · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ShipmentHistory.tsx:69-71; src/lib/orderStore.ts:280-286; server/src/routes/salesOrders.ts:858-868</code></dd>
+    <dt>What happens</dt><dd>The page re-reads the order just before undoing and sends only its fresh version. The server always undoes the <i>last</i> shipment. The row the user confirmed ('BR-1001 × 60') is never sent, and the fresh version defeats the stale-page check. If Open Picks confirmed another shipment on that order after the page loaded, Undo reverses the new one instead. Those 40 units go back into on-hand while they're on a truck, their invoice is voided (or the draft deleted), and the order goes back to Released.</dd>
+    <dt>Fix</dt><dd>Send the shipment's id with the undo. Have the server refuse with a 409 unless it is the latest shipment.</dd>
+    
+    <dt>Found by</dt><dd class="muted">STK-01</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="money" id="R8-03">
+  <summary><span class="fid">R8-03</span><span class="ftitle">Logistics can void an issued invoice, or delete a draft Accounting already reviewed, by undoing the shipment<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:858, :885-895; server/src/lib/documents.ts:136-149</code></dd>
+    <dt>What happens</dt><dd>Undo needs only Open Picks or Shipment History edit. The only invoice guard is 'already in QuickBooks'. Whenever QuickBooks isn't connected, the sync failed, or the 60-second worker hasn't run yet, a Logistics login can void INV-20001 through undo, although the Invoices page refuses it with a 403. A draft that Accounting already repriced or added freight to is deleted, and a reship creates a fresh draft at order prices.</dd>
+    <dt>Fix</dt><dd>Refuse undo when the shipment's invoice is issued, whatever its sync state ('void it from Invoices first'). Also refuse, or require Invoices edit, when the draft has been edited (version above 1).</dd>
+    <dt>Known list</dt><dd>A-15 (Closed): the 29 Sep rule predates the sprint 2 issue step</dd>
+    <dt>Found by</dt><dd class="muted">SEC-01</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="money" id="R8-04">
+  <summary><span class="fid">R8-04</span><span class="ftitle">Voiding an invoice that has no QuickBooks link is marked done without checking QuickBooks<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/integrations/sync.ts:155-156, :186-187; server/src/routes/salesOrders.ts:885-893</code></dd>
+    <dt>What happens</dt><dd>If the invoice reached QuickBooks but the response was lost (timeout, reset, a crash before the link was saved), our side has no link. Undo is then allowed. The worker logs 'never reached QuickBooks - nothing to void' and marks the void done, so QuickBooks keeps billing the customer for goods that went back on the shelf. Only a manual reconcile shows it. Reproduced with a probe test.</dd>
+    <dt>Fix</dt><dd>When there's no link, look the invoice up in QuickBooks by number and void what is found. Undo should also refuse while the invoice's push is still in progress, failed or dead.</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="money" id="R8-05">
+  <summary><span class="fid">R8-05</span><span class="ftitle">A restart during a QuickBooks sync leaves those documents stuck; a second API process would push them twice<small>Invoices &amp; money · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/integrations/sync.ts:247-260; server/src/index.ts:45-53; server/src/routes/integrations.ts:64; src/components/QuickBooksPanel.tsx:24</code></dd>
+    <dt>What happens</dt><dd>The worker marks a row PROCESSING before pushing, but only ever picks up PENDING and FAILED rows. Shutdown doesn't wait for an in-flight run. After a deploy restart mid-sync, the invoice never reaches QuickBooks and no retry is offered. The panel counts it as 'queued' and lists nothing, and the invoice reads 'Sending…' forever. Rows are claimed with a plain update, so two API processes (or an old one overlapping a new one) can both create the same invoice in QuickBooks.</dd>
+    <dt>Fix</dt><dd>Claim rows atomically (a conditional update, or <code>FOR UPDATE SKIP LOCKED</code>). Requeue PROCESSING rows older than about 10 minutes at startup and on every tick. Wait for the in-flight run on shutdown. Skip creating when a link exists, and look up by number first. Show stuck rows in the panel with Retry. Document 'one API process'.</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-04, OPS-02</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security" id="R8-06">
+  <summary><span class="fid">R8-06</span><span class="ftitle">Prices still reach logins without price access through six endpoints<small>Security · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/items.ts:69-93, :376; returns.ts:136, :166; vendorPurchaseOrders.ts:72, :93, :114; customers.ts:110-140; analytics.ts:230, :320-327</code></dd>
+    <dt>What happens</dt><dd>Price hiding is applied to order reads, shipments and the quick report's order lines only. Probe tests confirmed these leaks:<ul><li>A receiving-only login sees catalog <b>rates</b> (<code>/api/items</code>), the quick report's <code>item.rate</code> right next to <code>pricesHidden: true</code>, RA credit <b>rates</b>, and PO <b>costs</b>.</li><li>A labels-only login gets every customer's <b>contract price sheet</b> from <code>/api/customers</code>.</li><li>A reports-only login gets revenue and quantity per item per customer from Analytics, which divides out to the contract price.</li></ul></dd>
+    <dt>Fix</dt><dd>Run every money field through the same price check: rate on items and the quick report's item, rate on RA lines, cost on PO lines, and price overrides on customers. Require a pricing page for Analytics. Add these endpoints to the price-hiding test.</dd>
+    <dt>Known list</dt><dd>B-10 (Closed): fix incomplete</dd>
+    <dt>Found by</dt><dd class="muted">SEC-02</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security" id="R8-07">
+  <summary><span class="fid">R8-07</span><span class="ftitle">The Item Quick Report has no page check, so it bypasses the order-read restriction<small>Security · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/items.ts:325-398</code></dd>
+    <dt>What happens</dt><dd>The route has no permission at all. It returns up to 500 order lines per item (S.O., P.O., customer, status, quantities) and 500 vendor PO lines. A receiving-only login that gets 403 on <code>/api/sales-orders</code> gets all of this for any item, and can rebuild the order book by walking the item list.</dd>
+    <dt>Fix</dt><dd>Return order lines only to logins with order read access, and PO lines only with PO view.</dd>
+    <dt>Known list</dt><dd>B-10</dd>
+    <dt>Found by</dt><dd class="muted">SEC-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security" id="R8-08">
+  <summary><span class="fid">R8-08</span><span class="ftitle">Invoice issue and void, rate edits, permission changes and QuickBooks connect are still audited after commit; credit memo edits aren't audited at all<small>Security · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/invoices.ts:172-198 (no audit), :206, :223, :273, :285, :305; salesOrders.ts:540 and other commands; accounts.ts:172-185; integrations.ts:360, :420</code></dd>
+    <dt>What happens</dt><dd>These call the fire-and-forget logger after the transaction commits, so a failed insert loses the record. Repricing a credit memo line from 2.50 to 0.01 writes no audit row at all (confirmed). RA line-rate changes aren't diffed, and account permission changes record only the new map.</dd>
+    <dt>Fix</dt><dd>Write these with the in-transaction audit helper. Diff credit memo lines and RA rates, and record permissions as from/to.</dd>
+    <dt>Known list</dt><dd>B-11 (Closed): should be Partial</dd>
+    <dt>Found by</dt><dd class="muted">SEC-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security" id="R8-09">
+  <summary><span class="fid">R8-09</span><span class="ftitle">The 45-minute idle logout only runs in the browser; closing the tab defeats it, and Sign out doesn't revoke the token<small>Security · effort S / M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/authContext.tsx:26, :50-71; src/lib/apiClient.ts:7-18; src/lib/authStore.ts:76-78; server/src/middleware/auth.ts:14, :37</code></dd>
+    <dt>What happens</dt><dd>The idle timer restarts from zero every time the app loads, and the token lasts 10 hours in localStorage. On a shared warehouse PC, user B opens the app two hours after A closed the tab and is signed in as A. Sign out only forgets the token locally. <code>/api/auth/logout</code> is allow-listed, but the route doesn't exist.</dd>
+    <dt>Fix</dt><dd>Store the last-activity time and drop a stale token on load. Better, enforce idle time on the server (short tokens refreshed on activity, or a session row). Add a real logout that revokes the token.</dd>
+    <dt>Known list</dt><dd>B-03 (Closed): incomplete</dd>
+    <dt>Found by</dt><dd class="muted">SEC-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="security" id="R8-10">
+  <summary><span class="fid">R8-10</span><span class="ftitle">The example JWT secret passes the startup check; deployed unchanged, anyone could forge an admin token<small>Security · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/index.ts:12; server/.env.example:2</code></dd>
+    <dt>What happens</dt><dd>The only check is a <i>warning</i> when the secret is shorter than 16 characters. The example value, 'change-me-to-a-long-random-string', is 33. If a deploy copies .env.example without changing it, any user can read an admin's id from an order's <code>writtenById</code> or a stock movement's actor and sign their own admin token. Your local .env has a real secret, so this is about the production deploy.</dd>
+    <dt>Fix</dt><dd>Refuse to start when JWT_SECRET equals the example value or is shorter than 32 characters.</dd>
+    
+    <dt>Found by</dt><dd class="muted">SEC-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="stock" id="R8-11">
+  <summary><span class="fid">R8-11</span><span class="ftitle">Upgrading an existing database keeps old back-order holds reserved, contrary to the 'back orders hold nothing' decision<small>Stock · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/prisma/migrations/20260929140000_reservation_table/migration.sql:44; server/src/lib/reservations.ts:10</code></dd>
+    <dt>What happens</dt><dd>The backfill reserves stock for BACKORDERED orders from their old allocation data. Before sprint 2, a partial shipment left the unreleased lines' allocation in place (the A-07 problem). Every back order like that in production becomes a live reservation on upgrade and blocks other orders' allocation until an analyst happens to re-decide it. The backfill test covers only the new shape.</dd>
+    <dt>Fix</dt><dd>Add a follow-up migration that clears BACKORDERED orders' allocation, deletes their reservation rows and lowers the items' reserved counts. Then drop BACKORDERED from the holding statuses, and add an upgrade test with the old shape. <b>Do this before deploying sprint 2 to production.</b></dd>
+    <dt>Known list</dt><dd>A-07, A-25 (Closed): not true for upgraded data</dd>
+    <dt>Found by</dt><dd class="muted">STK-02, OPS-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ops" id="R8-12">
+  <summary><span class="fid">R8-12</span><span class="ftitle">The test-data generator crashes on the sprint 2 schema, and even fixed it would show held stock as available<small>Deploy &amp; tests · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/scripts/generate-test-data.mjs:518, :549-562, :800, :833-901; README.md:49-95</code></dd>
+    <dt>What happens</dt><dd><ul><li><code>npm run seed:testdata -- --reset</code> crashes with 'Argument invoiceId is missing'.</li><li>Invoices and credit memos now have their own ids, a DRAFT status, approvedAt/approvedBy and line positions.</li><li>It writes no reservation rows and no <code>qtyReserved</code>. About 52,000 held units would show as available, so allocation double-promises.</li><li>It leaves <code>lastShippedAt</code> empty, so the shipped-date sort sorts nothing.</li><li>It writes opening stock as ADJUST instead of OPENING.</li><li>It creates no drafts, charge lines, voids or pulled-from-floor orders for the new screens.</li><li>It isn't transactional: the crash left 20,664 invoices with no lines in the local database.</li></ul></dd>
+    <dt>Fix</dt><dd>Update the generator to the sprint 2 model (ids, drafts for recent shipments, reservations, lastShippedAt, OPENING, the new states), write each document with its lines, and update the README.</dd>
+    
+    <dt>Found by</dt><dd class="muted">OPS-05, STK-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="ops" id="R8-13">
+  <summary><span class="fid">R8-13</span><span class="ftitle">The search-index migration needs pg_trgm, which isn't documented, and CI can't catch it<small>Deploy &amp; tests · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/prisma/migrations/20260929170000_search_indexes/migration.sql:11; README.md:33; .github/workflows/ci.yml:13-17</code></dd>
+    <dt>What happens</dt><dd><code>CREATE EXTENSION pg_trgm</code> needs Postgres 13 or newer, the contrib package (separate on RHEL), and a role that can create extensions (owning the database is enough). CI runs as a superuser, so it never sees a failure. If production's app role doesn't own the database, the migration fails and rolls back the <code>lastShippedAt</code> column with it. Then every Confirm Shipped returns 500 until someone fixes the database by hand.</dd>
+    <dt>Fix</dt><dd>Document the prerequisites, have a DBA create the extension first where needed, and document the <code>migrate resolve</code> recovery. Run CI migrations as a non-superuser.</dd>
+    <dt>Known list</dt><dd>F-04 (Open): add to the deploy checklist</dd>
+    <dt>Found by</dt><dd class="muted">OPS-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="screens" id="R8-14">
+  <summary><span class="fid">R8-14</span><span class="ftitle">Changing Est. Ship in Sales Order View is silently thrown away<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OrderDetail.tsx:347-352, :168-172; server/src/routes/salesOrders.ts:115-139, :482-496</code></dd>
+    <dt>What happens</dt><dd>Edit mode offers a date field, but the save goes through the order PUT, which no longer accepts the ship date. Only the separate set-ship-date command changes it. The save succeeds, the page reloads showing the old date, and nothing tells the user. Customer Service moving a date for a customer on the phone has no other screen to do it from.</dd>
+    <dt>Fix</dt><dd>After the save, call set-ship-date when the date changed. Or make the field read-only here for logins that can't edit Schedule, with a link to it.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-01</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="money" id="R8-15">
+  <summary><span class="fid">R8-15</span><span class="ftitle">Screen totals and the server's totals disagree for rates with more than two decimals<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/money.ts:11-13; server/src/lib/money.ts:16-18; src/pages/InvoiceDetail.tsx:72, :319; src/pages/CreditMemoDetail.tsx</code></dd>
+    <dt>What happens</dt><dd>The browser rounds the rate to cents before multiplying; the server doesn't. Rates are stored to 4 decimals, and the invoice editor accepts 4. Examples:<ul><li>600 × $0.1875: the editor shows $114.00, while the issue confirmation (and QuickBooks) says $112.50.</li><li>500 × $2.3456: the editor shows $1,175.00 against $1,172.80.</li></ul>Order Entry and Sales Order View show the browser figure too, so the order and its invoice disagree.</dd>
+    <dt>Fix</dt><dd>Make the browser use the server's method (an integer rate in ten-thousandths, multiply, then round), with a shared test of the same cases.</dd>
+    <dt>Known list</dt><dd>E-01 (Closed): only for 2-decimal rates</dd>
+    <dt>Found by</dt><dd class="muted">UI-02, ACC-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="screens" id="R8-16">
+  <summary><span class="fid">R8-16</span><span class="ftitle">Correcting a line's item number keeps the previous item's price<small>Screens · effort S</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/components/LineItemsTable.tsx:74-84</code></dd>
+    <dt>What happens</dt><dd>Since sprint 2, any non-zero rate already on the line is kept, including one auto-filled from the item that was there before. Example: type RP-100 ($4.20), realise it's wrong and change it to RP-900 ($42.00). The rate stays $4.20, and the order saves 10× under-priced on that line.</dd>
+    <dt>Fix</dt><dd>Remember whether the rate was typed by hand, and re-price whenever the item changes otherwise.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-03</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="medium" data-area="money" id="R8-17">
+  <summary><span class="fid">R8-17</span><span class="ftitle">A voided credit memo can't be raised again, and the error messages point to recovery paths the system refuses<small>Invoices &amp; money · effort M</small></span><span class="sevtag sev-medium">Medium</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/invoices.ts:180, :218; server/src/lib/documents.ts:284-285; server/src/routes/returns.ts:256-258</code></dd>
+    <dt>What happens</dt><dd>The messages say 'void it and receive the return again' or that a draft 'disappears if the return is reopened', but RAs can't be reopened. A new RA for the same units is refused ('0 returnable'), and undo is refused once a return was received. After voiding a wrong memo, the credit the customer is owed can't be produced in this system at all (confirmed). A draft memo that shouldn't exist can't be removed either.</dd>
+    <dt>Fix</dt><dd>On void, create a fresh draft for the same RA (allow several memos per RA, or add a 'supersedes' link). Allow cancelling a draft memo, and correct the messages.</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="money" id="R8-18">
+  <summary><span class="fid">R8-18</span><span class="ftitle">Credit memos take their price from draft invoices, so a later repricing at review isn't reflected<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/documents.ts:288, :295, :316</code></dd>
+    <dt>What happens</dt><dd>Ship 10 at $3, receive an RA for 4 before review, then reprice the invoice to $2 and issue it. The memo still credits $3 ($12.75 against $8.50 billed), and nothing flags the difference.</dd>
+    <dt>Fix</dt><dd>When an invoice is issued, re-price draft memo lines that came from it, or price only from issued invoices. At minimum, warn on the memo when the rates differ.</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="money" id="R8-19">
+  <summary><span class="fid">R8-19</span><span class="ftitle">A return without an S.O. # gets a 0% tax credit, and the reviewer can't change the tax rate<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/documents.ts:286-289, :316; server/src/routes/invoices.ts:157-161</code></dd>
+    <dt>What happens</dt><dd>A customer taxed at 8% returns $30 of goods on an RA with no S.O. #. The memo credits $30.00 instead of $32.40.</dd>
+    <dt>Fix</dt><dd>Fall back to the customer's tax-exempt flag and latest tax rate, and allow an audited tax-rate edit on the memo draft.</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-07</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="money" id="R8-20">
+  <summary><span class="fid">R8-20</span><span class="ftitle">Invoiced revenue in Analytics still includes sales tax and freight; customer item totals count unshipped and cancelled orders<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/analytics.ts:82-96, :252, :316-334</code></dd>
+    <dt>What happens</dt><dd>Revenue sums invoice <i>totals</i>, so taxable customers are overstated by about 6% and rankings are skewed. Each customer's items purchased uses ordered × rate over every order, including unshipped and cancelled ones. Average order value divides invoiced revenue by all orders. The test uses a 0% tax rate, so it can't catch this.</dd>
+    <dt>Fix</dt><dd>Use subtotal and decide whether freight counts as revenue. Base items purchased on invoice lines, and use the invoiced-order count for averages.</dd>
+    <dt>Known list</dt><dd>E-03 (Closed): should be Partial</dd>
+    <dt>Found by</dt><dd class="muted">ACC-08, SEC note</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="money" id="R8-21">
+  <summary><span class="fid">R8-21</span><span class="ftitle">The draft invoice editor has no upper limits, so large values return a 500 and bad quantities are silently changed<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/invoices.ts:147-156; server/src/lib/documents.ts:220, :234</code></dd>
+    <dt>What happens</dt><dd>A freight rate of 1e9 overflows the database column and returns a 500. A charge quantity of 0 or less is silently changed to 1.</dd>
+    <dt>Fix</dt><dd>Set bounds on rate and quantity (at most 4 decimals) and reject bad values instead of changing them.</dd>
+    <dt>Known list</dt><dd>E-07 (Closed): regressed in the sprint 2 editor</dd>
+    <dt>Found by</dt><dd class="muted">ACC-10, SEC note</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="money" id="R8-22">
+  <summary><span class="fid">R8-22</span><span class="ftitle">Invoice and credit memo dates use the UTC calendar day, so evening shipments are dated tomorrow<small>Invoices &amp; money · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/documents.ts:92, :107, :318; server/src/integrations/sync.ts:166</code></dd>
+    <dt>What happens</dt><dd>A shipment confirmed at 7:30 pm Central on 30 Sep is invoiced 1 Oct. On the last day of a month that moves revenue, the QuickBooks transaction date and the due date into the next month.</dd>
+    <dt>Fix</dt><dd>Work out the document date in the business's time zone (a setting, or the TZ variable).</dd>
+    
+    <dt>Found by</dt><dd class="muted">ACC-11, UI note</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="stock" id="R8-23">
+  <summary><span class="fid">R8-23</span><span class="ftitle">Undo Last Shipment works from Allocated, Checked and Entered and jumps the order straight to Released<small>Stock · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:866-867, :922-925; src/pages/OrderDetail.tsx:97-100</code></dd>
+    <dt>What happens</dt><dd>An order that was edited back to Entered for re-checking can be undone straight to Released without being checked, with old printed stamps, and then shipped at the edited prices. Stock stays balanced, but the re-check and the price lock are skipped.</dd>
+    <dt>Fix</dt><dd>Allow undo only from Shipped, or from Backordered with no allocation. Clear the printed stamps on undo.</dd>
+    
+    <dt>Found by</dt><dd class="muted">STK-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="stock" id="R8-24">
+  <summary><span class="fid">R8-24</span><span class="ftitle">The on-PO total is recomputed without locking the item, so two PO saves can lose an update or deadlock<small>Stock · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/lib/inventory.ts:113-131; server/src/routes/vendorPurchaseOrders.ts:162, :241, :310</code></dd>
+    <dt>What happens</dt><dd>Two buyers save POs for the same item at the same moment, and On PO ends up 100 short until the next PO change for that item. Items are updated in PO-line order rather than id order, so a PO save can deadlock against a shipment (the user sees a 500).</dd>
+    <dt>Fix</dt><dd>Lock the items in sorted id order before recomputing.</dd>
+    <dt>Known list</dt><dd>A-06 (Closed): the lock half is still open</dd>
+    <dt>Found by</dt><dd class="muted">STK-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="stock" id="R8-25">
+  <summary><span class="fid">R8-25</span><span class="ftitle">A partly shipped order cut down to what has shipped never closes<small>Stock · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:462, :621-639</code></dd>
+    <dt>What happens</dt><dd>A customer takes 60 of 100 and the line is edited to 60. After check and allocate, the order lands in Back Orders owing nothing and stays there. The only way out is Cancel, which labels a delivered order Cancelled.</dd>
+    <dt>Fix</dt><dd>If nothing is left to ship and the order has shipments, mark it Shipped. Otherwise refuse the edit and point to cancelling the remainder.</dd>
+    
+    <dt>Found by</dt><dd class="muted">STK-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="security" id="R8-26">
+  <summary><span class="fid">R8-26</span><span class="ftitle">Whoever entered an order can change its lines, prices, tax and customer, not just the header<small>Security · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/salesOrders.ts:409, :511-519, :218-222</code></dd>
+    <dt>What happens</dt><dd>A Purchasing login that imports an order can then change its rates, tax or customer while it's Entered or Checked. That goes against the decisions 'Import creates orders only' and 'the writer may edit header fields'.</dd>
+    <dt>Fix</dt><dd>For writers without an order edit page, refuse line and price changes.</dd>
+    <dt>Known list</dt><dd>B-07, B-16 (Closed)</dd>
+    <dt>Found by</dt><dd class="muted">SEC-07</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="security" id="R8-27">
+  <summary><span class="fid">R8-27</span><span class="ftitle">There's no Accounting preset, and every preset can see prices<small>Security · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/permissions.ts:160-306; server/src/lib/orderView.ts:19</code></dd>
+    <dt>What happens</dt><dd>Only Director (and Admin) can issue invoices, and Director can also disconnect QuickBooks, override document numbers and adjust stock. So the accounting clerk would have to be set up as a Director. Sales Order View, which every preset has, grants price access, so price hiding only protects hand-built custom logins.</dd>
+    <dt>Fix</dt><dd>Add an Accounting preset (invoices edit, read access to what it needs, no settings). Decide whether Logistics and Purchasing should keep Sales Order View.</dd>
+    
+    <dt>Found by</dt><dd class="muted">SEC-08, ACC note</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="security" id="R8-28">
+  <summary><span class="fid">R8-28</span><span class="ftitle">Any login can make the Dashboard summary scan every shipment ever made<small>Security · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/dashboard.ts:38-39, :51-54</code></dd>
+    <dt>What happens</dt><dd><code>?midnight=1970-01-01</code> loads every shipment with its lines on each call. That takes seconds and hundreds of MB once there's a year of data.</dd>
+    <dt>Fix</dt><dd>Ignore any midnight more than about 36 hours from the server's time.</dd>
+    
+    <dt>Found by</dt><dd class="muted">SEC-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="stock" id="R8-29">
+  <summary><span class="fid">R8-29</span><span class="ftitle">The item quantity PATCH still accepts the on-PO figure from the browser, without an audit entry<small>Stock · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/items.ts:252-306</code></dd>
+    <dt>What happens</dt><dd>Any catalog or inventory editor can overwrite the server-maintained On PO until the next PO change. The screens never send it.</dd>
+    <dt>Fix</dt><dd>Drop the field from the endpoint.</dd>
+    
+    <dt>Found by</dt><dd class="muted">STK note, OPS note</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ops" id="R8-30">
+  <summary><span class="fid">R8-30</span><span class="ftitle">The analytics and capacity cache can serve very old figures, recomputes many times at once, and issuing an invoice doesn't refresh it<small>Deploy &amp; tests · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/routes/analytics.ts:198-213, :221, :236</code></dd>
+    <dt>What happens</dt><dd>An expired entry is served no matter how old it is. While it refreshes, every request starts another compute: 15 people opening Release Orders at once means up to 15 capacity computes, each 0.9 s (30 days) to 3.3 s (90 days). Issuing or voiding an invoice doesn't clear the cache.</dd>
+    <dt>Fix</dt><dd>Share one in-flight refresh per key, cap how stale an entry can be, and clear the summary when an invoice is issued or voided.</dd>
+    <dt>Known list</dt><dd>D-13 (Closed): there is no roll-up table</dd>
+    <dt>Found by</dt><dd class="muted">OPS-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ops" id="R8-31">
+  <summary><span class="fid">R8-31</span><span class="ftitle">/api/health doesn't check the database<small>Deploy &amp; tests · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/src/app.ts:69</code></dd>
+    <dt>What happens</dt><dd>With Postgres down, health still returns 200, so monitors and the Playwright web-server check report healthy while every page fails.</dd>
+    <dt>Fix</dt><dd>Add a readiness check that runs <code>SELECT 1</code> and reports QuickBooks backlog and stuck rows.</dd>
+    
+    <dt>Found by</dt><dd class="muted">OPS-07</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ops" id="R8-32">
+  <summary><span class="fid">R8-32</span><span class="ftitle">Tests miss the new concurrency and invoice invariants, some assertions are weak, and two test runs can wreck each other<small>Deploy &amp; tests · effort M</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>server/test/*; e2e/*; playwright.config.ts:20; server/test/helpers.ts:20-27</code></dd>
+    <dt>What happens</dt><dd><ul><li><b>Not tested:</b><ul><li>document races (R8-01)</li><li>an invoice-equals-shipment check under load</li><li>the invoice and lastShippedAt migrations against existing data</li><li>migrations as a non-superuser</li><li>QuickBooks sync recovering after a crash</li><li>cache invalidation</li><li>any frontend unit test</li></ul></li><li><b>Weak:</b><ul><li>the analytics test sends a <code>nocache=1</code> the server ignores</li><li>an e2e check is wrapped in <code>if (item)</code>, so it can pass without checking anything</li><li>CI Playwright retries hide flaky tests</li><li>a test waits a fixed 50 ms for an audit write</li></ul></li><li><b>Shared database:</b> the suite truncates whatever <code>TEST_DATABASE_URL</code> points at, with nothing to stop two runs overlapping. Two overlapping runs on the shared test DB failed 60/79 and 6/79; isolated runs passed 79/79.</li></ul></dd>
+    <dt>Fix</dt><dd>Add the race, upgrade and non-superuser tests. Have the workload issue and void invoices. Take an advisory lock in the test setup, replace sleeps with polling, and drop the <code>if (item)</code> guard.</dd>
+    
+    <dt>Found by</dt><dd class="muted">OPS-08</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="ops" id="R8-33">
+  <summary><span class="fid">R8-33</span><span class="ftitle">The simulation and browser check don't cover the sprint 2 model<small>Deploy &amp; tests · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>sim/day.mjs:679; sim/ui-check.mjs:35, :165-173; sim/seed.mjs:103-116</code></dd>
+    <dt>What happens</dt><dd>The day simulation checks over-commitment from the old allocation data and never compares the reservation table. It has no Accounting actor, so invoices are never issued and the QuickBooks sync never runs. The browser check picks a test item without looking at what's reserved, so it fails on busy data. The seed still writes On PO by hand.</dd>
+    <dt>Fix</dt><dd>Add reservation and invoice checks and an Accounting actor to the simulation, pick items by available stock, and drop the On PO write.</dd>
+    <dt>Known list</dt><dd>F-03: the round 7 'no over-commitment' result predates the reservation table</dd>
+    <dt>Found by</dt><dd class="muted">OPS-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-34">
+  <summary><span class="fid">R8-34</span><span class="ftitle">Reports show $0.00 totals and 'NaN' rates to logins without price access<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/lib/orderStore.ts:60-61; src/lib/reports/dataSources.ts:143, :178, :209-219</code></dd>
+    <dt>What happens</dt><dd>A hidden rate becomes NaN in the browser. 'Sales Orders' then shows every total as 0.00, and 'Sales Order Lines' shows Rate NaN, in the CSV export too.</dd>
+    <dt>Fix</dt><dd>Keep a missing rate as missing, and drop the money columns when prices are hidden.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-04</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-35">
+  <summary><span class="fid">R8-35</span><span class="ftitle">After a conflict on a draft invoice or credit memo, the edits stay on screen but can never be saved<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/InvoiceDetail.tsx:111-146; src/pages/CreditMemoDetail.tsx</code></dd>
+    <dt>What happens</dt><dd>Every retry is refused again because the old version is kept. The only way out is a browser reload, which loses the typing.</dd>
+    <dt>Fix</dt><dd>Offer 'Reload the draft' as Order Detail does, or re-fetch and re-apply the edits.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-05</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-36">
+  <summary><span class="fid">R8-36</span><span class="ftitle">Edit Order is offered on shipped and cancelled orders, and a double-click on Save shows a false conflict<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OrderDetail.tsx:240-252, :168-183</code></dd>
+    <dt>What happens</dt><dd>Editing a shipped order ends in 'already shipped' with a reload suggestion that can't help. A double-click sends two saves: the first succeeds, and the second puts a 'changed by someone else' banner over a successful save.</dd>
+    <dt>Fix</dt><dd>Hide Edit on shipped and cancelled orders, and lock Save while a request is in flight.</dd>
+    <dt>Known list</dt><dd>C-07 (Closed): partly</dd>
+    <dt>Found by</dt><dd class="muted">UI-06</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-37">
+  <summary><span class="fid">R8-37</span><span class="ftitle">Dropdowns, checkboxes and date pickers ignore the chosen theme; printing can come out dark; a light flash on load<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/index.css:27, :36-37, :3028-3031; src/main.tsx:117</code></dd>
+    <dt>What happens</dt><dd>The CSS sets <code>color-scheme</code> once and never per theme, so native controls follow the operating system, not the user's choice. On a dark OS with 'Follow the system', print can come out with dark-theme colours. The theme is applied after the first paint, so there's a brief flash of the light theme.</dd>
+    <dt>Fix</dt><dd>Set <code>color-scheme</code> per theme, make the print rule beat system dark, and apply the theme from a small inline script.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-07</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-38">
+  <summary><span class="fid">R8-38</span><span class="ftitle">After a deploy, open tabs can't load the lazy pages, and Try again doesn't help<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/App.tsx:62-69; src/components/ErrorBoundary.tsx:96-101</code></dd>
+    <dt>What happens</dt><dd>Analytics, Reports, BOL, Labels and Import load on demand. After a redeploy the old file is gone, and React keeps the failed load, so Try again fails again until a full reload.</dd>
+    <dt>Fix</dt><dd>Reload the page once on a chunk-load error, and make Try again reload for those errors.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-08</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-39">
+  <summary><span class="fid">R8-39</span><span class="ftitle">'Pick &amp; Packed' still appears where the rest of the app says Released; reports can't filter Cancelled<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ScheduleShipments.tsx:11-17, :134-137; src/lib/reports/dataSources.ts:24, :63-64; src/pages/Analytics.tsx:27-35</code></dd>
+    <dt>What happens</dt><dd>The Schedule filter, the Reports status filter and column, and the Analytics status chart still show the raw status name. The reports' status list also leaves out Cancelled.</dd>
+    <dt>Fix</dt><dd>Show these through the status-label helper, and add Cancelled.</dd>
+    <dt>Known list</dt><dd>C-17 (Closed): partly</dd>
+    <dt>Found by</dt><dd class="muted">UI-09</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-40">
+  <summary><span class="fid">R8-40</span><span class="ftitle">The Invoices review queue and the Dashboard show 'Loading…' forever when their load fails<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/Invoices.tsx:48-49, :100-101; src/pages/Dashboard.tsx:319, :345, :409</code></dd>
+    <dt>What happens</dt><dd>Load failures aren't shown as errors by design, and these two pages never handle them, so the user sees endless loading with no retry.</dd>
+    <dt>Fix</dt><dd>Use the existing load-failed banner with Retry, as the queue pages do.</dd>
+    <dt>Known list</dt><dd>C-01 (Closed): partly</dd>
+    <dt>Found by</dt><dd class="muted">UI-10</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-41">
+  <summary><span class="fid">R8-41</span><span class="ftitle">Shipment History links invoices that Logistics can't open, and its 'invoiced' total includes drafts<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/ShipmentHistory.tsx:147-150, :194-197; server/src/routes/shipments.ts:107</code></dd>
+    <dt>What happens</dt><dd>Every invoice link leads Logistics to Access Denied. The '$X invoiced' figure counts drafts that may still change at review.</dd>
+    <dt>Fix</dt><dd>Show the number as plain text without Invoices access, and count only issued invoices (or relabel the figure).</dd>
+    <dt>Known list</dt><dd>C-14 (Closed): partly</dd>
+    <dt>Found by</dt><dd class="muted">UI-11, OPS note</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-42">
+  <summary><span class="fid">R8-42</span><span class="ftitle">Order Entry and the Dashboard still work out the lead time in the browser from a session cache<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/pages/OrderEntry.tsx:135-137, :260; src/pages/Dashboard.tsx:311, :421; src/lib/settingsCache.ts</code></dd>
+    <dt>What happens</dt><dd>If an admin changes the lead time from 5 to 7, sessions already open keep showing 5 and preview the wrong ship date, while the server stores order date + 7. If the settings load fails, 5 is used silently.</dd>
+    <dt>Fix</dt><dd>Show the server's date, and re-read settings when the window regains focus.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-12</dd>
+  </dl></div>
+</details>
+<details class="finding" data-sev="low" data-area="screens" id="R8-43">
+  <summary><span class="fid">R8-43</span><span class="ftitle">The new draft and void banners and the QuickBooks pills are hard to read in dark mode<small>Screens · effort S</small></span><span class="sevtag sev-low">Low</span></summary>
+  <div class="fbody"><dl>
+    <dt>Where</dt><dd><code>src/index.css:3773-3797</code></dd>
+    <dt>What happens</dt><dd>Hard-coded colours give 2.7:1 to 3.1:1 contrast on the dark panel, below the 4.5:1 minimum for normal text.</dd>
+    <dt>Fix</dt><dd>Turn them into theme tokens with lighter dark-mode values.</dd>
+    
+    <dt>Found by</dt><dd class="muted">UI-13</dd>
+  </dl></div>
+</details>
+    </div>
+  </section>
+
+  <section id="status">
+    <div class="section-head"><span class="eyebrow">03</span><h2>Corrections to the known list</h2>
+      <p class="muted">Items in <code>docs/review/open-bugs.md</code> whose status this round changes. The file now carries these in a Round 8 section.</p></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Item</th><th>Was</th><th>Now</th><th>Why</th></tr></thead>
+      <tbody><tr><td><code>A-06</code></td><td>Closed</td><td><b>Partial</b></td><td>The on-PO recompute still runs without an item lock (R8-24).</td></tr>
+<tr><td><code>A-07, A-25</code></td><td>Closed</td><td><b>Partial until a follow-up migration</b></td><td>The upgrade backfill keeps old back-order holds (R8-11).</td></tr>
+<tr><td><code>A-15</code></td><td>Closed</td><td><b>Partial</b></td><td>Undo can void an issued invoice that hasn't synced yet (R8-03, R8-04).</td></tr>
+<tr><td><code>B-03</code></td><td>Closed</td><td><b>Partial</b></td><td>Idle logout is browser-only, and Sign out doesn't revoke the token (R8-09).</td></tr>
+<tr><td><code>B-10</code></td><td>Closed</td><td><b>Partial</b></td><td>Six endpoints still return prices, and the quick report has no page check (R8-06, R8-07).</td></tr>
+<tr><td><code>B-11</code></td><td>Closed</td><td><b>Partial</b></td><td>Money actions are audited after commit, and credit memo edits aren't audited (R8-08).</td></tr>
+<tr><td><code>B-07, B-16</code></td><td>Closed</td><td><b>Partial</b></td><td>The writer can change lines and prices (R8-26).</td></tr>
+<tr><td><code>C-01, C-07, C-14, C-17</code></td><td>Closed</td><td><b>Partial</b></td><td>R8-40, R8-36, R8-41, R8-39.</td></tr>
+<tr><td><code>D-13</code></td><td>Closed</td><td><b>Partial</b></td><td>There is no roll-up table, and the cache can be very stale (R8-30).</td></tr>
+<tr><td><code>E-01</code></td><td>Closed</td><td><b>Partial</b></td><td>Correct only for 2-decimal rates (R8-15).</td></tr>
+<tr><td><code>E-03</code></td><td>Closed</td><td><b>Partial</b></td><td>Revenue still includes tax and freight (R8-20).</td></tr>
+<tr><td><code>E-07</code></td><td>Closed</td><td><b>Partial</b></td><td>The sprint 2 draft editor has no bounds (R8-21).</td></tr>
+<tr><td><code>E-09</code></td><td>Decision</td><td><b>Decision (new information)</b></td><td>The per-line taxable flag (e.g. tax-free freight) isn't sent to QuickBooks; only the total tax is.</td></tr>
+<tr><td><code>F-03</code></td><td>Closed</td><td><b>Partial</b></td><td>The day simulation doesn't check the reservation table or invoices (R8-33).</td></tr></tbody></table></div>
+  </section>
+
+  <section id="sound">
+    <div class="section-head"><span class="eyebrow">04</span><h2>Checked and found sound</h2>
+      <p class="muted">What the passes looked at closely and didn't flag.</p></div>
+    <div class="sound"><div class="panel"><h3>Reservation invariant</h3><p>Every allocate, unallocate, release, ship, undo, cancel and back-order path calls <code>syncReservations</code> inside the same transaction. The probe tests found no path where <code>Item.qtyReserved</code> differs from the sum of its Allocation rows for orders created after the migration. Many concurrent allocations against one scarce item never over-commit it.</p></div>
+<div class="panel"><h3>Lock ordering</h3><p>Stock-moving commands lock items in sorted id order, so two orders sharing items can't deadlock each other.</p></div>
+<div class="panel"><h3>Document arithmetic</h3><p>Invoice and credit-memo totals are computed in integer cents with one rounding rule, and CHARGE lines (freight) are kept out of item quantities. The 2-decimal case matches the screen exactly.</p></div>
+<div class="panel"><h3>QuickBooks connect</h3><p>The OAuth <code>state</code> is random, single-use and expires after ten minutes, and the callback trusts only a state it issued. With <code>TOKEN_ENCRYPTION_KEY</code> set, tokens are sealed with AES-256-GCM and a fresh IV per write; without it they're stored as-is and the status endpoint says so, so set the key in production.</p></div>
+<div class="panel"><h3>Sign-in</h3><p>bcrypt hashes, throttled sign-in, a forced password change after an admin reset (with the token rotated), and permissions re-read on every request, so deactivation takes effect immediately.</p></div>
+<div class="panel"><h3>Queries and errors</h3><p>All raw SQL, including the new trigram search, is parameterized; sort keys come from a fixed list. The error handler maps Prisma's not-found and conflict errors to 404 and 409 and doesn't send stack traces.</p></div>
+<div class="panel"><h3>Status commands</h3><p>Each workflow step has its own endpoint with a version check, and the plain PUT only edits header fields and lines. Edits after Checked send the order back to Entered as designed.</p></div>
+<div class="panel"><h3>Schema</h3><p><code>prisma migrate diff</code> shows no drift between the migrations and <code>schema.prisma</code>. The new indexes are used by the open-orders and search queries.</p></div></div>
+  </section>
+
+  <section id="tests">
+    <div class="section-head"><span class="eyebrow">05</span><h2>Tests run</h2></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Check</th><th>Result</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Server test suite (Vitest, real Postgres)</td><td><b>79 / 79 pass</b></td><td>7 files, about 38 s. Parallel runs against the shared <code>erp_test</code> database interfere with each other (<a href="#R8-32">R8-32</a>); isolated runs are clean.</td></tr>
+        <tr><td>Server typecheck (<code>tsc --noEmit</code>)</td><td><b>Clean</b></td><td></td></tr>
+        <tr><td><code>prisma migrate diff</code> (migrations vs schema)</td><td><b>No drift</b></td><td>On a database that already has <code>pg_trgm</code>; see <a href="#R8-13">R8-13</a>.</td></tr>
+        <tr><td>Probe tests (throwaway databases, then dropped)</td><td><b>Reproduced</b></td><td>Issue/issue and save/issue races (<a href="#R8-01">R8-01</a>: 3/3 and 12/12 rounds), the void with no link (<a href="#R8-04">R8-04</a>), price leaks (<a href="#R8-06">R8-06</a>), the unaudited credit memo edit (<a href="#R8-08">R8-08</a>).</td></tr>
+        <tr><td>Test-data generator</td><td><b>Crashes</b></td><td>"Argument <code>invoiceId</code> is missing" on the sprint 2 schema (<a href="#R8-12">R8-12</a>). The local <code>erp_dev</code> database is half-loaded: about 20,664 invoices with no lines, no Allocation rows and reserved quantities of 0.</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section id="method">
+    <div class="section-head"><span class="eyebrow">06</span><h2>Method and caveats</h2></div>
+    <div class="prose">
+      <ul>
+        <li><b>The five passes:</b> stock and the reservation table; invoices, credit memos and QuickBooks; security and permissions; screens; deploy, operations and tests. Each pass started from the known list and had to cite file and line and give a concrete failure case for every finding.</li>
+        <li><b>My checks:</b> I checked the High and every Medium against the code myself, for example the unlocked read in <code>issueInvoice</code>, undo reversing the last shipment rather than the chosen one, the missing gate on the quick report, the warn-only secret check, the BACKORDERED backfill, and the Est. Ship and item-price bugs on the order screens. Duplicates across passes were merged (for example ACC-01, ACC-02 and OPS-01 became R8-01).</li>
+        <li><b>What was changed:</b> nothing in the application. The passes sent only read requests to the running API. Probe tests ran on private scratch databases, which were dropped afterwards.</li>
+        <li><b>Not covered:</b> a live QuickBooks sandbox (the outbox was exercised with the repo's fake QuickBooks client), and a fresh day-simulation run, which needs the generator fixed first.</li>
+        <li><b>Where things are:</b> the known list is <code>docs/review/open-bugs.md</code>, which now lists this round's findings and status corrections.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Aamstrand ERP · review round 8 · 2026-10-01 · generated with Claude Code. File references point at commit 59c2a9f.</footer>
+</div>
+<script>
+(function () {
+  var chips = document.querySelectorAll('#findings .chip');
+  var items = document.querySelectorAll('#bug-list details.finding');
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (c) { c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });
+      var f = chip.getAttribute('data-filter');
+      items.forEach(function (el) {
+        var show = f === 'all' || (f.indexOf('sev:') === 0 ? el.dataset.sev === f.slice(4) : el.dataset.area === f.slice(5));
+        el.hidden = !show;
+      });
+    });
+  });
+  document.querySelectorAll('a[href^="#R8-"]').forEach(function (a) {
+    a.addEventListener('click', function () {
+      var d = document.getElementById(a.getAttribute('href').slice(1));
+      if (d) { d.hidden = false; d.open = true; }
+    });
+  });
+})();
+</script>
