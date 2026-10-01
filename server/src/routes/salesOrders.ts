@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { isoDate } from "../lib/dates.js";
+import { isDeadlock } from "../lib/deadlock.js";
 import { estimatedShipDateFor } from "../lib/leadTime.js";
 import { hasPermission, requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { idempotent } from "../middleware/idempotency.js";
@@ -181,14 +182,27 @@ type OrderRow = Prisma.SalesOrderGetPayload<{ include: typeof include }>;
 type ShipLine = { lineItemId: string; qty: number };
 type AllocationJson = { lines: { lineItemId: string; allocatedQty: number }[]; fullyAllocated: boolean; shipCompleteOnly?: boolean; decidedAt: string };
 
-function mapOut<T extends { soNumber: number; status: string; pickPackStatus: string | null }>(order: T) {
+// A claim that has not run out (C-08).
+function activeClaim(order: { claimedById?: string | null; claimedBy?: string | null; claimedUntil?: Date | null }) {
+  return order.claimedUntil && order.claimedById && order.claimedUntil.getTime() > Date.now()
+    ? { byId: order.claimedById, by: order.claimedBy ?? "", until: order.claimedUntil }
+    : null;
+}
+
+function mapOut<T extends { soNumber: number; status: string; pickPackStatus: string | null; claimedById?: string | null; claimedBy?: string | null; claimedUntil?: Date | null }>(order: T) {
   return {
     ...order,
     soNumber: String(order.soNumber),
     status: STATUS_OUT[order.status] ?? order.status,
     pickPackStatus: order.pickPackStatus ? (PICK_PACK_STATUS_OUT[order.pickPackStatus] ?? order.pickPackStatus) : null,
+    claim: activeClaim(order),
   };
 }
+
+// Writing a decision ends the claim on the order.
+const CLEAR_CLAIM = { claimedById: null, claimedBy: null, claimedUntil: null } as const;
+const CLAIM_MS = 10 * 60_000;
+const CLAIM_PAGES = ["validation", "allocation", "back-orders"];
 
 // Units shipped so far per line id, from the shipment records.
 function shippedByLine(order: Pick<OrderRow, "shipmentHistory">): Map<string, number> {
@@ -309,6 +323,57 @@ router.get("/", async (req: AuthedRequest, res) => {
     include,
   });
   res.json(orders.map((o) => hidePrices(mapOut(o), req.account!)));
+});
+
+// The Back Order Queue in one response (G-06): every Backordered order
+// with, per short line, what is free now and the first open PO that
+// covers it, grouped as stock arrived (flagged by a receipt), covered by a
+// PO, or uncovered. Nothing here allocates; an analyst decides.
+router.get("/back-orders", async (req: AuthedRequest, res) => {
+  requireOrderRead(req.account!);
+  const orders = await prisma.salesOrder.findMany({
+    where: { status: "BACKORDERED" },
+    orderBy: [{ dueDate: "asc" }, { orderDate: "asc" }, { soNumber: "asc" }],
+    include: { ...include, lineItems: { include: { catalogItem: { select: { qtyOnHand: true, qtyReserved: true } } } } },
+  });
+  const itemIds = [...new Set(orders.flatMap((o) => o.lineItems.map((l) => l.itemId)).filter((id): id is string => Boolean(id)))];
+  const poLines = itemIds.length
+    ? await prisma.vendorPoLine.findMany({
+        where: { itemId: { in: itemIds }, vendorPo: { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } },
+        include: { vendorPo: { select: { poNumber: true, expectedDate: true } } },
+      })
+    : [];
+  // Earliest open PO per item with something still to come.
+  const poByItem = new Map<string, { poNumber: string; expectedDate: string | null; outstanding: number }>();
+  for (const l of poLines.sort((a, b) => (a.vendorPo.expectedDate?.getTime() ?? Infinity) - (b.vendorPo.expectedDate?.getTime() ?? Infinity))) {
+    const outstanding = l.orderedQty - l.receivedQty;
+    if (!l.itemId || outstanding <= 0 || poByItem.has(l.itemId)) continue;
+    poByItem.set(l.itemId, { poNumber: l.vendorPo.poNumber, expectedDate: l.vendorPo.expectedDate ? l.vendorPo.expectedDate.toISOString().slice(0, 10) : null, outstanding });
+  }
+  const rows = orders.map((o) => {
+    const shipped = shippedByLine(o);
+    const lines = o.lineItems
+      .map((li) => {
+        const remaining = remainingFor(li, shipped);
+        const free = li.catalogItem ? li.catalogItem.qtyOnHand - li.catalogItem.qtyReserved : 0;
+        const coverage = remaining <= 0 ? "shipped" : free >= remaining ? "full" : free > 0 ? "partial" : "none";
+        return { lineItemId: li.id, item: li.item, remaining, free: Math.max(0, free), coverage, po: li.itemId ? (poByItem.get(li.itemId) ?? null) : null };
+      })
+      .filter((l) => l.remaining > 0);
+    const short = lines.filter((l) => l.coverage !== "full");
+    const group = o.stockArrivedAt ? "arrived" : short.every((l) => l.po) ? "covered" : "uncovered";
+    const dates = short.map((l) => l.po?.expectedDate ?? null);
+    const projectedArrival = group === "covered" && dates.every(Boolean) ? dates.sort().at(-1)! : null;
+    const { lineItems, ...rest } = o;
+    return {
+      ...hidePrices(mapOut({ ...rest, lineItems: lineItems.map(({ catalogItem: _c, ...li }) => li) }), req.account!),
+      group,
+      coverage: lines,
+      fillableNow: lines.length > 0 && short.length === 0,
+      projectedArrival,
+    };
+  });
+  res.json({ rows, counts: { arrived: rows.filter((r) => r.group === "arrived").length, covered: rows.filter((r) => r.group === "covered").length, uncovered: rows.filter((r) => r.group === "uncovered").length } });
 });
 
 router.get("/:soNumber", async (req: AuthedRequest, res) => {
@@ -553,9 +618,15 @@ router.post("/:soNumber/check", requirePermission("validation", "edit"), async (
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, parsed.data.version);
     assertStatus(order, ["ENTERED"], "checked");
+    // Maker is not checker (decided 1 Oct, G-10): the person who entered
+    // the order cannot be the one who checks it. Admin is exempt so a
+    // one-person day still works.
+    if (order.writtenById && order.writtenById === account.id && account.role !== "ADMIN") {
+      throw new HttpError(403, `You entered S.O. #${soNumber} - another person has to check it.`, { makerIsChecker: true });
+    }
     await tx.salesOrder.update({
       where: { soNumber },
-      data: { status: "CHECKED", checkedAt: new Date(), checkedBy: account.initials, checkedByColor: account.color, version: { increment: 1 } },
+      data: { status: "CHECKED", checkedAt: new Date(), checkedBy: account.initials, checkedByColor: account.color, ...CLEAR_CLAIM, version: { increment: 1 } },
     });
   });
   logAudit(account, "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { from: "Entered", to: "Checked" });
@@ -646,7 +717,9 @@ router.post("/:soNumber/allocate", async (req: AuthedRequest, res) => {
       decidedAt: new Date().toISOString(),
     };
     await assertAllocationAvailable(tx, soNumber, { status, lineItems: order.lineItems, allocation, pendingShipment: order.pendingShipment });
-    await tx.salesOrder.update({ where: { soNumber }, data: { status, allocation, version: { increment: 1 } } });
+    // Any decision clears the claim and the stock-arrived flag (G-06): the
+    // analyst has looked at it.
+    await tx.salesOrder.update({ where: { soNumber }, data: { status, allocation, stockArrivedAt: null, ...CLEAR_CLAIM, version: { increment: 1 } } });
     await syncReservations(tx, soNumber);
     return { from: STATUS_OUT[order.status], to: STATUS_OUT[status], units: hold ? 0 : total, fullyAllocated };
   });
@@ -960,6 +1033,8 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
         pendingShipment: onFloor ? undefined : [],
         pullRequestedAt: onFloor ? new Date() : null,
         pullAcknowledgedAt: null,
+        stockArrivedAt: null,
+        ...CLEAR_CLAIM,
         cancelledAt: new Date(),
         cancelledBy: req.account!.username,
         cancelReason: parsed.data.reason,
@@ -970,6 +1045,39 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
     await auditIn(tx, req.account!, "ORDER_CANCELLED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { reason: parsed.data.reason, pullFromFloor: onFloor });
   });
   res.json(await reload(soNumber, req.account!));
+});
+
+// A ten-minute claim on an order under review (C-08): the queues show who
+// has it and skip it for everyone else; a decision (check, allocate) or
+// leaving the page ends it; an old claim simply runs out. No version
+// check and no version bump - opening an order for review is not an edit.
+router.post("/:soNumber/claim", requireAnyPermission(CLAIM_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const account = req.account!;
+  await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<{ claimedById: string | null; claimedBy: string | null; claimedUntil: Date | null }[]>`SELECT "claimedById", "claimedBy", "claimedUntil" FROM "SalesOrder" WHERE "soNumber" = ${soNumber} FOR UPDATE`;
+    if (rows.length === 0) throw new HttpError(404, "Order not found");
+    const held = activeClaim(rows[0]);
+    if (held && held.byId !== account.id) {
+      throw new HttpError(409, `S.O. #${soNumber} is being reviewed by ${held.by} (until ${held.until.toISOString()}).`, { conflict: true, claimedBy: held.by, claimedUntil: held.until });
+    }
+    await tx.salesOrder.update({ where: { soNumber }, data: { claimedById: account.id, claimedBy: account.username, claimedUntil: new Date(Date.now() + CLAIM_MS) } });
+  });
+  res.json(await reload(soNumber, account));
+});
+
+// Lets go of a claim: the claimant leaving the page, or anyone once it has run out.
+router.post("/:soNumber/unclaim", requireAnyPermission(CLAIM_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const account = req.account!;
+  await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<{ claimedById: string | null; claimedBy: string | null; claimedUntil: Date | null }[]>`SELECT "claimedById", "claimedBy", "claimedUntil" FROM "SalesOrder" WHERE "soNumber" = ${soNumber} FOR UPDATE`;
+    if (rows.length === 0) throw new HttpError(404, "Order not found");
+    const held = activeClaim(rows[0]);
+    if (held && held.byId !== account.id && account.role !== "ADMIN") return;
+    await tx.salesOrder.update({ where: { soNumber }, data: { ...CLEAR_CLAIM } });
+  });
+  res.json(await reload(soNumber, account));
 });
 
 // The warehouse has pulled a cancelled order's pick back off the floor.
@@ -1073,6 +1181,10 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
       let message: string;
       if (err instanceof HttpError) {
         message = err.message;
+      } else if (isDeadlock(err)) {
+        // Two releases (or a release and a shipment) took item rows in
+        // different orders; Postgres aborted this one, nothing was saved.
+        message = "Another change collided with this one - nothing was saved. Try again.";
       } else {
         console.error(`release ${label} failed:`, err);
         message = "Unexpected error - this order was not released. Reload and try again.";

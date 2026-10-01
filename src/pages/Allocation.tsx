@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
+import { useAuth } from "../lib/authContext";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
@@ -18,9 +19,12 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 export default function Allocation() {
   const navigate = useNavigate();
+  const { account } = useAuth();
   const [query, setQuery] = useState("");
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("dueDate");
+  // An order someone else has open is theirs for now (C-08).
+  const takenBy = (o: PurchaseOrder) => (o.claim && account && o.claim.byId !== account.id ? o.claim.by : null);
   const [showSkipped, setShowSkipped] = useState(false);
   // Re-read each render: a Skip on the decision page lands in sessionStorage.
   const skipped = skippedSoNumbers("allocation");
@@ -61,8 +65,9 @@ export default function Allocation() {
   }, [filtered, sortBy, sortDir]);
 
   function startQueue() {
-    if (sorted.length === 0) return;
-    const queue = sorted.map((o) => o.soNumber);
+    const workable = sorted.filter((o) => !takenBy(o));
+    if (workable.length === 0) return;
+    const queue = workable.map((o) => o.soNumber);
     navigate(`/allocation/${queue[0]}`, { state: { queue, pos: 0 } });
   }
 
@@ -152,6 +157,7 @@ export default function Allocation() {
                   <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
                     {o.soNumber}
                   </Link>
+                  {takenBy(o) && <span className="queue-claim"> {takenBy(o)} has it</span>}
                 </td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>

@@ -11,6 +11,7 @@ import cors from "cors";
 import express from "express";
 import { Prisma } from "@prisma/client";
 import { HttpError } from "./lib/conflictError.js";
+import { isDeadlock } from "./lib/deadlock.js";
 import accountsRouter from "./routes/accounts.js";
 import analyticsRouter from "./routes/analytics.js";
 import auditLogRouter from "./routes/auditLog.js";
@@ -31,15 +32,6 @@ import stockMovementsRouter from "./routes/stockMovements.js";
 import vendorPurchaseOrdersRouter from "./routes/vendorPurchaseOrders.js";
 import vendorsRouter from "./routes/vendors.js";
 
-function isDeadlock(err: unknown): boolean {
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === "P2034") return true;
-    // A raw query (the item row locks) reports the Postgres code in meta.
-    const meta = err.meta as { code?: string; message?: string } | undefined;
-    return meta?.code === "40P01" || /40P01|deadlock detected/i.test(`${meta?.message ?? ""} ${err.message}`);
-  }
-  return err instanceof Prisma.PrismaClientUnknownRequestError && /40P01|deadlock detected/i.test(err.message);
-}
 
 export function createApp(): express.Express {
   const app = express();

@@ -215,6 +215,37 @@ export function markPrinted(
   return command(order, "mark-printed", { pickList: Boolean(docs.pickList), packingSlip: Boolean(docs.packingSlip), lines });
 }
 
+// A ten-minute claim while an order is under review (C-08). A 409 means
+// someone else has it; the body names them.
+export function claimOrder(order: Pick<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
+  return api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/claim`, {}).then(mapOrder);
+}
+
+export function unclaimOrder(order: Pick<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
+  return api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/unclaim`, {}).then(mapOrder);
+}
+
+// The Back Order Queue, with each order's short lines, what is free now,
+// the first open PO covering each, and the group it falls in (G-06).
+export interface BackOrderLine {
+  lineItemId: string;
+  item: string;
+  remaining: number;
+  free: number;
+  coverage: "full" | "partial" | "none" | "shipped";
+  po: { poNumber: string; expectedDate: string | null; outstanding: number } | null;
+}
+export interface BackOrderRow extends PurchaseOrder {
+  group: "arrived" | "covered" | "uncovered";
+  coverage: BackOrderLine[];
+  fillableNow: boolean;
+  projectedArrival: string | null;
+}
+export async function listBackOrders(): Promise<{ rows: BackOrderRow[]; counts: { arrived: number; covered: number; uncovered: number } }> {
+  const r = await api.get<{ rows: BackOrderRow[]; counts: { arrived: number; covered: number; uncovered: number } }>("/api/sales-orders/back-orders");
+  return { ...r, rows: r.rows.map((row) => ({ ...row, ...mapOrder(row) })) };
+}
+
 // The warehouse has pulled a cancelled order's pick back off the floor.
 export function acknowledgePull(order: PurchaseOrder): Promise<PurchaseOrder> {
   return command(order, "acknowledge-pull");

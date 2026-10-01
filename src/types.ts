@@ -138,6 +138,10 @@ export interface PurchaseOrder {
   // back, acknowledged from Open Picks (A-23).
   pullRequestedAt?: string | null;
   pullAcknowledgedAt?: string | null;
+  // Stock for a short line arrived on a PO; an analyst has to look (G-06).
+  stockArrivedAt?: string | null;
+  // Who has the order open for review, until when (C-08).
+  claim?: { by: string; byId: string; until: string } | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;

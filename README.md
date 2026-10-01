@@ -210,6 +210,23 @@ preferred vendor's name. The stage between release and shipment reads as
 Released on screen (its stored status name is unchanged); a new order line
 scrolls into view; the Release Orders tile shows "to release · to print".
 
+## A human at every step
+
+An order is never checked or allocated by the system. The person who
+entered an order cannot be the one who checks it (Admin excepted); the
+Validation queue marks those "yours" and Review Queue steps past them.
+Opening an order on a decision page claims it for ten minutes
+(`POST /api/sales-orders/:soNumber/claim`): the queues show who has it and
+step past it, the decision or leaving the page ends the claim, and an old
+claim runs out on its own.
+
+When a PO receipt lands stock that a back order waits on, the order is
+flagged (`stockArrivedAt`) and nothing is allocated. The Back Order Queue
+(`GET /api/sales-orders/back-orders`) groups orders as stock arrived (to
+review, with what is free per line), covered by an open PO (with the
+projected arrival), or not covered; the Dashboard counts the first group.
+The next allocation decision, allocate or hold again, clears the flag.
+
 ## Development
 
 ```bash

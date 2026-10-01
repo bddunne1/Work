@@ -13,7 +13,7 @@ export interface QueueSummary {
 
 export interface DashboardSummary {
   today: string;
-  queues: Record<"validate" | "allocate" | "backorder" | "release" | "print" | "ship" | "pull", QueueSummary>;
+  queues: Record<"validate" | "allocate" | "backorder" | "arrived" | "release" | "print" | "ship" | "pull", QueueSummary>;
   todayStats: {
     due: number;
     late: number;

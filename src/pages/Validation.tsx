@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
+import { useAuth } from "../lib/authContext";
 import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
@@ -11,9 +12,15 @@ import { matchesOrderQuery, orderTotalLabel } from "../types";
 // decision page) stay out of the list for this session.
 export default function Validation() {
   const navigate = useNavigate();
+  const { account } = useAuth();
   const [query, setQuery] = useState("");
   const [allOrders, setAllOrders] = useState<PurchaseOrder[]>([]);
   const [showSkipped, setShowSkipped] = useState(false);
+  // The person who entered an order cannot check it (G-10), and an order
+  // someone else has open is theirs for now (C-08): both stay listed, but
+  // Review Queue steps past them.
+  const isMine = (o: PurchaseOrder) => Boolean(account && account.role !== "admin" && o.writtenById === account.id);
+  const takenBy = (o: PurchaseOrder) => (o.claim && account && o.claim.byId !== account.id ? o.claim.by : null);
 
   const [loadFailed, setLoadFailed] = useState(false);
   const load = () => listOpenOrders().then(setAllOrders).catch(() => setLoadFailed(true));
@@ -33,8 +40,9 @@ export default function Validation() {
   const filtered = useMemo(() => pending.filter((o) => matchesOrderQuery(o, query)), [pending, query]);
 
   function startQueue() {
-    if (pending.length === 0) return;
-    const queue = pending.map((o) => o.soNumber);
+    const workable = pending.filter((o) => !isMine(o) && !takenBy(o));
+    if (workable.length === 0) return;
+    const queue = workable.map((o) => o.soNumber);
     navigate(`/validation/${queue[0]}`, { state: { queue, pos: 0 } });
   }
 
@@ -97,6 +105,8 @@ export default function Validation() {
                     {o.soNumber}
                   </Link>
                   {skipped.has(o.soNumber) && <span className="muted"> (skipped)</span>}
+                  {isMine(o) && <span className="muted" title="You entered this order; another person has to check it"> (yours)</span>}
+                  {takenBy(o) && <span className="queue-claim"> {takenBy(o)} has it</span>}
                 </td>
                 <td>{o.poNumber}</td>
                 <td>{o.billTo.name}</td>

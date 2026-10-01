@@ -144,6 +144,7 @@ const QUEUES: QueueDef[] = [
   { key: "validate", label: "To validate", to: "/validation", tile: "/validation", workPath: "/validation", viewPath: "/validation", color: "#12b886", lateLabel: "past ship date" },
   { key: "allocate", label: "To allocate", to: "/allocation", tile: "/allocation", workPath: "/allocation", viewPath: "/allocation", color: "#12b886", lateLabel: "past ship date" },
   { key: "backorder", label: "Back ordered", to: "/back-orders", tile: "/back-orders", workPath: "/back-orders", viewPath: "/back-orders", color: "#12b886", lateLabel: "past ship date", note: "waiting on stock" },
+  { key: "arrived", label: "Stock arrived, to review", to: "/back-orders", tile: "/back-orders", workPath: "/back-orders", viewPath: "/back-orders", color: "#12b886", lateLabel: "past ship date" },
   { key: "release", label: "To release", to: "/pick-pack?tab=ready", tile: "/pick-pack", workPath: "/pick-pack/review", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "print", label: "To print", to: "/pick-pack?tab=print", tile: "/pick-pack", workPath: "/pick-pack", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "ship", label: "To confirm shipped", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
@@ -153,7 +154,7 @@ const QUEUES: QueueDef[] = [
 ];
 
 // The queues an order passes through (the rest are stock coming in).
-const ORDER_QUEUE_KEYS = ["validate", "allocate", "backorder", "release", "print", "ship"];
+const ORDER_QUEUE_KEYS = ["validate", "allocate", "backorder", "arrived", "release", "print", "ship"];
 
 function isoDay(d: Date): string {
   return d.toLocaleDateString("en-CA");

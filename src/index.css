@@ -3887,3 +3887,14 @@ a.dash-lookup-row:focus-visible {
   .scroll-window { max-width: calc(100vw - 24px); }
   .toolbar { flex-wrap: wrap; }
 }
+
+/* Review queues: who has an order open (C-08). */
+.queue-claim { font-size: 12px; color: var(--danger); margin-left: 6px; white-space: nowrap; }
+/* Back Order Queue groups (G-06). */
+.backorder-group { margin-top: 20px; }
+.backorder-group-title { margin: 0 0 4px; font-size: 1.05rem; }
+.backorder-group-arrived .backorder-group-title { color: #12b886; }
+.backorder-lines { margin: 0; padding-left: 1em; font-size: 13px; }
+.backorder-lines .coverage-full { color: #12b886; }
+.backorder-lines .coverage-none { color: var(--danger); }
+.backorder-fillable { color: #12b886; font-weight: 600; }

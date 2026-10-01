@@ -328,6 +328,15 @@ model SalesOrder {
   // The most recent shipment, kept here by the ship and undo commands so
   // Shipment History sorts and filters without joining every record (D-08).
   lastShippedAt      DateTime?
+  // Who has this order open for review, until when (ten minutes): the
+  // validation and allocation queues skip it for everyone else (C-08).
+  claimedById        String?
+  claimedBy          String?
+  claimedUntil       DateTime?
+  // Set when a PO receipt lands stock for a back-ordered line, cleared by
+  // the next allocation decision: the order is flagged for an analyst, never
+  // filled by the system (decided 1 Oct, G-06).
+  stockArrivedAt     DateTime?
 
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]

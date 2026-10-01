@@ -44,7 +44,7 @@ router.get("/summary", async (req: AuthedRequest, res) => {
       where: { status: { in: [...OPEN] } },
       select: {
         soNumber: true, status: true, dueDate: true, estimatedShipDate: true, createdAt: true, checkedAt: true,
-        allocation: true, pickedAt: true, pendingShipment: true, pickListPrintedAt: true, packingSlipPrintedAt: true,
+        allocation: true, pickedAt: true, pendingShipment: true, pickListPrintedAt: true, packingSlipPrintedAt: true, stockArrivedAt: true,
         lineItems: lineSelect,
       },
     }),
@@ -70,7 +70,9 @@ router.get("/summary", async (req: AuthedRequest, res) => {
   const queues = {
     validate: summarize(open.filter((o) => o.status === "ENTERED").map((o) => entry(o, o.createdAt))),
     allocate: summarize(open.filter((o) => o.status === "CHECKED").map((o) => entry(o, o.checkedAt ?? o.createdAt))),
-    backorder: summarize(open.filter((o) => o.status === "BACKORDERED").map((o) => entry(o, null))),
+    backorder: summarize(open.filter((o) => o.status === "BACKORDERED" && !o.stockArrivedAt).map((o) => entry(o, null))),
+    // Back orders whose stock arrived on a PO, waiting for an analyst (G-06).
+    arrived: summarize(open.filter((o) => o.status === "BACKORDERED" && o.stockArrivedAt).map((o) => entry(o, o.stockArrivedAt))),
     release: summarize(open.filter((o) => o.status === "ALLOCATED" && allocated(o)).map((o) => entry(o, (o.allocation as { decidedAt?: string } | null)?.decidedAt))),
     print: summarize(open.filter((o) => isStaged(o) && !printed(o)).map((o) => entry(o, o.pickedAt))),
     ship: summarize(open.filter((o) => isStaged(o) && printed(o)).map((o) => entry(o, [o.pickListPrintedAt, o.packingSlipPrintedAt].filter((d): d is Date => Boolean(d)).sort((a, b) => b.getTime() - a.getTime())[0]))),

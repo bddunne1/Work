@@ -308,9 +308,19 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       data: { status: derivedStatus(poLines), version: { increment: 1 } },
     });
     await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemId));
+    // Back orders waiting on what just arrived are flagged for an analyst,
+    // never filled by the system (decided 1 Oct, G-06).
+    const arrivedItems = [...new Set(received.map((r) => byId.get(r.lineId)?.itemId).filter((id): id is string => Boolean(id)))];
+    const flagged = arrivedItems.length
+      ? await tx.salesOrder.updateMany({
+          where: { status: "BACKORDERED", lineItems: { some: { itemId: { in: arrivedItems } } } },
+          data: { stockArrivedAt: new Date() },
+        })
+      : { count: 0 };
     await auditIn(tx, req.account!, "VENDOR_PO_RECEIVED", "vendor-po", poNumber, poNumber, {
       units: received.reduce((sum, l) => sum + l.qty, 0),
       lines: received.length,
+      backOrdersFlagged: flagged.count,
     });
   });
   const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });
