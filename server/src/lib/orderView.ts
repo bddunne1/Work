@@ -22,6 +22,19 @@ export function canSeePrices(account: AuthedAccount): boolean {
   return account.role === "ADMIN" || PRICE_VIEW_PAGES.some((key) => hasPermission(account, key, "view"));
 }
 
+// Who sees what things cost us (E-05, decided 1 Oct): Purchasing (the PO
+// and receiving pages), whoever edits the catalog, the Sales Manager (edit
+// on Analytics) and above. A dock or order-entry login never does.
+export function canSeeCost(account: AuthedAccount): boolean {
+  return (
+    account.role === "ADMIN" ||
+    hasPermission(account, "purchase-orders", "view") ||
+    hasPermission(account, "receiving", "view") ||
+    hasPermission(account, "catalog", "edit") ||
+    hasPermission(account, "analytics", "edit")
+  );
+}
+
 export function requireOrderRead(account: AuthedAccount): void {
   if (account.role === "ADMIN" || ORDER_READ_PAGES.some((key) => hasPermission(account, key, "view"))) return;
   throw new HttpError(403, "Viewing orders needs access to one of the order pages.");

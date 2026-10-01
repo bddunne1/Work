@@ -265,6 +265,24 @@ carrier comes from an earlier BOL or shipment, else the customer's routing
 guide, else the order's Ship Via. The shipping label fills itself the same
 way when an S.O. # is typed.
 
+### Receiving, cost and margin
+
+On a purchase order, "Receive all outstanding" fills every line with what
+is still owed so only the exceptions need typing before Receive. Each
+receipt sets the item's last purchase cost (`Item.cost`), which the
+catalog editor can also set by hand; a new PO line starts from it.
+
+Cost is shown only to accounts that may see it: Purchasing (view on
+Purchase Orders or Receiving), catalog editors, the Sales Manager (edit on
+Analytics), Director and Admin. The server leaves `cost` off the item for
+everyone else, and the pages follow. Where cost is visible: the Item
+Profile shows cost and margin per unit, the Item Quick Report adds cost,
+on-hand value at cost and margin per line, the Sales Order Lines and
+Inventory reports gain cost and margin columns, and Analytics shows
+on-hand value at cost and the gross margin on issued invoices (lines
+whose item has no cost yet are counted in revenue and reported as
+uncosted).
+
 ## Development
 
 ```bash

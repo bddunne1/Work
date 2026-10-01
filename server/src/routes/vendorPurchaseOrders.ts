@@ -295,6 +295,8 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       }
       await tx.vendorPoLine.update({ where: { id: line.id }, data: { receivedQty: { increment: r.qty } } });
       line.receivedQty += r.qty;
+      // The receipt sets the item's last purchase cost (E-05).
+      if (line.itemId) await tx.item.update({ where: { id: line.itemId }, data: { cost: line.cost } });
       await adjustOnHand(tx, { itemId: line.itemId, itemNumber: line.itemNumber }, r.qty, {
         reason: "RECEIVE_PO",
         refType: "vendor-po",

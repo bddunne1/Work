@@ -1,6 +1,6 @@
 # Browser smoke tests
 
-Six Playwright specs walk the core flows against the dev servers on their
+Seven Playwright specs walk the core flows against the dev servers on their
 own ports (API 4100, client 5174) and a seeded database:
 
 1. sign in and the forced password change
@@ -9,6 +9,7 @@ own ports (API 4100, client 5174) and a seeded database:
 4. pack check, ship it and issue the invoice
 5. issue and receive a return, then issue the credit memo
 6. the dock's pack check with a short and initials, then ship what was packed
+7. receive all outstanding on a purchase order, with one exception
 
 ```bash
 # once: a database with the migrations and an admin account

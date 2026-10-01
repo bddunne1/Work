@@ -278,6 +278,9 @@ export interface Item {
   // shipped), maintained by the server in the same transaction as every
   // order step. Available = qtyOnHand - qtyReserved.
   qtyReserved: number;
+  // Last purchase cost (E-05). Undefined when this login may not see cost
+  // (the server leaves it out); null when no cost is known yet.
+  cost?: number | null;
   preferredVendorId?: string;
   // Read-only, from the server: the preferred vendor's name (C-16).
   preferredVendor?: { name: string } | null;

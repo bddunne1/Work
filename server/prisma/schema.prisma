@@ -218,6 +218,10 @@ model Item {
   description        String
   um                 String   @default("EA")
   rate               Decimal  @default(0) @db.Decimal(12, 4)
+  // Last purchase cost (E-05): editable on the catalog, set from the PO
+  // line by every receipt. Null until known. Shown only to accounts that
+  // may see cost (lib/orderView.ts canSeeCost).
+  cost               Decimal? @db.Decimal(12, 4)
   qtyOnHand          Int      @default(0)
   qtyOnPurchaseOrder Int      @default(0)
   // Units held by open orders (allocated or staged, not yet shipped): the

@@ -252,3 +252,61 @@ describe("carrier details on the order (G-07, decided 1 Oct)", () => {
     expect(all.bol_defaults).toEqual(good);
   });
 });
+
+describe("item cost and margin (E-05, E-02)", () => {
+  it("keeps the last purchase cost on the item, updates it on receipt, and shows it only to those who may see cost", async () => {
+    const root = await admin();
+    const item = ok(await root.post("/api/items", { itemNumber: "CO-1001", description: "Costed rope", um: "EA", rate: 10, cost: 4.25, qtyOnHand: 20, weight: 1 }), 201);
+    expect(Number(item.cost)).toBe(4.25);
+    // A receipt overwrites it with the PO line's cost.
+    const vendor = await makeVendor(root);
+    const po = await makePo(root, vendor, [{ itemNumber: "CO-1001", orderedQty: 50, cost: 4.6 }]);
+    await receive(root, po, [50]);
+    expect(Number((await itemByNumber("CO-1001"))!.cost)).toBe(4.6);
+    // Purchasing and the catalog editor see it; a dock login and an order-entry login do not.
+    const buyer = await as("buyer", { permissions: { "purchase-orders": "edit", receiving: "edit" } });
+    const dock = await as("dock", { permissions: { dock: "edit" } });
+    const clerk = await as("clerk", { permissions: { "order-entry": "edit", catalog: "view" } });
+    expect(Number(ok(await buyer.get(`/api/items/${item.id}`)).cost)).toBe(4.6);
+    expect(ok(await dock.get(`/api/items/${item.id}`))).not.toHaveProperty("cost");
+    const listed = ok(await clerk.get("/api/items")).find((i: any) => i.itemNumber === "CO-1001");
+    expect(listed).toBeDefined();
+    expect(listed).not.toHaveProperty("cost");
+    // The audit names the field when the catalog editor changes it.
+    const edited = ok(await root.put(`/api/items/${item.id}`, { ...ok(await root.get(`/api/items/${item.id}`)), cost: 5, rate: 10, weight: 1 }));
+    expect(Number(edited.cost)).toBe(5);
+    const audit = await prisma.auditLog.findFirst({ where: { action: "ITEM_UPDATED", targetId: item.id }, orderBy: { createdAt: "desc" } });
+    expect(audit!.detail).toHaveProperty("cost");
+  });
+
+  it("puts margin on the quick report and analytics for those who may see cost, and leaves cost out for the rest", async () => {
+    const root = await admin();
+    const item = ok(await root.post("/api/items", { itemNumber: "CO-2002", description: "Costed twine", um: "EA", rate: 8, cost: 6, qtyOnHand: 100, weight: 1 }), 201);
+    const o = await walkToReady(root, await makeOrder(root, [{ item: "CO-2002", ordered: 10, rate: 8 }]));
+    const shipped = ok(await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment }));
+    const draft = ok(await root.get(`/api/invoices?soNumber=${shipped.soNumber}&status=DRAFT`)).rows[0];
+    ok(await root.post(`/api/invoices/${draft.id}/issue`, { version: draft.version }));
+
+    const report = ok(await root.get(`/api/items/${item.id}/quick-report`));
+    expect(report.costHidden).toBe(false);
+    expect(report.summary).toMatchObject({ cost: 6, valueAtCost: 540, margin: 2 });
+    expect(report.soLines[0]).toMatchObject({ rate: 8, margin: 2, lineMargin: 20 });
+
+    const month = new Date().toISOString().slice(0, 7);
+    const summary = ok(await root.get(`/api/analytics/summary?thisMonth=${month}`));
+    expect(summary.margin).toMatchObject({ gross: 20, pct: 25, grossThisMonth: 20, uncosted: 0 });
+    expect(summary.inventory.totalCost).toBe(540);
+
+    // Customer service sees prices but not cost: no margin, no cost anywhere.
+    const cs = await as("cs", { permissions: { "order-entry": "edit", "order-detail": "view", analytics: "view", catalog: "view" } });
+    const theirs = ok(await cs.get(`/api/items/${item.id}/quick-report`));
+    expect(theirs.costHidden).toBe(true);
+    expect(theirs.summary).not.toHaveProperty("cost");
+    expect(theirs.soLines[0]).toHaveProperty("rate");
+    expect(theirs.soLines[0]).not.toHaveProperty("margin");
+    expect(theirs.poLines.every((l: any) => !("cost" in l))).toBe(true);
+    const theirSummary = ok(await cs.get(`/api/analytics/summary?thisMonth=${month}`));
+    expect(theirSummary.margin).toBeUndefined();
+    expect(theirSummary.inventory.totalCost).toBeUndefined();
+  });
+});

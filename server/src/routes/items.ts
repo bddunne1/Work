@@ -1,10 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
-import { requireAnyPermission, requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
+import { requireAnyPermission, requireAuth, requirePermission, type AuthedAccount, type AuthedRequest } from "../middleware/auth.js";
 import { enqueueIfSynced } from "../integrations/sync.js";
 import { auditIn, diffFields, logAudit } from "../lib/audit.js";
-import { canSeePrices } from "../lib/orderView.js";
+import { canSeeCost, canSeePrices } from "../lib/orderView.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
@@ -32,6 +32,9 @@ const itemSchema = z.object({
   description: z.string().min(1),
   um: z.string().max(20).default("EA"),
   rate: z.number().finite().nonnegative().default(0),
+  // Last purchase cost (E-05); null while unknown. Catalog edit sets it,
+  // every PO receipt overwrites it with the line's cost.
+  cost: z.number().finite().nonnegative().nullish(),
   qtyOnHand: z.number().int().default(0),
   reorderPoint: z.number().int().nonnegative().nullish(),
   countryOfOrigin: z.string().max(100).nullish(),
@@ -60,13 +63,20 @@ const adjustQtySchema = z.object({
 // The preferred vendor's name rides along so lists don't fetch every vendor to show it (C-16).
 const include = { components: true, links: true, preferredVendor: { select: { name: true } } };
 
+// Cost leaves the response only for accounts that may see it (E-05).
+function present<T extends { cost?: unknown }>(item: T, account: AuthedAccount): Omit<T, "cost"> | T {
+  if (canSeeCost(account)) return item;
+  const { cost: _cost, ...rest } = item;
+  return rest;
+}
+
 router.use(requireAuth);
 
 // Reads are open to any signed-in account: nearly every workflow page
 // (order entry, validation, allocation, pick/pack, receiving, pricing,
 // returns, labels) needs item numbers, weights and stock, and gating them
 // on the Catalog page key 403'd whole roles. Writes stay gated below.
-router.get("/", async (req, res) => {
+router.get("/", async (req: AuthedRequest, res) => {
   const q = String(req.query.q ?? "").trim();
   const items = await prisma.item.findMany({
     where: q
@@ -80,16 +90,16 @@ router.get("/", async (req, res) => {
     orderBy: { itemNumber: "asc" },
     include,
   });
-  res.json(items);
+  res.json(items.map((i) => present(i, req.account!)));
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: AuthedRequest, res) => {
   const item = await prisma.item.findUnique({ where: { id: req.params.id }, include });
   if (!item) {
     res.status(404).json({ error: "Item not found" });
     return;
   }
-  res.json(item);
+  res.json(present(item, req.account!));
 });
 
 router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest, res) => {
@@ -111,6 +121,7 @@ router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest
         description: data.description,
         um: data.um,
         rate: data.rate,
+        cost: data.cost,
         qtyOnHand: data.qtyOnHand,
         reorderPoint: data.reorderPoint,
         countryOfOrigin: data.countryOfOrigin,
@@ -146,7 +157,7 @@ router.post("/", requirePermission("catalog", "edit"), async (req: AuthedRequest
 });
 
 // The catalog fields whose changes are recorded field by field.
-const ITEM_FIELDS = ["itemNumber", "description", "um", "rate", "qtyOnHand", "reorderPoint", "countryOfOrigin", "weight", "notes", "preferredVendorId"];
+const ITEM_FIELDS = ["itemNumber", "description", "um", "rate", "cost", "qtyOnHand", "reorderPoint", "countryOfOrigin", "weight", "notes", "preferredVendorId"];
 
 router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedRequest, res) => {
   const parsed = updateSchema.safeParse(req.body);
@@ -172,6 +183,9 @@ router.put("/:id", requirePermission("catalog", "edit"), async (req: AuthedReque
           description: data.description,
           um: data.um,
           rate: data.rate,
+          // Left out of the body (an account that can't see cost saving the
+          // record back) leaves the cost alone.
+          ...(data.cost === undefined ? {} : { cost: data.cost }),
           qtyOnHand: data.qtyOnHand,
           reorderPoint: data.reorderPoint,
           countryOfOrigin: data.countryOfOrigin,
@@ -329,6 +343,8 @@ router.get("/:id/quick-report", async (req: AuthedRequest, res) => {
     return;
   }
   const showPrices = canSeePrices(req.account!);
+  const showCost = canSeeCost(req.account!);
+  const itemCost = item.cost === null ? null : Number(item.cost);
   const [lines, total, openLines, poLines] = await Promise.all([
     prisma.salesOrderLine.findMany({
       where: { itemId: item.id },
@@ -369,17 +385,22 @@ router.get("/:id/quick-report", async (req: AuthedRequest, res) => {
       remaining: Math.max(0, l.ordered - shipped),
       allocated: ["ALLOCATED", "BACKORDERED", "PICK_PACKED"].includes(o.status) ? allocated : 0,
       ...(showPrices ? { rate, amount: Math.round(l.ordered * rate * 100) / 100 } : {}),
+      // Margin against today's cost (E-02): the rate less what the item
+      // costs us, per unit and on the line.
+      ...(showPrices && showCost && itemCost !== null ? { margin: Math.round((rate - itemCost) * 10000) / 10000, lineMargin: Math.round(l.ordered * (rate - itemCost) * 100) / 100 } : {}),
     };
   });
   const onSalesOrder = openLines.reduce((sum, l) => sum + Math.max(0, l.ordered - shippedOn(l.salesOrder.shipmentHistory, l.id)), 0);
   res.json({
-    item,
+    item: present(item, req.account!),
     summary: {
       onHand: item.qtyOnHand,
       onSalesOrder,
       allocated: item.qtyReserved,
       onPurchaseOrder: item.qtyOnPurchaseOrder,
       available: item.qtyOnHand - item.qtyReserved,
+      ...(showCost ? { cost: itemCost, valueAtCost: itemCost === null ? null : Math.round(item.qtyOnHand * itemCost * 100) / 100 } : {}),
+      ...(showCost && showPrices && itemCost !== null ? { margin: Math.round((Number(item.rate) - itemCost) * 10000) / 10000 } : {}),
     },
     soLines,
     poLines: poLines.map((l) => ({
@@ -390,10 +411,11 @@ router.get("/:id/quick-report", async (req: AuthedRequest, res) => {
       orderedQty: l.orderedQty,
       receivedQty: l.receivedQty,
       outstanding: Math.max(0, l.orderedQty - l.receivedQty),
-      ...(showPrices ? { cost: Number(l.cost) } : {}),
+      ...(showCost ? { cost: Number(l.cost) } : {}),
     })),
     notice: total > lines.length ? `Showing the most recent ${lines.length} of ${total} order lines.` : undefined,
     pricesHidden: !showPrices,
+    costHidden: !showCost,
   });
 });
 
