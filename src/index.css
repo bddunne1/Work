@@ -3933,24 +3933,50 @@ a.dash-lookup-row:focus-visible {
   width: 100%;
 }
 
-/* Order Entry: the form beside its side panel (G-11). */
+/* Order Entry: the side panel is a row of cards above the form, and a
+   sticky column beside it only on a wide screen, so the grid keeps its
+   width (G-11). */
 .order-entry-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 16px;
   align-items: start;
 }
-@media (max-width: 1100px) {
+.order-side-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+@media (min-width: 1600px) {
   .order-entry-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 20px;
+  }
+  .order-side-panel {
+    order: 2;
     grid-template-columns: 1fr;
+    position: sticky;
+    top: 16px;
   }
 }
-.order-side-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 16px;
+.order-line-grid .line-item-table {
+  min-width: 880px;
+}
+.order-line-grid .col-item {
+  width: 150px;
+}
+.order-line-grid .col-cust-part {
+  width: 120px;
+}
+.order-line-grid .col-um {
+  width: 56px;
+}
+.order-line-grid .col-qty {
+  width: 84px;
+}
+.order-line-grid .col-rate,
+.order-line-grid .col-amount {
+  width: 92px;
 }
 .side-card {
   background: var(--panel-bg);

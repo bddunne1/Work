@@ -221,6 +221,7 @@ export default function OrderEntry() {
       </div>
 
       <div className="order-entry-layout">
+      <OrderEntrySidePanel customer={selectedCustomer} duplicates={duplicates} poNumber={order.poNumber.trim()} />
       <form className="sales-order" onSubmit={handleSubmit} onKeyDown={moveOnEnter}>
         <div className="customer-picker">
           <label htmlFor="customer-search">Customer</label>
@@ -415,7 +416,6 @@ export default function OrderEntry() {
           )}
         </div>
       </form>
-      <OrderEntrySidePanel customer={selectedCustomer} duplicates={duplicates} poNumber={order.poNumber.trim()} />
       </div>
     </div>
   );

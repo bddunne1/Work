@@ -83,6 +83,12 @@ export default function Layout() {
               Analytics
             </NavLink>
           )}
+          {canGo("/dock") && (
+            <NavLink to="/dock" className={({ isActive }) => (isActive ? "active" : "")}>
+              <InventoryIcon />
+              Dock
+            </NavLink>
+          )}
         </div>
       </nav>
       <div className="app-main">
