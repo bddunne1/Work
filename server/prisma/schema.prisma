@@ -334,6 +334,12 @@ model SalesOrder {
   // The most recent shipment, kept here by the ship and undo commands so
   // Shipment History sorts and filters without joining every record (D-08).
   lastShippedAt      DateTime?
+  // Carrier details for the shipment (G-07): from the BOL step or Mark
+  // Shipped. The latest shipment's values; each ShipmentRecord keeps its own.
+  carrier            String?
+  scac               String?
+  proNumber          String?
+  pickupDate         DateTime?       @db.Date
   // Who has this order open for review, until when (ten minutes): the
   // validation and allocation queues skip it for everyone else (C-08).
   claimedById        String?
@@ -407,6 +413,11 @@ model ShipmentRecord {
   shippedAt  DateTime   @default(now())
   // [{ lineItemId, qty }]
   lines      Json
+  // Carrier details as entered when this shipment was marked shipped (G-07).
+  carrier    String?
+  scac       String?
+  proNumber  String?
+  pickupDate DateTime?  @db.Date
   // The invoice raised for this shipment (one per shipment); voided, not
   // deleted, when the shipment is undone.
   invoice    Invoice?

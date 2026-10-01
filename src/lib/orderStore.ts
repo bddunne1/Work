@@ -1,6 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
-import type { BolDetails, PurchaseOrder, ShipmentLine } from "../types";
+import type { BolDetails, CarrierDetails, PurchaseOrder, ShipmentLine } from "../types";
 
 const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
@@ -57,6 +57,7 @@ function mapOrder(order: PurchaseOrder): PurchaseOrder {
     orderDate: order.orderDate.slice(0, 10),
     dueDate: order.dueDate.slice(0, 10),
     estimatedShipDate: order.estimatedShipDate ? order.estimatedShipDate.slice(0, 10) : undefined,
+    pickupDate: order.pickupDate ? order.pickupDate.slice(0, 10) : undefined,
     taxRate: Number(order.taxRate),
     lineItems: order.lineItems.map((li) => ({ ...li, rate: Number(li.rate), customerPartNumber: li.customerPartNumber ?? undefined })),
     checkedAt: order.checkedAt ?? undefined,
@@ -267,19 +268,20 @@ export function setEstimatedShipDate(order: PurchaseOrder, date: string | null):
   return command(order, "set-ship-date", { estimatedShipDate: date || null });
 }
 
-export function setBol(order: PurchaseOrder, bol: BolDetails): Promise<PurchaseOrder> {
-  return command(order, "set-bol", { bol });
+export function setBol(order: PurchaseOrder, bol: BolDetails, carrier?: CarrierDetails): Promise<PurchaseOrder> {
+  return command(order, "set-bol", { bol, carrier });
 }
 
 // Confirms a shipment of `lines`: the server records it, rolls the order to
 // Shipped/Backordered and takes the units out of qtyOnHand in a single
 // transaction. A stale `order.version` (someone else touched the order)
 // fails with a 409 and changes nothing - so a retry can't double-ship stock.
-export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Promise<PurchaseOrder> {
+export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[], carrier?: CarrierDetails): Promise<PurchaseOrder> {
   return mapOrder(
     await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/ship`, {
       version: order.version,
       lines: lines.filter((l) => l.qty > 0),
+      carrier,
     })
   );
 }

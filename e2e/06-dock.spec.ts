@@ -39,6 +39,8 @@ test("the dock does the pack check with a short, then ships what was packed", as
   await page.goto("/#/dock");
   await expect(page.locator(".dock-stage-ready .dock-card", { hasText: `#${order.soNumber}` })).toBeVisible();
   await page.locator(".dock-stage-ready .dock-card", { hasText: `#${order.soNumber}` }).click();
+  // The driver's PRO goes on at pickup; the carrier came from the order.
+  await page.getByLabel("PRO #").fill("PRO-E2E-4471");
   await page.getByRole("button", { name: "Mark Shipped" }).click();
   await expect(page).toHaveURL(/#\/dock$/);
   await expect(page.locator(".dock-shipped")).toContainText(`#${order.soNumber}`);
@@ -47,6 +49,8 @@ test("the dock does the pack check with a short, then ships what was packed", as
   // queue rather than Shipped.
   const shipped = await api("GET", so(order));
   expect(shipped.status).toBe("Backordered");
+  expect(shipped.proNumber).toBe("PRO-E2E-4471");
+  expect(shipped.shipmentHistory[0].proNumber).toBe("PRO-E2E-4471");
   const shippedUnits = shipped.shipmentHistory.flatMap((rec: any) => rec.lines).reduce((s: number, l: any) => s + l.qty, 0);
   expect(shippedUnits).toBe(6);
 });

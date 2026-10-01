@@ -3921,3 +3921,14 @@ a.dash-lookup-row:focus-visible {
 .dock-card-name { font-weight: 600; }
 .dock-card-sub { font-size: 13px; color: var(--text-muted, #666); }
 .dock-shipped { margin: 0; padding-left: 1.2em; }
+
+/* Carrier details at pickup on the pack check (G-07). */
+.carrier-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0;
+}
+.carrier-fields .form-field input {
+  width: 100%;
+}

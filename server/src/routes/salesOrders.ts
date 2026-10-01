@@ -156,8 +156,29 @@ const markPrintedSchema = z.object({
   lines: z.array(shipmentLineSchema).max(500).optional(),
 });
 const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: isoDate.nullable() });
-const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema });
-const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500) });
+// Carrier details saved on the order (G-07, decided 1 Oct): entered at the
+// BOL step and again, or for the first time, at Mark Shipped. Blank strings
+// clear a value; a field left out is left alone.
+const carrierSchema = z
+  .object({
+    carrier: z.string().trim().max(100).optional(),
+    scac: z.string().trim().max(10).optional(),
+    proNumber: z.string().trim().max(50).optional(),
+    pickupDate: isoDate.nullable().optional(),
+  })
+  .strict();
+type CarrierInput = z.infer<typeof carrierSchema>;
+function carrierData(c: CarrierInput | undefined) {
+  if (!c) return {};
+  const data: { carrier?: string | null; scac?: string | null; proNumber?: string | null; pickupDate?: Date | null } = {};
+  if (c.carrier !== undefined) data.carrier = c.carrier || null;
+  if (c.scac !== undefined) data.scac = c.scac.toUpperCase() || null;
+  if (c.proNumber !== undefined) data.proNumber = c.proNumber || null;
+  if (c.pickupDate !== undefined) data.pickupDate = c.pickupDate ? new Date(`${c.pickupDate}T00:00:00.000Z`) : null;
+  return data;
+}
+const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema, carrier: carrierSchema.optional() });
+const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500), carrier: carrierSchema.optional() });
 const readySchema = z.object({
   version: z.number().int(),
   // Packed quantities per line: at most what was staged, never more.
@@ -851,9 +872,14 @@ router.post("/:soNumber/set-bol", requirePermission("bol", "edit"), async (req: 
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, parsed.data.version);
     if (order.status === "CANCELLED") throw new HttpError(409, `S.O. #${soNumber} was cancelled.`, { conflict: true });
-    await tx.salesOrder.update({ where: { soNumber }, data: { bol: parsed.data.bol, version: { increment: 1 } } });
+    await tx.salesOrder.update({ where: { soNumber }, data: { bol: parsed.data.bol, ...carrierData(parsed.data.carrier), version: { increment: 1 } } });
   });
-  logAudit(req.account!, "ORDER_BOL_GENERATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, { weight: parsed.data.bol.weight, packages: parsed.data.bol.packageCount });
+  logAudit(req.account!, "ORDER_BOL_GENERATED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
+    weight: parsed.data.bol.weight,
+    packages: parsed.data.bol.packageCount,
+    carrier: parsed.data.carrier?.carrier,
+    proNumber: parsed.data.carrier?.proNumber,
+  });
   res.json(await reload(soNumber, req.account!));
 });
 
@@ -868,11 +894,21 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { version, lines } = parsed.data;
+  const { version, lines, carrier } = parsed.data;
   const account = req.account!;
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, version);
     assertStatus(order, ["PICK_PACKED"], "shipped");
+    // Carrier details for this shipment: what was just entered over what the
+    // BOL step saved; the pickup date defaults to today.
+    const shippedAt = new Date();
+    const carrierNow = {
+      carrier: order.carrier,
+      scac: order.scac,
+      proNumber: order.proNumber,
+      pickupDate: order.pickupDate ?? new Date(`${shippedAt.toISOString().slice(0, 10)}T00:00:00.000Z`),
+      ...carrierData(carrier),
+    };
     // The pack check comes first (decided 1 Oct): what ships is exactly what
     // was packed and printed on the packing slip. A short found at pickup
     // means un-ready the order and redo the pack check.
@@ -915,7 +951,7 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
         );
       }
     }
-    const record = await tx.shipmentRecord.create({ data: { soNumber, shippedAt: new Date(), lines: shipped } });
+    const record = await tx.shipmentRecord.create({ data: { soNumber, shippedAt, lines: shipped, ...carrierNow } });
     // The invoice for this shipment, from the order's prices as they stand,
     // queued for the accounting bridge in this same transaction.
     const invoice = await createInvoiceForShipment(tx, order, { id: record.id, shippedAt: record.shippedAt, lines: shipped }, account);
@@ -929,8 +965,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     await tx.salesOrder.update({
       where: { soNumber },
       data: fullyShipped
-        ? { status: "SHIPPED", pendingShipment: [], lastShippedAt: record.shippedAt, ...CLEAR_READY, version: { increment: 1 } }
-        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, lastShippedAt: record.shippedAt, ...CLEAR_READY, version: { increment: 1 } },
+        ? { status: "SHIPPED", pendingShipment: [], lastShippedAt: record.shippedAt, ...carrierNow, ...CLEAR_READY, version: { increment: 1 } }
+        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, lastShippedAt: record.shippedAt, ...carrierNow, ...CLEAR_READY, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
     await auditIn(tx, account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
@@ -938,6 +974,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
       result: fullyShipped ? "Shipped" : "Backordered",
       invoice: invoice.invoiceNumber,
       invoiceTotal: invoice.total.toString(),
+      carrier: carrierNow.carrier ?? undefined,
+      proNumber: carrierNow.proNumber ?? undefined,
     });
   });
   res.json(await reload(soNumber, req.account!));

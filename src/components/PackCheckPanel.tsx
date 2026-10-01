@@ -1,9 +1,10 @@
 import { useState } from "react";
 import BatchPrintDocs from "./BatchPrintDocs";
 import { isConflictError } from "../lib/apiClient";
+import { localIsoDate } from "../lib/dateUtils";
 import { getOrder, readyOrder, shipOrder, unreadyOrder } from "../lib/orderStore";
 import { showToast } from "../lib/toast";
-import type { PurchaseOrder } from "../types";
+import type { CarrierDetails, PurchaseOrder } from "../types";
 
 // The floor's two steps on a printed pick (decided 1 Oct): the pack check,
 // which records the packed quantities (shorts included), marks the order
@@ -26,6 +27,15 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
   const [busy, setBusy] = useState(false);
   const [printing, setPrinting] = useState<PurchaseOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Carrier details at pickup (G-07): what the BOL step saved, else the
+  // order's Ship Via; the PRO is usually typed here when the driver hands
+  // it over. Saved on the order and the shipment by Mark Shipped.
+  const [carrier, setCarrier] = useState<Required<Omit<CarrierDetails, "pickupDate">> & { pickupDate: string }>(() => ({
+    carrier: order.carrier ?? order.shipVia ?? "",
+    scac: order.scac ?? "",
+    proNumber: order.proNumber ?? "",
+    pickupDate: order.pickupDate ?? localIsoDate(),
+  }));
 
   const lineFor = (id: string) => order.lineItems.find((li) => li.id === id);
   const ready = Boolean(order.readyAt);
@@ -87,7 +97,12 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
     if (busy) return;
     setBusy(true);
     try {
-      const shipped = await shipOrder(order, pending);
+      const shipped = await shipOrder(order, pending, {
+        carrier: carrier.carrier.trim(),
+        scac: carrier.scac.trim(),
+        proNumber: carrier.proNumber.trim(),
+        pickupDate: carrier.pickupDate || null,
+      });
       onChange(shipped);
       onShipped?.(shipped);
     } catch (err) {
@@ -212,9 +227,27 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
               </tbody>
             </table>
           </div>
+          <div className="carrier-fields">
+            <label className="form-field">
+              Carrier
+              <input value={carrier.carrier} maxLength={100} onChange={(e) => setCarrier((c) => ({ ...c, carrier: e.target.value }))} placeholder="e.g. Central Transport" />
+            </label>
+            <label className="form-field">
+              SCAC
+              <input value={carrier.scac} maxLength={10} onChange={(e) => setCarrier((c) => ({ ...c, scac: e.target.value.toUpperCase() }))} />
+            </label>
+            <label className="form-field">
+              PRO #
+              <input value={carrier.proNumber} maxLength={50} onChange={(e) => setCarrier((c) => ({ ...c, proNumber: e.target.value }))} />
+            </label>
+            <label className="form-field">
+              Pickup date
+              <input type="date" value={carrier.pickupDate} onChange={(e) => setCarrier((c) => ({ ...c, pickupDate: e.target.value }))} />
+            </label>
+          </div>
           <div className="decision-outcome outcome-success">
             <div className="decision-outcome-label">Mark shipped at pickup</div>
-            <div className="decision-outcome-detail">Ships exactly what was packed. If something changed, send it back to the floor and redo the pack check.</div>
+            <div className="decision-outcome-detail">Ships exactly what was packed and saves the carrier details above. If something changed, send it back to the floor and redo the pack check.</div>
             <div className="button-row">
               <button type="button" className="primary-btn" disabled={busy} onClick={markShipped}>
                 {busy ? "Saving…" : "Mark Shipped"}

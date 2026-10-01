@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/prisma.js";
 import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
-import { admin, allocate, as, check, getOrder, itemByNumber, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, ready, receive, release, resetDb, so, undoShipment, unready, walkToPrinted } from "./helpers.js";
+import { admin, allocate, as, check, getOrder, itemByNumber, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, ready, receive, release, resetDb, so, undoShipment, unready, walkToPrinted, walkToReady } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -184,5 +184,71 @@ describe("ready to ship (decided 1 Oct) and release-and-print (G-05)", () => {
     // A pick list reprint from Open Picks is still allowed.
     expect((await markPrinted(root, o)).status).toBe(200);
     void release;
+  });
+});
+
+describe("carrier details on the order (G-07, decided 1 Oct)", () => {
+  const bol = {
+    weight: "40",
+    packageCount: "2",
+    palletSlip: "Y" as const,
+    handlingUnitQty: "1",
+    handlingUnitType: "Pallet",
+    packageQty: "2",
+    packageType: "Cartons",
+    hazmat: false,
+    commodityDescription: "Rope",
+    nmfcNumber: "",
+    freightClass: "",
+    additionalInfo: "",
+    generatedAt: new Date().toISOString(),
+  };
+
+  it("saves carrier, SCAC, PRO and pickup date at the BOL step and at Mark Shipped, on the order and the shipment", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    let o = await walkToPrinted(root, await makeOrder(root, [{ item: "BR-1001", ordered: 4 }]));
+    // The BOL step saves the carrier it was written for.
+    o = ok(await root.post(`${so(o)}/set-bol`, { version: o.version, bol, carrier: { carrier: "Central Transport", scac: "ctii", pickupDate: "2026-10-02" } }));
+    expect(o).toMatchObject({ carrier: "Central Transport", scac: "CTII", proNumber: null });
+    expect(o.pickupDate).toMatch(/^2026-10-02/);
+    // A bad SCAC or a half-typed date is refused.
+    expect((await root.post(`${so(o)}/set-bol`, { version: o.version, bol, carrier: { scac: "TOO-LONG-FOR-A-SCAC" } })).status).toBe(400);
+    expect((await root.post(`${so(o)}/set-bol`, { version: o.version, bol, carrier: { pickupDate: "2026-1" } })).status).toBe(400);
+    // Mark Shipped adds the PRO the driver hands over; the rest carries.
+    o = ok(await ready(root, o));
+    const shipped = ok(await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment, carrier: { proNumber: "PRO-778899" } }));
+    expect(shipped).toMatchObject({ status: "Shipped", carrier: "Central Transport", scac: "CTII", proNumber: "PRO-778899" });
+    expect(shipped.pickupDate).toMatch(/^2026-10-02/);
+    expect(shipped.shipmentHistory[0]).toMatchObject({ carrier: "Central Transport", scac: "CTII", proNumber: "PRO-778899" });
+    const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_SHIPPED", targetId: String(o.soNumber) } });
+    expect(audit!.detail).toMatchObject({ proNumber: "PRO-778899" });
+    // The PRO finds the order and its shipment.
+    const search = ok(await root.get("/api/sales-orders/search?q=778899"));
+    expect(search.rows.map((r: any) => r.soNumber)).toEqual([shipped.soNumber]);
+    const ships = ok(await root.get("/api/shipments?q=PRO-7788&from=2000-01-01&to=2100-01-01"));
+    expect(ships.rows).toHaveLength(1);
+    expect(ships.rows[0]).toMatchObject({ soNumber: Number(o.soNumber), carrier: "Central Transport", proNumber: "PRO-778899", pickupDate: "2026-10-02" });
+  });
+
+  it("defaults the pickup date to the ship date when none was given, and the dock may enter the PRO", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const dock = await as("dock", { permissions: { dock: "edit" } });
+    const o = await walkToReady(root, await makeOrder(root, [{ item: "BR-1001", ordered: 2 }]));
+    const shipped = ok(await dock.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment, carrier: { carrier: "UPS Freight", proNumber: "1Z999" } }));
+    expect(shipped.pickupDate).toMatch(new RegExp(`^${new Date().toISOString().slice(0, 10)}`));
+    expect(shipped.shipmentHistory[0]).toMatchObject({ carrier: "UPS Freight", proNumber: "1Z999" });
+    expect(shipped.carrier).toBe("UPS Freight");
+  });
+
+  it("keeps the BOL defaults as a setting and refuses a malformed one", async () => {
+    const root = await admin();
+    const good = { unitsPerPackage: 12, packagesPerHandlingUnit: 40, handlingUnitType: "Pallet", packageType: "Cartons", freightClass: "70", nmfcNumber: "50040" };
+    expect((await root.put("/api/settings/bol_defaults", { value: good })).status).toBe(204);
+    expect((await root.put("/api/settings/bol_defaults", { value: { ...good, unitsPerPackage: 0 } })).status).toBe(400);
+    expect((await root.put("/api/settings/bol_defaults", { value: { ...good, extra: 1 } })).status).toBe(400);
+    const all = ok(await root.get("/api/settings"));
+    expect(all.bol_defaults).toEqual(good);
   });
 });

@@ -67,6 +67,20 @@ export interface ShipmentRecord {
   id: string;
   shippedAt: string;
   lines: ShipmentLine[];
+  // Carrier details as entered when this shipment was marked shipped (G-07).
+  carrier?: string | null;
+  scac?: string | null;
+  proNumber?: string | null;
+  pickupDate?: string | null;
+}
+
+// Carrier details saved on the order at the BOL step or at Mark Shipped
+// (G-07, decided 1 Oct). Blank clears a value; undefined leaves it alone.
+export interface CarrierDetails {
+  carrier?: string;
+  scac?: string;
+  proNumber?: string;
+  pickupDate?: string | null;
 }
 
 export interface BolDetails {
@@ -144,6 +158,11 @@ export interface PurchaseOrder {
   pullAcknowledgedAt?: string | null;
   // Stock for a short line arrived on a PO; an analyst has to look (G-06).
   stockArrivedAt?: string | null;
+  // Carrier, SCAC, PRO and pickup date of the latest shipment (G-07).
+  carrier?: string | null;
+  scac?: string | null;
+  proNumber?: string | null;
+  pickupDate?: string | null;
   // Who has the order open for review, until when (C-08).
   claim?: { by: string; byId: string; until: string } | null;
   createdAt: string;

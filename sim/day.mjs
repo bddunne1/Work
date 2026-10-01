@@ -454,7 +454,9 @@ async function logistics(user) {
         const lines = o.pendingShipment.map((l) => ({ lineItemId: l.lineItemId, qty: rng.chance(0.05) ? Math.floor(l.qty * 0.9) : l.qty }));
         const packed = o.readyAt ? o : await post(user, `/api/sales-orders/${o.soNumber}/ready`, { version: o.version, lines, packedBy: "floor" });
         if (!o.readyAt) event(user, "pack-check", { so: o.soNumber, at: simNow() });
-        await post(user, `/api/sales-orders/${o.soNumber}/ship`, { version: packed.version, lines: packed.pendingShipment });
+        // Carrier details at pickup (G-07): the PRO the driver hands over.
+        const carrier = { carrier: packed.carrier || packed.shipVia || "Common Carrier", proNumber: `PRO${String(o.soNumber).padStart(6, "0")}${100 + Math.floor(rng.next() * 900)}` };
+        await post(user, `/api/sales-orders/${o.soNumber}/ship`, { version: packed.version, lines: packed.pendingShipment, carrier });
         event(user, "order-shipped", { so: o.soNumber, units: packed.pendingShipment.reduce((s, l) => s + l.qty, 0), at: simNow() });
       });
     }

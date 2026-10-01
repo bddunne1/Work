@@ -247,6 +247,24 @@ Picks under its own name. The Dashboard splits the floor into "to pack"
 and "on the dock", and the Ready to ship pill marks orders waiting for the
 carrier.
 
+### Carrier details and the BOL
+
+Carrier, SCAC, PRO number and pickup date live on the order and on each
+shipment record. Generate BOL saves them with the BOL (`set-bol` takes a
+`carrier` object) and Mark Shipped saves or corrects them at pickup
+(`ship` takes the same object; the pickup date defaults to the ship
+date). They show on the Sales Order View, in Shipment History (and its
+CSV) and on the pack check, and a PRO number is searchable from Open
+Orders and Shipment History.
+
+Generate BOL prefills each order from what it carries: the staged (or
+ordered) quantities times the item weights, turned into package and
+handling-unit counts by the BOL defaults in Settings (units per package,
+packages per handling unit, the unit names, freight class and NMFC). The
+carrier comes from an earlier BOL or shipment, else the customer's routing
+guide, else the order's Ship Via. The shipping label fills itself the same
+way when an S.O. # is typed.
+
 ## Development
 
 ```bash

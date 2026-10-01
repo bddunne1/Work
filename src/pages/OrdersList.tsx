@@ -47,7 +47,7 @@ function OrdersListInner({ closed }: Props) {
       <div className="toolbar">
         <input
           className="search-input"
-          placeholder="Search by S.O. #, P.O. #, or customer..."
+          placeholder="Search by S.O. #, P.O. #, customer, or PRO #..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

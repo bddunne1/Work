@@ -34,6 +34,18 @@ export const SETTING_SCHEMAS: Record<string, z.ZodTypeAny> = {
   capacity_lookback_days: z.number().int().min(1).max(90),
   // The name and address printed on every document.
   company_info: z.object({ name: text, street: text, city: text, state: text, zip: text, phone: text }).strict(),
+  // How the BOL and label prefill their handling units (G-07): units per
+  // package, packages per handling unit, and the names and freight codes.
+  bol_defaults: z
+    .object({
+      unitsPerPackage: z.number().int().min(1).max(100000),
+      packagesPerHandlingUnit: z.number().int().min(1).max(10000),
+      handlingUnitType: text,
+      packageType: text,
+      freightClass: text,
+      nmfcNumber: text,
+    })
+    .strict(),
 };
 
 const putSchema = z.object({ value: z.unknown() });

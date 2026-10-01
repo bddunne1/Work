@@ -4,8 +4,10 @@ import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { listCustomers } from "../lib/customerStore";
+import { listItems } from "../lib/itemStore";
+import { getOrder } from "../lib/orderStore";
 import type { Address, Customer } from "../types";
-import { emptyAddress } from "../types";
+import { emptyAddress, orderWeight, pendingShipmentWeight, weightIndex } from "../types";
 
 export default function ShippingLabelCreate() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -21,6 +23,33 @@ export default function ShippingLabelCreate() {
   const [soNumber, setSoNumber] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [shipVia, setShipVia] = useState("");
+  const [proNumber, setProNumber] = useState("");
+  const [weight, setWeight] = useState("");
+  const [orderNote, setOrderNote] = useState("");
+
+  // Typing an S.O. # fills the label from the order (G-07): ship-to, P.O.,
+  // the carrier saved at the BOL step or Mark Shipped, its PRO, and the
+  // weight of what is staged (or ordered) from the item weights.
+  async function fillFromOrder() {
+    const so = soNumber.trim();
+    if (!so) return;
+    const order = await getOrder(so).catch(() => undefined);
+    if (!order) {
+      setOrderNote(`No order #${so}.`);
+      return;
+    }
+    setOrderNote("");
+    setManual(true);
+    setCustomerId(undefined);
+    setLocationId(undefined);
+    setShipTo({ ...order.shipTo });
+    setPoNumber(order.poNumber);
+    setShipVia(order.carrier || order.shipVia || "");
+    setProNumber(order.proNumber ?? "");
+    const weights = weightIndex(await listItems().catch(() => []));
+    const lbs = (order.pendingShipment?.length ?? 0) > 0 ? pendingShipmentWeight(order, weights) : orderWeight(order, weights);
+    setWeight(lbs > 0 ? String(Math.round(lbs)) : "");
+  }
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
   const company = getCompanyInfo();
@@ -114,13 +143,15 @@ export default function ShippingLabelCreate() {
             <tr>
               <th>S.O. # (optional)</th>
               <th>P.O. # (optional)</th>
-              <th>Ship Via (optional)</th>
+              <th>Carrier / Ship Via (optional)</th>
+              <th>PRO # (optional)</th>
+              <th>Weight, lbs (optional)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>
-                <input value={soNumber} onChange={(e) => setSoNumber(e.target.value)} />
+                <input value={soNumber} onChange={(e) => setSoNumber(e.target.value)} onBlur={fillFromOrder} onKeyDown={(e) => e.key === "Enter" && fillFromOrder()} placeholder="fills the label from the order" />
               </td>
               <td>
                 <input value={poNumber} onChange={(e) => setPoNumber(e.target.value)} />
@@ -128,9 +159,16 @@ export default function ShippingLabelCreate() {
               <td>
                 <input value={shipVia} onChange={(e) => setShipVia(e.target.value)} />
               </td>
+              <td>
+                <input value={proNumber} onChange={(e) => setProNumber(e.target.value)} />
+              </td>
+              <td>
+                <input type="number" min={0} value={weight} onChange={(e) => setWeight(e.target.value)} />
+              </td>
             </tr>
           </tbody>
         </table>
+        {orderNote && <p className="muted">{orderNote}</p>}
       </div>
 
       <div className="shipping-label print-only">
@@ -162,6 +200,18 @@ export default function ShippingLabelCreate() {
             <span className="muted">Ship Via</span>
             <div className="label-meta-value">{shipVia || "—"}</div>
           </div>
+          {proNumber && (
+            <div>
+              <span className="muted">PRO #</span>
+              <div className="label-meta-value">{proNumber}</div>
+            </div>
+          )}
+          {weight && (
+            <div>
+              <span className="muted">Weight</span>
+              <div className="label-meta-value">{weight} lbs</div>
+            </div>
+          )}
         </div>
 
         {shipTo.notes && (
