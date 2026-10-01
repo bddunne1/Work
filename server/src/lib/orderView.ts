@@ -10,7 +10,7 @@ export const ORDER_READ_PAGES = [
   "order-entry", "validation", "allocation", "back-orders", "labels",
   "open-orders", "closed-orders", "order-detail", "returns",
   "pick-pack", "pick-release", "open-picks", "warehouse-capacity",
-  "schedule", "bol", "shipment-history", "inventory", "reports", "analytics", "invoices",
+  "schedule", "bol", "shipment-history", "inventory", "reports", "analytics", "invoices", "dock",
 ];
 
 // Prices are for the office: Order Entry, Sales Order View, Customer

@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/prisma.js";
 import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
-import { admin, allocate, as, check, getOrder, itemByNumber, makeItem, makeOrder, makePo, makeVendor, ok, receive, resetDb, so } from "./helpers.js";
+import { admin, allocate, as, check, getOrder, itemByNumber, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, ready, receive, release, resetDb, so, undoShipment, unready, walkToPrinted } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -114,5 +114,75 @@ describe("order claim (C-08)", () => {
     // Nobody without a review page can claim.
     const dock = await as("dock", { permissions: { "open-picks": "edit" } });
     expect((await dock.post(`${so(o)}/claim`, {})).status).toBe(403);
+  });
+});
+
+describe("ready to ship (decided 1 Oct) and release-and-print (G-05)", () => {
+  it("packs at the pack check, prints the slip from what was packed, and ships exactly that", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    await makeItem(root, "BR-2002", 100);
+    let o = await walkToPrinted(root, await makeOrder(root, [{ item: "BR-1001", ordered: 10 }, { item: "BR-2002", ordered: 4 }]));
+    expect(o.readyAt).toBeNull();
+    // No shipment before the pack check.
+    const early = await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment });
+    expect(early.status).toBe(409);
+    expect(early.body.notReady).toBe(true);
+    // The warehouse login does the pack check on its shared account, with initials typed.
+    const dock = await as("floor", { permissions: { dock: "edit" } });
+    expect((await dock.get(so(o))).status).toBe(200);
+    expect((await dock.get(so(o))).body.pricesHidden).toBe(true);
+    const packed = ok(await ready(dock, o, [8, 4], "KM"));
+    expect(packed.readyAt).toBeTruthy();
+    expect(packed.readyBy).toBe("KM");
+    expect(packed.packingSlipPrintedAt).toBeTruthy();
+    expect(packed.pendingShipment).toEqual([{ lineItemId: o.lineItems[0].id, qty: 8 }, { lineItemId: o.lineItems[1].id, qty: 4 }]);
+    expect((await itemByNumber("BR-1001"))!.qtyReserved).toBe(8);
+    const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_READY", targetId: String(o.soNumber) } });
+    expect(audit!.detail).toMatchObject({ units: 12, shorts: 2, packedBy: "KM" });
+    // Shipping anything other than what was packed is refused; the packed quantities ship.
+    const changed = await dock.post(`${so(packed)}/ship`, { version: packed.version, lines: [{ lineItemId: o.lineItems[0].id, qty: 7 }, { lineItemId: o.lineItems[1].id, qty: 4 }] });
+    expect(changed.status).toBe(409);
+    expect(changed.body.error).toMatch(/packed at the pack check/);
+    // A short found at pickup: back to the floor, re-check, then ship.
+    const back = ok(await unready(dock, packed));
+    expect(back.readyAt).toBeNull();
+    expect(back.pendingShipment).toEqual(packed.pendingShipment);
+    const again = ok(await ready(dock, back, [8, 3]));
+    const shipped = ok(await dock.post(`${so(again)}/ship`, { version: again.version, lines: again.pendingShipment }));
+    expect(shipped.status).toBe("Backordered");
+    expect(shipped.readyAt).toBeNull();
+    expect((await itemByNumber("BR-1001"))!).toMatchObject({ qtyOnHand: 92, qtyReserved: 0 });
+    expect((await itemByNumber("BR-2002"))!).toMatchObject({ qtyOnHand: 97, qtyReserved: 0 });
+    // Undo puts it back on the dock, ready.
+    const undone = ok(await undoShipment(root, shipped));
+    expect(undone.readyAt).toBeTruthy();
+    expect(undone.status).toBe("Pick & Packed");
+    // Nobody without the dock or Open Picks can do the pack check.
+    const analyst = await as("an", { permissions: { allocation: "edit", "pick-pack": "edit" } });
+    expect((await analyst.post(`${so(undone)}/unready`, { version: undone.version })).status).toBe(403);
+    // Summary counts the two floor stages apart.
+    const s = ok(await root.get("/api/dashboard/summary"));
+    expect(s.queues.ship.count).toBe(1);
+    expect(s.queues.pack.count).toBe(0);
+  });
+
+  it("releases and prints the pick list in one step", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    let o = ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 3 }])))));
+    const res = ok(await root.post("/api/sales-orders/release", { print: true, orders: [{ soNumber: o.soNumber, version: o.version }] }));
+    o = res.orders[0];
+    expect(o.status).toBe("Pick & Packed");
+    expect(o.pickListPrintedAt).toBeTruthy();
+    expect(o.packingSlipPrintedAt).toBeNull();
+    const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_STATUS_CHANGED", targetId: String(o.soNumber) }, orderBy: { createdAt: "desc" } });
+    expect(audit!.detail).toMatchObject({ to: "Pick & Packed", printed: true });
+    // Straight to the pack check; the slip prints there.
+    o = ok(await ready(root, o));
+    expect(o.packingSlipPrintedAt).toBeTruthy();
+    // A pick list reprint from Open Picks is still allowed.
+    expect((await markPrinted(root, o)).status).toBe(200);
+    void release;
   });
 });

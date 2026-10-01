@@ -13,7 +13,7 @@ function statusSlug(status: string): string {
 export default function StatusPill({
   order,
 }: {
-  order: Pick<PurchaseOrder, "status" | "pickPackStatus">;
+  order: Pick<PurchaseOrder, "status" | "pickPackStatus" | "readyAt">;
 }) {
   return (
     <span className="status-pill-group">
@@ -23,6 +23,7 @@ export default function StatusPill({
           {order.pickPackStatus}
         </span>
       )}
+      {order.status === "Pick & Packed" && order.readyAt && <span className="pickpack-flag pickpack-flag-ready">Ready to ship</span>}
     </span>
   );
 }

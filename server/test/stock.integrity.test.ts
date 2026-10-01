@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/prisma.js";
 import {
-  admin, allocate, check, editItem, editOrder, editPo, editRa, expectLedgerReconciles, itemByNumber, makeItem, makeOrder, makePo, makeVendor, markPrinted,
-  ok, orderReadyToShip, receive, release, resetDb, ship, so, undoShipment,
+  admin, allocate, check, editItem, editOrder, editPo, editRa, expectLedgerReconciles, itemByNumber, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, orderReadyToShip, ready, receive, release, resetDb, ship, so, undoShipment,
 } from "./helpers.js";
 
 beforeEach(resetDb);
@@ -17,13 +16,23 @@ describe("shipping guards (R5-01)", () => {
     o = ok(await allocate(root, o, [10, 0], false));
     o = ok(await release(root, o));
     o = ok(await markPrinted(root, o));
-    // Line 2 was never released.
+    // Line 2 was never released: the pack check refuses it.
     let res = await ship(root, o, [10, 1]);
-    expect(res.status).toBe(409);
-    expect(res.body.error).toMatch(/BR-1002: 0 units are staged/);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/BR-1002: not staged/);
     // Line 1 over what was staged.
     res = await ship(root, o, [11, 0]);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/BR-1001: 10 staged/);
+    // No pack check yet: the shipment itself is refused.
+    res = await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment });
     expect(res.status).toBe(409);
+    expect(res.body.notReady).toBe(true);
+    // After the pack check, the shipment must match what was packed exactly.
+    o = ok(await ready(root, o));
+    res = await root.post(`${so(o)}/ship`, { version: o.version, lines: [{ lineItemId: o.lineItems[0].id, qty: 9 }] });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/packed at the pack check/);
     // A line id from another order.
     const other = await makeOrder(root, [{ item: "BR-1001", ordered: 1 }]);
     res = await root.post(`${so(o)}/ship`, { version: o.version, lines: [{ lineItemId: other.lineItems[0].id, qty: 1 }] });

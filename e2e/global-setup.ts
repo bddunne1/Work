@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { ADMIN_PASSWORD, API, STAFF_PASSWORD, api, apiToken } from "./helpers";
+import { ADMIN_PASSWORD, API, STAFF_PASSWORD, WAREHOUSE_PASSWORD, api, apiToken } from "./helpers";
 
 // Seeds what the specs need through the API: a few stocked items, a
 // customer with a ship-to, and a staff account that must change its
@@ -34,5 +34,12 @@ export default async function globalSetup() {
     },
     token
   );
-  writeFileSync(new URL("./.state.json", import.meta.url), JSON.stringify({ itemNumbers, customerId: customer.id, customerName, staffUsername }, null, 2));
+  // The shared floor login for the dock screen (G-09). Its first-sign-in
+  // password change is done here so the dock spec signs straight in.
+  const warehouseUsername = `dock_${stamp.toLowerCase()}`;
+  const temp = `${WAREHOUSE_PASSWORD}-temp`;
+  await api("POST", "/api/accounts", { username: warehouseUsername, password: temp, role: "CUSTOM", permissions: { dock: "edit" }, initials: "FL" }, token);
+  const floor = await apiToken(warehouseUsername, temp);
+  await api("POST", "/api/auth/change-password", { currentPassword: temp, newPassword: WAREHOUSE_PASSWORD }, floor);
+  writeFileSync(new URL("./.state.json", import.meta.url), JSON.stringify({ itemNumbers, customerId: customer.id, customerName, staffUsername, warehouseUsername }, null, 2));
 }

@@ -44,7 +44,7 @@ router.get("/summary", async (req: AuthedRequest, res) => {
       where: { status: { in: [...OPEN] } },
       select: {
         soNumber: true, status: true, dueDate: true, estimatedShipDate: true, createdAt: true, checkedAt: true,
-        allocation: true, pickedAt: true, pendingShipment: true, pickListPrintedAt: true, packingSlipPrintedAt: true, stockArrivedAt: true,
+        allocation: true, pickedAt: true, pendingShipment: true, pickListPrintedAt: true, packingSlipPrintedAt: true, stockArrivedAt: true, readyAt: true,
         lineItems: lineSelect,
       },
     }),
@@ -63,7 +63,8 @@ router.get("/summary", async (req: AuthedRequest, res) => {
   const late = (o: Open) => shipBy(o) < today;
   const staged = (o: Open) => (o.pendingShipment as { lineItemId: string; qty: number }[] | null) ?? [];
   const isStaged = (o: Open) => o.status === "PICK_PACKED" && staged(o).some((l) => l.qty > 0);
-  const printed = (o: Open) => Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
+  // On the floor once the pick list is printed; the packing slip prints at the pack check.
+  const printed = (o: Open) => Boolean(o.pickListPrintedAt);
   const allocated = (o: Open) => ((o.allocation as { lines?: { allocatedQty: number }[]; decidedAt?: string } | null)?.lines ?? []).some((l) => l.allocatedQty > 0);
   const entry = (o: Open, since: Date | string | null | undefined) => ({ late: late(o), since });
 
@@ -75,7 +76,9 @@ router.get("/summary", async (req: AuthedRequest, res) => {
     arrived: summarize(open.filter((o) => o.status === "BACKORDERED" && o.stockArrivedAt).map((o) => entry(o, o.stockArrivedAt))),
     release: summarize(open.filter((o) => o.status === "ALLOCATED" && allocated(o)).map((o) => entry(o, (o.allocation as { decidedAt?: string } | null)?.decidedAt))),
     print: summarize(open.filter((o) => isStaged(o) && !printed(o)).map((o) => entry(o, o.pickedAt))),
-    ship: summarize(open.filter((o) => isStaged(o) && printed(o)).map((o) => entry(o, [o.pickListPrintedAt, o.packingSlipPrintedAt].filter((d): d is Date => Boolean(d)).sort((a, b) => b.getTime() - a.getTime())[0]))),
+    // Being picked and packed on the floor, then ready on the dock for pickup.
+    pack: summarize(open.filter((o) => isStaged(o) && printed(o) && !o.readyAt).map((o) => entry(o, o.pickListPrintedAt))),
+    ship: summarize(open.filter((o) => isStaged(o) && o.readyAt).map((o) => entry(o, o.readyAt))),
     pull: summarize(pulls.map((p) => ({ late: false, since: p.pullRequestedAt }))),
   };
 

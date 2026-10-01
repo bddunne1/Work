@@ -126,6 +126,10 @@ export interface PurchaseOrder {
   pendingShipment?: ShipmentLine[];
   pickListPrintedAt?: string;
   packingSlipPrintedAt?: string;
+  // The pack check (sprint 3): packed, checked and on the dock; the packing
+  // slip printed from the packed quantities; Mark Shipped ships exactly those.
+  readyAt?: string | null;
+  readyBy?: string | null;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";

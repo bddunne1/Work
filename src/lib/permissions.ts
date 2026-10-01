@@ -59,6 +59,9 @@ export const PAGE_DEFS: PageDef[] = [
   { key: "pick-pack", label: "Release Orders (print pick lists)", group: "Fulfillment", rules: simplePage("/pick-pack") },
   { key: "pick-release", label: "Release Orders (release to warehouse)", group: "Fulfillment", rules: simplePage("/pick-pack/") },
   { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: simplePage("/open-picks") },
+  // The warehouse's own screen: being picked, the pack check, ready to ship,
+  // shipped at pickup, pull from floor. No prices anywhere on it.
+  { key: "dock", label: "Dock (warehouse floor)", group: "Fulfillment", rules: simplePage("/dock") },
   {
     key: "warehouse-capacity",
     label: "Warehouse Capacity",
@@ -290,6 +293,15 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
     },
   },
   {
+    key: "warehouse",
+    label: "Warehouse (dock)",
+    description:
+      "The shared floor login for the dock tablet: see what is being picked, do the pack check (which prints the packing slip), mark orders ready and shipped at pickup, and pull cancelled picks. No prices.",
+    permissions: {
+      dock: "edit",
+    },
+  },
+  {
     key: "director",
     label: "Director",
     description:
@@ -297,7 +309,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
     permissions: Object.fromEntries(
       [
         "order-entry", "validation", "allocation", "back-orders", "labels", "open-orders", "closed-orders",
-        "order-detail", "returns", "pick-pack", "pick-release", "open-picks", "warehouse-capacity", "schedule",
+        "order-detail", "returns", "pick-pack", "pick-release", "open-picks", "dock", "warehouse-capacity", "schedule",
         "bol", "shipment-history", "customers", "customer-pricing", "routing-guide", "catalog", "inventory",
         "import", "analytics", "reports", "purchase-orders", "receiving", "vendors", "invoices", "settings", "audit-log",
       ].map((k) => [k, "edit" as AccessLevel])

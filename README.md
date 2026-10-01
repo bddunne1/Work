@@ -227,6 +227,26 @@ review, with what is free per line), covered by an open PO (with the
 projected arrival), or not covered; the Dashboard counts the first group.
 The next allocation decision, allocate or hold again, clears the flag.
 
+### The pack check and Ready to ship
+
+A released pick has three stops on the floor. Release prints the pick list
+("Release and print" does both in one step, or print later from Open
+Picks). When the goods are picked and packed, the **pack check**
+(`POST /api/sales-orders/:soNumber/ready`) records what was actually
+packed per line, shorts included, marks the order Ready to ship
+(`readyAt`, `readyBy`) and prints the packing slip from those quantities.
+Mark Shipped (`/ship`) then requires the order to be ready and ships
+exactly the packed quantities; a short leaves the balance on back order.
+"Back to the floor" (`/unready`) reopens the pack check.
+
+The warehouse works from the **Dock** page (`/dock`, page key `dock`,
+preset Warehouse): being picked, Ready to ship, shipped today and picks to
+pull, with no prices anywhere. The shared floor login types the packer's
+initials at the pack check. Logistics can do the same pack check from Open
+Picks under its own name. The Dashboard splits the floor into "to pack"
+and "on the dock", and the Ready to ship pill marks orders waiting for the
+carrier.
+
 ## Development
 
 ```bash

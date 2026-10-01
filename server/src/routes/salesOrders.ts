@@ -158,8 +158,18 @@ const markPrintedSchema = z.object({
 const setShipDateSchema = z.object({ version: z.number().int(), estimatedShipDate: isoDate.nullable() });
 const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema });
 const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500) });
+const readySchema = z.object({
+  version: z.number().int(),
+  // Packed quantities per line: at most what was staged, never more.
+  lines: z.array(shipmentLineSchema).max(500).optional(),
+  // Who packed it, typed on a shared floor login (decided 1 Oct).
+  packedBy: z.string().trim().max(40).optional(),
+});
 const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling").max(2000) });
 const releaseSchema = z.object({
+  // Print the pick list in the same step (G-05): the orders come back
+  // marked printed and the page renders the pick lists for the batch.
+  print: z.boolean().optional(),
   orders: z
     .array(
       z.object({
@@ -241,7 +251,10 @@ const PRICE_PAGES = ["order-entry", "order-detail"];
 // can serve the open-orders query (PF-04).
 const OPEN_STATUSES = ["ENTERED", "CHECKED", "ALLOCATED", "BACKORDERED", "PICK_PACKED"] as const;
 const MAX_SHIPPED_SINCE_DAYS = 90;
-const ORDER_SHIP_PAGES = ["open-picks", "shipment-history"];
+const ORDER_SHIP_PAGES = ["open-picks", "shipment-history", "dock"];
+// The pack check: the warehouse's dock screen, or Logistics from Open Picks (decided 1 Oct).
+const READY_PAGES = ["dock", "open-picks"];
+const CLEAR_READY = { readyAt: null, readyBy: null, readyById: null } as const;
 const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
 const ALLOCATE_PAGES = ["allocation", "back-orders"];
 const REVISE_ALLOCATION_PAGES = ["allocation", "back-orders", "pick-release"];
@@ -753,6 +766,7 @@ router.post("/:soNumber/unallocate", requireAnyPermission(UNALLOCATE_PAGES, "edi
         pickPackStatus: null,
         pickListPrintedAt: null,
         packingSlipPrintedAt: null,
+        ...CLEAR_READY,
         version: { increment: 1 },
       },
     });
@@ -859,6 +873,10 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, version);
     assertStatus(order, ["PICK_PACKED"], "shipped");
+    // The pack check comes first (decided 1 Oct): what ships is exactly what
+    // was packed and printed on the packing slip. A short found at pickup
+    // means un-ready the order and redo the pack check.
+    if (!order.readyAt) throw new HttpError(409, `S.O. #${soNumber} has not had its pack check - mark it Ready to ship first.`, { conflict: true, notReady: true });
     const staged = stagedByLine(order);
     const shippedSoFar = shippedByLine(order);
     const lineById = new Map(order.lineItems.map((li) => [li.id, li]));
@@ -873,8 +891,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
       if (seen.has(l.lineItemId)) throw new HttpError(400, `${li.item} appears twice in this shipment.`);
       seen.add(l.lineItemId);
       const stagedQty = staged.get(l.lineItemId) ?? 0;
-      if (l.qty > stagedQty) {
-        throw new HttpError(409, `${li.item}: ${stagedQty} ${stagedQty === 1 ? "unit is" : "units are"} staged for this pick, ${l.qty} entered. Only what was released can ship.`, { conflict: true });
+      if (l.qty !== stagedQty) {
+        throw new HttpError(409, `${li.item}: ${stagedQty} packed at the pack check, ${l.qty} entered. Quantities are confirmed at the pack check - un-ready the order to change them.`, { conflict: true });
       }
       const remaining = remainingFor(li, shippedSoFar);
       if (l.qty > remaining) throw new HttpError(409, `${li.item}: only ${remaining} still owed on S.O. #${soNumber}, ${l.qty} entered.`, { conflict: true });
@@ -911,8 +929,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     await tx.salesOrder.update({
       where: { soNumber },
       data: fullyShipped
-        ? { status: "SHIPPED", pendingShipment: [], lastShippedAt: record.shippedAt, version: { increment: 1 } }
-        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, lastShippedAt: record.shippedAt, version: { increment: 1 } },
+        ? { status: "SHIPPED", pendingShipment: [], lastShippedAt: record.shippedAt, ...CLEAR_READY, version: { increment: 1 } }
+        : { status: "BACKORDERED", pendingShipment: [], allocation: Prisma.JsonNull, lastShippedAt: record.shippedAt, ...CLEAR_READY, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
     await auditIn(tx, account, "ORDER_SHIPPED", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
@@ -994,7 +1012,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     const previous = order.shipmentHistory.length > 1 ? order.shipmentHistory[order.shipmentHistory.length - 2].shippedAt : null;
     await tx.salesOrder.update({
       where: { soNumber },
-      data: { status: "PICK_PACKED", pendingShipment: lines, lastShippedAt: previous, version: { increment: 1 } },
+      data: { status: "PICK_PACKED", pendingShipment: lines, lastShippedAt: previous, readyAt: new Date(), readyBy: req.account!.initials, readyById: req.account!.id, version: { increment: 1 } },
     });
     await syncReservations(tx, soNumber);
     await auditIn(tx, req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
@@ -1035,6 +1053,7 @@ router.post("/:soNumber/cancel", requireAnyPermission(ORDER_CANCEL_PAGES, "edit"
         pullAcknowledgedAt: null,
         stockArrivedAt: null,
         ...CLEAR_CLAIM,
+        ...CLEAR_READY,
         cancelledAt: new Date(),
         cancelledBy: req.account!.username,
         cancelReason: parsed.data.reason,
@@ -1080,8 +1099,80 @@ router.post("/:soNumber/unclaim", requireAnyPermission(CLAIM_PAGES, "edit"), asy
   res.json(await reload(soNumber, account));
 });
 
+// The pack check (decided 1 Oct): the pick is picked, checked and packed on
+// the dock. The packed quantities (only down from what was staged) become
+// the shipment, the packing slip is printed from them, and the order waits
+// as Ready to ship until the carrier collects it.
+router.post("/:soNumber/ready", requireAnyPermission(READY_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = readySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const { version, lines, packedBy } = parsed.data;
+  const account = req.account!;
+  const outcome = await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, version);
+    assertStatus(order, ["PICK_PACKED"], "marked ready to ship");
+    if (!order.pickListPrintedAt) throw new HttpError(409, `S.O. #${soNumber}'s pick list has not printed yet - release and print it first.`, { conflict: true });
+    const staged = stagedByLine(order);
+    const byId = new Map(order.lineItems.map((li) => [li.id, li]));
+    let next: ShipLine[] = [...staged].map(([lineItemId, qty]) => ({ lineItemId, qty })).filter((l) => l.qty > 0);
+    let shorts = 0;
+    if (lines) {
+      next = [];
+      for (const l of lines) {
+        const li = byId.get(l.lineItemId);
+        const was = staged.get(l.lineItemId);
+        if (!li) throw new HttpError(400, `S.O. #${soNumber} changed since it was loaded - reload and try again.`);
+        // A line that was never staged (not released) is simply not packed.
+        if (was === undefined) {
+          if (l.qty > 0) throw new HttpError(400, `${li.item}: not staged for this pick - nothing of it can be packed.`);
+          continue;
+        }
+        if (l.qty > was) throw new HttpError(400, `${li.item}: ${was} staged for this pick - the packed quantity can be less, not more.`);
+        if (l.qty < was) shorts += was - l.qty;
+        if (l.qty > 0) next.push({ lineItemId: l.lineItemId, qty: l.qty });
+      }
+      for (const [lineItemId, qty] of staged) if (!lines.some((l) => l.lineItemId === lineItemId) && qty > 0) next.push({ lineItemId, qty });
+    }
+    if (next.length === 0) throw new HttpError(400, "Nothing packed - every line is 0. Unallocate the order instead.");
+    const now = new Date();
+    await tx.salesOrder.update({
+      where: { soNumber },
+      data: { pendingShipment: next, packingSlipPrintedAt: now, readyAt: now, readyBy: packedBy || account.initials, readyById: account.id, version: { increment: 1 } },
+    });
+    if (lines) await syncReservations(tx, soNumber);
+    const units = next.reduce((s, l) => s + l.qty, 0);
+    await auditIn(tx, account, "ORDER_READY", "sales-order", String(soNumber), `S.O. #${soNumber}`, { units, shorts, packedBy: packedBy || account.initials });
+    return { units, shorts };
+  });
+  void outcome;
+  res.json(await reload(soNumber, account));
+});
+
+// Back to the floor: the pack check is redone (a short found at pickup, a
+// damaged carton). Quantities stay as packed until the next pack check.
+router.post("/:soNumber/unready", requireAnyPermission(READY_PAGES, "edit"), async (req: AuthedRequest, res) => {
+  const soNumber = parseSo(req.params.soNumber);
+  const parsed = versionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  await prisma.$transaction(async (tx) => {
+    const order = await lockOrder(tx, soNumber, parsed.data.version);
+    assertStatus(order, ["PICK_PACKED"], "sent back to the floor");
+    if (!order.readyAt) throw new HttpError(409, `S.O. #${soNumber} is not marked ready.`, { conflict: true });
+    await tx.salesOrder.update({ where: { soNumber }, data: { ...CLEAR_READY, version: { increment: 1 } } });
+    await auditIn(tx, req.account!, "ORDER_UNREADY", "sales-order", String(soNumber), `S.O. #${soNumber}`, { wasReadyBy: order.readyBy });
+  });
+  res.json(await reload(soNumber, req.account!));
+});
+
 // The warehouse has pulled a cancelled order's pick back off the floor.
-router.post("/:soNumber/acknowledge-pull", requirePermission("open-picks", "edit"), async (req: AuthedRequest, res) => {
+router.post("/:soNumber/acknowledge-pull", requireAnyPermission(["open-picks", "dock"], "edit"), async (req: AuthedRequest, res) => {
   const soNumber = parseSo(req.params.soNumber);
   const parsed = versionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -1156,8 +1247,9 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
             pickPackStatus: complete ? "COMPLETE" : "PARTIAL",
             pickedAt: new Date(),
             pendingShipment: pending,
-            pickListPrintedAt: null,
+            pickListPrintedAt: parsed.data.print ? new Date() : null,
             packingSlipPrintedAt: null,
+            ...CLEAR_READY,
             allocation: nextAllocation ?? Prisma.JsonNull,
             version: { increment: 1 },
           },
@@ -1171,6 +1263,7 @@ router.post("/release", requirePermission("pick-release", "edit"), async (req: A
         lines: summary.lines,
         units: summary.units,
         release: summary.complete ? "Complete" : "Partial",
+        printed: Boolean(parsed.data.print),
       });
       releasedSoNumbers.push(soNumber);
       results.push({ soNumber: String(soNumber), ok: true });

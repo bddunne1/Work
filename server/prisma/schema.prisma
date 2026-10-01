@@ -310,6 +310,12 @@ model SalesOrder {
   pendingShipment      Json?
   pickListPrintedAt    DateTime?
   packingSlipPrintedAt DateTime?
+  // The pack check (decided 1 Oct): the goods are packed, checked and on
+  // the dock, the packing slip printed from the packed quantities. Mark
+  // Shipped then ships exactly those.
+  readyAt              DateTime?
+  readyBy              String?
+  readyById            String?
   estimatedShipDate    DateTime?       @db.Date
   pickPackStatus       PickPackStatus?
   bol                  Json?

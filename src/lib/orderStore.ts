@@ -251,6 +251,18 @@ export function acknowledgePull(order: PurchaseOrder): Promise<PurchaseOrder> {
   return command(order, "acknowledge-pull");
 }
 
+// The pack check (sprint 3): packed quantities per line (at most what was
+// staged) and who packed it; the server prints-stamps the packing slip and
+// marks the order Ready to ship.
+export function readyOrder(order: PurchaseOrder, lines?: ShipmentLine[], packedBy?: string): Promise<PurchaseOrder> {
+  return command(order, "ready", { lines, packedBy: packedBy || undefined });
+}
+
+// Back to the floor for another pack check.
+export function unreadyOrder(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return command(order, "unready");
+}
+
 export function setEstimatedShipDate(order: PurchaseOrder, date: string | null): Promise<PurchaseOrder> {
   return command(order, "set-ship-date", { estimatedShipDate: date || null });
 }
@@ -299,8 +311,11 @@ export interface ReleaseResult {
 // Releases allocated orders to the warehouse in one call. Each order is
 // released (or refused) on its own, so a stale order in the batch doesn't
 // stop the rest - check `results` for any that didn't go.
-export async function releaseOrders(requests: ReleaseRequest[]): Promise<ReleaseResult> {
+// `print` marks the pick list printed in the same step (G-05); the caller
+// then renders the pick lists for the orders that came back.
+export async function releaseOrders(requests: ReleaseRequest[], opts: { print?: boolean } = {}): Promise<ReleaseResult> {
   const res = await api.post<ReleaseResult>("/api/sales-orders/release", {
+    print: Boolean(opts.print),
     orders: requests.map((r) => ({ soNumber: r.order.soNumber, version: r.order.version, lines: r.lines })),
   });
   return { results: res.results, orders: res.orders.map(mapOrder) };

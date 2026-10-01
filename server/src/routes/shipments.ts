@@ -17,7 +17,7 @@ import { prisma } from "../prisma.js";
 const router = Router();
 router.use(requireAuth);
 
-const VIEW_PAGES = ["shipment-history", "open-picks"];
+const VIEW_PAGES = ["shipment-history", "open-picks", "dock"];
 
 interface ShipLine {
   lineItemId: string;

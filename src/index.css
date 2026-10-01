@@ -3898,3 +3898,26 @@ a.dash-lookup-row:focus-visible {
 .backorder-lines .coverage-full { color: #12b886; }
 .backorder-lines .coverage-none { color: var(--danger); }
 .backorder-fillable { color: #12b886; font-weight: 600; }
+
+/* ---- The floor: Open Picks stages, the dock screen, the pack check (sprint 3) ---- */
+.floor-stage { margin-top: 20px; }
+.floor-stage-title { margin: 0 0 6px; font-size: 1.05rem; }
+.pickpack-flag-ready { background: #12b886; color: #fff; }
+.pack-initials { max-width: 220px; margin-top: 10px; }
+.dock .page-header h1 { font-size: 1.6rem; }
+.dock-stage { margin-top: 18px; }
+.dock-stage h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.dock-stage-ready h2 { color: #12b886; }
+.dock-stage-pull h2 { color: var(--danger); }
+.dock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.dock-card {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left;
+  padding: 14px 16px; min-height: 92px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--panel-bg); color: var(--text-h); font: inherit; cursor: pointer;
+}
+.dock-card:hover { border-color: var(--accent, #4c6ef5); }
+.dock-card-static { cursor: default; }
+.dock-card-so { font-size: 1.25rem; font-weight: 700; }
+.dock-card-name { font-weight: 600; }
+.dock-card-sub { font-size: 13px; color: var(--text-muted, #666); }
+.dock-shipped { margin: 0; padding-left: 1.2em; }
