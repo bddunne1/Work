@@ -4,7 +4,7 @@ import BrandMark, { Wordmark } from "./BrandMark";
 import ErrorBoundary from "./ErrorBoundary";
 import ToastHost from "./Toast";
 import MoreMenu from "./MoreMenu";
-import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
+import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, ForkliftIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
 import { getPageAccent } from "../lib/pageAccent";
 import { getAccessLevel } from "../lib/permissions";
@@ -85,7 +85,7 @@ export default function Layout() {
           )}
           {canGo("/dock") && (
             <NavLink to="/dock" className={({ isActive }) => (isActive ? "active" : "")}>
-              <InventoryIcon />
+              <ForkliftIcon />
               Dock
             </NavLink>
           )}
