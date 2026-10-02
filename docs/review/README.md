@@ -1,12 +1,16 @@
 # ERP review
 
-## Round 8 — 1 Oct 2026
-- `erp-review-8.html`: code review of main after sprint 2 (#8), focused on the
-  reservation table, the invoice review queue, the QuickBooks outbox and price
-  hiding. 43 findings (R8-01 to R8-43; 1 High, 16 Medium, 26 Low), 14 Closed
-  items on the known list found only partly done, and what was checked and
-  found sound. Server tests 79/79, typecheck clean, no schema drift. The
-  findings and corrections are in section R of `open-bugs.md`. Published copy:
+## Round 9 — 2 Oct 2026
+- `erp-review-9.html`: code review of main after sprint 3 (#9, `b484a61`). It
+  replaces the 1 Oct draft (round 8 IDs, written before sprint 3 merged).
+  66 findings (R9-01 to R9-66; 1 High, 26 Medium, 39 Low): 23 new in sprint
+  3's code and the 43 draft findings re-checked (none fixed, 9 worse). Each
+  finding has what happens, its business impact, a worked example with
+  realistic values, the fix and how it was verified; 26 of the 27 High and
+  Medium findings were reproduced or measured. Also known-list corrections,
+  what was checked and found sound, and the test runs (server 89/89,
+  Playwright 7/7, no schema drift). Findings and corrections are in section R
+  of `open-bugs.md`. Published copy:
   https://claude.ai/artifact/EVoewbGtaghjncweB4nY7S
 
 ## Sprint 1 — 29 Sep 2026
