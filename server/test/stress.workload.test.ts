@@ -4,7 +4,7 @@ import { processOutbox } from "../src/integrations/sync.js";
 import { prisma } from "../src/prisma.js";
 import {
   admin, allocate, cancel, check, makeItem, makeOrder, makePo, makeVendor, markPrinted, ok, receive, release, resetDb,
-  ship, so, undoShipment, type Client,
+  ready, ship, so, undoShipment, unready, type Client,
 } from "./helpers.js";
 
 // A randomized, concurrent workload against the real API followed by a full
@@ -114,17 +114,22 @@ async function worker(id: number, c: Client, tally: Tally, ledgerOnly: { adjust:
         }
         break;
       case "Pick & Packed":
-        if (!(o.pickListPrintedAt && o.packingSlipPrintedAt)) {
+        if (!o.pickListPrintedAt) {
           const trim = rand() < 0.2 ? o.pendingShipment.map((l: any) => ({ lineItemId: l.lineItemId, qty: Math.max(0, l.qty - 1) })) : undefined;
           note("print", (await markPrinted(c, o, trim)).status);
         } else if (o.pendingShipment.length === 0) {
           note("undo", (await undoShipment(c, o)).status);
-        } else {
+        } else if (!o.readyAt) {
+          // The pack check: a short now and then, recorded here, not at the shipment.
           const qtys = o.lineItems.map((li: any) => {
             const staged = o.pendingShipment.find((l: any) => l.lineItemId === li.id)?.qty ?? 0;
             return rand() < 0.1 ? Math.floor(staged * 0.8) : staged;
           });
-          note("ship", (await ship(c, o, qtys)).status);
+          note("ready", (await ready(c, o, qtys)).status);
+        } else if (rand() < 0.05) {
+          note("unready", (await unready(c, o)).status);
+        } else {
+          note("ship", (await ship(c, o)).status);
         }
         break;
       default:

@@ -4,10 +4,13 @@ import { Link } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
+import { getCustomer } from "../lib/customerStore";
+import { listItems } from "../lib/itemStore";
 import { listOpenOrders, setBol } from "../lib/orderStore";
+import { getBolDefaults } from "../lib/settingsStore";
 import { localIsoDate } from "../lib/dateUtils";
 import type { Address, BolDetails, PurchaseOrder } from "../types";
-import { matchesOrderQuery, orderTotalLabel, statusLabel } from "../types";
+import { matchesOrderQuery, orderTotalLabel, orderWeight, pendingShipmentWeight, statusLabel, weightIndex } from "../types";
 
 interface BolInput {
   weight: string;
@@ -24,19 +27,29 @@ interface BolInput {
   additionalInfo: string;
 }
 
-function emptyBolInput(order: PurchaseOrder): BolInput {
+// Prefilled from what the order carries (G-07): the staged quantities (or
+// the ordered ones before release) times each item's weight, turned into
+// package and handling-unit counts by the BOL defaults in Settings. Every
+// field stays editable.
+function emptyBolInput(order: PurchaseOrder, weights: Map<string, number>): BolInput {
+  const d = getBolDefaults();
+  const staged = (order.pendingShipment?.length ?? 0) > 0;
+  const units = staged ? (order.pendingShipment ?? []).reduce((s, l) => s + l.qty, 0) : order.lineItems.reduce((s, li) => s + li.ordered, 0);
+  const weight = staged ? pendingShipmentWeight(order, weights) : orderWeight(order, weights);
+  const packages = units > 0 ? Math.ceil(units / Math.max(1, d.unitsPerPackage)) : 0;
+  const handlingUnits = packages > 0 ? Math.ceil(packages / Math.max(1, d.packagesPerHandlingUnit)) : 0;
   return {
-    weight: "",
-    packageCount: "",
+    weight: weight > 0 ? String(Math.round(weight)) : "",
+    packageCount: packages > 0 ? String(packages) : "",
     palletSlip: "Y",
-    handlingUnitQty: "",
-    handlingUnitType: "Pallet",
-    packageQty: "",
-    packageType: "Cartons",
+    handlingUnitQty: handlingUnits > 0 ? String(handlingUnits) : "",
+    handlingUnitType: d.handlingUnitType,
+    packageQty: packages > 0 ? String(packages) : "",
+    packageType: d.packageType,
     hazmat: false,
     commodityDescription: order.lineItems.map((li) => li.description).filter(Boolean).join("; "),
-    nmfcNumber: "",
-    freightClass: "",
+    nmfcNumber: d.nmfcNumber,
+    freightClass: d.freightClass,
     additionalInfo: "",
   };
 }
@@ -69,9 +82,11 @@ export default function GenerateBOL() {
   const canEdit = useCanEdit();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [query, setQuery] = useState("");
+  const [weights, setWeights] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     listOpenOrders().then(setOrders);
+    listItems().then((items) => setWeights(weightIndex(items))).catch(() => {});
   }, []);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -92,6 +107,7 @@ export default function GenerateBOL() {
   const [sealNumber, setSealNumber] = useState("");
   const [scac, setScac] = useState("");
   const [proNumber, setProNumber] = useState("");
+  const [pickupDate, setPickupDate] = useState(today);
   const [freightChargeTerm, setFreightChargeTerm] = useState<FreightChargeTerm>("Prepaid");
   const [masterBol, setMasterBol] = useState(false);
   const [thirdPartyName, setThirdPartyName] = useState("");
@@ -133,15 +149,32 @@ export default function GenerateBOL() {
     setDetails((d) => {
       if (d[soNumber]) return d;
       const order = orders.find((o) => o.soNumber === soNumber);
-      return order ? { ...d, [soNumber]: emptyBolInput(order) } : d;
+      return order ? { ...d, [soNumber]: emptyBolInput(order, weights) } : d;
     });
     setGenerated(false);
+    // The first order selected brings its carrier along: what an earlier BOL
+    // or Mark Shipped saved, else the customer's routing guide, else Ship Via.
+    const order = orders.find((o) => o.soNumber === soNumber);
+    if (order && selected.size === 0 && !selected.has(soNumber)) void prefillCarrier(order);
+  }
+
+  async function prefillCarrier(order: PurchaseOrder) {
+    if (order.scac) setScac(order.scac);
+    if (order.proNumber) setProNumber(order.proNumber);
+    if (order.pickupDate) setPickupDate(order.pickupDate);
+    if (order.carrier) {
+      setCarrierName(order.carrier);
+      return;
+    }
+    const guide = order.customerId ? (await getCustomer(order.customerId).catch(() => undefined))?.routingGuide : undefined;
+    setCarrierName((c) => c || guide?.preferredCarrier || order.shipVia || "");
+    if (guide?.notes) setSpecialInstructions((s) => s || guide.notes || "");
   }
 
   function updateDetail(soNumber: string, patch: Partial<BolInput>) {
     setDetails((d) => {
       const order = orders.find((o) => o.soNumber === soNumber);
-      const base = d[soNumber] ?? (order ? emptyBolInput(order) : undefined);
+      const base = d[soNumber] ?? (order ? emptyBolInput(order, weights) : undefined);
       if (!base) return d;
       return { ...d, [soNumber]: { ...base, ...patch } };
     });
@@ -162,7 +195,7 @@ export default function GenerateBOL() {
       for (const o of selectedOrders) {
         const d = details[o.soNumber];
         const bol: BolDetails = { ...d, generatedAt };
-        await setBol(o, bol);
+        await setBol(o, bol, { carrier: carrierName.trim(), scac: scac.trim(), proNumber: proNumber.trim(), pickupDate: pickupDate || null });
       }
     } catch (err) {
       if (isConflictError(err)) {
@@ -278,7 +311,7 @@ export default function GenerateBOL() {
                 </thead>
                 <tbody>
                   {selectedOrders.map((o) => {
-                    const d = details[o.soNumber] ?? emptyBolInput(o);
+                    const d = details[o.soNumber] ?? emptyBolInput(o, weights);
                     return (
                       <tr key={o.soNumber}>
                         <td>
@@ -480,7 +513,12 @@ export default function GenerateBOL() {
                 Pro Number
                 <input value={proNumber} onChange={(e) => setProNumber(e.target.value)} disabled={!canEdit} />
               </label>
+              <label>
+                Pickup Date
+                <input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} disabled={!canEdit} />
+              </label>
             </div>
+            <p className="muted">Carrier, SCAC, PRO and pickup date are saved on each selected order and shown on its Sales Order View; Mark Shipped can add or correct them at pickup.</p>
 
             <div className="bol-subhead">Freight Charge Terms</div>
             <div className="decision-buttons">
@@ -816,7 +854,7 @@ export default function GenerateBOL() {
             </thead>
             <tbody>
               {selectedOrders.map((o) => {
-                const d = details[o.soNumber] ?? emptyBolInput(o);
+                const d = details[o.soNumber] ?? emptyBolInput(o, weights);
                 return (
                   <tr key={o.soNumber}>
                     <td>{o.poNumber || o.soNumber}</td>
@@ -868,7 +906,7 @@ export default function GenerateBOL() {
               </thead>
               <tbody>
                 {selectedOrders.map((o) => {
-                  const d = details[o.soNumber] ?? emptyBolInput(o);
+                  const d = details[o.soNumber] ?? emptyBolInput(o, weights);
                   return (
                     <tr key={o.soNumber}>
                       <td>{d.handlingUnitQty || "—"}</td>

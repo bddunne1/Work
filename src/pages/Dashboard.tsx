@@ -69,7 +69,8 @@ const LANES: Lane[] = [
     color: "#7c6ff2",
     modules: [
       { name: "Release Orders", description: "Pick lists and packing slips for the floor", to: "/pick-pack", icon: PickPackIcon },
-      { name: "Open Picks", description: "Printed orders ready to confirm shipped", to: "/open-picks", icon: OpenPicksIcon },
+      { name: "Open Picks", description: "Being picked, the pack check, ready to ship, shipped at pickup", to: "/open-picks", icon: OpenPicksIcon },
+      { name: "Dock", description: "The warehouse floor's screen", to: "/dock", icon: WarehouseIcon },
       { name: "Warehouse Capacity", description: "Weight on the floor and dwell time", to: "/warehouse-capacity", icon: WarehouseIcon },
     ],
   },
@@ -144,16 +145,18 @@ const QUEUES: QueueDef[] = [
   { key: "validate", label: "To validate", to: "/validation", tile: "/validation", workPath: "/validation", viewPath: "/validation", color: "#12b886", lateLabel: "past ship date" },
   { key: "allocate", label: "To allocate", to: "/allocation", tile: "/allocation", workPath: "/allocation", viewPath: "/allocation", color: "#12b886", lateLabel: "past ship date" },
   { key: "backorder", label: "Back ordered", to: "/back-orders", tile: "/back-orders", workPath: "/back-orders", viewPath: "/back-orders", color: "#12b886", lateLabel: "past ship date", note: "waiting on stock" },
+  { key: "arrived", label: "Stock arrived, to review", to: "/back-orders", tile: "/back-orders", workPath: "/back-orders", viewPath: "/back-orders", color: "#12b886", lateLabel: "past ship date" },
   { key: "release", label: "To release", to: "/pick-pack?tab=ready", tile: "/pick-pack", workPath: "/pick-pack/review", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "print", label: "To print", to: "/pick-pack?tab=print", tile: "/pick-pack", workPath: "/pick-pack", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
-  { key: "ship", label: "To confirm shipped", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
+  { key: "pack", label: "On the floor, being picked", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
+  { key: "ship", label: "Ready to ship, awaiting pickup", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "pull", label: "To pull from floor", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#f06595", lateLabel: "", note: "cancelled after printing" },
   { key: "receive", label: "POs to receive", to: "/receiving", tile: "/receiving", workPath: "/receiving", viewPath: "/receiving", color: "#1c7ed6", lateLabel: "past expected date" },
   { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/receiving", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
 ];
 
 // The queues an order passes through (the rest are stock coming in).
-const ORDER_QUEUE_KEYS = ["validate", "allocate", "backorder", "release", "print", "ship"];
+const ORDER_QUEUE_KEYS = ["validate", "allocate", "backorder", "arrived", "release", "print", "pack", "ship"];
 
 function isoDay(d: Date): string {
   return d.toLocaleDateString("en-CA");

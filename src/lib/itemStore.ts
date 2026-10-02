@@ -9,8 +9,19 @@ function mapItem(i: Item): Item {
   return {
     ...i,
     rate: Number(i.rate),
+    cost: i.cost === undefined ? undefined : i.cost === null ? null : Number(i.cost),
     weight: i.weight !== undefined && i.weight !== null ? Number(i.weight) : undefined,
   };
+}
+
+// Margin per unit (E-02): the rate less the cost, when both are known.
+export function unitMargin(item: Pick<Item, "rate" | "cost">): number | undefined {
+  return item.cost === undefined || item.cost === null ? undefined : item.rate - item.cost;
+}
+
+export function marginPct(item: Pick<Item, "rate" | "cost">): number | undefined {
+  const m = unitMargin(item);
+  return m === undefined || item.rate <= 0 ? undefined : (m / item.rate) * 100;
 }
 
 export async function listItems(q?: string): Promise<Item[]> {
@@ -44,11 +55,13 @@ export async function getItem(id: string): Promise<Item | undefined> {
 // amounts are present only for an office login.
 export interface ItemQuickReport {
   item: Item;
-  summary: { onHand: number; onSalesOrder: number; allocated: number; onPurchaseOrder: number; available: number };
+  summary: { onHand: number; onSalesOrder: number; allocated: number; onPurchaseOrder: number; available: number; cost?: number | null; valueAtCost?: number | null; margin?: number };
   soLines: ReportRow[];
   poLines: ReportRow[];
   notice?: string;
   pricesHidden: boolean;
+  // True for a login that may not see what items cost (E-05).
+  costHidden: boolean;
 }
 
 export async function getItemQuickReport(id: string): Promise<ItemQuickReport> {

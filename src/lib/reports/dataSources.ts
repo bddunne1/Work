@@ -183,7 +183,10 @@ const salesOrders: ReportDataSource = {
 
 // `exactItem` matches the item # exactly (case-insensitive) instead of the
 // report filter's substring match - for the one-item quick report.
-function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues, exactItem?: string): ReportRow[] {
+// `costs` (item # -> last purchase cost) adds cost and margin columns for a
+// login that may see cost (E-02); the server leaves cost off the items for
+// everyone else, so the map is empty and the columns stay blank.
+function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues, exactItem?: string, costs: Map<string, number> = new Map()): ReportRow[] {
   const exact = exactItem?.trim().toLowerCase();
   const rows: ReportRow[] = [];
   for (const o of orders) {
@@ -208,10 +211,22 @@ function salesOrderLineRows(orders: PurchaseOrder[], filters: ReportFilterValues
         allocated: allocatedQtyFor(o, li.id),
         rate: li.rate,
         amount: lineAmount(li),
+        ...costColumns(costs.get(li.item.trim().toLowerCase()), li),
       });
     }
   }
   return rows;
+}
+
+function costColumns(cost: number | undefined, li: { rate: number; ordered: number }): ReportRow {
+  return cost === undefined ? {} : { cost, margin: Math.round((li.rate - cost) * li.ordered * 100) / 100 };
+}
+
+// Item # -> last purchase cost, for the items whose cost this login may see.
+function costIndex(items: { itemNumber: string; cost?: number | null }[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const i of items) if (typeof i.cost === "number") map.set(i.itemNumber.trim().toLowerCase(), i.cost);
+  return map;
 }
 
 const salesOrderLines: ReportDataSource = {
@@ -233,6 +248,8 @@ const salesOrderLines: ReportDataSource = {
     { key: "allocated", label: "Allocated", align: "right" },
     { key: "rate", label: "Rate", align: "right" },
     { key: "amount", label: "Amount", align: "right" },
+    { key: "cost", label: "Cost / unit", align: "right" },
+    { key: "margin", label: "Line Margin", align: "right" },
   ],
   defaultColumns: ["soNumber", "customer", "orderDate", "status", "item", "ordered", "allocated", "amount"],
   filterFields: [
@@ -242,7 +259,8 @@ const salesOrderLines: ReportDataSource = {
     { key: "item", label: "Item #", type: "text", placeholder: "Search item #..." },
   ],
   async buildRows(filters): Promise<ReportRowsResult> {
-    return buildOrderReport(filters, (orders) => salesOrderLineRows(orders, filters));
+    const costs = costIndex(await listItems());
+    return buildOrderReport(filters, (orders) => salesOrderLineRows(orders, filters, undefined, costs));
   },
 };
 
@@ -360,6 +378,9 @@ const inventory: ReportDataSource = {
     { key: "onPurchaseOrder", label: "On Purchase Order", align: "right" },
     { key: "available", label: "Available", align: "right" },
     { key: "rate", label: "Rate", align: "right" },
+    { key: "cost", label: "Cost", align: "right" },
+    { key: "valueAtCost", label: "On Hand at Cost", align: "right" },
+    { key: "marginPct", label: "Margin %", align: "right" },
   ],
   defaultColumns: ["item", "description", "onHand", "onSalesOrder", "allocated", "onPurchaseOrder", "available"],
   filterFields: [{ key: "item", label: "Item #", type: "text", placeholder: "Search item # or description..." }],
@@ -382,6 +403,9 @@ const inventory: ReportDataSource = {
           onPurchaseOrder: i.qtyOnPurchaseOrder,
           available: availableQty(i, allocated),
           rate: i.rate,
+          ...(typeof i.cost === "number"
+            ? { cost: i.cost, valueAtCost: Math.round(i.qtyOnHand * i.cost * 100) / 100, marginPct: i.rate > 0 ? Math.round(((i.rate - i.cost) / i.rate) * 1000) / 10 : "" }
+            : {}),
         };
       });
   },

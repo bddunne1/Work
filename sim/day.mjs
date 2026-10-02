@@ -428,7 +428,7 @@ async function logistics(user) {
   while (!dayOver()) {
     let did = false;
     const open = await attempt(user, "open-picks", () => listOpen(user), { retry: false });
-    const staged = (open ?? []).filter((o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0 && o.pickListPrintedAt && o.packingSlipPrintedAt);
+    const staged = (open ?? []).filter((o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0 && o.pickListPrintedAt);
     const now = Date.now();
     const readyToConfirm = staged.filter((o) => now - Date.parse(o.pickListPrintedAt) >= floorMinutes(o) * SIM_MIN).sort(bySo);
     // BOL for big orders before they go out.
@@ -449,10 +449,15 @@ async function logistics(user) {
         const o = await getOrder(user, target.soNumber);
         if (o.status !== "Pick & Packed" || !(o.pendingShipment?.length)) return;
         await work(user, 1.5 + o.pendingShipment.length * 0.15);
-        // ~5% of lines come back short from the floor
+        // The pack check (sprint 3): ~5% of lines come back short from the
+        // floor and are recorded here; the shipment then ships what was packed.
         const lines = o.pendingShipment.map((l) => ({ lineItemId: l.lineItemId, qty: rng.chance(0.05) ? Math.floor(l.qty * 0.9) : l.qty }));
-        await post(user, `/api/sales-orders/${o.soNumber}/ship`, { version: o.version, lines });
-        event(user, "order-shipped", { so: o.soNumber, units: lines.reduce((s, l) => s + l.qty, 0), at: simNow() });
+        const packed = o.readyAt ? o : await post(user, `/api/sales-orders/${o.soNumber}/ready`, { version: o.version, lines, packedBy: "floor" });
+        if (!o.readyAt) event(user, "pack-check", { so: o.soNumber, at: simNow() });
+        // Carrier details at pickup (G-07): the PRO the driver hands over.
+        const carrier = { carrier: packed.carrier || packed.shipVia || "Common Carrier", proNumber: `PRO${String(o.soNumber).padStart(6, "0")}${100 + Math.floor(rng.next() * 900)}` };
+        await post(user, `/api/sales-orders/${o.soNumber}/ship`, { version: packed.version, lines: packed.pendingShipment, carrier });
+        event(user, "order-shipped", { so: o.soNumber, units: packed.pendingShipment.reduce((s, l) => s + l.qty, 0), at: simNow() });
       });
     }
     // Schedule truck pickups for staged orders that aren't ready yet.

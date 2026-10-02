@@ -10,7 +10,7 @@ export const ORDER_READ_PAGES = [
   "order-entry", "validation", "allocation", "back-orders", "labels",
   "open-orders", "closed-orders", "order-detail", "returns",
   "pick-pack", "pick-release", "open-picks", "warehouse-capacity",
-  "schedule", "bol", "shipment-history", "inventory", "reports", "analytics", "invoices",
+  "schedule", "bol", "shipment-history", "inventory", "reports", "analytics", "invoices", "dock",
 ];
 
 // Prices are for the office: Order Entry, Sales Order View, Customer
@@ -20,6 +20,19 @@ export const PRICE_VIEW_PAGES = ["order-entry", "order-detail", "customer-pricin
 
 export function canSeePrices(account: AuthedAccount): boolean {
   return account.role === "ADMIN" || PRICE_VIEW_PAGES.some((key) => hasPermission(account, key, "view"));
+}
+
+// Who sees what things cost us (E-05, decided 1 Oct): Purchasing (the PO
+// and receiving pages), whoever edits the catalog, the Sales Manager (edit
+// on Analytics) and above. A dock or order-entry login never does.
+export function canSeeCost(account: AuthedAccount): boolean {
+  return (
+    account.role === "ADMIN" ||
+    hasPermission(account, "purchase-orders", "view") ||
+    hasPermission(account, "receiving", "view") ||
+    hasPermission(account, "catalog", "edit") ||
+    hasPermission(account, "analytics", "edit")
+  );
 }
 
 export function requireOrderRead(account: AuthedAccount): void {

@@ -74,6 +74,13 @@ function PurchaseOrderDetailInner() {
   const anyOutstanding = po.lines.some((l) => vendorPoLineOutstanding(l) > 0);
   const anyQtyEntered = Object.values(qtys).some((q) => q > 0);
 
+  // Receive all outstanding (G-08): every line filled with what is still
+  // owed; the exceptions are edited before Receive.
+  function fillOutstanding() {
+    if (!po) return;
+    setQtys(Object.fromEntries(po.lines.filter((l) => vendorPoLineOutstanding(l) > 0).map((l) => [l.id, vendorPoLineOutstanding(l)])));
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -157,9 +164,14 @@ function PurchaseOrderDetailInner() {
             Enter what actually arrived against each line, then receive. Received units are added straight
             to on-hand inventory.
           </div>
-          <button type="button" className="primary-btn" disabled={!anyQtyEntered} onClick={handleReceive}>
-            Receive
-          </button>
+          <div className="button-row">
+            <button type="button" className="secondary-btn" onClick={fillOutstanding}>
+              Receive all outstanding
+            </button>
+            <button type="button" className="primary-btn" disabled={!anyQtyEntered} onClick={handleReceive}>
+              Receive
+            </button>
+          </div>
         </div>
       )}
 

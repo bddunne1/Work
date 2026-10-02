@@ -17,7 +17,7 @@ import { prisma } from "../prisma.js";
 const router = Router();
 router.use(requireAuth);
 
-const VIEW_PAGES = ["shipment-history", "open-picks"];
+const VIEW_PAGES = ["shipment-history", "open-picks", "dock"];
 
 interface ShipLine {
   lineItemId: string;
@@ -50,6 +50,7 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req: AuthedRequ
       ...(Number.isFinite(asNumber) && /^\s*(s\.?o\.?\s*#?\s*)?\d+\s*$/i.test(q) ? [{ soNumber: asNumber }] : []),
       { salesOrder: { poNumber: { contains: q, mode: "insensitive" } } },
       { invoice: { customerName: { contains: q, mode: "insensitive" } } },
+      { proNumber: { contains: q, mode: "insensitive" } },
     ];
   }
 
@@ -89,6 +90,10 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req: AuthedRequ
       orderVersion: r.salesOrder.version,
       lines,
       units: lines.reduce((sum, l) => sum + l.qty, 0),
+      carrier: r.carrier,
+      scac: r.scac,
+      proNumber: r.proNumber,
+      pickupDate: r.pickupDate ? r.pickupDate.toISOString().slice(0, 10) : null,
       invoiceId: r.invoice?.id ?? null,
       invoiceNumber: r.invoice?.invoiceNumber ?? null,
       invoiceTotal: r.invoice && showPrices ? r.invoice.total.toString() : null,

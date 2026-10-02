@@ -18,8 +18,10 @@ import { allocatedQtyFor, canUnallocate, pendingShipmentWeight, remainingToShip,
 type Tab = "ready" | "print" | "floor";
 type ShipFilter = "all" | "due" | "tomorrow" | "later";
 
+// On the floor once the pick list has printed; the packing slip prints at
+// the pack check (sprint 3), so it no longer gates this.
 function isFullyPrinted(o: PurchaseOrder): boolean {
-  return Boolean(o.pickListPrintedAt && o.packingSlipPrintedAt);
+  return Boolean(o.pickListPrintedAt);
 }
 
 function readyToRelease(orders: PurchaseOrder[]): PurchaseOrder[] {
@@ -110,7 +112,12 @@ export default function PickPack() {
   // Print tab
   const [printSel, setPrintSel] = useState<Record<string, boolean>>({});
   const [includePick, setIncludePick] = useState(true);
-  const [includeSlip, setIncludeSlip] = useState(true);
+  // The packing slip prints at the pack check from the packed quantities;
+  // here it is off unless someone wants an early copy.
+  const [includeSlip, setIncludeSlip] = useState(false);
+  // Release and print in one step (G-05): the pick lists for the batch that
+  // just released, rendered for printing.
+  const [justReleased, setJustReleased] = useState<PurchaseOrder[] | null>(null);
   const [printing, setPrinting] = useState(false);
 
   // When the lists were last loaded - drives "today", "tomorrow" and time on
@@ -212,7 +219,7 @@ export default function PickPack() {
   );
   const nothingToRelease = selectedReady.filter((o) => releaseTotals(o).units === 0);
 
-  async function handleRelease() {
+  async function handleRelease(print = false) {
     if (!canRelease || selectedReady.length === 0 || busy) return;
     if (nothingToRelease.length > 0) {
       setMessage({
@@ -230,8 +237,16 @@ export default function PickPack() {
           lines: qtyEdits[o.soNumber]
             ? o.lineItems.map((li) => ({ lineItemId: li.id, qty: releaseQty(o, li.id) }))
             : undefined,
-        }))
+        })),
+        { print }
       );
+      if (print && res.orders.length > 0) {
+        setJustReleased(res.orders);
+        setTimeout(() => {
+          window.print();
+          setJustReleased(null);
+        }, 50);
+      }
       const released = res.results.filter((r) => r.ok).map((r) => r.soNumber);
       const failed = res.results.filter((r) => !r.ok);
       setReleaseSel((s) => {
@@ -248,7 +263,9 @@ export default function PickPack() {
       if (failed.length === 0) {
         setMessage({
           kind: "ok",
-          text: `Released ${released.length} order${released.length === 1 ? "" : "s"}. They're on the Released tab, waiting for their pick lists and packing slips.`,
+          text: print
+            ? `Released ${released.length} order${released.length === 1 ? "" : "s"} and printed the pick list${released.length === 1 ? "" : "s"}. ${released.length === 1 ? "It is" : "They are"} on the floor; the packing slip prints at the pack check.`
+            : `Released ${released.length} order${released.length === 1 ? "" : "s"}. They're on the Released tab, waiting for their pick lists.`,
         });
       } else {
         setMessage({
@@ -695,8 +712,11 @@ export default function PickPack() {
               <button type="button" className="secondary-btn" disabled={busy} onClick={() => unallocateMany(selectedReady)}>
                 Unallocate
               </button>
-              <button type="button" className="primary-btn" disabled={busy} onClick={handleRelease}>
+              <button type="button" className="primary-btn" disabled={busy} onClick={() => handleRelease(false)}>
                 {busy ? "Releasing…" : `Release ${selectedReady.length} order${selectedReady.length === 1 ? "" : "s"}`}
+              </button>
+              <button type="button" className="primary-btn" disabled={busy} onClick={() => handleRelease(true)} title="Release the selected orders and print their pick lists in one step">
+                Release and print
               </button>
             </span>
           </div>
@@ -725,6 +745,7 @@ export default function PickPack() {
       </div>
 
       {printing && <BatchPrintDocs orders={selectedPrint} includePick={includePick} includeSlip={includeSlip} />}
+      {justReleased && <BatchPrintDocs orders={justReleased} includePick includeSlip={false} />}
     </div>
   );
 }

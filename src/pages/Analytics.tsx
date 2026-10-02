@@ -287,6 +287,12 @@ export default function Analytics() {
                 <div className="stat-value">{currency(inventoryStats.totalValue)}</div>
                 <div className="stat-label">On-Hand Value</div>
               </div>
+              {inventoryStats.totalCost !== undefined && (
+                <div className="stat-card">
+                  <div className="stat-value">{currency(inventoryStats.totalCost)}</div>
+                  <div className="stat-label">On-Hand at Cost</div>
+                </div>
+              )}
               <div className="stat-card">
                 <div className="stat-value">{inventoryStats.outOfStock}</div>
                 <div className="stat-label">Out of Stock</div>
@@ -349,7 +355,28 @@ export default function Analytics() {
                 <div className="stat-value">{salesStats.ordersThisMonth}</div>
                 <div className="stat-label">Orders This Month</div>
               </div>
+              {summary.margin && (
+                <div className="stat-card">
+                  <div className="stat-value">
+                    {currency(summary.margin.gross)}
+                    {summary.margin.pct !== null ? <span className="muted"> {summary.margin.pct}%</span> : null}
+                  </div>
+                  <div className="stat-label">Gross Margin (invoiced)</div>
+                </div>
+              )}
+              {summary.margin && (
+                <div className="stat-card">
+                  <div className="stat-value">
+                    {currency(summary.margin.grossThisMonth)}
+                    {summary.margin.pctThisMonth !== null ? <span className="muted"> {summary.margin.pctThisMonth}%</span> : null}
+                  </div>
+                  <div className="stat-label">Margin This Month</div>
+                </div>
+              )}
             </div>
+            {summary.margin && summary.margin.uncosted > 0 && (
+              <p className="muted">{currency(summary.margin.uncosted)} of invoiced revenue is on items with no cost yet and is left out of the margin.</p>
+            )}
           </section>
 
           <section className="lane-section">

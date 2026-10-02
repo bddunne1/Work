@@ -5,7 +5,7 @@ import StockLedger from "../components/StockLedger";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
-import { deleteItem, getItem, updateItem } from "../lib/itemStore";
+import { deleteItem, getItem, marginPct, unitMargin, updateItem } from "../lib/itemStore";
 import Pager from "../components/Pager";
 import StatusPill from "../components/StatusPill";
 import { OPEN_ORDER_STATUSES, searchAllOrders } from "../lib/orderStore";
@@ -234,6 +234,32 @@ function ItemProfileInner() {
               <p>${view.rate.toFixed(2)}</p>
             )}
           </label>
+          {view.cost !== undefined && (
+            <label className="form-field">
+              Cost (last PO)
+              {editing ? (
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={view.cost ?? ""}
+                  placeholder="Set by the next receipt"
+                  onChange={(e) => set("cost", e.target.value === "" ? null : Number(e.target.value))}
+                />
+              ) : (
+                <p>{view.cost === null ? "—" : `$${view.cost.toFixed(2)}`}</p>
+              )}
+            </label>
+          )}
+          {view.cost !== undefined && unitMargin(view) !== undefined && (
+            <label className="form-field">
+              Margin
+              <p>
+                ${unitMargin(view)!.toFixed(2)}
+                {marginPct(view) !== undefined ? ` (${marginPct(view)!.toFixed(1)}%)` : ""}
+              </p>
+            </label>
+          )}
         </div>
 
         <table className="meta-table order-details-table">

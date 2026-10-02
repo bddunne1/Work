@@ -1,0 +1,36 @@
+metric                                 sprint 2 (round 7) sprint 3 (round 8)
+API calls                                            3606               4058
+5xx responses                                           0                  0
+409 conflicts                                          47                 61
+400s                                                    0                  0
+403s                                                    0                  0
+p50 / p95 / max ms                             28/82/2223         29/81/1137
+MB transferred                                        511                563
+inventory.docDriftItems                                 0                  0
+inventory.docDriftUnits                                 0                  0
+inventory.ledgerDriftItems                              0                  0
+inventory.negative                                      0                  0
+inventory.overcommittedItems                            0                  0
+inventory.qtyOnPurchaseOrderMismatches                  0                  0
+inventory.movementsToday                              953               1030
+orders entered today                                  203                205
+shipped units today                                 46168              51161
+at close: Entered                                     116                110
+at close: Checked                                       2                  1
+at close: Allocated                                     0                  2
+at close: Backordered                                  37                 36
+at close: Pick & Packed                                 7                  4
+at close: Shipped                                      38                 51
+waiting validation (arrived <3pm)                      98                 89
+over-shipped lines                                      0                  0
+cancelled holding stock                                 0                  0
+returns received                                        6                  7
+
+problems (sprint 2): {"conflict-409 | Analyst | validate | This record was changed by someone else since you loaded it. Reload and try again.": 11, "conflict-409 | Analyst | allocate | This record was changed by someone else since you loaded it. Reload and try again.": 38, "conflict-409 | Analyst | release-pick | S.O. #\u2026: This record was changed by someone else since you loaded it. Reload and try again.": 19, "conflict-409 | Order Entry | print-picks | This record was changed by someone else since you loaded it. Reload and try again.": 12}
+top routes by MB (sprint 2):
+  GET /api/sales-orders                         n=  962 p95=  90 avgKB=367
+  GET /api/items                                n=  614 p95=  77 avgKB=238
+  GET /api/customers                            n=  169 p95= 658 avgKB=215
+  GET /api/customers/:id                        n=  345 p95=  24 avgKB=64
+  GET /api/vendor-purchase-orders               n=   89 p95=  37 avgKB=110
+  GET /api/sales-orders/search                  n=  124 p95=  40 avgKB=20

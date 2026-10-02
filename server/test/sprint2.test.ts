@@ -551,7 +551,7 @@ describe("search, small endpoints, revenue and capacity (D-02, D-08, D-10, D-13)
     const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 4, rate: 2.5 }], { customerId: cust.id })));
     ok(await allocate(root, ok(await check(root, await makeOrder(root, [{ item: "BR-1001", ordered: 6 }], { customerId: cust.id })))));
     const report = ok(await root.get(`/api/items/${item.id}/quick-report`));
-    expect(report.summary).toEqual({ onHand: 96, onSalesOrder: 6, allocated: 6, onPurchaseOrder: 0, available: 90 });
+    expect(report.summary).toEqual({ onHand: 96, onSalesOrder: 6, allocated: 6, onPurchaseOrder: 0, available: 90, cost: null, valueAtCost: null });
     expect(report.soLines).toHaveLength(2);
     expect(report.soLines[1]).toMatchObject({ soNumber: o.soNumber, ordered: 4, shipped: 4, remaining: 0, status: "Shipped", rate: 2.5, amount: 10 });
     expect(report.soLines[0]).toMatchObject({ ordered: 6, shipped: 0, remaining: 6, allocated: 6, status: "Allocated" });

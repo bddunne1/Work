@@ -67,6 +67,20 @@ export interface ShipmentRecord {
   id: string;
   shippedAt: string;
   lines: ShipmentLine[];
+  // Carrier details as entered when this shipment was marked shipped (G-07).
+  carrier?: string | null;
+  scac?: string | null;
+  proNumber?: string | null;
+  pickupDate?: string | null;
+}
+
+// Carrier details saved on the order at the BOL step or at Mark Shipped
+// (G-07, decided 1 Oct). Blank clears a value; undefined leaves it alone.
+export interface CarrierDetails {
+  carrier?: string;
+  scac?: string;
+  proNumber?: string;
+  pickupDate?: string | null;
 }
 
 export interface BolDetails {
@@ -126,6 +140,10 @@ export interface PurchaseOrder {
   pendingShipment?: ShipmentLine[];
   pickListPrintedAt?: string;
   packingSlipPrintedAt?: string;
+  // The pack check (sprint 3): packed, checked and on the dock; the packing
+  // slip printed from the packed quantities; Mark Shipped ships exactly those.
+  readyAt?: string | null;
+  readyBy?: string | null;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";
@@ -138,6 +156,15 @@ export interface PurchaseOrder {
   // back, acknowledged from Open Picks (A-23).
   pullRequestedAt?: string | null;
   pullAcknowledgedAt?: string | null;
+  // Stock for a short line arrived on a PO; an analyst has to look (G-06).
+  stockArrivedAt?: string | null;
+  // Carrier, SCAC, PRO and pickup date of the latest shipment (G-07).
+  carrier?: string | null;
+  scac?: string | null;
+  proNumber?: string | null;
+  pickupDate?: string | null;
+  // Who has the order open for review, until when (C-08).
+  claim?: { by: string; byId: string; until: string } | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -251,6 +278,9 @@ export interface Item {
   // shipped), maintained by the server in the same transaction as every
   // order step. Available = qtyOnHand - qtyReserved.
   qtyReserved: number;
+  // Last purchase cost (E-05). Undefined when this login may not see cost
+  // (the server leaves it out); null when no cost is known yet.
+  cost?: number | null;
   preferredVendorId?: string;
   // Read-only, from the server: the preferred vendor's name (C-16).
   preferredVendor?: { name: string } | null;

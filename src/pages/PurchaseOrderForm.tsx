@@ -48,7 +48,9 @@ export default function PurchaseOrderForm() {
     const q = itemNumber.trim().toLowerCase();
     const match = catalog.find((c) => c.itemNumber.trim().toLowerCase() === q);
     if (!match) return;
-    updateLine(id, { itemNumber: match.itemNumber, description: match.description, cost: match.rate });
+    // The line starts from the item's last purchase cost (E-05); typed over
+    // when the vendor's price has moved.
+    updateLine(id, { itemNumber: match.itemNumber, description: match.description, cost: match.cost ?? 0 });
   }
 
   function addLine() {

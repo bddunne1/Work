@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Router } from "express";
-import { requireAnyPermission, requireAuth } from "../middleware/auth.js";
+import { requireAnyPermission, requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { canSeeCost } from "../lib/orderView.js";
 import { prisma } from "../prisma.js";
 
 // Server-side aggregates for the Analytics page (src/pages/Analytics.tsx),
@@ -235,15 +236,22 @@ router.use(requireAnyPermission(["analytics", "reports"], "view"));
 // answer is served while a fresh one is computed (D-13).
 const summaryCache = new StaleWhileRefresh<Awaited<ReturnType<typeof computeSummary>>>(60_000, 32);
 
-router.get("/summary", async (req, res) => {
+router.get("/summary", async (req: AuthedRequest, res) => {
   const endMonth = monthParam(req.query.endMonth);
   const thisMonth = monthParam(req.query.thisMonth);
   const months = monthsParam(req.query.months);
-  res.json(await summaryCache.get(`${endMonth}|${thisMonth}|${months}`, () => computeSummary(thisMonth, monthWindow(endMonth, months))));
+  const summary = await summaryCache.get(`${endMonth}|${thisMonth}|${months}`, () => computeSummary(thisMonth, monthWindow(endMonth, months)));
+  if (canSeeCost(req.account!)) {
+    res.json(summary);
+    return;
+  }
+  // Cost and margin stay with the accounts that may see them (E-05).
+  const { margin: _margin, ...rest } = summary;
+  res.json({ ...rest, inventory: { ...rest.inventory, totalCost: undefined } });
 });
 
 async function computeSummary(thisMonth: string, window: string[]) {
-  const [salesRows, statusRows, topCustomers, monthlyRevenue, inventoryRows, topInventoryValue, outOfStockItems] =
+  const [salesRows, statusRows, topCustomers, monthlyRevenue, inventoryRows, topInventoryValue, outOfStockItems, marginRows] =
     await Promise.all([
       prisma.$queryRaw<{ totalOrders: number; totalRevenue: number; openOrders: number; ordersThisMonth: number }[]>`
         ${orderTotalsCte()}
@@ -267,13 +275,14 @@ async function computeSummary(thisMonth: string, window: string[]) {
         LIMIT 8`,
       monthlyRevenueSeries(window),
       prisma.$queryRaw<
-        { totalItems: number; totalOnHand: number; totalOnPO: number; outOfStock: number; totalValue: number }[]
+        { totalItems: number; totalOnHand: number; totalOnPO: number; outOfStock: number; totalValue: number; totalCost: number }[]
       >`
         SELECT COUNT(*)::int AS "totalItems",
                COALESCE(SUM("qtyOnHand"), 0)::float8 AS "totalOnHand",
                COALESCE(SUM("qtyOnPurchaseOrder"), 0)::float8 AS "totalOnPO",
                (COUNT(*) FILTER (WHERE "qtyOnHand" <= 0))::int AS "outOfStock",
-               COALESCE(SUM("qtyOnHand" * "rate"), 0)::float8 AS "totalValue"
+               COALESCE(SUM("qtyOnHand" * "rate"), 0)::float8 AS "totalValue",
+               COALESCE(SUM(GREATEST("qtyOnHand", 0) * COALESCE("cost", 0)), 0)::float8 AS "totalCost"
         FROM "Item"`,
       // Ties keep the page's old order: items were listed by item #.
       prisma.$queryRaw<{ itemNumber: string; description: string; value: number }[]>`
@@ -288,7 +297,23 @@ async function computeSummary(thisMonth: string, window: string[]) {
         take: 10,
         select: { id: true, itemNumber: true, description: true, qtyOnPurchaseOrder: true },
       }),
+      // Gross margin (E-02): issued invoice item lines against the item's
+      // current cost, this month and over everything invoiced. Lines whose
+      // item has no cost yet are counted in revenue and left out of margin.
+      prisma.$queryRaw<{ revenue: number; cost: number; costedRevenue: number; revenueThisMonth: number; costThisMonth: number; costedRevenueThisMonth: number }[]>`
+        SELECT COALESCE(SUM(il."amount"), 0)::float8 AS "revenue",
+               COALESCE(SUM(il."qty" * i."cost"), 0)::float8 AS "cost",
+               COALESCE(SUM(il."amount") FILTER (WHERE i."cost" IS NOT NULL), 0)::float8 AS "costedRevenue",
+               COALESCE(SUM(il."amount") FILTER (WHERE to_char(inv."invoiceDate", 'YYYY-MM') = ${thisMonth}), 0)::float8 AS "revenueThisMonth",
+               COALESCE(SUM(il."qty" * i."cost") FILTER (WHERE to_char(inv."invoiceDate", 'YYYY-MM') = ${thisMonth}), 0)::float8 AS "costThisMonth",
+               COALESCE(SUM(il."amount") FILTER (WHERE i."cost" IS NOT NULL AND to_char(inv."invoiceDate", 'YYYY-MM') = ${thisMonth}), 0)::float8 AS "costedRevenueThisMonth"
+        FROM "InvoiceLine" il
+        JOIN "Invoice" inv ON inv."id" = il."invoiceId" AND inv."status" = 'ISSUED'
+        LEFT JOIN "Item" i ON i."id" = il."itemId"
+        WHERE il."kind" = 'ITEM'`,
     ]);
+  const m = marginRows[0];
+  const pct = (gross: number, rev: number) => (rev > 0 ? Math.round((gross / rev) * 1000) / 10 : null);
 
   const ordersByStatus: Record<string, number> = {};
   for (const r of statusRows) ordersByStatus[STATUS_OUT[r.status] ?? r.status] = r.count;
@@ -301,6 +326,14 @@ async function computeSummary(thisMonth: string, window: string[]) {
     inventory: inventoryRows[0],
     topInventoryValue,
     outOfStockItems,
+    margin: {
+      gross: Math.round((m.costedRevenue - m.cost) * 100) / 100,
+      pct: pct(m.costedRevenue - m.cost, m.costedRevenue),
+      grossThisMonth: Math.round((m.costedRevenueThisMonth - m.costThisMonth) * 100) / 100,
+      pctThisMonth: pct(m.costedRevenueThisMonth - m.costThisMonth, m.costedRevenueThisMonth),
+      // Revenue on lines whose item has no cost yet - left out of the margin.
+      uncosted: Math.round((m.revenue - m.costedRevenue) * 100) / 100,
+    },
   };
 }
 

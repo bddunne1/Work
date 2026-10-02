@@ -5,6 +5,7 @@ import { isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { allocateOrder, getOrder } from "../lib/orderStore";
+import { useClaim } from "../lib/useClaim";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
@@ -24,6 +25,8 @@ function AllocationDecisionInner() {
   const queueState = location.state as ReviewQueueState | undefined;
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  // Hold the order while it is open here (C-08); the decision ends the claim.
+  const { heldBy } = useClaim(order, Boolean(order && ["Checked", "Backordered", "Allocated"].includes(order.status)));
 
   const [customer, setCustomer] = useState<Customer | undefined>();
   const [qtys, setQtys] = useState<Record<string, number>>({});
@@ -137,9 +140,10 @@ function AllocationDecisionInner() {
   // stock) orders. Opened from a stale queue or link after the order was
   // already allocated/packed/shipped, confirming would drag it backwards.
   const staleStatus = order.status !== "Checked" && order.status !== "Backordered";
+  const blocked = staleStatus || Boolean(heldBy);
 
   async function applyDecision() {
-    if (!order || !outcomeStatus || staleStatus) return;
+    if (!order || !outcomeStatus || blocked) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
     const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
     // Allocating zero units has nothing to pick, so it's really a hold -
@@ -210,6 +214,9 @@ function AllocationDecisionInner() {
           This order is already {statusLabel(order.status)} - someone else moved it on since this queue was loaded, so it can't be
           re-allocated from here.
         </p>
+      )}
+      {!staleStatus && heldBy && (
+        <p className="stale-status-notice">{heldBy} has this order open right now. Skip to the next one, or come back in a few minutes.</p>
       )}
 
       <div className="sales-order validation-panel">
@@ -313,7 +320,7 @@ function AllocationDecisionInner() {
             <div className={`decision-outcome ${outcomeClass}`}>
               <div className="decision-outcome-label">{outcomeLabel}</div>
               <div className="decision-outcome-detail">{outcomeDetail}</div>
-              <button type="button" className="primary-btn" onClick={applyDecision} disabled={staleStatus}>
+              <button type="button" className="primary-btn" onClick={applyDecision} disabled={blocked}>
                 Confirm &amp; Apply
               </button>
             </div>

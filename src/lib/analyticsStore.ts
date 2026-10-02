@@ -15,9 +15,13 @@ export interface AnalyticsSummary {
   ordersByStatus: Record<string, number>;
   monthlyRevenue: MonthlyRevenuePoint[];
   topCustomers: { customerId: string; name: string; revenue: number }[];
-  inventory: { totalItems: number; totalOnHand: number; totalOnPO: number; outOfStock: number; totalValue: number };
+  // totalCost only for a login that may see cost (E-05).
+  inventory: { totalItems: number; totalOnHand: number; totalOnPO: number; outOfStock: number; totalValue: number; totalCost?: number };
   topInventoryValue: { itemNumber: string; description: string; value: number }[];
   outOfStockItems: { id: string; itemNumber: string; description: string; qtyOnPurchaseOrder: number }[];
+  // Gross margin on issued invoices against today's item costs (E-02);
+  // absent for a login that may not see cost.
+  margin?: { gross: number; pct: number | null; grossThisMonth: number; pctThisMonth: number | null; uncosted: number };
 }
 
 export interface CustomerAnalytics {

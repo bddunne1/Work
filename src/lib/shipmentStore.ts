@@ -14,6 +14,11 @@ export interface ShipmentRow {
   orderVersion: number;
   lines: { lineItemId: string; item: string; description: string; um: string; qty: number }[];
   units: number;
+  // Carrier details entered at the BOL step or Mark Shipped (G-07).
+  carrier: string | null;
+  scac: string | null;
+  proNumber: string | null;
+  pickupDate: string | null;
   invoiceId: string | null;
   invoiceNumber: string | null;
   invoiceTotal: string | null;

@@ -22,3 +22,33 @@ export function getCapacityLookbackDays(): number {
 export async function setCapacityLookbackDays(days: number): Promise<void> {
   await setSetting("capacity_lookback_days", Math.min(90, Math.max(1, Math.floor(days))));
 }
+
+// How Generate BOL and the shipping label prefill handling units (G-07):
+// units per package and packages per handling unit turn the staged
+// quantities into package and H.U. counts; the rest are the names and
+// freight codes the forms start with.
+export interface BolDefaults {
+  unitsPerPackage: number;
+  packagesPerHandlingUnit: number;
+  handlingUnitType: string;
+  packageType: string;
+  freightClass: string;
+  nmfcNumber: string;
+}
+
+const DEFAULT_BOL_DEFAULTS: BolDefaults = {
+  unitsPerPackage: 1,
+  packagesPerHandlingUnit: 1,
+  handlingUnitType: "Pallet",
+  packageType: "Cartons",
+  freightClass: "",
+  nmfcNumber: "",
+};
+
+export function getBolDefaults(): BolDefaults {
+  return { ...DEFAULT_BOL_DEFAULTS, ...getSetting<Partial<BolDefaults>>("bol_defaults", {}) };
+}
+
+export async function setBolDefaults(value: BolDefaults): Promise<void> {
+  await setSetting("bol_defaults", value);
+}
