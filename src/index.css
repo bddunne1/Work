@@ -1,3 +1,22 @@
+/* Sora, the brand's typeface, self-hosted (public/fonts) so it needs no
+   outside connection; the variable file covers regular to extra bold. */
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/sora-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Sora";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/sora-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* Splice brand: Ink #14181F, Signal #FF5A2C, Paper #FBFAF7. Panels are
    Paper on a warm grey; Signal is the accent for links, active states and
    selections (darkened a step where it carries body-size text); primary
@@ -31,11 +50,14 @@
   --chart-cat-6: #008300;
   --chart-seq-1: #2a78d6;
 
-  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  /* Sora across the whole app, as on the brand sheet; it runs a little
+     wide, so the base size drops a point and numbers are set tabular. */
+  --sans: "Sora", system-ui, "Segoe UI", Roboto, sans-serif;
   --brand: "Sora", system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 15px/1.5 var(--sans);
+  font: 14px/1.5 var(--sans);
+  font-variant-numeric: tabular-nums;
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
@@ -123,6 +145,15 @@ h3 {
   font-weight: 600;
   color: var(--text-h);
   margin: 0;
+}
+
+/* Form controls and buttons take the page font (Sora) rather than the
+   browser's default. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 a {
@@ -236,7 +267,12 @@ a {
   gap: 10px;
 }
 
-a.brand:hover .brand-name {
+a.brand {
+  text-decoration: none;
+}
+
+a.brand:hover .brand-name,
+a.brand:hover .wordmark {
   color: var(--accent);
 }
 
