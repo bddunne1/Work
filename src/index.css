@@ -1,16 +1,27 @@
+/* Splice brand: Ink #14181F, Signal #FF5A2C, Paper #FBFAF7. Panels are
+   Paper on a warm grey; Signal is the accent for links, active states and
+   selections (darkened a step where it carries body-size text); primary
+   buttons are Ink in the light theme and Signal in the dark one, as the
+   two tiles on the brand sheet. */
 :root {
-  --text: #3f3f46;
-  --text-h: #18181b;
-  --bg: #dfe2e8;
-  --panel-bg: #ffffff;
-  --border: #cbced6;
-  --border-strong: #a9adb8;
-  --accent: #2f5fdb;
-  --accent-hover: #24499f;
-  --accent-bg: rgba(47, 95, 219, 0.08);
-  --muted: #6b7280;
+  --ink: #14181F;
+  --signal: #FF5A2C;
+  --paper: #FBFAF7;
+  --text: #2d333b;
+  --text-h: #14181F;
+  --bg: #ECEAE4;
+  --panel-bg: #FBFAF7;
+  --border: #D9D6CE;
+  --border-strong: #B9B5AB;
+  --accent: #E04E22;
+  --accent-hover: #BF401A;
+  --accent-bg: rgba(255, 90, 44, 0.1);
+  --btn-primary: #14181F;
+  --btn-primary-hover: #2B323C;
+  --btn-primary-text: #FBFAF7;
+  --muted: #6b7079;
   --danger: #d6336c;
-  --shadow: rgba(15, 23, 42, 0.08) 0 1px 2px, rgba(15, 23, 42, 0.06) 0 1px 3px;
+  --shadow: rgba(20, 24, 31, 0.08) 0 1px 2px, rgba(20, 24, 31, 0.06) 0 1px 3px;
 
   --chart-cat-1: #2a78d6;
   --chart-cat-2: #eb6834;
@@ -21,6 +32,7 @@
   --chart-seq-1: #2a78d6;
 
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --brand: "Sora", system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 15px/1.5 var(--sans);
@@ -35,16 +47,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --text: #d4d4d8;
-    --text-h: #f4f4f5;
-    --bg: #17181c;
-    --panel-bg: #202127;
-    --border: #33343c;
-    --border-strong: #44454f;
-    --accent: #6d8cf0;
-    --accent-hover: #8aa2f4;
-    --accent-bg: rgba(109, 140, 240, 0.15);
-    --muted: #9299a6;
+    --text: #d3d7dc;
+    --text-h: #FBFAF7;
+    --bg: #14181F;
+    --panel-bg: #1C2129;
+    --border: #2C323B;
+    --border-strong: #3E4650;
+    --accent: #FF7A55;
+    --accent-hover: #FF9A7E;
+    --accent-bg: rgba(255, 90, 44, 0.16);
+    --btn-primary: #FF5A2C;
+    --btn-primary-hover: #FF7A55;
+    --btn-primary-text: #14181F;
+    --muted: #8f97a3;
     --danger: #f06595;
     --shadow: rgba(0, 0, 0, 0.4) 0 1px 2px, rgba(0, 0, 0, 0.3) 0 1px 3px;
     --chart-cat-1: #3987e5;
@@ -58,16 +73,19 @@
 }
 
 :root[data-theme="dark"] {
-  --text: #d4d4d8;
-  --text-h: #f4f4f5;
-  --bg: #17181c;
-  --panel-bg: #202127;
-  --border: #33343c;
-  --border-strong: #44454f;
-  --accent: #6d8cf0;
-  --accent-hover: #8aa2f4;
-  --accent-bg: rgba(109, 140, 240, 0.15);
-  --muted: #9299a6;
+  --text: #d3d7dc;
+  --text-h: #FBFAF7;
+  --bg: #14181F;
+  --panel-bg: #1C2129;
+  --border: #2C323B;
+  --border-strong: #3E4650;
+  --accent: #FF7A55;
+  --accent-hover: #FF9A7E;
+  --accent-bg: rgba(255, 90, 44, 0.16);
+  --btn-primary: #FF5A2C;
+  --btn-primary-hover: #FF7A55;
+  --btn-primary-text: #14181F;
+  --muted: #8f97a3;
   --danger: #f06595;
   --shadow: rgba(0, 0, 0, 0.4) 0 1px 2px, rgba(0, 0, 0, 0.3) 0 1px 3px;
   --chart-cat-1: #3987e5;
@@ -141,7 +159,7 @@ a {
   width: 46px;
   height: 46px;
   flex: none;
-  filter: drop-shadow(0 2px 4px rgba(27, 63, 156, 0.35));
+  filter: drop-shadow(0 2px 4px rgba(20, 24, 31, 0.35));
 }
 
 .sidebar-links {
@@ -223,22 +241,25 @@ a.brand:hover .brand-name {
 }
 
 .brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+  width: 40px;
+  height: 40px;
+  flex: none;
 }
 
 .brand-name {
   font-weight: 700;
   color: var(--text-h);
   font-size: 15px;
+}
+
+/* The Splice wordmark, Sora Bold with the brand sheet's tight tracking. */
+.wordmark {
+  font-family: var(--brand);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-h);
 }
 
 .brand-sub {
@@ -1965,7 +1986,7 @@ a.dash-lookup-row:focus-visible {
 }
 
 .release-chip-today {
-  background: rgba(47, 95, 219, 0.14);
+  background: rgba(255, 90, 44, 0.14);
   color: var(--accent);
 }
 
@@ -2434,8 +2455,8 @@ a.dash-lookup-row:focus-visible {
 }
 
 .primary-btn {
-  background: var(--accent);
-  color: #fff;
+  background: var(--btn-primary);
+  color: var(--btn-primary-text);
   border: none;
   border-radius: 6px;
   padding: 9px 18px;
@@ -2448,7 +2469,7 @@ a.dash-lookup-row:focus-visible {
 }
 
 .primary-btn:hover {
-  background: var(--accent-hover);
+  background: var(--btn-primary-hover);
 }
 
 .primary-btn:disabled {
@@ -4053,4 +4074,24 @@ a.dash-lookup-row:focus-visible {
   gap: 12px;
   flex-wrap: wrap;
   font-size: 12.5px;
+}
+
+/* The mark sits on its Ink tile in the light theme and on its Signal tile
+   in the dark one, as the two app tiles on the brand sheet. */
+.theme-dark-only {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-light-only {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .theme-dark-only {
+    display: block;
+  }
+}
+:root[data-theme="dark"] .theme-light-only {
+  display: none;
+}
+:root[data-theme="dark"] .theme-dark-only {
+  display: block;
 }

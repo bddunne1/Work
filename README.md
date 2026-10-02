@@ -1,4 +1,6 @@
-# Aamstrand ERP
+# Splice
+
+Splice is the order management system built for Aamstrand Ropes & Twines.
 
 Purchase-order / fulfillment ERP built around the order workflow:
 order entry → validation → allocation → pick & pack → open picks (ship) →

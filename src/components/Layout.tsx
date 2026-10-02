@@ -53,7 +53,8 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <nav className="sidebar-nav no-print">
-        <BrandMark className="sidebar-brand-mark" />
+        <BrandMark className="sidebar-brand-mark theme-light-only" />
+        <BrandMark className="sidebar-brand-mark theme-dark-only" tile="signal" />
         <div className="sidebar-links">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             <DashboardIcon />
