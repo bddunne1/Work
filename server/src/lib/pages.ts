@@ -34,6 +34,7 @@ export const PAGE_LABELS: Record<string, string> = {
   settings: "Settings",
   "audit-log": "Activity Log",
   invoices: "Invoices",
+  dock: "Dock",
 };
 
 export function pageLabel(key: string): string {

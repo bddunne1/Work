@@ -137,6 +137,8 @@ router.get("/", async (req: AuthedRequest, res) => {
       Prisma.sql`lower(so."poNumber") LIKE ${pattern}`,
       Prisma.sql`lower(so."billTo"->>'name') LIKE ${pattern}`,
       Prisma.sql`lower(so."shipTo"->>'name') LIKE ${pattern}`,
+      // The carrier's PRO number, once shipped (G-07).
+      Prisma.sql`lower(so."proNumber") LIKE ${pattern}`,
     ];
     if (/^\d+$/.test(q)) {
       const n = Number(q);

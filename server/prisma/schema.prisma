@@ -218,6 +218,10 @@ model Item {
   description        String
   um                 String   @default("EA")
   rate               Decimal  @default(0) @db.Decimal(12, 4)
+  // Last purchase cost (E-05): editable on the catalog, set from the PO
+  // line by every receipt. Null until known. Shown only to accounts that
+  // may see cost (lib/orderView.ts canSeeCost).
+  cost               Decimal? @db.Decimal(12, 4)
   qtyOnHand          Int      @default(0)
   qtyOnPurchaseOrder Int      @default(0)
   // Units held by open orders (allocated or staged, not yet shipped): the
@@ -310,6 +314,12 @@ model SalesOrder {
   pendingShipment      Json?
   pickListPrintedAt    DateTime?
   packingSlipPrintedAt DateTime?
+  // The pack check (decided 1 Oct): the goods are packed, checked and on
+  // the dock, the packing slip printed from the packed quantities. Mark
+  // Shipped then ships exactly those.
+  readyAt              DateTime?
+  readyBy              String?
+  readyById            String?
   estimatedShipDate    DateTime?       @db.Date
   pickPackStatus       PickPackStatus?
   bol                  Json?
@@ -328,6 +338,21 @@ model SalesOrder {
   // The most recent shipment, kept here by the ship and undo commands so
   // Shipment History sorts and filters without joining every record (D-08).
   lastShippedAt      DateTime?
+  // Carrier details for the shipment (G-07): from the BOL step or Mark
+  // Shipped. The latest shipment's values; each ShipmentRecord keeps its own.
+  carrier            String?
+  scac               String?
+  proNumber          String?
+  pickupDate         DateTime?       @db.Date
+  // Who has this order open for review, until when (ten minutes): the
+  // validation and allocation queues skip it for everyone else (C-08).
+  claimedById        String?
+  claimedBy          String?
+  claimedUntil       DateTime?
+  // Set when a PO receipt lands stock for a back-ordered line, cleared by
+  // the next allocation decision: the order is flagged for an analyst, never
+  // filled by the system (decided 1 Oct, G-06).
+  stockArrivedAt     DateTime?
 
   lineItems       SalesOrderLine[]
   shipmentHistory ShipmentRecord[]
@@ -392,6 +417,11 @@ model ShipmentRecord {
   shippedAt  DateTime   @default(now())
   // [{ lineItemId, qty }]
   lines      Json
+  // Carrier details as entered when this shipment was marked shipped (G-07).
+  carrier    String?
+  scac       String?
+  proNumber  String?
+  pickupDate DateTime?  @db.Date
   // The invoice raised for this shipment (one per shipment); voided, not
   // deleted, when the shipment is undone.
   invoice    Invoice?

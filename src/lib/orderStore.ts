@@ -1,6 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
-import type { BolDetails, PurchaseOrder, ShipmentLine } from "../types";
+import type { BolDetails, CarrierDetails, PurchaseOrder, ShipmentLine } from "../types";
 
 const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
@@ -57,6 +57,7 @@ function mapOrder(order: PurchaseOrder): PurchaseOrder {
     orderDate: order.orderDate.slice(0, 10),
     dueDate: order.dueDate.slice(0, 10),
     estimatedShipDate: order.estimatedShipDate ? order.estimatedShipDate.slice(0, 10) : undefined,
+    pickupDate: order.pickupDate ? order.pickupDate.slice(0, 10) : undefined,
     taxRate: Number(order.taxRate),
     lineItems: order.lineItems.map((li) => ({ ...li, rate: Number(li.rate), customerPartNumber: li.customerPartNumber ?? undefined })),
     checkedAt: order.checkedAt ?? undefined,
@@ -215,28 +216,72 @@ export function markPrinted(
   return command(order, "mark-printed", { pickList: Boolean(docs.pickList), packingSlip: Boolean(docs.packingSlip), lines });
 }
 
+// A ten-minute claim while an order is under review (C-08). A 409 means
+// someone else has it; the body names them.
+export function claimOrder(order: Pick<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
+  return api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/claim`, {}).then(mapOrder);
+}
+
+export function unclaimOrder(order: Pick<PurchaseOrder, "soNumber">): Promise<PurchaseOrder> {
+  return api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/unclaim`, {}).then(mapOrder);
+}
+
+// The Back Order Queue, with each order's short lines, what is free now,
+// the first open PO covering each, and the group it falls in (G-06).
+export interface BackOrderLine {
+  lineItemId: string;
+  item: string;
+  remaining: number;
+  free: number;
+  coverage: "full" | "partial" | "none" | "shipped";
+  po: { poNumber: string; expectedDate: string | null; outstanding: number } | null;
+}
+export interface BackOrderRow extends PurchaseOrder {
+  group: "arrived" | "covered" | "uncovered";
+  coverage: BackOrderLine[];
+  fillableNow: boolean;
+  projectedArrival: string | null;
+}
+export async function listBackOrders(): Promise<{ rows: BackOrderRow[]; counts: { arrived: number; covered: number; uncovered: number } }> {
+  const r = await api.get<{ rows: BackOrderRow[]; counts: { arrived: number; covered: number; uncovered: number } }>("/api/sales-orders/back-orders");
+  return { ...r, rows: r.rows.map((row) => ({ ...row, ...mapOrder(row) })) };
+}
+
 // The warehouse has pulled a cancelled order's pick back off the floor.
 export function acknowledgePull(order: PurchaseOrder): Promise<PurchaseOrder> {
   return command(order, "acknowledge-pull");
+}
+
+// The pack check (sprint 3): packed quantities per line (at most what was
+// staged) and who packed it; the server prints-stamps the packing slip and
+// marks the order Ready to ship.
+export function readyOrder(order: PurchaseOrder, lines?: ShipmentLine[], packedBy?: string): Promise<PurchaseOrder> {
+  return command(order, "ready", { lines, packedBy: packedBy || undefined });
+}
+
+// Back to the floor for another pack check.
+export function unreadyOrder(order: PurchaseOrder): Promise<PurchaseOrder> {
+  return command(order, "unready");
 }
 
 export function setEstimatedShipDate(order: PurchaseOrder, date: string | null): Promise<PurchaseOrder> {
   return command(order, "set-ship-date", { estimatedShipDate: date || null });
 }
 
-export function setBol(order: PurchaseOrder, bol: BolDetails): Promise<PurchaseOrder> {
-  return command(order, "set-bol", { bol });
+export function setBol(order: PurchaseOrder, bol: BolDetails, carrier?: CarrierDetails): Promise<PurchaseOrder> {
+  return command(order, "set-bol", { bol, carrier });
 }
 
 // Confirms a shipment of `lines`: the server records it, rolls the order to
 // Shipped/Backordered and takes the units out of qtyOnHand in a single
 // transaction. A stale `order.version` (someone else touched the order)
 // fails with a 409 and changes nothing - so a retry can't double-ship stock.
-export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[]): Promise<PurchaseOrder> {
+export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[], carrier?: CarrierDetails): Promise<PurchaseOrder> {
   return mapOrder(
     await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/ship`, {
       version: order.version,
       lines: lines.filter((l) => l.qty > 0),
+      carrier,
     })
   );
 }
@@ -268,8 +313,11 @@ export interface ReleaseResult {
 // Releases allocated orders to the warehouse in one call. Each order is
 // released (or refused) on its own, so a stale order in the batch doesn't
 // stop the rest - check `results` for any that didn't go.
-export async function releaseOrders(requests: ReleaseRequest[]): Promise<ReleaseResult> {
+// `print` marks the pick list printed in the same step (G-05); the caller
+// then renders the pick lists for the orders that came back.
+export async function releaseOrders(requests: ReleaseRequest[], opts: { print?: boolean } = {}): Promise<ReleaseResult> {
   const res = await api.post<ReleaseResult>("/api/sales-orders/release", {
+    print: Boolean(opts.print),
     orders: requests.map((r) => ({ soNumber: r.order.soNumber, version: r.order.version, lines: r.lines })),
   });
   return { results: res.results, orders: res.orders.map(mapOrder) };

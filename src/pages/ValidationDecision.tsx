@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
 import { isConflictError } from "../lib/apiClient";
+import { useAuth } from "../lib/authContext";
 import { checkOrder, getOrder } from "../lib/orderStore";
+import { useClaim } from "../lib/useClaim";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
@@ -21,8 +23,11 @@ function ValidationDecisionInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
+  const { account } = useAuth();
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  // Hold the order while it is open here (C-08); the check ends the claim.
+  const { heldBy } = useClaim(order, Boolean(order && order.status === "Entered"));
 
   useEffect(() => {
     if (!soNumber) return;
@@ -49,6 +54,9 @@ function ValidationDecisionInner() {
   // past validation - checking it again would drag it back to Checked while
   // leaving its allocation/pick in place.
   const staleStatus = order.status !== "Entered";
+  // Maker is not checker (G-10): the server refuses too; say so up front.
+  const mine = Boolean(account && account.role !== "admin" && order.writtenById === account.id);
+  const blocked = staleStatus || mine || Boolean(heldBy);
 
   // Park this order for the session and move on (R4-19).
   function skip() {
@@ -60,7 +68,7 @@ function ValidationDecisionInner() {
   }
 
   async function markChecked() {
-    if (!order || staleStatus) return;
+    if (!order || blocked) return;
     try {
       // The server stamps who checked it from the session, not from here.
       await checkOrder(order);
@@ -108,6 +116,12 @@ function ValidationDecisionInner() {
         <p className="stale-status-notice">
           This order is already {statusLabel(order.status)} - it has moved past validation since this queue was loaded.
         </p>
+      )}
+      {!staleStatus && mine && (
+        <p className="stale-status-notice">You entered this order, so another person has to check it. Skip to the next one.</p>
+      )}
+      {!staleStatus && heldBy && (
+        <p className="stale-status-notice">{heldBy} has this order open right now. Skip to the next one, or come back in a few minutes.</p>
       )}
 
       <div className="sales-order validation-panel">
@@ -165,7 +179,7 @@ function ValidationDecisionInner() {
           <div className="decision-outcome-detail">
             Marking this checked sends it to Allocation to confirm stock and release it for picking.
           </div>
-          <button type="button" className="primary-btn" onClick={markChecked} disabled={staleStatus}>
+          <button type="button" className="primary-btn" onClick={markChecked} disabled={blocked}>
             Mark as Checked
           </button>
         </div>

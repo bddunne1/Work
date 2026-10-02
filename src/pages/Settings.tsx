@@ -4,8 +4,11 @@ import type { CompanyInfo } from "../lib/companyStore";
 import { getCompanyInfo, setCompanyInfo } from "../lib/companyStore";
 import { maxExistingSalesOrderNumber, nextSalesOrderNumber, setNextSalesOrderNumber } from "../lib/orderStore";
 import {
+  type BolDefaults,
+  getBolDefaults,
   getCapacityLookbackDays,
   getLeadTimeDays,
+  setBolDefaults,
   setCapacityLookbackDays,
   setLeadTimeDays,
 } from "../lib/settingsStore";
@@ -17,6 +20,36 @@ export default function Settings() {
 
   const [leadTime, setLeadTime] = useState(() => getLeadTimeDays());
   const [lookback, setLookback] = useState(() => getCapacityLookbackDays());
+
+  // BOL and label prefill (G-07): typed as text, validated on save.
+  const [bolDefaults, setBolDefaultsState] = useState<BolDefaults>(() => getBolDefaults());
+  const [bolText, setBolText] = useState(() => {
+    const d = getBolDefaults();
+    return { unitsPerPackage: String(d.unitsPerPackage), packagesPerHandlingUnit: String(d.packagesPerHandlingUnit) };
+  });
+  const [bolSaved, setBolSaved] = useState(false);
+  const [bolError, setBolError] = useState("");
+
+  function setBolField<K extends keyof BolDefaults>(key: K, value: BolDefaults[K]) {
+    setBolDefaultsState((d) => ({ ...d, [key]: value }));
+    setBolSaved(false);
+  }
+
+  async function saveBolDefaults(e: React.FormEvent) {
+    e.preventDefault();
+    const upp = Number(bolText.unitsPerPackage);
+    const pph = Number(bolText.packagesPerHandlingUnit);
+    if (!Number.isInteger(upp) || upp < 1 || !Number.isInteger(pph) || pph < 1) {
+      setBolError("Units per package and packages per handling unit must be whole numbers, 1 or more.");
+      return;
+    }
+    setBolError("");
+    const next = { ...bolDefaults, unitsPerPackage: upp, packagesPerHandlingUnit: pph };
+    await setBolDefaults(next);
+    setBolDefaultsState(next);
+    setBolSaved(true);
+    setTimeout(() => setBolSaved(false), 2000);
+  }
 
   const [nextSo, setNextSo] = useState("");
   const [soError, setSoError] = useState("");
@@ -193,6 +226,50 @@ export default function Settings() {
           Lead time is applied to every new order at entry - see Order Entry. The capacity lookback
           is the default window Warehouse Capacity uses for throughput and dwell time.
         </p>
+      </div>
+
+      <div className="import-panel">
+        <h3>BOL and Label Defaults</h3>
+        <p className="muted">
+          Generate BOL and the shipping label start from these: the staged quantities become package and
+          handling-unit counts, and the weight comes from each item's weight. Everything stays editable on
+          the form.
+        </p>
+        <form onSubmit={saveBolDefaults}>
+          <div className="form-row">
+            <label className="form-field">
+              Units per package
+              <input type="number" min={1} step={1} value={bolText.unitsPerPackage} onChange={(e) => setBolText((t) => ({ ...t, unitsPerPackage: e.target.value }))} />
+            </label>
+            <label className="form-field">
+              Packages per handling unit
+              <input type="number" min={1} step={1} value={bolText.packagesPerHandlingUnit} onChange={(e) => setBolText((t) => ({ ...t, packagesPerHandlingUnit: e.target.value }))} />
+            </label>
+            <label className="form-field">
+              Handling unit type
+              <input value={bolDefaults.handlingUnitType} onChange={(e) => setBolField("handlingUnitType", e.target.value)} />
+            </label>
+            <label className="form-field">
+              Package type
+              <input value={bolDefaults.packageType} onChange={(e) => setBolField("packageType", e.target.value)} />
+            </label>
+            <label className="form-field">
+              Freight class
+              <input value={bolDefaults.freightClass} onChange={(e) => setBolField("freightClass", e.target.value)} />
+            </label>
+            <label className="form-field">
+              NMFC #
+              <input value={bolDefaults.nmfcNumber} onChange={(e) => setBolField("nmfcNumber", e.target.value)} />
+            </label>
+          </div>
+          {bolError && <p className="login-error">{bolError}</p>}
+          <div className="inline-actions">
+            <button type="submit" className="primary-btn">
+              Save BOL Defaults
+            </button>
+            {bolSaved && <span className="muted">Saved.</span>}
+          </div>
+        </form>
       </div>
 
       <div className="import-panel">

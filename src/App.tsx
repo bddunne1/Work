@@ -34,6 +34,8 @@ import Items from "./pages/Items";
 import Login from "./pages/Login";
 import OpenPicks from "./pages/OpenPicks";
 import OpenPicksDetail from "./pages/OpenPicksDetail";
+import Dock from "./pages/Dock";
+import DockPick from "./pages/DockPick";
 import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
 import Preferences from "./pages/Preferences";
@@ -107,6 +109,8 @@ function App() {
             <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
             <Route path="open-picks" element={<OpenPicks />} />
             <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
+            <Route path="dock" element={<Dock />} />
+            <Route path="dock/:soNumber" element={<DockPick />} />
             <Route path="warehouse-capacity" element={<WarehouseCapacity />} />
             <Route path="schedule" element={<ScheduleShipments />} />
             <Route path="shipment-history" element={<ShipmentHistory />} />

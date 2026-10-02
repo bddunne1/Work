@@ -1,15 +1,20 @@
 import { expect, test } from "@playwright/test";
-import { acceptDialogs, api, orderReadyToShip, seed, signIn, so } from "./helpers";
+import { acceptDialogs, api, orderPrinted, seed, signIn, so } from "./helpers";
 
-// Logistics confirms the shipment; Accounting finds the draft invoice in
+// Logistics does the pack check (Ready to ship, packing slip printed), then
+// marks the order shipped at pickup; Accounting finds the draft invoice in
 // the review queue and issues it.
-test("ship an order and issue its invoice", async ({ page }) => {
+test("pack check, ship an order and issue its invoice", async ({ page }) => {
   const state = seed();
-  const order = await orderReadyToShip(state, [{ item: state.itemNumbers[0], ordered: 3, rate: 4 }]);
+  const order = await orderPrinted(state, [{ item: state.itemNumbers[0], ordered: 3, rate: 4 }]);
   acceptDialogs(page);
   await signIn(page);
 
   await page.goto(`/#/open-picks/${order.soNumber}`);
+  await expect(page.getByRole("heading", { name: "Pack check" })).toBeVisible();
+  await page.getByRole("button", { name: "Ready to ship · print packing slip" }).click();
+  await expect(page.getByRole("heading", { name: "Ready to ship" })).toBeVisible();
+  await expect.poll(async () => (await api("GET", so(order))).readyAt).toBeTruthy();
   await page.getByRole("button", { name: "Mark Shipped" }).click();
   await expect.poll(async () => (await api("GET", so(order))).status).toBe("Shipped");
 

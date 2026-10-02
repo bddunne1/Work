@@ -81,7 +81,7 @@ export default function ShipmentHistory() {
   }
 
   function exportCsv() {
-    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Lines", "Units", "Invoice", "Invoice Total"];
+    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Lines", "Units", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
     const body = rows.map((r) => [
       new Date(r.shippedAt).toLocaleString(),
       String(r.soNumber),
@@ -90,6 +90,10 @@ export default function ShipmentHistory() {
       `${r.shipTo.city}, ${r.shipTo.state}`,
       r.lines.map((l) => `${l.item} x ${l.qty}`).join("; "),
       String(r.units),
+      r.carrier ?? "",
+      r.scac ?? "",
+      r.proNumber ?? "",
+      r.pickupDate ?? "",
       r.invoiceNumber ?? (r.invoiceId ? "Draft" : ""),
       r.invoiceTotal ?? "",
     ]);
@@ -132,7 +136,7 @@ export default function ShipmentHistory() {
         <input
           id="shipments-search"
           className="search-input"
-          placeholder="Search by S.O. #, P.O. #, or customer..."
+          placeholder="Search by S.O. #, P.O. #, customer, or PRO #..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -168,6 +172,8 @@ export default function ShipmentHistory() {
               <th>Ship To</th>
               <th>Lines</th>
               <th className="amount-cell">Units</th>
+              <th>Carrier</th>
+              <th>PRO #</th>
               <th>Invoice</th>
               <th className="amount-cell">Total</th>
               <th></th>
@@ -190,6 +196,8 @@ export default function ShipmentHistory() {
                 </td>
                 <td>{r.lines.map((l) => `${l.item} × ${l.qty}`).join(", ")}</td>
                 <td className="amount-cell">{r.units.toLocaleString()}</td>
+                <td>{[r.carrier, r.scac].filter(Boolean).join(" · ") || "—"}</td>
+                <td>{r.proNumber || "—"}</td>
                 <td onClick={(e) => e.stopPropagation()}>
                   {r.invoiceId ? (
                     <Link to={`/invoices/${encodeURIComponent(r.invoiceNumber ?? r.invoiceId)}`} className={r.invoiceStatus === "VOID" ? "muted" : undefined}>
@@ -217,7 +225,7 @@ export default function ShipmentHistory() {
                 This page: {rows.length} shipment{rows.length === 1 ? "" : "s"}
               </td>
               <td className="amount-cell">{pageUnits.toLocaleString()}</td>
-              <td colSpan={3}></td>
+              <td colSpan={5}></td>
             </tr>
           </tfoot>
         </table>

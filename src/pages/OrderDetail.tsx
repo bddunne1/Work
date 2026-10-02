@@ -28,8 +28,8 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
     case "Allocated":
       return { label: "To Release Orders", to: `/pick-pack/${order.soNumber}` };
     case "Pick & Packed":
-      return order.pickListPrintedAt && order.packingSlipPrintedAt
-        ? { label: "To Open Picks", to: `/open-picks/${order.soNumber}` }
+      return order.pickListPrintedAt
+        ? { label: order.readyAt ? "To the Dock" : "To the Pack Check", to: `/open-picks/${order.soNumber}` }
         : { label: "To Release Orders", to: "/pick-pack" };
     default:
       return null;
@@ -464,6 +464,30 @@ function OrderDetailInner() {
           pricesHidden={view.pricesHidden}
         />
 
+        {(view.carrier || view.scac || view.proNumber || view.pickupDate) && (
+          <div className="shipment-history">
+            <div className="so-notes-label muted">Shipping</div>
+            <table className="meta-table order-details-table">
+              <thead>
+                <tr>
+                  <th>Carrier</th>
+                  <th>SCAC</th>
+                  <th>PRO #</th>
+                  <th>Pickup Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{view.carrier || "—"}</td>
+                  <td>{view.scac || "—"}</td>
+                  <td>{view.proNumber || "—"}</td>
+                  <td>{view.pickupDate || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {view.shipmentHistory && view.shipmentHistory.length > 0 && (
           <div className="shipment-history">
             <div className="so-notes-label muted">Shipment History</div>
@@ -473,6 +497,8 @@ function OrderDetailInner() {
                   <tr>
                     <th>Date</th>
                     <th>Lines Shipped</th>
+                    <th>Carrier</th>
+                    <th>PRO #</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -480,6 +506,8 @@ function OrderDetailInner() {
                     <tr key={rec.id}>
                       <td>{new Date(rec.shippedAt).toLocaleString()}</td>
                       <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+                      <td>{[rec.carrier, rec.scac].filter(Boolean).join(" · ") || "—"}</td>
+                      <td>{rec.proNumber || "—"}</td>
                     </tr>
                   ))}
                 </tbody>

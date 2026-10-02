@@ -210,6 +210,94 @@ preferred vendor's name. The stage between release and shipment reads as
 Released on screen (its stored status name is unchanged); a new order line
 scrolls into view; the Release Orders tile shows "to release · to print".
 
+## A human at every step
+
+An order is never checked or allocated by the system. The person who
+entered an order cannot be the one who checks it (Admin excepted); the
+Validation queue marks those "yours" and Review Queue steps past them.
+Opening an order on a decision page claims it for ten minutes
+(`POST /api/sales-orders/:soNumber/claim`): the queues show who has it and
+step past it, the decision or leaving the page ends the claim, and an old
+claim runs out on its own.
+
+When a PO receipt lands stock that a back order waits on, the order is
+flagged (`stockArrivedAt`) and nothing is allocated. The Back Order Queue
+(`GET /api/sales-orders/back-orders`) groups orders as stock arrived (to
+review, with what is free per line), covered by an open PO (with the
+projected arrival), or not covered; the Dashboard counts the first group.
+The next allocation decision, allocate or hold again, clears the flag.
+
+### The pack check and Ready to ship
+
+A released pick has three stops on the floor. Release prints the pick list
+("Release and print" does both in one step, or print later from Open
+Picks). When the goods are picked and packed, the **pack check**
+(`POST /api/sales-orders/:soNumber/ready`) records what was actually
+packed per line, shorts included, marks the order Ready to ship
+(`readyAt`, `readyBy`) and prints the packing slip from those quantities.
+Mark Shipped (`/ship`) then requires the order to be ready and ships
+exactly the packed quantities; a short leaves the balance on back order.
+"Back to the floor" (`/unready`) reopens the pack check.
+
+The warehouse works from the **Dock** page (`/dock`, page key `dock`,
+preset Warehouse): being picked, Ready to ship, shipped today and picks to
+pull, with no prices anywhere. The shared floor login types the packer's
+initials at the pack check. Logistics can do the same pack check from Open
+Picks under its own name. The Dashboard splits the floor into "to pack"
+and "on the dock", and the Ready to ship pill marks orders waiting for the
+carrier.
+
+### Carrier details and the BOL
+
+Carrier, SCAC, PRO number and pickup date live on the order and on each
+shipment record. Generate BOL saves them with the BOL (`set-bol` takes a
+`carrier` object) and Mark Shipped saves or corrects them at pickup
+(`ship` takes the same object; the pickup date defaults to the ship
+date). They show on the Sales Order View, in Shipment History (and its
+CSV) and on the pack check, and a PRO number is searchable from Open
+Orders and Shipment History.
+
+Generate BOL prefills each order from what it carries: the staged (or
+ordered) quantities times the item weights, turned into package and
+handling-unit counts by the BOL defaults in Settings (units per package,
+packages per handling unit, the unit names, freight class and NMFC). The
+carrier comes from an earlier BOL or shipment, else the customer's routing
+guide, else the order's Ship Via. The shipping label fills itself the same
+way when an S.O. # is typed.
+
+### Receiving, cost and margin
+
+On a purchase order, "Receive all outstanding" fills every line with what
+is still owed so only the exceptions need typing before Receive. Each
+receipt sets the item's last purchase cost (`Item.cost`), which the
+catalog editor can also set by hand; a new PO line starts from it.
+
+Cost is shown only to accounts that may see it: Purchasing (view on
+Purchase Orders or Receiving), catalog editors, the Sales Manager (edit on
+Analytics), Director and Admin. The server leaves `cost` off the item for
+everyone else, and the pages follow. Where cost is visible: the Item
+Profile shows cost and margin per unit, the Item Quick Report adds cost,
+on-hand value at cost and margin per line, the Sales Order Lines and
+Inventory reports gain cost and margin columns, and Analytics shows
+on-hand value at cost and the gross margin on issued invoices (lines
+whose item has no cost yet are counted in revenue and reported as
+uncosted).
+
+### Order Entry as a keyboard grid
+
+The line grid on Order Entry is worked without the mouse: Enter in the
+Item cell resolves it (our item number or the customer's own part number)
+and jumps to Ordered, Enter again goes to Rate, and Enter on a complete
+line adds the next one. Pasting "item, qty" lines from a customer's PO or
+a spreadsheet into an Item cell fills a row per line. Each line shows what
+is available now (on hand less what other open orders hold, red when the
+order exceeds it) and whether the price came from the customer's sheet or
+the catalog. The due date starts from the order date plus the lead time
+until it is typed over. A P.O. number already entered for the customer
+shows a warning (not a block) beside the field and in the side panel,
+which also carries the customer's terms and flags, routing guide and
+latest notes.
+
 ## Development
 
 ```bash

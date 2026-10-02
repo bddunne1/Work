@@ -1,26 +1,24 @@
-import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { listItems } from "../lib/itemStore";
 import LoadFailed from "../components/LoadFailed";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
+import { listItems } from "../lib/itemStore";
 import { acknowledgePull, listOpenOrders, listPendingPulls, shipOrder } from "../lib/orderStore";
+import { showToast } from "../lib/toast";
 import type { PurchaseOrder } from "../types";
 import { pendingShipmentWeight, weightIndex } from "../types";
 
-function openPickOrders(orders: PurchaseOrder[]): PurchaseOrder[] {
-  return orders.filter(
-    (o) =>
-      o.status === "Pick & Packed" &&
-      (o.pendingShipment?.length ?? 0) > 0 &&
-      o.pickListPrintedAt &&
-      o.packingSlipPrintedAt
-  );
+// Logistics' view of the floor (sprint 3): picks being picked and packed
+// (pick list printed), picks that passed the pack check and wait on the
+// dock as Ready to ship, and cancelled picks to pull back. Mark Shipped
+// ships exactly what the pack check packed.
+function onFloor(orders: PurchaseOrder[]): PurchaseOrder[] {
+  return orders.filter((o) => o.status === "Pick & Packed" && (o.pendingShipment?.length ?? 0) > 0 && o.pickListPrintedAt);
 }
 
-function daysInWarehouse(pickedAt: string): number {
-  return (Date.now() - new Date(pickedAt).getTime()) / 86_400_000;
+function daysSince(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 86_400_000;
 }
 
 export default function OpenPicks() {
@@ -31,11 +29,12 @@ export default function OpenPicks() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [weights, setWeights] = useState<Map<string, number>>(new Map());
   const [pulling, setPulling] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const [loadFailed, setLoadFailed] = useState(false);
   const load = () => {
     listItems().then((items) => setWeights(weightIndex(items))).catch(() => {});
-    listOpenOrders().then((os) => setOrders(openPickOrders(os))).catch(() => setLoadFailed(true));
+    listOpenOrders().then((os) => setOrders(onFloor(os))).catch(() => setLoadFailed(true));
     listPendingPulls().then(setPulls).catch(() => {});
   };
   const retry = () => {
@@ -43,6 +42,10 @@ export default function OpenPicks() {
     load();
   };
   useEffect(load, []);
+
+  const picking = orders.filter((o) => !o.readyAt);
+  const ready = orders.filter((o) => o.readyAt);
+  const selectedOrders = ready.filter((o) => selected[o.soNumber]);
 
   // Cancelled after its pick list printed: the goods are staged on the floor
   // and have to go back on the shelf (A-23).
@@ -64,24 +67,6 @@ export default function OpenPicks() {
     }
   }
 
-  const selectedOrders = orders.filter((o) => selected[o.soNumber]);
-
-  function toggleSelected(soNumber: string) {
-    setSelected((s) => ({ ...s, [soNumber]: !s[soNumber] }));
-  }
-
-  function selectAll() {
-    const s: Record<string, boolean> = {};
-    for (const o of orders) s[o.soNumber] = true;
-    setSelected(s);
-  }
-
-  function selectNone() {
-    setSelected({});
-  }
-
-  const [confirming, setConfirming] = useState(false);
-
   // Each order is its own attempt (R4-31): one refusal no longer stops the
   // rest, the button is locked while the batch runs, and the list is
   // reloaded whatever happened, because it is stale either way.
@@ -99,34 +84,52 @@ export default function OpenPicks() {
       }
     }
     try {
-      setOrders(openPickOrders(await listOpenOrders()));
+      setOrders(onFloor(await listOpenOrders()));
       setSelected({});
     } finally {
       setConfirming(false);
     }
-    if (failures.length > 0) {
-      showToast(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`);
-    }
+    if (failures.length > 0) showToast(`${shipped} shipped, ${failures.length} not:\n${failures.join("\n")}`, "error", 12000);
   }
+
+  const row = (o: PurchaseOrder, stage: "picking" | "ready") => (
+    <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/open-picks/${o.soNumber}`)}>
+      {stage === "ready" && (
+        <td onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" checked={Boolean(selected[o.soNumber])} onChange={() => setSelected((s) => ({ ...s, [o.soNumber]: !s[o.soNumber] }))} aria-label={`Select S.O. ${o.soNumber}`} />
+        </td>
+      )}
+      <td onClick={(e) => e.stopPropagation()}>
+        <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
+          {o.soNumber}
+        </Link>
+      </td>
+      <td>{o.poNumber}</td>
+      <td>{o.billTo.name}</td>
+      <td>{stage === "ready" ? (o.readyAt ? `${new Date(o.readyAt).toLocaleString()}${o.readyBy ? ` · ${o.readyBy}` : ""}` : "—") : o.pickListPrintedAt ? new Date(o.pickListPrintedAt).toLocaleString() : "—"}</td>
+      <td>{o.pickedAt ? `${daysSince(o.pickedAt).toFixed(1)} d` : "—"}</td>
+      <td className="amount-cell">{pendingShipmentWeight(o, weights).toFixed(0)} lbs</td>
+      <td>
+        {o.pickPackStatus && <span className={`pickpack-flag pickpack-flag-${o.pickPackStatus.toLowerCase()}`}>{o.pickPackStatus}</span>}
+      </td>
+    </tr>
+  );
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Open Picks</h1>
         <p className="muted">
-          Packed and staged, waiting on the physical pick list to come back from the warehouse so
-          logistics can confirm what actually shipped.
+          What the floor is working on. A printed pick is picked and packed, then checked at the dock: the pack check records what was packed and
+          prints the packing slip. Ready orders wait for the carrier; Mark Shipped at pickup ships exactly what was packed.
         </p>
       </div>
-
       {loadFailed && <LoadFailed what="open picks" onRetry={retry} />}
 
       {pulls.length > 0 && (
         <section className="pull-list" aria-label="Pull from floor">
           <h2 className="pull-list-title">Pull from floor</h2>
-          <p className="muted">
-            These orders were cancelled after their pick list printed. The staged goods go back on the shelf; mark each one pulled once it is.
-          </p>
+          <p className="muted">These orders were cancelled after their pick list printed. The staged goods go back on the shelf; mark each one pulled once it is.</p>
           <div className="scroll-window">
             <table className="data-table">
               <thead>
@@ -171,89 +174,69 @@ export default function OpenPicks() {
         </section>
       )}
 
-      {orders.length === 0 ? (
-        <p className="muted">Nothing staged right now.</p>
-      ) : (
-        <>
-          <div className="toolbar">
-            <p className="muted">
-              {selectedOrders.length} of {orders.length} selected
-            </p>
-            <div className="inline-actions">
-              <button type="button" className="secondary-btn" onClick={selectAll}>
-                Select All
-              </button>
-              <button type="button" className="secondary-btn" onClick={selectNone}>
-                Select None
-              </button>
+      <section className="floor-stage">
+        <h2 className="floor-stage-title">
+          Ready to ship <span className="muted">({ready.length})</span>
+        </h2>
+        {ready.length === 0 ? (
+          <p className="muted">Nothing on the dock right now.</p>
+        ) : (
+          <>
+            <div className="scroll-window">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Select</th>
+                    <th>S.O. #</th>
+                    <th>P.O. #</th>
+                    <th>Customer</th>
+                    <th>Packed</th>
+                    <th>Days in Warehouse</th>
+                    <th>Weight</th>
+                    <th>Release</th>
+                  </tr>
+                </thead>
+                <tbody>{ready.map((o) => row(o, "ready"))}</tbody>
+              </table>
             </div>
-          </div>
+            {canEdit && (
+              <div className="button-row">
+                <button type="button" className="primary-btn" disabled={selectedOrders.length === 0 || confirming} onClick={confirmSelected}>
+                  {confirming ? "Confirming…" : `Mark Shipped (${selectedOrders.length} selected)`}
+                </button>
+                <span className="muted">Ships exactly what the pack check packed.</span>
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
+      <section className="floor-stage">
+        <h2 className="floor-stage-title">
+          Being picked <span className="muted">({picking.length})</span>
+        </h2>
+        {picking.length === 0 ? (
+          <p className="muted">No picks on the floor.</p>
+        ) : (
           <div className="scroll-window">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Select</th>
                   <th>S.O. #</th>
                   <th>P.O. #</th>
                   <th>Customer</th>
-                  <th>Packed</th>
+                  <th>Pick list printed</th>
                   <th>Days in Warehouse</th>
                   <th>Weight</th>
                   <th>Release</th>
                 </tr>
               </thead>
-              <tbody>
-                {orders.map((o) => (
-                  <tr
-                    key={o.soNumber}
-                    className="clickable-row"
-                    onClick={() => navigate(`/open-picks/${o.soNumber}`)}
-                  >
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(selected[o.soNumber])}
-                        onChange={() => toggleSelected(o.soNumber)}
-                        aria-label={`Select S.O. ${o.soNumber}`}
-                      />
-                    </td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
-                        {o.soNumber}
-                      </Link>
-                    </td>
-                    <td>{o.poNumber}</td>
-                    <td>{o.billTo.name}</td>
-                    <td>{o.pickedAt ? new Date(o.pickedAt).toLocaleString() : "—"}</td>
-                    <td>{o.pickedAt ? `${daysInWarehouse(o.pickedAt).toFixed(1)} d` : "—"}</td>
-                    <td className="amount-cell">{pendingShipmentWeight(o, weights).toFixed(0)} lbs</td>
-                    <td>
-                      {o.pickPackStatus && (
-                        <span className={`pickpack-flag pickpack-flag-${o.pickPackStatus.toLowerCase()}`}>
-                          {o.pickPackStatus}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+              <tbody>{picking.map((o) => row(o, "picking"))}</tbody>
             </table>
           </div>
-
-          <div className="button-row">
-            <button
-              type="button"
-              className="primary-btn"
-              disabled={selectedOrders.length === 0 || confirming}
-              onClick={confirmSelected}
-            >
-              {confirming ? "Confirming…" : "Confirm Shipment (Selected)"}
-            </button>
-            <span className="muted">Ships exactly what was packed, no quantity changes.</span>
-          </div>
-        </>
-      )}
+        )}
+        <p className="muted">Open a pick to do its pack check once it is packed.</p>
+      </section>
     </div>
   );
 }

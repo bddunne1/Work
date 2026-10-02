@@ -175,12 +175,32 @@ export async function release(c: Client, o: any, qtys?: number[]): Promise<Res> 
 export function markPrinted(c: Client, o: any, lines?: { lineItemId: string; qty: number }[]) {
   return c.post(`${so(o)}/mark-printed`, { version: o.version, pickList: true, packingSlip: true, lines });
 }
-export function ship(c: Client, o: any, qtys?: number[]) {
-  const pending: { lineItemId: string; qty: number }[] = o.pendingShipment ?? [];
-  const lines = qtys
-    ? o.lineItems.map((li: any, i: number) => ({ lineItemId: li.id, qty: qtys[i] }))
-    : pending;
-  return c.post(`${so(o)}/ship`, { version: o.version, lines });
+// The pack check (sprint 3): packed quantities by line index (default: what
+// was staged), optionally who packed it.
+export function ready(c: Client, o: any, qtys?: number[], packedBy?: string) {
+  const lines = qtys ? o.lineItems.map((li: any, i: number) => ({ lineItemId: li.id, qty: qtys[i] })) : undefined;
+  return c.post(`${so(o)}/ready`, { version: o.version, lines, packedBy });
+}
+export function unready(c: Client, o: any) {
+  return c.post(`${so(o)}/unready`, { version: o.version });
+}
+// Ships what was packed. Since sprint 3 the pack check comes first and a
+// short is recorded there, so `qtys` (by line index) go through ready: an
+// order already marked ready is un-readied and re-checked with them. A
+// refusal at any step is returned as the result.
+export async function ship(c: Client, o: any, qtys?: number[]): Promise<Res> {
+  let cur = o;
+  if (qtys || !cur.readyAt) {
+    if (cur.readyAt) {
+      const back = await unready(c, cur);
+      if (back.status !== 200) return back;
+      cur = back.body;
+    }
+    const packed = await ready(c, cur, qtys);
+    if (packed.status !== 200) return packed;
+    cur = packed.body;
+  }
+  return c.post(`${so(cur)}/ship`, { version: cur.version, lines: cur.pendingShipment ?? [] });
 }
 export function undoShipment(c: Client, o: any) {
   return c.post(`${so(o)}/undo-shipment`, { version: o.version });
@@ -215,6 +235,11 @@ export async function walkToPrinted(c: Client, o: any) {
   return ok(await markPrinted(c, o));
 }
 
+// ...and through the pack check, so it can ship.
+export async function walkToReady(c: Client, o: any) {
+  return ok(await ready(c, await walkToPrinted(c, o)));
+}
+
 // Walks a fresh order all the way to "printed and waiting to ship". Header
 // fields that are locked once stock is committed (customer, tax, prices)
 // go in `extra` so they are set before allocation.
@@ -224,6 +249,9 @@ export async function orderReadyToShip(c: Client, lines: LineSpec[], extra: Reco
   o = ok(await allocate(c, o));
   o = ok(await release(c, o));
   o = ok(await markPrinted(c, o));
+  // Since sprint 3 a shipment needs the pack check first; "ready to ship"
+  // means through it.
+  o = ok(await ready(c, o));
   return o;
 }
 

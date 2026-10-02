@@ -3887,3 +3887,170 @@ a.dash-lookup-row:focus-visible {
   .scroll-window { max-width: calc(100vw - 24px); }
   .toolbar { flex-wrap: wrap; }
 }
+
+/* Review queues: who has an order open (C-08). */
+.queue-claim { font-size: 12px; color: var(--danger); margin-left: 6px; white-space: nowrap; }
+/* Back Order Queue groups (G-06). */
+.backorder-group { margin-top: 20px; }
+.backorder-group-title { margin: 0 0 4px; font-size: 1.05rem; }
+.backorder-group-arrived .backorder-group-title { color: #12b886; }
+.backorder-lines { margin: 0; padding-left: 1em; font-size: 13px; }
+.backorder-lines .coverage-full { color: #12b886; }
+.backorder-lines .coverage-none { color: var(--danger); }
+.backorder-fillable { color: #12b886; font-weight: 600; }
+
+/* ---- The floor: Open Picks stages, the dock screen, the pack check (sprint 3) ---- */
+.floor-stage { margin-top: 20px; }
+.floor-stage-title { margin: 0 0 6px; font-size: 1.05rem; }
+.pickpack-flag-ready { background: #12b886; color: #fff; }
+.pack-initials { max-width: 220px; margin-top: 10px; }
+.dock .page-header h1 { font-size: 1.6rem; }
+.dock-stage { margin-top: 18px; }
+.dock-stage h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.dock-stage-ready h2 { color: #12b886; }
+.dock-stage-pull h2 { color: var(--danger); }
+.dock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.dock-card {
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start; text-align: left;
+  padding: 14px 16px; min-height: 92px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--panel-bg); color: var(--text-h); font: inherit; cursor: pointer;
+}
+.dock-card:hover { border-color: var(--accent, #4c6ef5); }
+.dock-card-static { cursor: default; }
+.dock-card-so { font-size: 1.25rem; font-weight: 700; }
+.dock-card-name { font-weight: 600; }
+.dock-card-sub { font-size: 13px; color: var(--text-muted, #666); }
+.dock-shipped { margin: 0; padding-left: 1.2em; }
+
+/* Carrier details at pickup on the pack check (G-07). */
+.carrier-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px 16px;
+  margin: 12px 0;
+}
+.carrier-fields .form-field input {
+  width: 100%;
+}
+
+/* Order Entry: the side panel is a row of cards above the form, and a
+   sticky column beside it only on a wide screen, so the grid keeps its
+   width (G-11). */
+.order-entry-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.order-side-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+@media (min-width: 1600px) {
+  .order-entry-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 20px;
+  }
+  .order-side-panel {
+    order: 2;
+    grid-template-columns: 1fr;
+    position: sticky;
+    top: 16px;
+  }
+}
+.order-line-grid .line-item-table {
+  min-width: 880px;
+}
+.order-line-grid .col-item {
+  width: 150px;
+}
+.order-line-grid .col-cust-part {
+  width: 120px;
+}
+.order-line-grid .col-um {
+  width: 56px;
+}
+.order-line-grid .col-qty {
+  width: 84px;
+}
+.order-line-grid .col-rate,
+.order-line-grid .col-amount {
+  width: 92px;
+}
+.side-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+}
+.side-card-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.side-card-warning {
+  border-color: #f59f00;
+  background: rgba(245, 159, 0, 0.08);
+}
+.side-card ul {
+  margin: 0 0 6px 18px;
+  padding: 0;
+}
+.side-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+}
+.side-facts dt {
+  color: var(--muted);
+}
+.side-facts dd {
+  margin: 0;
+}
+.side-notes {
+  list-style: none;
+  margin: 0 !important;
+  padding: 0;
+}
+.side-notes li + li {
+  margin-top: 6px;
+}
+.field-warning {
+  color: #b35c00;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.input-warning {
+  border-color: #f59f00 !important;
+}
+.order-line-grid .avail-cell.short,
+.order-line-grid input.num-input.short {
+  color: #c92a2a;
+  font-weight: 600;
+}
+.order-line-grid tr.line-unresolved input[data-cell="item"] {
+  border-color: #f59f00;
+}
+.order-line-grid .rate-cell {
+  position: relative;
+}
+.price-source {
+  display: block;
+  font-size: 10px;
+  line-height: 1;
+  margin-top: 2px;
+  color: var(--muted);
+  text-align: right;
+}
+.price-source-sheet {
+  color: #2b8a3e;
+}
+.grid-help {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+}

@@ -1,0 +1,10788 @@
+{
+ "realMinutes": 12,
+ "ordersPlanned": 150,
+ "backlog": 60,
+ "staff": [
+  [
+   "pur.dan",
+   "purchasing",
+   "Purchasing"
+  ],
+  [
+   "pur.ali",
+   "purchasing",
+   "Purchasing"
+  ],
+  [
+   "cs.linda",
+   "customer-service",
+   "Customer Service"
+  ],
+  [
+   "cs.maria",
+   "customer-service",
+   "Customer Service"
+  ],
+  [
+   "cs.james",
+   "customer-service",
+   "Customer Service"
+  ],
+  [
+   "cs.priya",
+   "customer-service",
+   "Customer Service"
+  ],
+  [
+   "oe.tom",
+   "order-entry",
+   "Order Entry"
+  ],
+  [
+   "oe.rosa",
+   "order-entry",
+   "Order Entry"
+  ],
+  [
+   "an.derek",
+   "analyst",
+   "Analyst"
+  ],
+  [
+   "an.sofia",
+   "analyst",
+   "Analyst"
+  ],
+  [
+   "log.marcus",
+   "logistics",
+   "Logistics"
+  ],
+  [
+   "dir.sam",
+   "ADMIN",
+   "Director"
+  ],
+  [
+   "sm.helen",
+   "sales-manager",
+   "Sales Manager"
+  ],
+  [
+   "sm.kenji",
+   "sales-manager",
+   "Sales Manager"
+  ],
+  [
+   "sm.grace",
+   "sales-manager",
+   "Sales Manager"
+  ]
+ ],
+ "summary": {
+  "totalCalls": 4058,
+  "statusTotals": {
+   "200": 3830,
+   "201": 167,
+   "409": 61
+  },
+  "overall": {
+   "p50": 29,
+   "p95": 81,
+   "p99": 664,
+   "max": 1137
+  },
+  "totalMB": 563,
+  "routes": [
+   {
+    "route": "GET /api/sales-orders",
+    "n": 962,
+    "p50": 47,
+    "p95": 90,
+    "max": 1097,
+    "avgKB": 367,
+    "status": {
+     "200": 962
+    }
+   },
+   {
+    "route": "GET /api/items",
+    "n": 614,
+    "p50": 44,
+    "p95": 77,
+    "max": 1028,
+    "avgKB": 238,
+    "status": {
+     "200": 614
+    }
+   },
+   {
+    "route": "GET /api/sales-orders/:so",
+    "n": 556,
+    "p50": 10,
+    "p95": 19,
+    "max": 131,
+    "avgKB": 3,
+    "status": {
+     "200": 556
+    }
+   },
+   {
+    "route": "GET /api/customers/:id",
+    "n": 345,
+    "p50": 15,
+    "p95": 24,
+    "max": 1014,
+    "avgKB": 64,
+    "status": {
+     "200": 345
+    }
+   },
+   {
+    "route": "GET /api/customers",
+    "n": 169,
+    "p50": 39,
+    "p95": 658,
+    "max": 1026,
+    "avgKB": 215,
+    "status": {
+     "200": 169
+    }
+   },
+   {
+    "route": "GET /api/counters/salesOrder",
+    "n": 145,
+    "p50": 7,
+    "p95": 19,
+    "max": 816,
+    "avgKB": 0,
+    "status": {
+     "200": 145
+    }
+   },
+   {
+    "route": "POST /api/sales-orders",
+    "n": 145,
+    "p50": 25,
+    "p95": 40,
+    "max": 58,
+    "avgKB": 3,
+    "status": {
+     "201": 145
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/allocate",
+    "n": 135,
+    "p50": 35,
+    "p95": 67,
+    "max": 106,
+    "avgKB": 3,
+    "status": {
+     "200": 97,
+     "409": 38
+    }
+   },
+   {
+    "route": "GET /api/sales-orders/search",
+    "n": 124,
+    "p50": 14,
+    "p95": 40,
+    "max": 1037,
+    "avgKB": 20,
+    "status": {
+     "200": 124
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/check",
+    "n": 105,
+    "p50": 22,
+    "p95": 29,
+    "max": 62,
+    "avgKB": 3,
+    "status": {
+     "200": 94,
+     "409": 11
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/release",
+    "n": 101,
+    "p50": 25,
+    "p95": 41,
+    "max": 78,
+    "avgKB": 3,
+    "status": {
+     "200": 101
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/mark-printed",
+    "n": 94,
+    "p50": 19,
+    "p95": 30,
+    "max": 58,
+    "avgKB": 3,
+    "status": {
+     "200": 82,
+     "409": 12
+    }
+   },
+   {
+    "route": "GET /api/vendor-purchase-orders",
+    "n": 89,
+    "p50": 20,
+    "p95": 37,
+    "max": 480,
+    "avgKB": 110,
+    "status": {
+     "200": 89
+    }
+   },
+   {
+    "route": "GET /api/returns",
+    "n": 89,
+    "p50": 7,
+    "p95": 13,
+    "max": 227,
+    "avgKB": 2,
+    "status": {
+     "200": 89
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/ready",
+    "n": 78,
+    "p50": 27,
+    "p95": 39,
+    "max": 54,
+    "avgKB": 4,
+    "status": {
+     "200": 78
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/ship",
+    "n": 78,
+    "p50": 73,
+    "p95": 168,
+    "max": 280,
+    "avgKB": 4,
+    "status": {
+     "200": 78
+    }
+   },
+   {
+    "route": "PUT /api/customers/:id",
+    "n": 32,
+    "p50": 30,
+    "p95": 49,
+    "max": 57,
+    "avgKB": 8,
+    "status": {
+     "200": 32
+    }
+   },
+   {
+    "route": "GET /api/analytics/summary",
+    "n": 25,
+    "p50": 6,
+    "p95": 13,
+    "max": 54,
+    "avgKB": 3,
+    "status": {
+     "200": 25
+    }
+   },
+   {
+    "route": "POST /api/auth/login",
+    "n": 15,
+    "p50": 256,
+    "p95": 731,
+    "max": 731,
+    "avgKB": 1,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "POST /api/auth/change-password",
+    "n": 15,
+    "p50": 632,
+    "p95": 1137,
+    "max": 1137,
+    "avgKB": 1,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/auth/me",
+    "n": 15,
+    "p50": 91,
+    "p95": 388,
+    "max": 388,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/settings",
+    "n": 15,
+    "p50": 307,
+    "p95": 659,
+    "max": 659,
+    "avgKB": 0,
+    "status": {
+     "200": 15
+    }
+   },
+   {
+    "route": "GET /api/vendor-purchase-orders/:po",
+    "n": 14,
+    "p50": 10,
+    "p95": 17,
+    "max": 17,
+    "avgKB": 2,
+    "status": {
+     "200": 14
+    }
+   },
+   {
+    "route": "GET /api/items/:id",
+    "n": 12,
+    "p50": 7,
+    "p95": 9,
+    "max": 9,
+    "avgKB": 0,
+    "status": {
+     "200": 12
+    }
+   },
+   {
+    "route": "PATCH /api/items/by-number/:item/qty",
+    "n": 12,
+    "p50": 17,
+    "p95": 27,
+    "max": 27,
+    "avgKB": 0,
+    "status": {
+     "200": 12
+    }
+   },
+   {
+    "route": "POST /api/vendor-purchase-orders/:po/receive",
+    "n": 11,
+    "p50": 54,
+    "p95": 193,
+    "max": 193,
+    "avgKB": 2,
+    "status": {
+     "200": 11
+    }
+   },
+   {
+    "route": "GET /api/stock-movements",
+    "n": 10,
+    "p50": 13,
+    "p95": 19,
+    "max": 19,
+    "avgKB": 100,
+    "status": {
+     "200": 10
+    }
+   },
+   {
+    "route": "GET /api/audit-log",
+    "n": 9,
+    "p50": 14,
+    "p95": 20,
+    "max": 20,
+    "avgKB": 66,
+    "status": {
+     "200": 9
+    }
+   },
+   {
+    "route": "POST /api/customers",
+    "n": 8,
+    "p50": 15,
+    "p95": 20,
+    "max": 20,
+    "avgKB": 1,
+    "status": {
+     "201": 8
+    }
+   },
+   {
+    "route": "GET /api/returns/:ra",
+    "n": 8,
+    "p50": 9,
+    "p95": 12,
+    "max": 12,
+    "avgKB": 1,
+    "status": {
+     "200": 8
+    }
+   },
+   {
+    "route": "POST /api/vendor-purchase-orders",
+    "n": 7,
+    "p50": 34,
+    "p95": 79,
+    "max": 79,
+    "avgKB": 1,
+    "status": {
+     "201": 7
+    }
+   },
+   {
+    "route": "POST /api/returns",
+    "n": 7,
+    "p50": 26,
+    "p95": 31,
+    "max": 31,
+    "avgKB": 1,
+    "status": {
+     "201": 7
+    }
+   },
+   {
+    "route": "POST /api/returns/:ra/receive",
+    "n": 7,
+    "p50": 36,
+    "p95": 56,
+    "max": 56,
+    "avgKB": 1,
+    "status": {
+     "200": 7
+    }
+   },
+   {
+    "route": "GET /api/vendors",
+    "n": 2,
+    "p50": 6,
+    "p95": 6,
+    "max": 6,
+    "avgKB": 4,
+    "status": {
+     "200": 2
+    }
+   },
+   {
+    "route": "PUT /api/vendors/:id",
+    "n": 2,
+    "p50": 12,
+    "p95": 15,
+    "max": 15,
+    "avgKB": 0,
+    "status": {
+     "200": 2
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/set-bol",
+    "n": 2,
+    "p50": 18,
+    "p95": 20,
+    "max": 20,
+    "avgKB": 12,
+    "status": {
+     "200": 2
+    }
+   },
+   {
+    "route": "POST /api/sales-orders/:so/cancel",
+    "n": 1,
+    "p50": 31,
+    "p95": 31,
+    "max": 31,
+    "avgKB": 4,
+    "status": {
+     "200": 1
+    }
+   }
+  ],
+  "eventsByRole": {
+   "Customer Service": {
+    "status-call": 67,
+    "order-entered": 65,
+    "quote": 33,
+    "return-issued": 7,
+    "order-cancelled": 1
+   },
+   "Analyst": {
+    "order-checked": 94,
+    "conflict-409": 68,
+    "order-allocated": 97,
+    "pick-released": 82
+   },
+   "Sales Manager": {
+    "account-updated": 32,
+    "account-reviewed": 39,
+    "customer-created": 8
+   },
+   "Order Entry": {
+    "order-entered": 80,
+    "pick-printed": 82,
+    "conflict-409": 12
+   },
+   "Purchasing": {
+    "po-received": 11,
+    "cycle-count": 12,
+    "vendor-po-created": 7,
+    "return-received": 7,
+    "vendor-updated": 2
+   },
+   "Logistics": {
+    "pack-check": 78,
+    "order-shipped": 78,
+    "bol-generated": 2,
+    "eod-report": 1
+   }
+  },
+  "problems": {
+   "conflict-409 | Analyst | validate | This record was changed by someone else since you loaded it. Reload and try again.": 11,
+   "conflict-409 | Analyst | allocate | This record was changed by someone else since you loaded it. Reload and try again.": 38,
+   "conflict-409 | Analyst | release-pick | S.O. #…: This record was changed by someone else since you loaded it. Reload and try again.": 19,
+   "conflict-409 | Order Entry | print-picks | This record was changed by someone else since you loaded it. Reload and try again.": 12
+  },
+  "people": {
+   "pur.dan": {
+    "role": "Purchasing",
+    "busyPct": 61,
+    "idlePct": 38,
+    "busyOfTracked": 62
+   },
+   "pur.ali": {
+    "role": "Purchasing",
+    "busyPct": 42,
+    "idlePct": 58,
+    "busyOfTracked": 42
+   },
+   "cs.james": {
+    "role": "Customer Service",
+    "busyPct": 51,
+    "idlePct": 49,
+    "busyOfTracked": 51
+   },
+   "cs.linda": {
+    "role": "Customer Service",
+    "busyPct": 58,
+    "idlePct": 44,
+    "busyOfTracked": 57
+   },
+   "cs.maria": {
+    "role": "Customer Service",
+    "busyPct": 55,
+    "idlePct": 48,
+    "busyOfTracked": 53
+   },
+   "cs.priya": {
+    "role": "Customer Service",
+    "busyPct": 59,
+    "idlePct": 43,
+    "busyOfTracked": 58
+   },
+   "oe.tom": {
+    "role": "Order Entry",
+    "busyPct": 92,
+    "idlePct": 10,
+    "busyOfTracked": 90
+   },
+   "oe.rosa": {
+    "role": "Order Entry",
+    "busyPct": 81,
+    "idlePct": 19,
+    "busyOfTracked": 81
+   },
+   "an.sofia": {
+    "role": "Analyst",
+    "busyPct": 96,
+    "idlePct": 0,
+    "busyOfTracked": 100
+   },
+   "an.derek": {
+    "role": "Analyst",
+    "busyPct": 96,
+    "idlePct": 0,
+    "busyOfTracked": 100
+   },
+   "sm.grace": {
+    "role": "Sales Manager",
+    "busyPct": 39,
+    "idlePct": 62,
+    "busyOfTracked": 39
+   },
+   "sm.kenji": {
+    "role": "Sales Manager",
+    "busyPct": 35,
+    "idlePct": 65,
+    "busyOfTracked": 35
+   },
+   "sm.helen": {
+    "role": "Sales Manager",
+    "busyPct": 41,
+    "idlePct": 60,
+    "busyOfTracked": 41
+   },
+   "log.marcus": {
+    "role": "Logistics",
+    "busyPct": 44,
+    "idlePct": 53,
+    "busyOfTracked": 45
+   },
+   "dir.sam": {
+    "role": "Director",
+    "busyPct": 47,
+    "idlePct": 56,
+    "busyOfTracked": 45
+   }
+  },
+  "leadTimesMinutes": {
+   "entryToChecked": {
+    "n": 34,
+    "p50": 344,
+    "p90": 365
+   },
+   "checkedToAllocated": {
+    "n": 93,
+    "p50": 5,
+    "p90": 12
+   },
+   "allocatedToReleased": {
+    "n": 82,
+    "p50": 4,
+    "p90": 14
+   },
+   "releasedToShipped": {
+    "n": 78,
+    "p50": 34,
+    "p90": 53
+   },
+   "entryToShipped": {
+    "n": 24,
+    "p50": 384,
+    "p90": 402
+   }
+  },
+  "ordersEnteredBy": {
+   "order-entry": 80,
+   "customer-service": 65
+  }
+ },
+ "audit": {
+  "orders": {
+   "total": 205,
+   "enteredToday": 205,
+   "byStatus": {
+    "Entered": 110,
+    "Cancelled": 1,
+    "Allocated": 2,
+    "Checked": 1,
+    "Pick & Packed": 4,
+    "Shipped": 51,
+    "Backordered": 36
+   },
+   "orderedUnitsToday": 389862,
+   "shippedUnitsToday": 51161
+  },
+  "inventory": {
+   "docDriftItems": 0,
+   "docDriftUnits": 0,
+   "ledgerDriftItems": 0,
+   "negative": 0,
+   "overcommittedItems": 0,
+   "overcommittedUnits": 0,
+   "qtyOnPurchaseOrderMismatches": 0,
+   "movementsToday": 1030,
+   "sampleDrifts": []
+  },
+  "overShippedLines": 0,
+  "cancelledHoldingStock": 0,
+  "waitingValidation": {
+   "total": 110,
+   "fromYesterday": 0,
+   "arrivedBefore3pm": 89,
+   "arrivedAfter3pm": 21
+  },
+  "vendorPos": {
+   "total": 47,
+   "received": 7,
+   "partial": 0
+  },
+  "returns": {
+   "issued": 0,
+   "received": 7
+  }
+ },
+ "events": [
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 7896
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10003",
+    "at": 6.156666666666666
+   },
+   "t": 9235
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 9653
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 9676
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 32,
+    "ms": 33
+   },
+   "t": 12516
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10061",
+    "kind": "small",
+    "lines": 3,
+    "units": 118,
+    "at": 8.422
+   },
+   "t": 12633
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10062",
+    "kind": "small",
+    "lines": 3,
+    "units": 90,
+    "at": 8.467333333333332
+   },
+   "t": 12701
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10063",
+    "kind": "small",
+    "lines": 6,
+    "units": 211,
+    "at": 8.620666666666667
+   },
+   "t": 12931
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10064",
+    "kind": "small",
+    "lines": 6,
+    "units": 191,
+    "at": 8.698666666666666
+   },
+   "t": 13048
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 37
+   },
+   "t": 13833
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10003",
+    "status": "Allocated",
+    "fully": true,
+    "at": 10.677333333333333
+   },
+   "t": 16016
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 17027
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 19819
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10003",
+    "units": 1201,
+    "at": 13.264666666666667
+   },
+   "t": 19897
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10004",
+    "at": 13.611333333333333
+   },
+   "t": 20417
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10001",
+    "at": 15.493333333333334
+   },
+   "t": 23240
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10004",
+    "status": "Allocated",
+    "fully": true,
+    "at": 15.942666666666666
+   },
+   "t": 23914
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10065",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7,
+    "at": 16.283333333333335
+   },
+   "t": 24425
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 26036
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10005",
+    "at": 17.43
+   },
+   "t": 26145
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10004",
+    "units": 223,
+    "at": 17.656666666666666
+   },
+   "t": 26485
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 49
+   },
+   "t": 26857
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10066",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1137,
+    "at": 18.344666666666665
+   },
+   "t": 27517
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 3
+   },
+   "t": 28612
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10006",
+    "at": 19.177333333333333
+   },
+   "t": 28766
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10005",
+    "status": "Allocated",
+    "fully": true,
+    "at": 20.054
+   },
+   "t": 30081
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 27
+   },
+   "t": 31596
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10008",
+    "at": 21.542666666666666
+   },
+   "t": 32314
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10067",
+    "kind": "small",
+    "lines": 7,
+    "units": 263,
+    "at": 21.624666666666666
+   },
+   "t": 32437
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10068",
+    "kind": "small",
+    "lines": 6,
+    "units": 178,
+    "at": 21.714666666666666
+   },
+   "t": 32572
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10005",
+    "units": 149,
+    "at": 21.808666666666667
+   },
+   "t": 32713
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10005: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 34974
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5038",
+    "units": 11764
+   },
+   "t": 35110
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10008",
+    "status": "Allocated",
+    "fully": false,
+    "at": 24.525333333333332
+   },
+   "t": 36788
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 37065
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 37342
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5038",
+    "units": 259
+   },
+   "t": 37938
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10069",
+    "kind": "medium",
+    "lines": 8,
+    "units": 578,
+    "at": 25.6
+   },
+   "t": 38400
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10008",
+    "units": 145,
+    "at": 26.146
+   },
+   "t": 39219
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10070",
+    "kind": "small",
+    "lines": 6,
+    "units": 216,
+    "at": 26.883333333333333
+   },
+   "t": 40325
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 40455
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10071",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8,
+    "at": 27.898
+   },
+   "t": 41847
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "TB-1007",
+    "delta": 1
+   },
+   "t": 43288
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10001",
+    "status": "Allocated",
+    "fully": true,
+    "at": 28.877333333333333
+   },
+   "t": 43316
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10008",
+    "at": 29.503333333333334
+   },
+   "t": 44255
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10005",
+    "at": 29.514666666666667
+   },
+   "t": 44272
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10004",
+    "at": 29.525333333333332
+   },
+   "t": 44288
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10003",
+    "at": 29.536
+   },
+   "t": 44304
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 44465
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 44775
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 45451
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 45690
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 46059
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 47000
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10006",
+    "status": "Allocated",
+    "fully": true,
+    "at": 31.377333333333333
+   },
+   "t": 47066
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 47297
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 47508
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "PN-1026",
+    "delta": 0
+   },
+   "t": 48211
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10001",
+    "units": 130,
+    "at": 32.217333333333336
+   },
+   "t": 48326
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10006",
+    "units": 118,
+    "at": 33.16733333333333
+   },
+   "t": 49751
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10001",
+    "at": 34.338
+   },
+   "t": 51507
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10002",
+    "at": 35.193333333333335
+   },
+   "t": 52790
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10010",
+    "at": 36.98466666666667
+   },
+   "t": 55477
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 55870
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10072",
+    "kind": "medium",
+    "lines": 8,
+    "units": 699,
+    "at": 37.822
+   },
+   "t": 56733
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10006",
+    "at": 39.18533333333333
+   },
+   "t": 58778
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 58800
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10009",
+    "at": 40.971333333333334
+   },
+   "t": 61457
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10002",
+    "status": "Allocated",
+    "fully": true,
+    "at": 41.169333333333334
+   },
+   "t": 61754
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10073",
+    "kind": "medium",
+    "lines": 10,
+    "units": 1101,
+    "at": 41.696666666666665
+   },
+   "t": 62545
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 63492
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 63500
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 64958
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "151f10a7-7969-4595-b7c2-a30bffdaa6b5"
+   },
+   "t": 64974
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10002",
+    "units": 961,
+    "at": 43.61533333333333
+   },
+   "t": 65423
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10002: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 65937
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10010",
+    "status": "Allocated",
+    "fully": true,
+    "at": 45.72666666666667
+   },
+   "t": 68590
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10074",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1309,
+    "at": 45.80733333333333
+   },
+   "t": 68711
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 69863
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10075",
+    "kind": "medium",
+    "lines": 10,
+    "units": 958,
+    "at": 47.230666666666664
+   },
+   "t": 70846
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10005",
+    "at": 48.56333333333333
+   },
+   "t": 72845
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10005",
+    "units": 149,
+    "at": 48.611333333333334
+   },
+   "t": 72917
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10009",
+    "status": "Allocated",
+    "fully": true,
+    "at": 49.704
+   },
+   "t": 74556
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10076",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 49.94733333333333
+   },
+   "t": 74921
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10077",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3,
+    "at": 50.19133333333333
+   },
+   "t": 75287
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10004",
+    "at": 51.52333333333333
+   },
+   "t": 77285
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10004",
+    "units": 217,
+    "at": 51.576
+   },
+   "t": 77364
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10002",
+    "at": 51.66733333333333
+   },
+   "t": 77501
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10011",
+    "at": 52.44266666666667
+   },
+   "t": 78664
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10078",
+    "kind": "small",
+    "lines": 7,
+    "units": 213,
+    "at": 52.730666666666664
+   },
+   "t": 79096
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 79355
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 35,
+    "ms": 33
+   },
+   "t": 79694
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 80333
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10008",
+    "at": 53.56666666666667
+   },
+   "t": 80350
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10008",
+    "units": 145,
+    "at": 53.61333333333334
+   },
+   "t": 80420
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10010",
+    "units": 8,
+    "at": 53.650666666666666
+   },
+   "t": 80476
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 82605
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 82809
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10001",
+    "at": 55.76133333333333
+   },
+   "t": 83642
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10001",
+    "units": 130,
+    "at": 55.812
+   },
+   "t": 83718
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10009",
+    "units": 1248,
+    "at": 56.33133333333333
+   },
+   "t": 84497
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10009: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 84718
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10007",
+    "at": 58.663333333333334
+   },
+   "t": 87995
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5008",
+    "units": 11959
+   },
+   "t": 88004
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10011",
+    "status": "Allocated",
+    "fully": true,
+    "at": 59.93266666666667
+   },
+   "t": 89899
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10012",
+    "at": 60.93666666666667
+   },
+   "t": 91405
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10079",
+    "kind": "small",
+    "lines": 4,
+    "units": 124,
+    "at": 61.1
+   },
+   "t": 91650
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5036",
+    "units": 13737
+   },
+   "t": 91956
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10007",
+    "status": "Allocated",
+    "fully": true,
+    "at": 61.43
+   },
+   "t": 92145
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10080",
+    "kind": "medium",
+    "lines": 11,
+    "units": 886,
+    "at": 61.43
+   },
+   "t": 92145
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 21,
+    "ms": 32
+   },
+   "t": 92572
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 94111
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10012",
+    "status": "Allocated",
+    "fully": false,
+    "at": 63.80533333333333
+   },
+   "t": 95708
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10010",
+    "at": 64.05333333333333
+   },
+   "t": 96080
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10009",
+    "at": 64.07133333333333
+   },
+   "t": 96107
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10006",
+    "at": 64.202
+   },
+   "t": 96303
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10006",
+    "units": 116,
+    "at": 64.254
+   },
+   "t": 96381
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 96748
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10081",
+    "kind": "small",
+    "lines": 3,
+    "units": 132,
+    "at": 65.30733333333333
+   },
+   "t": 97961
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10011",
+    "units": 863,
+    "at": 65.47733333333333
+   },
+   "t": 98216
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 98917
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10007",
+    "units": 3,
+    "at": 67.18133333333333
+   },
+   "t": 100772
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 101397
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10014",
+    "at": 67.79
+   },
+   "t": 101685
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10003",
+    "at": 67.798
+   },
+   "t": 101697
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 101708
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10003",
+    "units": 1177,
+    "at": 67.872
+   },
+   "t": 101808
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10011",
+    "at": 67.95066666666666
+   },
+   "t": 101926
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "CL-1020",
+    "delta": 1
+   },
+   "t": 103675
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 104461
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10082",
+    "kind": "medium",
+    "lines": 9,
+    "units": 593,
+    "at": 69.87733333333334
+   },
+   "t": 104816
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10083",
+    "kind": "small",
+    "lines": 3,
+    "units": 89,
+    "at": 69.904
+   },
+   "t": 104856
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10013",
+    "at": 70.17133333333334
+   },
+   "t": 105257
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10014",
+    "status": "Allocated",
+    "fully": true,
+    "at": 70.83266666666667
+   },
+   "t": 106249
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10007",
+    "at": 72.43733333333333
+   },
+   "t": 108656
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10012",
+    "units": 199,
+    "at": 72.588
+   },
+   "t": 108882
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10012: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 109143
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 111546
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10014",
+    "units": 584,
+    "at": 74.646
+   },
+   "t": 111969
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10084",
+    "kind": "small",
+    "lines": 5,
+    "units": 143,
+    "at": 74.71066666666667
+   },
+   "t": 112066
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10012",
+    "at": 75.47133333333333
+   },
+   "t": 113207
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5041",
+    "lines": 5
+   },
+   "t": 113689
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10017",
+    "at": 76.03133333333334
+   },
+   "t": 114047
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10013",
+    "status": "Allocated",
+    "fully": false,
+    "at": 77.23533333333333
+   },
+   "t": 115853
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10017",
+    "status": "Allocated",
+    "fully": true,
+    "at": 77.742
+   },
+   "t": 116613
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10014",
+    "at": 77.75533333333334
+   },
+   "t": 116633
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 118799
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10017",
+    "units": 8,
+    "at": 79.74466666666666
+   },
+   "t": 119617
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 121068
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10085",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6,
+    "at": 81.55066666666667
+   },
+   "t": 122326
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10013",
+    "units": 704,
+    "at": 81.72933333333333
+   },
+   "t": 122594
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10086",
+    "kind": "medium",
+    "lines": 9,
+    "units": 771,
+    "at": 82.02333333333333
+   },
+   "t": 123035
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10018",
+    "at": 82.086
+   },
+   "t": 123129
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10010",
+    "at": 82.244
+   },
+   "t": 123366
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10010",
+    "units": 8,
+    "at": 82.27733333333333
+   },
+   "t": 123416
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10015",
+    "at": 83.42133333333334
+   },
+   "t": 125132
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10016",
+    "at": 83.94333333333333
+   },
+   "t": 125915
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10017",
+    "at": 84.02133333333333
+   },
+   "t": 126032
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10013",
+    "at": 84.03333333333333
+   },
+   "t": 126050
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 127174
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 127855
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10087",
+    "kind": "medium",
+    "lines": 9,
+    "units": 841,
+    "at": 85.96866666666666
+   },
+   "t": 128953
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10016",
+    "status": "Allocated",
+    "fully": true,
+    "at": 86.22933333333333
+   },
+   "t": 129344
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10018",
+    "status": "Allocated",
+    "fully": false,
+    "at": 86.624
+   },
+   "t": 129936
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10007",
+    "at": 86.94
+   },
+   "t": 130410
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10007",
+    "units": 3,
+    "at": 86.96933333333334
+   },
+   "t": 130454
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10088",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3,
+    "at": 87.08333333333333
+   },
+   "t": 130625
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 131542
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10016",
+    "units": 162,
+    "at": 88.02266666666667
+   },
+   "t": 132034
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 132293
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10089",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 88.24266666666666
+   },
+   "t": 132364
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 31
+   },
+   "t": 132923
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10015",
+    "status": "Allocated",
+    "fully": true,
+    "at": 89.26533333333333
+   },
+   "t": 133898
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10018",
+    "units": 668,
+    "at": 90.752
+   },
+   "t": 136128
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10016",
+    "at": 90.98266666666666
+   },
+   "t": 136474
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10015",
+    "units": 202,
+    "at": 91.21
+   },
+   "t": 136815
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 137044
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "349c3cbe-6a43-4a37-9430-4c9bb7431947"
+   },
+   "t": 138256
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10020",
+    "at": 92.218
+   },
+   "t": 138327
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 138816
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10002",
+    "at": 93.65
+   },
+   "t": 140475
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10002",
+    "units": 961,
+    "at": 93.73533333333333
+   },
+   "t": 140603
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10018",
+    "at": 93.86333333333333
+   },
+   "t": 140795
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10015",
+    "at": 93.876
+   },
+   "t": 140814
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 140824
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10020",
+    "status": "Allocated",
+    "fully": true,
+    "at": 93.92866666666667
+   },
+   "t": 140893
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10090",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 94.54666666666667
+   },
+   "t": 141820
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 142023
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10091",
+    "kind": "small",
+    "lines": 3,
+    "units": 116,
+    "at": 96.072
+   },
+   "t": 144108
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10019",
+    "at": 96.43
+   },
+   "t": 144645
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10020",
+    "units": 3,
+    "at": 96.53733333333334
+   },
+   "t": 144806
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 144853
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 4
+   },
+   "t": 146030
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10011",
+    "at": 98.75
+   },
+   "t": 148125
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10011",
+    "units": 863,
+    "at": 98.81533333333333
+   },
+   "t": 148223
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10019",
+    "status": "Allocated",
+    "fully": true,
+    "at": 98.96333333333334
+   },
+   "t": 148445
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 150545
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10022",
+    "at": 100.57866666666666
+   },
+   "t": 150868
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10019",
+    "units": 170,
+    "at": 101.10933333333334
+   },
+   "t": 151664
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10020",
+    "at": 101.49066666666667
+   },
+   "t": 152236
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10012",
+    "at": 101.84266666666667
+   },
+   "t": 152764
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10012",
+    "units": 199,
+    "at": 101.89466666666667
+   },
+   "t": 152842
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10019: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 154590
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10092",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8,
+    "at": 104.66666666666667
+   },
+   "t": 157000
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 157129
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 158101
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5008",
+    "units": 2007
+   },
+   "t": 158157
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 158160
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10022",
+    "status": "Allocated",
+    "fully": true,
+    "at": 105.93266666666666
+   },
+   "t": 158899
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10019",
+    "at": 106.24866666666667
+   },
+   "t": 159373
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10009",
+    "at": 106.41533333333334
+   },
+   "t": 159623
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10009",
+    "units": 1236,
+    "at": 106.49466666666666
+   },
+   "t": 159742
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 161466
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10093",
+    "kind": "medium",
+    "lines": 12,
+    "units": 718,
+    "at": 108.17266666666667
+   },
+   "t": 162259
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10022",
+    "units": 1112,
+    "at": 108.734
+   },
+   "t": 163101
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 163238
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10094",
+    "kind": "medium",
+    "lines": 11,
+    "units": 849,
+    "at": 109.41466666666666
+   },
+   "t": 164122
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10014",
+    "at": 109.66
+   },
+   "t": 164490
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10014",
+    "units": 582,
+    "at": 109.71533333333333
+   },
+   "t": 164573
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10024",
+    "at": 110.03533333333333
+   },
+   "t": 165053
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 165373
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10022",
+    "at": 110.36733333333333
+   },
+   "t": 165551
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10095",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7,
+    "at": 111.008
+   },
+   "t": 166512
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10024",
+    "status": "Allocated",
+    "fully": true,
+    "at": 111.94066666666667
+   },
+   "t": 167911
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10016",
+    "at": 112.20466666666667
+   },
+   "t": 168307
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10016",
+    "units": 162,
+    "at": 112.25333333333333
+   },
+   "t": 168380
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10021",
+    "at": 112.66133333333333
+   },
+   "t": 168992
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10017",
+    "at": 113.89466666666667
+   },
+   "t": 170842
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10017",
+    "units": 8,
+    "at": 113.92466666666667
+   },
+   "t": 170887
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10023",
+    "at": 114.016
+   },
+   "t": 171024
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10024",
+    "units": 118,
+    "at": 114.41866666666667
+   },
+   "t": 171628
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10015",
+    "at": 115.83333333333333
+   },
+   "t": 173750
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10023",
+    "status": "Allocated",
+    "fully": true,
+    "at": 115.858
+   },
+   "t": 173787
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10015",
+    "units": 202,
+    "at": 115.88066666666667
+   },
+   "t": 173821
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 174324
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 174529
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10096",
+    "kind": "small",
+    "lines": 7,
+    "units": 121,
+    "at": 116.58266666666667
+   },
+   "t": 174874
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10097",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3,
+    "at": 117.768
+   },
+   "t": 176652
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10023",
+    "units": 163,
+    "at": 117.878
+   },
+   "t": 176817
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10013",
+    "at": 118.11666666666666
+   },
+   "t": 177175
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10013",
+    "units": 704,
+    "at": 118.22866666666667
+   },
+   "t": 177343
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10024",
+    "at": 118.928
+   },
+   "t": 178392
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 179326
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10020",
+    "at": 120.34266666666667
+   },
+   "t": 180514
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10020",
+    "units": 3,
+    "at": 120.37133333333334
+   },
+   "t": 180557
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 180773
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10027",
+    "at": 120.964
+   },
+   "t": 181446
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10023",
+    "at": 121.048
+   },
+   "t": 181572
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10098",
+    "kind": "small",
+    "lines": 6,
+    "units": 231,
+    "at": 121.54
+   },
+   "t": 182310
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10025",
+    "at": 122.55533333333334
+   },
+   "t": 183833
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 185130
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 185201
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5008",
+    "units": 596
+   },
+   "t": 187094
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5041",
+    "units": 1507
+   },
+   "t": 187219
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 188333
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10099",
+    "kind": "small",
+    "lines": 4,
+    "units": 137,
+    "at": 125.85733333333333
+   },
+   "t": 188786
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10018",
+    "at": 126.34466666666667
+   },
+   "t": 189517
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10018",
+    "units": 668,
+    "at": 126.404
+   },
+   "t": 189606
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10019",
+    "at": 128.52266666666668
+   },
+   "t": 192784
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10019",
+    "units": 170,
+    "at": 128.56666666666666
+   },
+   "t": 192850
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 194432
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10026",
+    "at": 130.028
+   },
+   "t": 195042
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10100",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8,
+    "at": 130.84266666666667
+   },
+   "t": 196264
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 196506
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 197166
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 197386
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10027",
+    "status": "Backordered",
+    "fully": false,
+    "at": 132.54533333333333
+   },
+   "t": 198818
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 199804
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10025",
+    "status": "Allocated",
+    "fully": true,
+    "at": 134.08666666666667
+   },
+   "t": 201130
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10101",
+    "kind": "medium",
+    "lines": 14,
+    "units": 988,
+    "at": 134.42666666666668
+   },
+   "t": 201640
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10024",
+    "at": 136.39533333333333
+   },
+   "t": 204593
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10024",
+    "units": 118,
+    "at": 136.43
+   },
+   "t": 204645
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10102",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 137.68866666666668
+   },
+   "t": 206533
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 208112
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 210421
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5042",
+    "lines": 8
+   },
+   "t": 210919
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10026",
+    "status": "Allocated",
+    "fully": false,
+    "at": 140.728
+   },
+   "t": 211092
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10103",
+    "kind": "small",
+    "lines": 5,
+    "units": 151,
+    "at": 140.76133333333334
+   },
+   "t": 211142
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3001",
+    "so": "10007"
+   },
+   "t": 211464
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10023",
+    "at": 142.16533333333334
+   },
+   "t": 213248
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10023",
+    "units": 163,
+    "at": 142.20066666666668
+   },
+   "t": 213301
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5041",
+    "units": 85
+   },
+   "t": 213585
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10025",
+    "units": 7,
+    "at": 142.62266666666667
+   },
+   "t": 213934
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 27
+   },
+   "t": 215484
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10104",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3,
+    "at": 144.47733333333332
+   },
+   "t": 216716
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 218873
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10105",
+    "kind": "small",
+    "lines": 6,
+    "units": 211,
+    "at": 146.43666666666667
+   },
+   "t": 219655
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 220198
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10026",
+    "units": 16500,
+    "at": 147.006
+   },
+   "t": 220509
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10025",
+    "at": 148.178
+   },
+   "t": 222267
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10030",
+    "at": 149.184
+   },
+   "t": 223776
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 224778
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "CL-1024",
+    "delta": 1
+   },
+   "t": 224815
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10026",
+    "at": 150.76266666666666
+   },
+   "t": 226144
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10106",
+    "kind": "small",
+    "lines": 6,
+    "units": 186,
+    "at": 151.25666666666666
+   },
+   "t": 226885
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10022",
+    "at": 152.53933333333333
+   },
+   "t": 228809
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 228891
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10022",
+    "units": 1110,
+    "at": 152.624
+   },
+   "t": 228936
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10026: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 228963
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 24
+   },
+   "t": 229365
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 229441
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 29
+   },
+   "t": 235858
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10021",
+    "status": "Allocated",
+    "fully": false,
+    "at": 157.42866666666666
+   },
+   "t": 236143
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10107",
+    "kind": "medium",
+    "lines": 9,
+    "units": 760,
+    "at": 158.844
+   },
+   "t": 238266
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10108",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3,
+    "at": 158.888
+   },
+   "t": 238332
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 239663
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10030",
+    "status": "Allocated",
+    "fully": true,
+    "at": 160.426
+   },
+   "t": 240639
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 241075
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3001"
+   },
+   "t": 242288
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10030",
+    "units": 162,
+    "at": 162.16466666666668
+   },
+   "t": 243247
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10029",
+    "at": 162.67933333333335
+   },
+   "t": 244019
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10025",
+    "at": 163.6
+   },
+   "t": 245400
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10025",
+    "units": 7,
+    "at": 163.63266666666667
+   },
+   "t": 245449
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 245701
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 246520
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10029",
+    "status": "Backordered",
+    "fully": false,
+    "at": 165.32733333333334
+   },
+   "t": 247991
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10021",
+    "units": 9070,
+    "at": 165.44466666666668
+   },
+   "t": 248167
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10109",
+    "kind": "small",
+    "lines": 6,
+    "units": 87,
+    "at": 166.374
+   },
+   "t": 249561
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10031",
+    "at": 166.93933333333334
+   },
+   "t": 250409
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "GS-1052",
+    "delta": 0
+   },
+   "t": 250506
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10032",
+    "at": 167.06933333333333
+   },
+   "t": 250604
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "GS-1035",
+    "delta": 0
+   },
+   "t": 252140
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10110",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1084,
+    "at": 168.19133333333335
+   },
+   "t": 252287
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10028",
+    "at": 168.68333333333334
+   },
+   "t": 253025
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10031",
+    "status": "Allocated",
+    "fully": true,
+    "at": 169.18133333333333
+   },
+   "t": 253772
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10030",
+    "at": 169.48533333333333
+   },
+   "t": 254228
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10021",
+    "at": 169.506
+   },
+   "t": 254259
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 17,
+    "ms": 23
+   },
+   "t": 254861
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10111",
+    "kind": "small",
+    "lines": 7,
+    "units": 159,
+    "at": 171.19333333333333
+   },
+   "t": 256790
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10032",
+    "status": "Allocated",
+    "fully": true,
+    "at": 171.366
+   },
+   "t": 257049
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10112",
+    "kind": "large",
+    "lines": 38,
+    "units": 18645,
+    "at": 171.95333333333335
+   },
+   "t": 257930
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10034",
+    "at": 172.52666666666667
+   },
+   "t": 258790
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10032",
+    "units": 7,
+    "at": 172.976
+   },
+   "t": 259464
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10031",
+    "units": 80,
+    "at": 174.26066666666668
+   },
+   "t": 261391
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10031: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 261939
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 262713
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "00ede3ea-1472-4255-a16c-13d6717a78a1"
+   },
+   "t": 263006
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10113",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1132,
+    "at": 177.21333333333334
+   },
+   "t": 265820
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10028",
+    "status": "Allocated",
+    "fully": true,
+    "at": 177.62066666666666
+   },
+   "t": 266431
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 268260
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10034",
+    "status": "Allocated",
+    "fully": false,
+    "at": 180.04866666666666
+   },
+   "t": 270073
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 271928
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10114",
+    "kind": "small",
+    "lines": 4,
+    "units": 152,
+    "at": 181.90266666666668
+   },
+   "t": 272854
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10115",
+    "kind": "small",
+    "lines": 5,
+    "units": 200,
+    "at": 181.96933333333334
+   },
+   "t": 272954
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10034",
+    "units": 1059,
+    "at": 182.70266666666666
+   },
+   "t": 274054
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 275084
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10032",
+    "at": 183.986
+   },
+   "t": 275979
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10031",
+    "at": 183.99666666666667
+   },
+   "t": 275995
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10035",
+    "at": 184.58933333333334
+   },
+   "t": 276884
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10036",
+    "at": 185.65666666666667
+   },
+   "t": 278485
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 278747
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10028",
+    "units": 8,
+    "at": 187.53266666666667
+   },
+   "t": 281299
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10035",
+    "status": "Backordered",
+    "fully": false,
+    "at": 187.86466666666666
+   },
+   "t": 281797
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10116",
+    "kind": "small",
+    "lines": 4,
+    "units": 114,
+    "at": 188.17666666666668
+   },
+   "t": 282265
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10037",
+    "at": 188.78666666666666
+   },
+   "t": 283180
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10117",
+    "kind": "large",
+    "lines": 27,
+    "units": 12613,
+    "at": 188.98933333333332
+   },
+   "t": 283484
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 283889
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 284015
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10030",
+    "at": 189.85066666666665
+   },
+   "t": 284776
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 284811
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10030",
+    "units": 162,
+    "at": 189.90533333333335
+   },
+   "t": 284858
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10036",
+    "status": "Allocated",
+    "fully": true,
+    "at": 190.42333333333335
+   },
+   "t": 285635
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 286677
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10038",
+    "at": 191.53066666666666
+   },
+   "t": 287296
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10036",
+    "units": 3,
+    "at": 191.87533333333334
+   },
+   "t": 287813
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10037",
+    "status": "Allocated",
+    "fully": true,
+    "at": 192.878
+   },
+   "t": 289317
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10039",
+    "at": 193.428
+   },
+   "t": 290142
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10038",
+    "status": "Allocated",
+    "fully": true,
+    "at": 194.43
+   },
+   "t": 291645
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10118",
+    "kind": "medium",
+    "lines": 13,
+    "units": 805,
+    "at": 195.21066666666667
+   },
+   "t": 292816
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 293510
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10039",
+    "status": "Allocated",
+    "fully": true,
+    "at": 195.926
+   },
+   "t": 293889
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "6818daa9-b32a-4ddc-8e33-1562e137ac01"
+   },
+   "t": 294894
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10036",
+    "at": 197.13733333333334
+   },
+   "t": 295706
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10034",
+    "at": 197.15
+   },
+   "t": 295725
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10028",
+    "at": 197.16266666666667
+   },
+   "t": 295744
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 295926
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10037",
+    "units": 4,
+    "at": 197.29466666666667
+   },
+   "t": 295942
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 296678
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10040",
+    "at": 197.87266666666667
+   },
+   "t": 296809
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10039",
+    "units": 4,
+    "at": 198.99733333333333
+   },
+   "t": 298496
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 299664
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10040",
+    "status": "Allocated",
+    "fully": true,
+    "at": 199.77733333333333
+   },
+   "t": 299666
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10038",
+    "units": 8,
+    "at": 200.972
+   },
+   "t": 301458
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10119",
+    "kind": "medium",
+    "lines": 9,
+    "units": 661,
+    "at": 201.018
+   },
+   "t": 301527
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10031",
+    "at": 201.44466666666668
+   },
+   "t": 302167
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10031",
+    "units": 80,
+    "at": 201.48466666666667
+   },
+   "t": 302227
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10041",
+    "at": 202.78066666666666
+   },
+   "t": 304171
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10032",
+    "at": 203.024
+   },
+   "t": 304536
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10032",
+    "units": 7,
+    "at": 203.06
+   },
+   "t": 304590
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10042",
+    "at": 203.43066666666667
+   },
+   "t": 305146
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10120",
+    "kind": "medium",
+    "lines": 9,
+    "units": 793,
+    "at": 203.498
+   },
+   "t": 305247
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10041",
+    "status": "Allocated",
+    "fully": true,
+    "at": 205.66266666666667
+   },
+   "t": 308494
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10042",
+    "status": "Allocated",
+    "fully": true,
+    "at": 207.20466666666667
+   },
+   "t": 310807
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10040",
+    "units": 6,
+    "at": 208.444
+   },
+   "t": 312666
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3002",
+    "so": "10020"
+   },
+   "t": 313022
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5043",
+    "lines": 11
+   },
+   "t": 313765
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10121",
+    "kind": "small",
+    "lines": 4,
+    "units": 187,
+    "at": 209.33466666666666
+   },
+   "t": 314002
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 314141
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10041",
+    "units": 748,
+    "at": 210.434
+   },
+   "t": 315651
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10036",
+    "at": 210.90866666666668
+   },
+   "t": 316363
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10036",
+    "units": 3,
+    "at": 210.938
+   },
+   "t": 316407
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10122",
+    "kind": "medium",
+    "lines": 14,
+    "units": 880,
+    "at": 211.106
+   },
+   "t": 316659
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10123",
+    "kind": "large",
+    "lines": 33,
+    "units": 16439,
+    "at": 212.15266666666668
+   },
+   "t": 318229
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10042",
+    "units": 247,
+    "at": 212.43333333333334
+   },
+   "t": 318650
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10041: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 319284
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10028",
+    "at": 213.034
+   },
+   "t": 319551
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10028",
+    "units": 8,
+    "at": 213.06866666666667
+   },
+   "t": 319603
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 296,
+    "ms": 43
+   },
+   "t": 320848
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 321028
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3002"
+   },
+   "t": 321956
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10043",
+    "at": 214.704
+   },
+   "t": 322056
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 323238
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 38,
+    "ms": 29
+   },
+   "t": 323331
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10044",
+    "at": 215.89333333333335
+   },
+   "t": 323840
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 324425
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10046",
+    "at": 217.694
+   },
+   "t": 326541
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10043",
+    "status": "Allocated",
+    "fully": false,
+    "at": 217.89933333333335
+   },
+   "t": 326849
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 328200
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10043",
+    "units": 158,
+    "at": 219.45866666666666
+   },
+   "t": 329188
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 330822
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10046",
+    "status": "Allocated",
+    "fully": true,
+    "at": 221.58866666666665
+   },
+   "t": 332383
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10124",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1026,
+    "at": 222.14466666666667
+   },
+   "t": 333217
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10125",
+    "kind": "medium",
+    "lines": 8,
+    "units": 600,
+    "at": 222.57866666666666
+   },
+   "t": 333868
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10126",
+    "kind": "large",
+    "lines": 21,
+    "units": 10681,
+    "at": 223.24733333333333
+   },
+   "t": 334871
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10044",
+    "status": "Allocated",
+    "fully": false,
+    "at": 224.77333333333334
+   },
+   "t": 337160
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 338087
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10043",
+    "at": 226.30866666666665
+   },
+   "t": 339463
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10042",
+    "at": 226.32
+   },
+   "t": 339480
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10041",
+    "at": 226.33066666666667
+   },
+   "t": 339496
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10040",
+    "at": 226.34066666666666
+   },
+   "t": 339511
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10039",
+    "at": 226.35
+   },
+   "t": 339525
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10038",
+    "at": 226.36
+   },
+   "t": 339540
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10037",
+    "at": 226.37066666666666
+   },
+   "t": 339556
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10047",
+    "at": 227.20933333333332
+   },
+   "t": 340814
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 341091
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 344872
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 345172
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 345907
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10047",
+    "status": "Allocated",
+    "fully": true,
+    "at": 230.60533333333333
+   },
+   "t": 345908
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 346175
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 346758
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10127",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1226,
+    "at": 231.686
+   },
+   "t": 347529
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10033",
+    "at": 231.97266666666667
+   },
+   "t": 347959
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10045",
+    "at": 233.98
+   },
+   "t": 350970
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10046",
+    "units": 219,
+    "at": 234.418
+   },
+   "t": 351627
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10033",
+    "status": "Allocated",
+    "fully": true,
+    "at": 236.17866666666666
+   },
+   "t": 354268
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 354553
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 28
+   },
+   "t": 356302
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10047",
+    "units": 150,
+    "at": 238.13466666666667
+   },
+   "t": 357202
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10034",
+    "at": 238.52066666666667
+   },
+   "t": 357781
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10034",
+    "units": 1039,
+    "at": 238.64266666666666
+   },
+   "t": 357964
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10128",
+    "kind": "medium",
+    "lines": 12,
+    "units": 860,
+    "at": 239.004
+   },
+   "t": 358506
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10047",
+    "at": 240.23533333333333
+   },
+   "t": 360353
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10046",
+    "at": 240.24533333333332
+   },
+   "t": 360368
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 360481
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10044",
+    "units": 938,
+    "at": 240.34933333333333
+   },
+   "t": 360524
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10037",
+    "at": 240.634
+   },
+   "t": 360951
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10037",
+    "units": 4,
+    "at": 240.662
+   },
+   "t": 360993
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10044: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 361390
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 35,
+    "ms": 28
+   },
+   "t": 362476
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10129",
+    "kind": "large",
+    "lines": 22,
+    "units": 10102,
+    "at": 241.70866666666666
+   },
+   "t": 362563
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10038",
+    "at": 242.458
+   },
+   "t": 363687
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10038",
+    "units": 8,
+    "at": 242.49
+   },
+   "t": 363735
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10044",
+    "at": 243.236
+   },
+   "t": 364854
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10130",
+    "kind": "medium",
+    "lines": 11,
+    "units": 1023,
+    "at": 243.35533333333333
+   },
+   "t": 365033
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10033",
+    "units": 156,
+    "at": 243.35733333333334
+   },
+   "t": 365036
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10039",
+    "at": 243.93866666666668
+   },
+   "t": 365908
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10039",
+    "units": 4,
+    "at": 243.96533333333332
+   },
+   "t": 365948
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "vendor-updated",
+   "detail": {},
+   "t": 365995
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10045",
+    "status": "Allocated",
+    "fully": true,
+    "at": 244.98933333333332
+   },
+   "t": 367484
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10040",
+    "at": 245.448
+   },
+   "t": 368172
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10040",
+    "units": 6,
+    "at": 245.48733333333334
+   },
+   "t": 368231
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 369531
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10045",
+    "units": 1060,
+    "at": 247.31933333333333
+   },
+   "t": 370979
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10131",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1136,
+    "at": 248.16333333333333
+   },
+   "t": 372245
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 373731
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10132",
+    "kind": "small",
+    "lines": 7,
+    "units": 287,
+    "at": 249.886
+   },
+   "t": 374829
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10050",
+    "at": 250.03133333333332
+   },
+   "t": 375047
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 376443
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10042",
+    "at": 251.04066666666668
+   },
+   "t": 376561
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10042",
+    "units": 235,
+    "at": 251.09066666666666
+   },
+   "t": 376636
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10051",
+    "at": 251.77066666666667
+   },
+   "t": 377656
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10045",
+    "at": 251.82933333333332
+   },
+   "t": 377744
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10033",
+    "at": 251.84
+   },
+   "t": 377760
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10133",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1303,
+    "at": 252.78666666666666
+   },
+   "t": 379180
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10050",
+    "status": "Allocated",
+    "fully": true,
+    "at": 253.15
+   },
+   "t": 379725
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10043",
+    "at": 253.81333333333333
+   },
+   "t": 380720
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10043",
+    "units": 155,
+    "at": 253.852
+   },
+   "t": 380778
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 381179
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10051",
+    "status": "Allocated",
+    "fully": true,
+    "at": 255.35866666666666
+   },
+   "t": 383038
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 383262
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10134",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7,
+    "at": 255.73666666666668
+   },
+   "t": 383605
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 384443
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "CL-1011",
+    "delta": 0
+   },
+   "t": 384701
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10048",
+    "at": 256.65866666666665
+   },
+   "t": 384988
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10135",
+    "kind": "medium",
+    "lines": 14,
+    "units": 896,
+    "at": 256.7966666666667
+   },
+   "t": 385195
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10048",
+    "status": "Allocated",
+    "fully": true,
+    "at": 258.01533333333333
+   },
+   "t": 387023
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10052",
+    "at": 258.2393333333333
+   },
+   "t": 387359
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10136",
+    "kind": "small",
+    "lines": 4,
+    "units": 65,
+    "at": 258.60266666666666
+   },
+   "t": 387904
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10041",
+    "at": 259.46866666666665
+   },
+   "t": 389203
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10048",
+    "units": 4,
+    "at": 259.504
+   },
+   "t": 389256
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10041",
+    "units": 748,
+    "at": 259.534
+   },
+   "t": 389301
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10137",
+    "kind": "medium",
+    "lines": 9,
+    "units": 823,
+    "at": 259.5346666666667
+   },
+   "t": 389302
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 389992
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10052",
+    "status": "Allocated",
+    "fully": true,
+    "at": 260.66133333333335
+   },
+   "t": 390992
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10051",
+    "units": 191,
+    "at": 261.0246666666667
+   },
+   "t": 391537
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10138",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 262.1693333333333
+   },
+   "t": 393254
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "bol-generated",
+   "detail": {
+    "so": "10021"
+   },
+   "t": 395025
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10053",
+    "at": 263.554
+   },
+   "t": 395331
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10054",
+    "at": 264.3786666666667
+   },
+   "t": 396568
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10139",
+    "kind": "small",
+    "lines": 5,
+    "units": 203,
+    "at": 264.664
+   },
+   "t": 396996
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10140",
+    "kind": "small",
+    "lines": 6,
+    "units": 205,
+    "at": 264.93466666666666
+   },
+   "t": 397402
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10050",
+    "units": 661,
+    "at": 265.25333333333333
+   },
+   "t": 397880
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 399023
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 399943
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 4
+   },
+   "t": 400024
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10051",
+    "at": 267.3473333333333
+   },
+   "t": 401021
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10050",
+    "at": 267.3573333333333
+   },
+   "t": 401036
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10048",
+    "at": 267.3666666666667
+   },
+   "t": 401050
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10053",
+    "status": "Allocated",
+    "fully": false,
+    "at": 267.8926666666667
+   },
+   "t": 401839
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10021",
+    "at": 268.0253333333333
+   },
+   "t": 402038
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 402125
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10021",
+    "units": 9070,
+    "at": 268.13933333333335
+   },
+   "t": 402209
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 403234
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 404817
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10053",
+    "units": 734,
+    "at": 270.8113333333333
+   },
+   "t": 406217
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5044",
+    "lines": 3
+   },
+   "t": 407416
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 408235
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10053: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 409067
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "bol-generated",
+   "detail": {
+    "so": "10026"
+   },
+   "t": 409086
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10141",
+    "kind": "small",
+    "lines": 3,
+    "units": 128,
+    "at": 272.88
+   },
+   "t": 409320
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10054",
+    "status": "Allocated",
+    "fully": true,
+    "at": 274.1293333333333
+   },
+   "t": 411194
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 411684
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10053",
+    "at": 274.46933333333334
+   },
+   "t": 411704
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10142",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1409,
+    "at": 275.51533333333333
+   },
+   "t": 413273
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 415028
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "TB-1070",
+    "delta": 3
+   },
+   "t": 416011
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10026",
+    "at": 277.9286666666667
+   },
+   "t": 416893
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 417166
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10026",
+    "units": 16432,
+    "at": 278.11533333333335
+   },
+   "t": 417173
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10055",
+    "at": 278.3353333333333
+   },
+   "t": 417503
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10054",
+    "units": 1062,
+    "at": 279.928
+   },
+   "t": 419892
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10054: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 420703
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10033",
+    "at": 280.6546666666667
+   },
+   "t": 420982
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10033",
+    "units": 156,
+    "at": 280.692
+   },
+   "t": 421038
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10052",
+    "units": 191,
+    "at": 282.25733333333335
+   },
+   "t": 423386
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10143",
+    "kind": "medium",
+    "lines": 11,
+    "units": 945,
+    "at": 282.35333333333335
+   },
+   "t": 423531
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 25
+   },
+   "t": 423539
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10052: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 424255
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 426670
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10049",
+    "at": 284.49333333333334
+   },
+   "t": 426740
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10054",
+    "at": 284.6553333333333
+   },
+   "t": 426983
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10052",
+    "at": 284.6666666666667
+   },
+   "t": 427000
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10044",
+    "at": 284.832
+   },
+   "t": 427248
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10044",
+    "units": 935,
+    "at": 284.93733333333336
+   },
+   "t": 427406
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10057",
+    "at": 286.62
+   },
+   "t": 429930
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 22,
+    "ms": 22
+   },
+   "t": 430433
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10144",
+    "kind": "small",
+    "lines": 5,
+    "units": 161,
+    "at": 287.112
+   },
+   "t": 430668
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10145",
+    "kind": "large",
+    "lines": 21,
+    "units": 10694,
+    "at": 287.1673333333333
+   },
+   "t": 430751
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10046",
+    "at": 287.234
+   },
+   "t": 430851
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10046",
+    "units": 219,
+    "at": 287.29
+   },
+   "t": 430935
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10056",
+    "at": 287.92333333333335
+   },
+   "t": 431885
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10055",
+    "status": "Backordered",
+    "fully": false,
+    "at": 289.9633333333333
+   },
+   "t": 434945
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10060",
+    "at": 291.0593333333333
+   },
+   "t": 436589
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10146",
+    "kind": "small",
+    "lines": 3,
+    "units": 85,
+    "at": 291.17133333333334
+   },
+   "t": 436757
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10045",
+    "at": 291.478
+   },
+   "t": 437217
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10045",
+    "units": 1060,
+    "at": 291.564
+   },
+   "t": 437346
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 21,
+    "ms": 27
+   },
+   "t": 438537
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10056",
+    "status": "Allocated",
+    "fully": false,
+    "at": 292.788
+   },
+   "t": 439182
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 439215
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10056",
+    "units": 4,
+    "at": 294.36333333333334
+   },
+   "t": 441545
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10047",
+    "at": 294.5346666666667
+   },
+   "t": 441802
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10047",
+    "units": 150,
+    "at": 294.58733333333333
+   },
+   "t": 441881
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10057",
+    "status": "Allocated",
+    "fully": true,
+    "at": 294.956
+   },
+   "t": 442434
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10048",
+    "at": 295.832
+   },
+   "t": 443748
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10048",
+    "units": 4,
+    "at": 295.86266666666666
+   },
+   "t": 443794
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10147",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1010,
+    "at": 296.518
+   },
+   "t": 444777
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10056",
+    "at": 297.152
+   },
+   "t": 445728
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10148",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8,
+    "at": 297.2026666666667
+   },
+   "t": 445804
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10149",
+    "kind": "large",
+    "lines": 29,
+    "units": 15711,
+    "at": 298.6413333333333
+   },
+   "t": 447962
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10050",
+    "at": 299.138
+   },
+   "t": 448707
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10050",
+    "units": 661,
+    "at": 299.2013333333333
+   },
+   "t": 448802
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10060",
+    "status": "Backordered",
+    "fully": false,
+    "at": 299.238
+   },
+   "t": 448857
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 448876
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10051",
+    "at": 300.9533333333333
+   },
+   "t": 451430
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10051",
+    "units": 187,
+    "at": 301.0006666666667
+   },
+   "t": 451501
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 451652
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10049",
+    "status": "Allocated",
+    "fully": false,
+    "at": 302.18666666666667
+   },
+   "t": 453280
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10060",
+    "status": "Backordered",
+    "fully": false,
+    "at": 302.53866666666664
+   },
+   "t": 453808
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10059",
+    "at": 306.082
+   },
+   "t": 459123
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 459349
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10053",
+    "at": 306.274
+   },
+   "t": 459411
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10053",
+    "units": 734,
+    "at": 306.33666666666664
+   },
+   "t": 459505
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10150",
+    "kind": "medium",
+    "lines": 11,
+    "units": 1061,
+    "at": 307.09933333333333
+   },
+   "t": 460649
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 460708
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10052",
+    "at": 308.1573333333333
+   },
+   "t": 462236
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10052",
+    "units": 191,
+    "at": 308.208
+   },
+   "t": 462312
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 463079
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10059",
+    "status": "Backordered",
+    "fully": false,
+    "at": 309.56666666666666
+   },
+   "t": 464350
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10151",
+    "kind": "small",
+    "lines": 7,
+    "units": 264,
+    "at": 311.44
+   },
+   "t": 467160
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10061",
+    "at": 311.85133333333334
+   },
+   "t": 467777
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 468410
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 468454
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10152",
+    "kind": "large",
+    "lines": 40,
+    "units": 21929,
+    "at": 312.46666666666664
+   },
+   "t": 468700
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 468771
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10056",
+    "at": 313.056
+   },
+   "t": 469584
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10056",
+    "units": 4,
+    "at": 313.0846666666667
+   },
+   "t": 469627
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 470719
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10057",
+    "units": 744,
+    "at": 314.7866666666667
+   },
+   "t": 472180
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 474089
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10059",
+    "status": "Backordered",
+    "fully": false,
+    "at": 316.79066666666665
+   },
+   "t": 475186
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10049",
+    "units": 166,
+    "at": 317.0366666666667
+   },
+   "t": 475555
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10153",
+    "kind": "small",
+    "lines": 5,
+    "units": 119,
+    "at": 317.28933333333333
+   },
+   "t": 475934
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10061",
+    "status": "Allocated",
+    "fully": true,
+    "at": 318.8693333333333
+   },
+   "t": 478304
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 478822
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 479263
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10062",
+    "at": 320.882
+   },
+   "t": 481323
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10154",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 6,
+    "at": 321.42133333333334
+   },
+   "t": 482132
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10061",
+    "units": 118,
+    "at": 321.78333333333336
+   },
+   "t": 482675
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 3
+   },
+   "t": 482736
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10061: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 483619
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10155",
+    "kind": "small",
+    "lines": 6,
+    "units": 210,
+    "at": 322.432
+   },
+   "t": 483648
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10054",
+    "at": 322.538
+   },
+   "t": 483807
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10054",
+    "units": 1043,
+    "at": 322.60266666666666
+   },
+   "t": 483904
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10062",
+    "status": "Allocated",
+    "fully": true,
+    "at": 323.51866666666666
+   },
+   "t": 485278
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10062",
+    "units": 90,
+    "at": 324.9406666666667
+   },
+   "t": 487411
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 487872
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 488384
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 38
+   },
+   "t": 490224
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10156",
+    "kind": "small",
+    "lines": 5,
+    "units": 203,
+    "at": 326.91266666666667
+   },
+   "t": 490369
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10064",
+    "at": 327.16133333333335
+   },
+   "t": 490742
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10063",
+    "at": 328.56
+   },
+   "t": 492840
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 493452
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10065",
+    "at": 329.054
+   },
+   "t": 493581
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10157",
+    "kind": "large",
+    "lines": 32,
+    "units": 16350,
+    "at": 329.32933333333335
+   },
+   "t": 493994
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 495298
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10058",
+    "at": 331.9386666666667
+   },
+   "t": 497908
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10066",
+    "at": 332.4293333333333
+   },
+   "t": 498644
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 498832
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10058",
+    "status": "Allocated",
+    "fully": true,
+    "at": 334.322
+   },
+   "t": 501483
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5045",
+    "lines": 2
+   },
+   "t": 501508
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10063",
+    "status": "Allocated",
+    "fully": true,
+    "at": 335.08
+   },
+   "t": 502620
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10158",
+    "kind": "medium",
+    "lines": 14,
+    "units": 879,
+    "at": 335.218
+   },
+   "t": 502827
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 503155
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10159",
+    "kind": "medium",
+    "lines": 8,
+    "units": 485,
+    "at": 335.72
+   },
+   "t": 503580
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10058",
+    "units": 3,
+    "at": 335.8806666666667
+   },
+   "t": 503821
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10063",
+    "units": 211,
+    "at": 336.754
+   },
+   "t": 505131
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3003",
+    "so": "10045"
+   },
+   "t": 506640
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10160",
+    "kind": "medium",
+    "lines": 13,
+    "units": 828,
+    "at": 338.22933333333333
+   },
+   "t": 507344
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10063: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 507492
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10067",
+    "at": 339.488
+   },
+   "t": 509232
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10161",
+    "kind": "small",
+    "lines": 4,
+    "units": 169,
+    "at": 340.42333333333335
+   },
+   "t": 510635
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 31
+   },
+   "t": 511315
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 511543
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10070",
+    "at": 341.83933333333334
+   },
+   "t": 512759
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 512971
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 513230
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10065",
+    "status": "Allocated",
+    "fully": true,
+    "at": 343.28066666666666
+   },
+   "t": 514921
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10064",
+    "status": "Allocated",
+    "fully": true,
+    "at": 345.04266666666666
+   },
+   "t": 517564
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10162",
+    "kind": "medium",
+    "lines": 8,
+    "units": 598,
+    "at": 346.712
+   },
+   "t": 520068
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10067",
+    "status": "Allocated",
+    "fully": true,
+    "at": 346.93533333333335
+   },
+   "t": 520403
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5045",
+    "units": 310
+   },
+   "t": 521520
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 521873
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 522592
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3004",
+    "so": "10038"
+   },
+   "t": 522761
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10163",
+    "kind": "small",
+    "lines": 3,
+    "units": 65,
+    "at": 349.1553333333333
+   },
+   "t": 523733
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10070",
+    "status": "Allocated",
+    "fully": false,
+    "at": 349.18266666666665
+   },
+   "t": 523774
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 525084
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10164",
+    "kind": "large",
+    "lines": 23,
+    "units": 11947,
+    "at": 350.59133333333335
+   },
+   "t": 525887
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3003"
+   },
+   "t": 529405
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 30
+   },
+   "t": 529492
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10063",
+    "at": 353.0713333333333
+   },
+   "t": 529607
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10062",
+    "at": 353.0853333333333
+   },
+   "t": 529628
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10061",
+    "at": 353.09866666666665
+   },
+   "t": 529648
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10058",
+    "at": 353.11066666666665
+   },
+   "t": 529666
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10057",
+    "at": 353.12466666666666
+   },
+   "t": 529687
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10049",
+    "at": 353.13733333333334
+   },
+   "t": 529706
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10066",
+    "status": "Allocated",
+    "fully": true,
+    "at": 354.554
+   },
+   "t": 531831
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 532220
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10165",
+    "kind": "small",
+    "lines": 7,
+    "units": 255,
+    "at": 354.84933333333333
+   },
+   "t": 532274
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10166",
+    "kind": "small",
+    "lines": 4,
+    "units": 110,
+    "at": 356.4313333333333
+   },
+   "t": 534647
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 535246
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10068",
+    "at": 357.13866666666667
+   },
+   "t": 535708
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10066",
+    "units": 1137,
+    "at": 357.79133333333334
+   },
+   "t": 536687
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10167",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 3,
+    "at": 357.85333333333335
+   },
+   "t": 536780
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 3
+   },
+   "t": 537976
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 538274
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10168",
+    "kind": "small",
+    "lines": 5,
+    "units": 171,
+    "at": 358.91333333333336
+   },
+   "t": 538370
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "1a592c3e-ebe3-4f58-acc5-1becb9fa0568"
+   },
+   "t": 538728
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 538795
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10064",
+    "units": 191,
+    "at": 359.344
+   },
+   "t": 539016
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10066: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 539513
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10066",
+    "at": 359.936
+   },
+   "t": 539904
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "BR-1074",
+    "delta": 1
+   },
+   "t": 540151
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 540307
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3004"
+   },
+   "t": 540728
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10065",
+    "units": 7,
+    "at": 361.30533333333335
+   },
+   "t": 541958
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10067",
+    "units": 263,
+    "at": 361.81
+   },
+   "t": 542715
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10065",
+    "at": 362.7986666666667
+   },
+   "t": 544198
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10064",
+    "at": 362.81
+   },
+   "t": 544215
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "vendor-updated",
+   "detail": {},
+   "t": 544794
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10068",
+    "status": "Allocated",
+    "fully": true,
+    "at": 364.75333333333333
+   },
+   "t": 547130
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 547449
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10067",
+    "at": 365.42266666666666
+   },
+   "t": 548134
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10071",
+    "at": 367.0966666666667
+   },
+   "t": 550645
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 2
+   },
+   "t": 550654
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10058",
+    "at": 367.25266666666664
+   },
+   "t": 550879
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10058",
+    "units": 3,
+    "at": 367.27866666666665
+   },
+   "t": 550918
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10069",
+    "at": 367.5113333333333
+   },
+   "t": 551267
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10169",
+    "kind": "medium",
+    "lines": 8,
+    "units": 530,
+    "at": 368.48466666666667
+   },
+   "t": 552727
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10170",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 7,
+    "at": 368.728
+   },
+   "t": 553092
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3005",
+    "so": "10052"
+   },
+   "t": 553682
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10071",
+    "status": "Allocated",
+    "fully": true,
+    "at": 369.354
+   },
+   "t": 554031
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "PN-1033",
+    "delta": 0
+   },
+   "t": 554170
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10171",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1029,
+    "at": 371.20666666666665
+   },
+   "t": 556810
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10069",
+    "status": "Allocated",
+    "fully": true,
+    "at": 371.57866666666666
+   },
+   "t": 557368
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10068",
+    "units": 178,
+    "at": 371.65
+   },
+   "t": 557475
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10061",
+    "at": 371.94866666666667
+   },
+   "t": 557923
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10061",
+    "units": 118,
+    "at": 372.00266666666664
+   },
+   "t": 558004
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10071",
+    "units": 8,
+    "at": 373.30333333333334
+   },
+   "t": 559955
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10070",
+    "units": 189,
+    "at": 374.05133333333333
+   },
+   "t": 561077
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10172",
+    "kind": "medium",
+    "lines": 8,
+    "units": 707,
+    "at": 374.056
+   },
+   "t": 561084
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10062",
+    "at": 374.42066666666665
+   },
+   "t": 561631
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10062",
+    "units": 90,
+    "at": 374.464
+   },
+   "t": 561696
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10070: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 562442
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 563258
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10073",
+    "at": 376.924
+   },
+   "t": 565386
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10071",
+    "at": 377.144
+   },
+   "t": 565716
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10070",
+    "at": 377.1566666666667
+   },
+   "t": 565735
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10049",
+    "at": 377.164
+   },
+   "t": 565746
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10068",
+    "at": 377.17
+   },
+   "t": 565755
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10049",
+    "units": 166,
+    "at": 377.212
+   },
+   "t": 565818
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10072",
+    "at": 377.534
+   },
+   "t": 566301
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 5
+   },
+   "t": 566540
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 57
+   },
+   "t": 566702
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10173",
+    "kind": "small",
+    "lines": 4,
+    "units": 107,
+    "at": 377.83866666666665
+   },
+   "t": 566758
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 567348
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10069",
+    "units": 578,
+    "at": 379.8906666666667
+   },
+   "t": 569836
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10063",
+    "at": 379.99066666666664
+   },
+   "t": 569986
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10063",
+    "units": 211,
+    "at": 380.04
+   },
+   "t": 570060
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10073",
+    "status": "Allocated",
+    "fully": true,
+    "at": 380.8186666666667
+   },
+   "t": 571228
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10065",
+    "at": 382.176
+   },
+   "t": 573264
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10065",
+    "units": 7,
+    "at": 382.20666666666665
+   },
+   "t": 573310
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3005"
+   },
+   "t": 573535
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 574409
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10075",
+    "at": 383.31466666666665
+   },
+   "t": 574972
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10072",
+    "status": "Allocated",
+    "fully": false,
+    "at": 383.8233333333333
+   },
+   "t": 575735
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 576265
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10057",
+    "at": 384.7513333333333
+   },
+   "t": 577127
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10057",
+    "units": 744,
+    "at": 384.81733333333335
+   },
+   "t": 577226
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 33
+   },
+   "t": 577842
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10073",
+    "units": 1101,
+    "at": 385.764
+   },
+   "t": 578646
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10064",
+    "at": 387.1526666666667
+   },
+   "t": 580729
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10064",
+    "units": 191,
+    "at": 387.2
+   },
+   "t": 580800
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10075",
+    "status": "Backordered",
+    "fully": false,
+    "at": 387.4386666666667
+   },
+   "t": 581158
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3006",
+    "so": "10047"
+   },
+   "t": 583350
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10072",
+    "units": 645,
+    "at": 389.194
+   },
+   "t": 583791
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10174",
+    "kind": "medium",
+    "lines": 9,
+    "units": 819,
+    "at": 389.4646666666667
+   },
+   "t": 584197
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10067",
+    "at": 389.974
+   },
+   "t": 584961
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 585040
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10067",
+    "units": 263,
+    "at": 390.032
+   },
+   "t": 585048
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 33
+   },
+   "t": 586211
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10077",
+    "at": 391.03866666666664
+   },
+   "t": 586558
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10175",
+    "kind": "medium",
+    "lines": 13,
+    "units": 892,
+    "at": 391.906
+   },
+   "t": 587859
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10076",
+    "at": 392.408
+   },
+   "t": 588612
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5046",
+    "lines": 1
+   },
+   "t": 590604
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10075",
+    "status": "Backordered",
+    "fully": false,
+    "at": 393.738
+   },
+   "t": 590607
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10076",
+    "status": "Allocated",
+    "fully": true,
+    "at": 394.15133333333335
+   },
+   "t": 591227
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 4
+   },
+   "t": 592319
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10071",
+    "at": 394.95666666666665
+   },
+   "t": 592435
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10071",
+    "units": 8,
+    "at": 394.99
+   },
+   "t": 592485
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10176",
+    "kind": "large",
+    "lines": 35,
+    "units": 17633,
+    "at": 395.34133333333335
+   },
+   "t": 593012
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10076",
+    "units": 4,
+    "at": 395.5733333333333
+   },
+   "t": 593360
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10074",
+    "at": 396.53
+   },
+   "t": 594795
+  },
+  {
+   "user": "pur.ali",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3006"
+   },
+   "t": 595007
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10077",
+    "status": "Backordered",
+    "fully": false,
+    "at": 397.54533333333336
+   },
+   "t": 596318
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10073",
+    "at": 397.698
+   },
+   "t": 596547
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10072",
+    "at": 397.71
+   },
+   "t": 596565
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10069",
+    "at": 397.7493333333333
+   },
+   "t": 596624
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10177",
+    "kind": "medium",
+    "lines": 13,
+    "units": 928,
+    "at": 398.82733333333334
+   },
+   "t": 598241
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10178",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1206,
+    "at": 399.2126666666667
+   },
+   "t": 598819
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 6,
+    "ms": 31
+   },
+   "t": 600318
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10074",
+    "status": "Allocated",
+    "fully": false,
+    "at": 400.82
+   },
+   "t": 601230
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10066",
+    "at": 401.83933333333334
+   },
+   "t": 602759
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10066",
+    "units": 1135,
+    "at": 401.928
+   },
+   "t": 602892
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 603192
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 603302
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10179",
+    "kind": "tiny",
+    "lines": 2,
+    "units": 8,
+    "at": 402.38533333333334
+   },
+   "t": 603578
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 603580
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10180",
+    "kind": "medium",
+    "lines": 9,
+    "units": 798,
+    "at": 403.46666666666664
+   },
+   "t": 605200
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10078",
+    "at": 403.48133333333334
+   },
+   "t": 605222
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10068",
+    "at": 404.99133333333333
+   },
+   "t": 607487
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10068",
+    "units": 178,
+    "at": 405.044
+   },
+   "t": 607566
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10074",
+    "units": 1018,
+    "at": 406.186
+   },
+   "t": 609279
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10074: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 609597
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10070",
+    "at": 407.3433333333333
+   },
+   "t": 611015
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10070",
+    "units": 189,
+    "at": 407.38533333333334
+   },
+   "t": 611078
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10181",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1160,
+    "at": 407.66
+   },
+   "t": 611490
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5046",
+    "units": 176
+   },
+   "t": 612063
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10078",
+    "status": "Allocated",
+    "fully": false,
+    "at": 408.58
+   },
+   "t": 612870
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "2153870e-7398-4731-a0c7-a6872d18df68"
+   },
+   "t": 613068
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10079",
+    "at": 409.296
+   },
+   "t": 613944
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 614172
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10076",
+    "at": 409.474
+   },
+   "t": 614211
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10074",
+    "at": 409.49
+   },
+   "t": 614235
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10182",
+    "kind": "small",
+    "lines": 5,
+    "units": 104,
+    "at": 409.66066666666666
+   },
+   "t": 614491
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10183",
+    "kind": "medium",
+    "lines": 10,
+    "units": 746,
+    "at": 410.7866666666667
+   },
+   "t": 616180
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10078",
+    "units": 159,
+    "at": 411.29333333333335
+   },
+   "t": 616940
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10079",
+    "status": "Allocated",
+    "fully": true,
+    "at": 411.8306666666667
+   },
+   "t": 617746
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10078",
+    "at": 413.136
+   },
+   "t": 619704
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 619728
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10082",
+    "at": 413.708
+   },
+   "t": 620562
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "GS-1005",
+    "delta": 0
+   },
+   "t": 620636
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-cancelled",
+   "detail": {
+    "so": "10181",
+    "from": "Entered"
+   },
+   "t": 621791
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 621886
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10079",
+    "units": 124,
+    "at": 415.968
+   },
+   "t": 623952
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10082",
+    "status": "Allocated",
+    "fully": true,
+    "at": 417.902
+   },
+   "t": 626853
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 627971
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10184",
+    "kind": "medium",
+    "lines": 10,
+    "units": 687,
+    "at": 419.19466666666665
+   },
+   "t": 628792
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 630158
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10079",
+    "at": 420.194
+   },
+   "t": 630291
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10082",
+    "units": 593,
+    "at": 420.5613333333333
+   },
+   "t": 630842
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10185",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 420.84133333333335
+   },
+   "t": 631262
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "return-issued",
+   "detail": {
+    "ra": "RA-3007",
+    "so": "10033"
+   },
+   "t": 631597
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10186",
+    "kind": "medium",
+    "lines": 12,
+    "units": 965,
+    "at": 421.628
+   },
+   "t": 632442
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10082",
+    "at": 422.16
+   },
+   "t": 633240
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 633805
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10081",
+    "at": 422.688
+   },
+   "t": 634032
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10080",
+    "at": 423.1053333333333
+   },
+   "t": 634658
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10084",
+    "at": 424.98466666666667
+   },
+   "t": 637477
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10069",
+    "at": 425.1166666666667
+   },
+   "t": 637675
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10085",
+    "at": 425.13466666666665
+   },
+   "t": 637702
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10069",
+    "units": 578,
+    "at": 425.18333333333334
+   },
+   "t": 637775
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10187",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 425.67066666666665
+   },
+   "t": 638506
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 640018
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10072",
+    "at": 427.54066666666665
+   },
+   "t": 641311
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10072",
+    "units": 645,
+    "at": 427.594
+   },
+   "t": 641391
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 642274
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10080",
+    "status": "Allocated",
+    "fully": true,
+    "at": 429.00666666666666
+   },
+   "t": 643510
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 643899
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10076",
+    "at": 429.46066666666667
+   },
+   "t": 644191
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10076",
+    "units": 4,
+    "at": 429.4873333333333
+   },
+   "t": 644231
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 4
+   },
+   "t": 644761
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "a9cdfeb6-55d8-4733-865c-f5ef66fba211"
+   },
+   "t": 645415
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 8,
+    "ms": 32
+   },
+   "t": 645962
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10080",
+    "units": 886,
+    "at": 431.5113333333333
+   },
+   "t": 647267
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10080: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 648891
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10080",
+    "at": 433.222
+   },
+   "t": 649833
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10073",
+    "at": 433.356
+   },
+   "t": 650034
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10073",
+    "units": 1101,
+    "at": 433.4293333333333
+   },
+   "t": 650144
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10086",
+    "at": 433.696
+   },
+   "t": 650544
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "return-received",
+   "detail": {
+    "ra": "RA-3007"
+   },
+   "t": 652345
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10083",
+    "at": 434.972
+   },
+   "t": 652458
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10084",
+    "status": "Allocated",
+    "fully": false,
+    "at": 435.98066666666665
+   },
+   "t": 653971
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10083",
+    "status": "Allocated",
+    "fully": true,
+    "at": 437.54466666666667
+   },
+   "t": 656317
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 656772
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10188",
+    "kind": "medium",
+    "lines": 14,
+    "units": 1206,
+    "at": 438.2
+   },
+   "t": 657300
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10078",
+    "at": 438.338
+   },
+   "t": 657507
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10078",
+    "units": 159,
+    "at": 438.4053333333333
+   },
+   "t": 657608
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 4
+   },
+   "t": 658471
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10085",
+    "status": "Allocated",
+    "fully": true,
+    "at": 439.12666666666667
+   },
+   "t": 658690
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10084",
+    "units": 116,
+    "at": 439.97866666666664
+   },
+   "t": 659968
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10189",
+    "kind": "small",
+    "lines": 6,
+    "units": 260,
+    "at": 440.52866666666665
+   },
+   "t": 660793
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10079",
+    "at": 441.144
+   },
+   "t": 661716
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10079",
+    "units": 124,
+    "at": 441.186
+   },
+   "t": 661779
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10086",
+    "status": "Backordered",
+    "fully": false,
+    "at": 442.142
+   },
+   "t": 663213
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 664985
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10083",
+    "units": 89,
+    "at": 443.6213333333333
+   },
+   "t": 665432
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10085",
+    "units": 6,
+    "at": 445.452
+   },
+   "t": 668178
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10190",
+    "kind": "tiny",
+    "lines": 1,
+    "units": 4,
+    "at": 446.492
+   },
+   "t": 669738
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10086",
+    "status": "Backordered",
+    "fully": false,
+    "at": 446.53066666666666
+   },
+   "t": 669796
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10191",
+    "kind": "large",
+    "lines": 40,
+    "units": 20848,
+    "at": 447.01866666666666
+   },
+   "t": 670528
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10074",
+    "at": 447.38866666666667
+   },
+   "t": 671083
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10074",
+    "units": 1015,
+    "at": 447.456
+   },
+   "t": 671184
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "customer-created",
+   "detail": {
+    "id": "733a4ad0-897b-41e0-8385-22ad3267c8a5"
+   },
+   "t": 671281
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10081",
+    "status": "Allocated",
+    "fully": true,
+    "at": 447.572
+   },
+   "t": 671358
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 673065
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 38
+   },
+   "t": 673720
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 674190
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10081",
+    "units": 132,
+    "at": 449.478
+   },
+   "t": 674217
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10087",
+    "at": 449.7126666666667
+   },
+   "t": 674569
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10192",
+    "kind": "large",
+    "lines": 26,
+    "units": 13536,
+    "at": 450.17533333333336
+   },
+   "t": 675263
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10089",
+    "at": 451.06533333333334
+   },
+   "t": 676598
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 677213
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10193",
+    "kind": "small",
+    "lines": 4,
+    "units": 159,
+    "at": 451.58733333333333
+   },
+   "t": 677381
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10085",
+    "at": 451.792
+   },
+   "t": 677688
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10084",
+    "at": 451.804
+   },
+   "t": 677706
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10083",
+    "at": 451.81666666666666
+   },
+   "t": 677725
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10081",
+    "at": 451.8306666666667
+   },
+   "t": 677746
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10089",
+    "status": "Allocated",
+    "fully": true,
+    "at": 452.46733333333333
+   },
+   "t": 678701
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10088",
+    "at": 453.20466666666664
+   },
+   "t": 679807
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10082",
+    "at": 453.81733333333335
+   },
+   "t": 680726
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10082",
+    "units": 593,
+    "at": 453.88666666666666
+   },
+   "t": 680830
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10194",
+    "kind": "large",
+    "lines": 36,
+    "units": 17417,
+    "at": 454.022
+   },
+   "t": 681033
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10089",
+    "units": 4,
+    "at": 454.1053333333333
+   },
+   "t": 681158
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 681661
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 682441
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "vendor-po-created",
+   "detail": {
+    "po": "PO-5047",
+    "lines": 3
+   },
+   "t": 683175
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 683258
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "print-picks",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 684003
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10195",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1127,
+    "at": 456.1893333333333
+   },
+   "t": 684284
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10091",
+    "at": 456.22333333333336
+   },
+   "t": 684335
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 28
+   },
+   "t": 686264
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10087",
+    "status": "Allocated",
+    "fully": false,
+    "at": 457.742
+   },
+   "t": 686613
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10091",
+    "status": "Allocated",
+    "fully": true,
+    "at": 457.9533333333333
+   },
+   "t": 686930
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10089",
+    "at": 459.0973333333333
+   },
+   "t": 688646
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10088",
+    "status": "Allocated",
+    "fully": true,
+    "at": 459.50466666666665
+   },
+   "t": 689257
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 689482
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 690883
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "eod-report",
+   "detail": {
+    "orders": 72,
+    "units": 49928
+   },
+   "t": 692132
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "cycle-count",
+   "detail": {
+    "item": "FS-1041",
+    "delta": 0
+   },
+   "t": 692229
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10093",
+    "at": 462.9633333333333
+   },
+   "t": 694445
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "validate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 695037
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 39
+   },
+   "t": 696422
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10196",
+    "kind": "medium",
+    "lines": 11,
+    "units": 945,
+    "at": 464.472
+   },
+   "t": 696708
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10088",
+    "units": 3,
+    "at": 464.536
+   },
+   "t": 696804
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 699043
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 1
+   },
+   "t": 700351
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10197",
+    "kind": "small",
+    "lines": 7,
+    "units": 239,
+    "at": 466.938
+   },
+   "t": 700407
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 700622
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10080",
+    "at": 467.3106666666667
+   },
+   "t": 700966
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10080",
+    "units": 886,
+    "at": 467.3806666666667
+   },
+   "t": 701071
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10093",
+    "status": "Allocated",
+    "fully": true,
+    "at": 468.122
+   },
+   "t": 702183
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 29,
+    "ms": 22
+   },
+   "t": 702189
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10081",
+    "at": 469.154
+   },
+   "t": 703731
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10081",
+    "units": 132,
+    "at": 469.1886666666667
+   },
+   "t": 703783
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10198",
+    "kind": "medium",
+    "lines": 12,
+    "units": 920,
+    "at": 469.26866666666666
+   },
+   "t": 703903
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10092",
+    "at": 469.7853333333333
+   },
+   "t": 704678
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10199",
+    "kind": "large",
+    "lines": 28,
+    "units": 15682,
+    "at": 469.97933333333333
+   },
+   "t": 704969
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 705076
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10088",
+    "at": 470.516
+   },
+   "t": 705774
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10083",
+    "at": 470.81533333333334
+   },
+   "t": 706223
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10083",
+    "units": 89,
+    "at": 470.85266666666666
+   },
+   "t": 706279
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10092",
+    "status": "Allocated",
+    "fully": true,
+    "at": 471.68333333333334
+   },
+   "t": 707525
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 709002
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10084",
+    "at": 473.0613333333333
+   },
+   "t": 709592
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10084",
+    "units": 116,
+    "at": 473.1093333333333
+   },
+   "t": 709664
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10095",
+    "at": 473.31933333333336
+   },
+   "t": 709979
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 3
+   },
+   "t": 711760
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "quote",
+   "detail": {
+    "items": 3
+   },
+   "t": 712129
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10092",
+    "units": 8,
+    "at": 474.78133333333335
+   },
+   "t": 712172
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10085",
+    "at": 475.00533333333334
+   },
+   "t": 712508
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10085",
+    "units": 6,
+    "at": 475.04466666666667
+   },
+   "t": 712567
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10200",
+    "kind": "small",
+    "lines": 6,
+    "units": 126,
+    "at": 475.10266666666666
+   },
+   "t": 712654
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-allocated",
+   "detail": {
+    "so": "10095",
+    "status": "Allocated",
+    "fully": true,
+    "at": 475.216
+   },
+   "t": 712824
+  },
+  {
+   "user": "sm.helen",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 27
+   },
+   "t": 715031
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "allocate",
+    "message": "This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 715246
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "pack-check",
+   "detail": {
+    "so": "10089",
+    "at": 477.152
+   },
+   "t": 715728
+  },
+  {
+   "user": "log.marcus",
+   "role": "Logistics",
+   "kind": "order-shipped",
+   "detail": {
+    "so": "10089",
+    "units": 4,
+    "at": 477.18533333333335
+   },
+   "t": 715778
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10092",
+    "at": 477.57733333333334
+   },
+   "t": 716366
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "order-checked",
+   "detail": {
+    "so": "10094",
+    "at": 478.45733333333334
+   },
+   "t": 717686
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10091",
+    "units": 116,
+    "at": 478.82666666666665
+   },
+   "t": 718240
+  },
+  {
+   "user": "pur.dan",
+   "role": "Purchasing",
+   "kind": "po-received",
+   "detail": {
+    "po": "PO-5047",
+    "units": 1510
+   },
+   "t": 721494
+  },
+  {
+   "user": "an.derek",
+   "role": "Analyst",
+   "kind": "pick-released",
+   "detail": {
+    "so": "10093",
+    "units": 718,
+    "at": 481.118
+   },
+   "t": 721677
+  },
+  {
+   "user": "an.sofia",
+   "role": "Analyst",
+   "kind": "conflict-409",
+   "detail": {
+    "action": "release-pick",
+    "message": "S.O. #10093: This record was changed by someone else since you loaded it. Reload and try again."
+   },
+   "t": 721818
+  },
+  {
+   "user": "cs.james",
+   "role": "Customer Service",
+   "kind": "status-call",
+   "detail": {},
+   "t": 722648
+  },
+  {
+   "user": "sm.kenji",
+   "role": "Sales Manager",
+   "kind": "account-updated",
+   "detail": {
+    "overrides": 0,
+    "ms": 26
+   },
+   "t": 723048
+  },
+  {
+   "user": "sm.grace",
+   "role": "Sales Manager",
+   "kind": "account-reviewed",
+   "detail": {},
+   "t": 725374
+  },
+  {
+   "user": "oe.rosa",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10201",
+    "kind": "medium",
+    "lines": 12,
+    "units": 1184,
+    "at": 485.28133333333335
+   },
+   "t": 727922
+  },
+  {
+   "user": "cs.linda",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10202",
+    "kind": "medium",
+    "lines": 10,
+    "units": 801,
+    "at": 485.73066666666665
+   },
+   "t": 728596
+  },
+  {
+   "user": "cs.maria",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10203",
+    "kind": "medium",
+    "lines": 13,
+    "units": 1127,
+    "at": 488.094
+   },
+   "t": 732141
+  },
+  {
+   "user": "cs.priya",
+   "role": "Customer Service",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10204",
+    "kind": "large",
+    "lines": 30,
+    "units": 17255,
+    "at": 490.78333333333336
+   },
+   "t": 736175
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "order-entered",
+   "detail": {
+    "so": "10205",
+    "kind": "large",
+    "lines": 31,
+    "units": 15864,
+    "at": 498.024
+   },
+   "t": 747036
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10093",
+    "at": 499.77066666666667
+   },
+   "t": 749656
+  },
+  {
+   "user": "oe.tom",
+   "role": "Order Entry",
+   "kind": "pick-printed",
+   "detail": {
+    "so": "10091",
+    "at": 499.7853333333333
+   },
+   "t": 749678
+  }
+ ]
+}

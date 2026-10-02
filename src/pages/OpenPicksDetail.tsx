@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import LineItemsTable from "../components/LineItemsTable";
+import PackCheckPanel from "../components/PackCheckPanel";
 import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
-import { getOrder, markPrinted, shipOrder } from "../lib/orderStore";
+import { getOrder, markPrinted } from "../lib/orderStore";
 import type { PurchaseOrder } from "../types";
-import { orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
+import { orderSubtotal, orderTax, orderTotalLabel } from "../types";
 
 export default function OpenPicksDetail() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -24,9 +25,8 @@ function OpenPicksDetailInner() {
   const [loading, setLoading] = useState(true);
   const pending = order?.pendingShipment ?? [];
 
-  const [qtys, setQtys] = useState<Record<string, number>>({});
   const [includePick, setIncludePick] = useState(true);
-  const [includeSlip, setIncludeSlip] = useState(true);
+  const [includeSlip, setIncludeSlip] = useState(false);
   const [printing, setPrinting] = useState(false);
 
   useEffect(() => {
@@ -34,9 +34,6 @@ function OpenPicksDetailInner() {
     getOrder(soNumber).then((o) => {
       setOrder(o);
       setLoading(false);
-      const q: Record<string, number> = {};
-      for (const l of o?.pendingShipment ?? []) q[l.lineItemId] = l.qty;
-      setQtys(q);
     });
   }, [soNumber]);
 
@@ -55,37 +52,10 @@ function OpenPicksDetailInner() {
 
   const company = getCompanyInfo();
 
-  function lineFor(lineItemId: string) {
-    return order!.lineItems.find((li) => li.id === lineItemId);
-  }
-
-  function setQty(lineItemId: string, value: number, max: number) {
-    const clamped = Math.max(0, Math.min(value, max));
-    setQtys((q) => ({ ...q, [lineItemId]: clamped }));
-  }
-
-  async function markShipped() {
-    if (!order) return;
-    const lines = pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 }));
-    try {
-      await shipOrder(order, lines);
-    } catch (err) {
-      if (isConflictError(err)) {
-        showToast(err.message);
-        setOrder(await getOrder(order.soNumber));
-        return;
-      }
-      throw err;
-    }
-    navigate(`/storage/${order.soNumber}`);
-  }
-
   async function reprint() {
     if (!order || (!includePick && !includeSlip)) return;
-    // Carry any corrected "Actual Shipped" quantities into the reprinted
-    // documents (and persist them) so a stock shortfall discovered here
-    // reprints a pick list the warehouse can actually fulfill. The server
-    // only lets a staged quantity go down, never up.
+    // Reprints the documents as they stand; quantities change at the pack
+    // check, not here.
     try {
       // Keep the server's copy (new version) - otherwise Mark Shipped right
       // after a reprint is a guaranteed "changed by someone else" 409.
@@ -93,7 +63,7 @@ function OpenPicksDetailInner() {
         await markPrinted(
           order,
           { pickList: includePick, packingSlip: includeSlip },
-          pending.map((l) => ({ lineItemId: l.lineItemId, qty: Math.min(l.qty, qtys[l.lineItemId] ?? l.qty) }))
+          pending.map((l) => ({ lineItemId: l.lineItemId, qty: l.qty }))
         )
       );
     } catch (err) {
@@ -231,70 +201,7 @@ function OpenPicksDetailInner() {
           )}
         </div>
 
-        <div className="line-items">
-          <div className="ship-locations-header">
-            <h3>Confirm Shipment</h3>
-          </div>
-          {pending.length === 0 ? (
-            <p className="muted">Nothing staged to confirm for this order.</p>
-          ) : (
-            <div className="scroll-window">
-              <table className="data-table line-item-table">
-                <thead>
-                  <tr>
-                    <th className="col-item">Item</th>
-                    <th className="col-desc">Description</th>
-                    <th className="col-um">U/M</th>
-                    <th className="col-qty">Packed</th>
-                    <th className="col-qty">Actual Shipped</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pending.map((l) => {
-                    const li = lineFor(l.lineItemId);
-                    if (!li) return null;
-                    const qty = qtys[l.lineItemId] ?? 0;
-                    const short = qty < l.qty;
-                    // Cap against what's still open on the order, not what was
-                    // originally packed - a reprint after finding more stock
-                    // than first packed needs to raise the quantity back up.
-                    const maxQty = remainingToShip(order, li);
-                    return (
-                      <tr key={l.lineItemId}>
-                        <td>{li.item}</td>
-                        <td>{li.description}</td>
-                        <td>{li.um}</td>
-                        <td className="amount-cell">{l.qty}</td>
-                        <td>
-                          <input
-                            type="number"
-                            className={`num-input allocate-qty-input ${short ? "short" : ""}`}
-                            min={0}
-                            max={maxQty}
-                            value={qty}
-                            onChange={(e) => setQty(l.lineItemId, Number(e.target.value), maxQty)}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div className="decision-outcome outcome-success">
-          <div className="decision-outcome-label">Mark as shipped</div>
-          <div className="decision-outcome-detail">
-            Match the "Actual Shipped" quantities to the physical pick list that came back from the
-            warehouse. An order that shipped complete moves to Shipped; anything short goes back to the
-            Back Order Queue for reallocation.
-          </div>
-          <button type="button" className="primary-btn" disabled={pending.length === 0} onClick={markShipped}>
-            Mark Shipped
-          </button>
-        </div>
+        <PackCheckPanel order={order} onChange={setOrder} onShipped={(shipped) => navigate(`/storage/${shipped.soNumber}`)} />
 
         <div className="ship-locations-header">
           <h3>Reprint</h3>
