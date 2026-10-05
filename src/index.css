@@ -2854,13 +2854,19 @@ a.dash-lookup-row:focus-visible {
   padding-top: 8px;
 }
 
+/* The sign-in screen sits on the brand artwork (rope, compass rose, waves
+   in Ink and Signal), with the card lifted off it by a deeper shadow. */
 .login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: #0d0f12 url("/login-bg.webp") center / cover no-repeat;
   padding: 20px;
+}
+
+.login-card {
+  box-shadow: rgba(0, 0, 0, 0.45) 0 12px 40px, rgba(0, 0, 0, 0.3) 0 2px 8px;
 }
 
 .login-card {
