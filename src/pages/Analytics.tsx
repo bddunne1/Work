@@ -205,14 +205,14 @@ export default function Analytics() {
       {tab === "customer" && (
         <>
           <section className="lane-section">
-            <h2 className="lane-title" style={{ borderColor: "#4c6ff5" }}>
+            <h2 className="lane-title" style={{ borderColor: "#FF5A2C" }}>
               Top Customers by Revenue
             </h2>
             <BarList items={topCustomers} valueFormatter={currency} emptyMessage="No order revenue yet." />
           </section>
 
           <section className="lane-section">
-            <h2 className="lane-title" style={{ borderColor: "#4c6ff5" }}>
+            <h2 className="lane-title" style={{ borderColor: "#FF5A2C" }}>
               Customer Detail
             </h2>
             <div className="customer-picker">

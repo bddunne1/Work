@@ -220,8 +220,15 @@ describe("price lock and Import (B-06, B-07)", () => {
     // Order Entry may reprice, and it is audited old to new.
     o = ok(await editOrder(entry, o, { lineItems: o.lineItems.map((l: any) => ({ ...l, rate: 4 })) }));
     expect(Number(o.lineItems[0].rate)).toBe(4);
-    const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_UPDATED", targetId: String(o.soNumber) }, orderBy: { createdAt: "desc" } });
-    expect(JSON.stringify(audit?.detail)).toMatch(/"from":"3"/);
+    // The audit row for a header or line edit is written after the response
+    // (logAudit), so wait for the one that records the price change rather
+    // than reading whichever ORDER_UPDATED row landed last.
+    await expect
+      .poll(async () => {
+        const rows = await prisma.auditLog.findMany({ where: { action: "ORDER_UPDATED", targetId: String(o.soNumber) } });
+        return rows.some((a) => JSON.stringify(a.detail).includes('"from":"3"'));
+      }, { timeout: 3000 })
+      .toBe(true);
     // Released: nobody, not even admin.
     o = ok(await release(root, o));
     const released = await editOrder(root, o, { lineItems: o.lineItems.map((l: any) => ({ ...l, rate: 5 })) });

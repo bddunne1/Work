@@ -304,3 +304,20 @@ export function ActivityLogIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+// A forklift, for the Dock: cab and counterweight on two wheels, the mast
+// and the forks out front at floor level.
+export function ForkliftIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3 16V9h5l3 4.5V16" />
+      <path d="M2.5 16h11" />
+      <circle cx="5" cy="18.5" r="1.7" />
+      <circle cx="11" cy="18.5" r="1.7" />
+      <path d="M15 4v14" />
+      <path d="M15 18h6.5" />
+      <path d="M13 13.5h2" />
+    </svg>
+  );
+}
+

@@ -1,3 +1,4 @@
+import BrandMark, { Wordmark } from "../components/BrandMark";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/authContext";
@@ -26,9 +27,10 @@ export default function Login() {
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-brand">
-          <span className="brand-mark">A</span>
+          <BrandMark className="brand-mark theme-light-only" />
+          <BrandMark className="brand-mark theme-dark-only" tile="signal" />
           <div>
-            <div className="brand-name">Aamstrand ERP</div>
+            <Wordmark />
             <div className="brand-sub">Order &amp; Fulfillment</div>
           </div>
         </div>

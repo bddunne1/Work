@@ -10,6 +10,7 @@ import {
   BolIcon,
   CatalogIcon,
   CustomersIcon,
+  ForkliftIcon,
   InventoryIcon,
   LabelsIcon,
   OpenPicksIcon,
@@ -70,7 +71,7 @@ const LANES: Lane[] = [
     modules: [
       { name: "Release Orders", description: "Pick lists and packing slips for the floor", to: "/pick-pack", icon: PickPackIcon },
       { name: "Open Picks", description: "Being picked, the pack check, ready to ship, shipped at pickup", to: "/open-picks", icon: OpenPicksIcon },
-      { name: "Dock", description: "The warehouse floor's screen", to: "/dock", icon: WarehouseIcon },
+      { name: "Dock", description: "The warehouse floor's screen", to: "/dock", icon: ForkliftIcon },
       { name: "Warehouse Capacity", description: "Weight on the floor and dwell time", to: "/warehouse-capacity", icon: WarehouseIcon },
     ],
   },

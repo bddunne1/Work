@@ -1,28 +1,34 @@
-// The Aamstrand "A" mark - a stylized standalone monogram for the sidebar,
-// echoing the italic wordmark's typography in a small gradient badge.
-export default function BrandMark({ className }: { className?: string }) {
+// The Splice mark: two crossing strokes, one in Ink (or Paper on a dark
+// tile) and one in Signal orange, with the orange stroke passing over the
+// other. `tile` picks the background it sits on, as on the brand sheet:
+// the Ink app tile (default, the sidebar), the Signal tile, or no tile at
+// all for the mark beside the wordmark.
+const INK = "#14181F";
+const SIGNAL = "#FF5A2C";
+const PAPER = "#FBFAF7";
+
+interface Props {
+  className?: string;
+  tile?: "ink" | "signal" | "none";
+}
+
+export default function BrandMark({ className, tile = "ink" }: Props) {
+  const under = tile === "signal" ? PAPER : tile === "ink" ? PAPER : "currentColor";
+  const over = tile === "signal" ? INK : SIGNAL;
+  const halo = tile === "signal" ? SIGNAL : tile === "ink" ? INK : "var(--panel-bg)";
   return (
-    <svg className={className} viewBox="0 0 64 64" role="img" aria-label="Aamstrand">
-      <defs>
-        <linearGradient id="brandMarkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#4c7ff0" />
-          <stop offset="100%" stopColor="#1b3f9c" />
-        </linearGradient>
-      </defs>
-      <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#brandMarkGradient)" />
-      <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="15.25" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1.5" />
-      <text
-        x="33"
-        y="46"
-        textAnchor="middle"
-        fontFamily="Arial, 'Helvetica Neue', sans-serif"
-        fontWeight="900"
-        fontStyle="italic"
-        fontSize="36"
-        fill="#ffffff"
-      >
-        A
-      </text>
+    <svg className={className} viewBox="0 0 64 64" role="img" aria-label="Splice">
+      {tile !== "none" && <rect x="0" y="0" width="64" height="64" rx="16" fill={tile === "signal" ? SIGNAL : INK} />}
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 19 C 26 19, 38 45, 50 45" stroke={under} strokeWidth="7.5" />
+        <path d="M14 45 C 26 45, 38 19, 50 19" stroke={halo} strokeWidth="12.5" />
+        <path d="M14 45 C 26 45, 38 19, 50 19" stroke={over} strokeWidth="7.5" />
+      </g>
     </svg>
   );
+}
+
+// The wordmark, set in Sora Bold (loaded in index.html).
+export function Wordmark({ className }: { className?: string }) {
+  return <span className={`wordmark ${className ?? ""}`.trim()}>Splice</span>;
 }

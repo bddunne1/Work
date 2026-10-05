@@ -1,12 +1,11 @@
 import { useEffect } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import BrandMark from "./BrandMark";
+import BrandMark, { Wordmark } from "./BrandMark";
 import ErrorBoundary from "./ErrorBoundary";
 import ToastHost from "./Toast";
 import MoreMenu from "./MoreMenu";
-import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, InventoryIcon } from "./SidebarIcons";
+import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, ForkliftIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
-import { getCompanyInfo } from "../lib/companyStore";
 import { getPageAccent } from "../lib/pageAccent";
 import { getAccessLevel } from "../lib/permissions";
 
@@ -53,7 +52,8 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <nav className="sidebar-nav no-print">
-        <BrandMark className="sidebar-brand-mark" />
+        <BrandMark className="sidebar-brand-mark theme-light-only" />
+        <BrandMark className="sidebar-brand-mark theme-dark-only" tile="signal" />
         <div className="sidebar-links">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : "")}>
             <DashboardIcon />
@@ -85,7 +85,7 @@ export default function Layout() {
           )}
           {canGo("/dock") && (
             <NavLink to="/dock" className={({ isActive }) => (isActive ? "active" : "")}>
-              <InventoryIcon />
+              <ForkliftIcon />
               Dock
             </NavLink>
           )}
@@ -93,8 +93,8 @@ export default function Layout() {
       </nav>
       <div className="app-main">
         <header className="topbar">
-          <Link to="/" className="brand">
-            <span className="brand-name">{getCompanyInfo().name}</span>
+          <Link to="/" className="brand" aria-label="Splice home">
+            <Wordmark />
           </Link>
           <div className="topbar-user">
             <span className="topbar-username">
