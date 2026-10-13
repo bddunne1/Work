@@ -21,3 +21,19 @@ RESTRICT or SET NULL name the delete rule.
 Regenerate after a schema change: create the ERD again from the schema
 (the Lucid document was built with the Lucid MCP `lucid_create_erd` tool
 and laid out by domain), or edit the entities in place in Lucidchart.
+
+## Screens, routes and tables
+
+Page 2 of the same Lucidchart document (export: `schema-map-2026-10.png`)
+maps the application onto the schema: each screen (left) to the API route
+modules it calls (middle), and each route module to the tables it reads
+(R) or writes (W), grouped into the same domains as the ERD. Orange lines
+are writes. Every write route also appends to AuditLog, drawn once from
+the Activity Log route to keep the page legible. The QuickBooks sync
+worker is drawn beside the routes because it writes the bridge tables
+without a request.
+
+The map was generated from the code: route modules from `server/src/app.ts`
+mounts and the Prisma calls in each router (and the lib functions it
+imports), screens from the store functions each page imports in `src/lib`.
+Regenerate it the same way after adding a page, a route or a table.
