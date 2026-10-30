@@ -55,6 +55,8 @@ jobs:
           cd server && npx tsc --noEmit -p .
       - name: Lint
         run: npm run lint
+      - name: Client unit tests
+        run: npm run test:client
       - name: Server tests
         run: npm --prefix server test
       - name: Frontend build
