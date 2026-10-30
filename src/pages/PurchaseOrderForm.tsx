@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { moveOnEnter } from "../lib/formKeys";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { listItems } from "../lib/itemStore";
 import { saveVendorPo } from "../lib/vendorPoStore";
@@ -17,15 +17,23 @@ function today(): string {
 
 export default function PurchaseOrderForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // "New PO for this vendor" from the vendor profile preselects the vendor.
+  const presetVendorId = searchParams.get("vendorId") ?? undefined;
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [catalog, setCatalog] = useState<Item[]>([]);
+  const [vendorQuery, setVendorQuery] = useState("");
+  const [vendorId, setVendorId] = useState<string | undefined>(presetVendorId);
 
   useEffect(() => {
-    listVendors().then(setVendors);
+    // Inactive vendors stay on their old POs but are not offered for new ones.
+    listVendors().then((vs) => {
+      setVendors(vs.filter((v) => v.active !== false || v.id === presetVendorId));
+      const preset = presetVendorId ? vs.find((v) => v.id === presetVendorId) : undefined;
+      if (preset) setVendorQuery(preset.name);
+    });
     listItems().then(setCatalog);
-  }, []);
-  const [vendorQuery, setVendorQuery] = useState("");
-  const [vendorId, setVendorId] = useState<string | undefined>();
+  }, [presetVendorId]);
   const [orderDate, setOrderDate] = useState(() => today());
   const [expectedDate, setExpectedDate] = useState("");
   const [notes, setNotes] = useState("");

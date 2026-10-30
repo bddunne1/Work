@@ -82,7 +82,7 @@ export default function ShipmentHistory() {
   }
 
   function exportCsv() {
-    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Units", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
+    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Units", "Picked By", "Checked By", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
     const body = rows.map((r) => [
       new Date(r.shippedAt).toLocaleString(),
       String(r.soNumber),
@@ -90,6 +90,8 @@ export default function ShipmentHistory() {
       r.customer,
       `${r.shipTo.city}, ${r.shipTo.state}`,
       String(r.units),
+      r.pickedBy ?? "",
+      r.checkedBy ?? "",
       r.carrier ?? "",
       r.scac ?? "",
       r.proNumber ?? "",
@@ -172,6 +174,7 @@ export default function ShipmentHistory() {
               <th>Customer</th>
               <th>Ship To</th>
               <th className="amount-cell">Units</th>
+              <th>Picked / Checked</th>
               <th>Carrier</th>
               <th>PRO #</th>
               <th>Invoice</th>
@@ -195,6 +198,7 @@ export default function ShipmentHistory() {
                   {r.shipTo.city}, {r.shipTo.state}
                 </td>
                 <td className="amount-cell">{r.units.toLocaleString()}</td>
+                <td>{r.pickedBy || r.checkedBy ? `${r.pickedBy || "—"} / ${r.checkedBy || "—"}` : "—"}</td>
                 <td>{[r.carrier, r.scac].filter(Boolean).join(" · ") || "—"}</td>
                 <td>{r.proNumber || "—"}</td>
                 <td onClick={(e) => e.stopPropagation()}>

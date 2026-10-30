@@ -139,7 +139,7 @@ describe("ready to ship (decided 1 Oct) and release-and-print (G-05)", () => {
     expect(packed.pendingShipment).toEqual([{ lineItemId: o.lineItems[0].id, qty: 8 }, { lineItemId: o.lineItems[1].id, qty: 4 }]);
     expect((await itemByNumber("BR-1001"))!.qtyReserved).toBe(8);
     const audit = await prisma.auditLog.findFirst({ where: { action: "ORDER_READY", targetId: String(o.soNumber) } });
-    expect(audit!.detail).toMatchObject({ units: 12, shorts: 2, packedBy: "KM" });
+    expect(audit!.detail).toMatchObject({ units: 12, shorts: 2, pickedBy: "KM", checkedBy: "KM" });
     // Shipping anything other than what was packed is refused; the packed quantities ship.
     const changed = await dock.post(`${so(packed)}/ship`, { version: packed.version, lines: [{ lineItemId: o.lineItems[0].id, qty: 7 }, { lineItemId: o.lineItems[1].id, qty: 4 }] });
     expect(changed.status).toBe(409);

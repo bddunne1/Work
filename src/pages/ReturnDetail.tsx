@@ -1,4 +1,6 @@
 import { showToast } from "../lib/toast";
+import CustomerPaysFlags from "../components/CustomerPaysFlags";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -55,7 +57,7 @@ function ReturnDetailInner() {
     return (
       <div className="page">
         <p>Return not found.</p>
-        <Link to="/returns">&larr; Back to Returns</Link>
+        <BackLink fallback="/returns" label="Returns" />
       </div>
     );
   }
@@ -138,9 +140,7 @@ function ReturnDetailInner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to="/returns" className="link-btn">
-          &larr; Back to Returns
-        </Link>
+        <BackLink fallback="/returns" label="Returns" />
         <div className="inline-actions">
           {canEditRa && !editing && (
             <button type="button" className="secondary-btn" onClick={startEdit}>
@@ -268,6 +268,15 @@ function ReturnDetailInner() {
             </tr>
           </tbody>
         </table>
+
+        <div className="customer-pays-block">
+          <div className="so-notes-label muted">Who pays</div>
+          {editing ? (
+            <CustomerPaysFlags value={view} onChange={(next) => setDraft((d) => (d ? { ...d, ...next } : d))} />
+          ) : (
+            <CustomerPaysFlags value={view} />
+          )}
+        </div>
 
         <div className="line-items">
           {editing && (

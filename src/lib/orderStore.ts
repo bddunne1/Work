@@ -261,8 +261,10 @@ export function acknowledgePull(order: PurchaseOrder): Promise<PurchaseOrder> {
 // The pack check (sprint 3): packed quantities per line (at most what was
 // staged) and who packed it; the server prints-stamps the packing slip and
 // marks the order Ready to ship.
-export function readyOrder(order: PurchaseOrder, lines?: ShipmentLine[], packedBy?: string): Promise<PurchaseOrder> {
-  return command(order, "ready", { lines, packedBy: packedBy || undefined });
+// `initials` names who picked and who checked; left out, the server stamps
+// the signed-in account's initials for both.
+export function readyOrder(order: PurchaseOrder, lines?: ShipmentLine[], initials?: { pickedBy: string; checkedBy: string }): Promise<PurchaseOrder> {
+  return command(order, "ready", { lines, pickedBy: initials?.pickedBy || undefined, checkedBy: initials?.checkedBy || undefined });
 }
 
 // Back to the floor for another pack check.

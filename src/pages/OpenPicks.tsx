@@ -94,7 +94,7 @@ export default function OpenPicks() {
   }
 
   const row = (o: PurchaseOrder, stage: "picking" | "ready") => (
-    <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/open-picks/${o.soNumber}`)}>
+    <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/pack-check/${o.soNumber}`)}>
       {stage === "ready" && (
         <td onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" checked={Boolean(selected[o.soNumber])} onChange={() => setSelected((s) => ({ ...s, [o.soNumber]: !s[o.soNumber] }))} aria-label={`Select S.O. ${o.soNumber}`} />

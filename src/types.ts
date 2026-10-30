@@ -72,6 +72,9 @@ export interface ShipmentRecord {
   scac?: string | null;
   proNumber?: string | null;
   pickupDate?: string | null;
+  // Who picked and who checked the pack this shipment came from.
+  pickedBy?: string | null;
+  checkedBy?: string | null;
 }
 
 // Carrier details saved on the order at the BOL step or at Mark Shipped
@@ -143,7 +146,11 @@ export interface PurchaseOrder {
   // The pack check (sprint 3): packed, checked and on the dock; the packing
   // slip printed from the packed quantities; Mark Shipped ships exactly those.
   readyAt?: string | null;
+  // The checker (kept for anything that read it before sprint 5).
   readyBy?: string | null;
+  // Who picked and who checked at the pack check.
+  pickedByInitials?: string | null;
+  checkedByInitials?: string | null;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";
@@ -571,9 +578,38 @@ export interface Vendor {
   phone?: string;
   email?: string;
   address?: Address;
+  // Vendor profile fields (sprint 5).
+  accountNumber?: string | null;
+  terms?: string | null;
+  leadTimeDays?: number | null;
+  website?: string | null;
+  notes?: string;
+  // Inactive vendors are hidden from the PO form's vendor picker.
+  active?: boolean;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
+}
+
+export interface VendorNote {
+  id: string;
+  vendorId: string;
+  text: string;
+  author?: string | null;
+  createdAt: string;
+}
+
+// GET /api/vendors/:id/profile (sprint 5). Cost figures are null/undefined
+// for an account that may not see cost.
+export interface VendorProfile {
+  vendor: Vendor;
+  openPos: { poNumber: string; orderDate: string | null; expectedDate: string | null; status: string; lines: number; outstandingQty: number; outstandingValue: number | null }[];
+  closedPoCount: number;
+  lastPoDate: string | null;
+  lastPoNumber: string | null;
+  openBalance: number | null;
+  items: { id: string; itemNumber: string; description: string; qtyOnHand: number; qtyOnPurchaseOrder: number; qtyReserved: number; cost?: number | null }[];
+  notes: VendorNote[];
 }
 
 export function emptyVendor(): Vendor {
@@ -624,6 +660,8 @@ export interface VendorPurchaseOrder {
   status: VendorPoStatus;
   notes: string;
   receivingHistory?: VendorReceivingRecord[];
+  // Who wrote the PO (sprint 5).
+  createdBy?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -728,6 +766,11 @@ export interface ReturnAuthorization {
   lines: ReturnLine[];
   status: ReturnStatus;
   notes: string;
+  // Customer-pays flags (sprint 5): billing decisions Accounting reads on
+  // the credit memo; changeable at any status.
+  customerPaysReturnFreight: boolean;
+  customerPaysRestockingFee: boolean;
+  customerPaysOriginalFreight: boolean;
   // Initials + account id of whoever wrote this RA - same signature/edit
   // pattern as a sales order's writtenBy.
   writtenBy?: string;
@@ -750,9 +793,18 @@ export function emptyReturn(raNumber: string): ReturnAuthorization {
     lines: [emptyReturnLine()],
     status: "Issued",
     notes: "",
+    customerPaysReturnFreight: false,
+    customerPaysRestockingFee: false,
+    customerPaysOriginalFreight: false,
     createdAt: new Date().toISOString(),
   };
 }
+
+export const CUSTOMER_PAYS_FLAGS: { key: "customerPaysReturnFreight" | "customerPaysRestockingFee" | "customerPaysOriginalFreight"; label: string }[] = [
+  { key: "customerPaysReturnFreight", label: "Customer pays return freight" },
+  { key: "customerPaysRestockingFee", label: "Customer pays restocking fee" },
+  { key: "customerPaysOriginalFreight", label: "Customer pays original freight" },
+];
 
 export function returnTotal(ra: Pick<ReturnAuthorization, "lines">): number {
   return ra.lines.reduce((sum, l) => sum + l.qty * l.rate, 0);
@@ -876,5 +928,7 @@ export interface CreditMemo {
   version: number;
   createdAt: string;
   lines: CreditMemoLine[];
+  // The return's customer-pays flags, read-only context for Accounting.
+  returnAuth?: { customerPaysReturnFreight: boolean; customerPaysRestockingFee: boolean; customerPaysOriginalFreight: boolean } | null;
   sync?: SyncInfo | null;
 }

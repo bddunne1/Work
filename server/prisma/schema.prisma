@@ -210,6 +210,14 @@ model Vendor {
   phone       String?
   email       String?
   address     Json?
+  // Vendor profile (sprint 5).
+  accountNumber String?
+  terms         String?
+  leadTimeDays  Int?
+  website       String?
+  notes         String   @default("")
+  // Inactive vendors stay on their POs and items but leave the PO form's picker.
+  active        Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
@@ -218,8 +226,21 @@ model Vendor {
   itemsPreferring      Item[]
   vendorPurchaseOrders VendorPurchaseOrder[]
   inboundShipments     InboundShipment[]
+  vendorNotes          VendorNote[]
 
   @@index([name])
+}
+
+// Dated notes on a vendor (sprint 5), like CustomerNote, with who wrote each.
+model VendorNote {
+  id        String   @id @default(uuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  text      String
+  author    String?
+  createdAt DateTime @default(now())
+
+  @@index([vendorId])
 }
 
 model Item {
@@ -332,8 +353,13 @@ model SalesOrder {
   // the dock, the packing slip printed from the packed quantities. Mark
   // Shipped then ships exactly those.
   readyAt              DateTime?
+  // Who checked the pack (kept as the checker for backward compatibility).
   readyBy              String?
   readyById            String?
+  // Picked-by and checked-by initials from the pack check (sprint 5):
+  // typed on the shared floor login, the account's own otherwise.
+  pickedByInitials     String?
+  checkedByInitials    String?
   estimatedShipDate    DateTime?       @db.Date
   pickPackStatus       PickPackStatus?
   bol                  Json?
@@ -436,6 +462,9 @@ model ShipmentRecord {
   scac       String?
   proNumber  String?
   pickupDate DateTime?  @db.Date
+  // Who picked and who checked the pack this shipment came from (sprint 5).
+  pickedBy   String?
+  checkedBy  String?
   // The invoice raised for this shipment (one per shipment); voided, not
   // deleted, when the shipment is undone.
   invoice    Invoice?
@@ -454,6 +483,9 @@ model VendorPurchaseOrder {
   expectedDate DateTime?      @db.Date
   status       VendorPoStatus @default(OPEN)
   notes        String         @default("")
+  // Who wrote the PO (sprint 5), stamped from the token at creation.
+  createdBy    String?
+  createdById  String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
@@ -548,6 +580,11 @@ model ReturnAuthorization {
   reason         String       @default("")
   status         ReturnStatus @default(ISSUED)
   notes          String       @default("")
+  // Billing decisions on the return (sprint 5): read by Accounting on the
+  // credit memo; they never move stock or change the credit memo math.
+  customerPaysReturnFreight   Boolean @default(false)
+  customerPaysRestockingFee   Boolean @default(false)
+  customerPaysOriginalFreight Boolean @default(false)
   writtenBy      String?
   writtenById    String?
   writtenByColor String?

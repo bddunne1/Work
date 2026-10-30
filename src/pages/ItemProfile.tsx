@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import StockLedger from "../components/StockLedger";
@@ -71,7 +72,7 @@ function ItemProfileInner() {
     return (
       <div className="page">
         <p>Item not found.</p>
-        <Link to="/items">&larr; Back to Item Catalog</Link>
+        <BackLink fallback="/items" label="Item Catalog" />
       </div>
     );
   }
@@ -159,9 +160,7 @@ function ItemProfileInner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to="/items" className="link-btn">
-          &larr; Back to Item Catalog
-        </Link>
+        <BackLink fallback="/items" label="Item Catalog" />
         <div className="inline-actions">
           {!editing && (
             <Link to={`/items/${item.id}/quick-report`} className="secondary-btn">
@@ -304,7 +303,7 @@ function ItemProfileInner() {
           </div>
         ) : (
           <p>
-            <strong>Preferred Vendor:</strong> {preferredVendor?.name ?? "—"}
+            <strong>Preferred Vendor:</strong> {preferredVendor ? <Link to={`/vendors/${preferredVendor.id}`}>{preferredVendor.name}</Link> : "—"}
           </p>
         )}
 

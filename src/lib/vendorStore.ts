@@ -1,5 +1,5 @@
 import { api } from "./apiClient";
-import type { Vendor } from "../types";
+import type { Vendor, VendorNote, VendorProfile } from "../types";
 
 export async function listVendors(): Promise<Vendor[]> {
   return api.get<Vendor[]>("/api/vendors");
@@ -22,4 +22,21 @@ export async function updateVendor(vendor: Vendor): Promise<Vendor> {
 
 export async function deleteVendor(id: string): Promise<void> {
   await api.del(`/api/vendors/${id}`);
+}
+
+// The vendor profile page (sprint 5).
+export async function getVendorProfile(id: string): Promise<VendorProfile | undefined> {
+  try {
+    return await api.get<VendorProfile>(`/api/vendors/${encodeURIComponent(id)}/profile`);
+  } catch {
+    return undefined;
+  }
+}
+
+export function addVendorNote(vendorId: string, text: string): Promise<VendorNote> {
+  return api.post<VendorNote>(`/api/vendors/${encodeURIComponent(vendorId)}/notes`, { text });
+}
+
+export function deleteVendorNote(vendorId: string, noteId: string): Promise<void> {
+  return api.del(`/api/vendors/${encodeURIComponent(vendorId)}/notes/${encodeURIComponent(noteId)}`);
 }

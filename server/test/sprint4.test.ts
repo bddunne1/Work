@@ -2,7 +2,7 @@
 // shipments, and the Purchase Orders open/closed filter.
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/prisma.js";
-import { admin, allocate, as, check, getOrder, makeItem, makeOrder, makePo, makeVendor, ok, receive, resetDb } from "./helpers.js";
+import { admin, allocate, as, check, getOrder, makeItem, makeOrder, makePo, makeVendor, ok, receive, resetDb, ship, so, walkToPrinted } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -221,5 +221,108 @@ describe("purchase orders: open and closed (list filters)", () => {
     expect(searched.counts).toEqual({ open: 0, closed: 1 });
     // open wins if both flags are sent.
     expect(numbers(ok(await root.get("/api/vendor-purchase-orders?open=1&closed=1")))).toEqual([open.poNumber, partial.poNumber].sort());
+  });
+});
+
+describe("picked-by and checked-by at the pack check (sprint 5)", () => {
+  it("stores both initials, keeps readyBy as the checker, audits them and copies them onto the shipment", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 50);
+    const o = await walkToPrinted(root, await makeOrder(root, [{ item: "BR-1001", ordered: 6 }]));
+    const dock = await as("floor2", { permissions: { dock: "edit" } });
+    const packed = ok(await dock.post(`${so(o)}/ready`, { version: o.version, pickedBy: " jr ", checkedBy: "km" }));
+    expect(packed).toMatchObject({ pickedByInitials: "jr", checkedByInitials: "km", readyBy: "km" });
+    await expect.poll(async () => (await prisma.auditLog.findFirst({ where: { action: "ORDER_READY", targetId: String(o.soNumber) } }))?.detail).toMatchObject({ pickedBy: "jr", checkedBy: "km", units: 6 });
+    // Un-ready clears them with the rest of the ready stamp.
+    const back = ok(await dock.post(`${so(packed)}/unready`, { version: packed.version }));
+    expect(back).toMatchObject({ readyAt: null, pickedByInitials: null, checkedByInitials: null });
+    // An office login without initials is stamped from its account for both.
+    const again = ok(await root.post(`${so(back)}/ready`, { version: back.version }));
+    expect(again.pickedByInitials).toBe(again.checkedByInitials);
+    expect(again.pickedByInitials).toBeTruthy();
+    // The shipment keeps them after Mark Shipped clears the order's ready fields.
+    const shipped = ok(await ship(root, again));
+    expect(shipped).toMatchObject({ status: "Shipped", pickedByInitials: null, checkedByInitials: null });
+    expect(shipped.shipmentHistory[0]).toMatchObject({ pickedBy: again.pickedByInitials, checkedBy: again.checkedByInitials });
+    const history = ok(await root.get("/api/shipments?from=2000-01-01&to=2100-01-01"));
+    const row = (history.rows ?? history).find((r: any) => r.soNumber === Number(o.soNumber));
+    expect(row).toMatchObject({ pickedBy: again.pickedByInitials, checkedBy: again.checkedByInitials });
+  });
+});
+
+describe("return customer-pays flags (sprint 5)", () => {
+  it("round-trips the three flags, lets them change at any status, and audits the change", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 20);
+    const body = { billTo: { name: "Acme", addressLine1: "1 Main", addressLine2: "", city: "Manteno", state: "IL", zip: "60950", notes: "" }, requestDate: "2026-10-30", reason: "Overstock", notes: "", lines: [{ itemNumber: "BR-1001", description: "BR-1001", um: "EA", qty: 2, rate: 2.5, reason: "", restock: true }] };
+    // Default false; set at creation.
+    const plain = ok(await root.post("/api/returns", body), 201);
+    expect(plain).toMatchObject({ customerPaysReturnFreight: false, customerPaysRestockingFee: false, customerPaysOriginalFreight: false });
+    const ra = ok(await root.post("/api/returns", { ...body, customerPaysReturnFreight: true, customerPaysRestockingFee: true }), 201);
+    expect(ra).toMatchObject({ customerPaysReturnFreight: true, customerPaysRestockingFee: true, customerPaysOriginalFreight: false });
+    expect(ok(await root.get(`/api/returns/${ra.raNumber}`))).toMatchObject({ customerPaysRestockingFee: true });
+    // Receive the goods, then change a flag on the Received RA: the lines are frozen, the billing decision is not.
+    const received = ok(await root.post(`/api/returns/${ra.raNumber}/receive`, { version: ra.version, lines: [] }));
+    expect(received.status).toBe("Received");
+    const put = { ...received, lines: received.lines.map((l: any) => ({ ...l, rate: Number(l.rate) })), customerPaysRestockingFee: false, customerPaysOriginalFreight: true };
+    const updated = ok(await root.put(`/api/returns/${ra.raNumber}`, put));
+    expect(updated).toMatchObject({ status: "Received", customerPaysReturnFreight: true, customerPaysRestockingFee: false, customerPaysOriginalFreight: true });
+    await expect.poll(async () => (await prisma.auditLog.findFirst({ where: { action: "RETURN_UPDATED", targetId: ra.raNumber }, orderBy: { createdAt: "desc" } }))?.detail).toMatchObject({
+      customerPays: { customerPaysRestockingFee: { from: true, to: false }, customerPaysOriginalFreight: { from: false, to: true } },
+    });
+    // The credit memo raised for the received return carries the flags for Accounting.
+    const memos = ok(await root.get(`/api/invoices/credit-memos?q=${ra.raNumber}&page=1&pageSize=10`));
+    const memo = (memos.rows ?? memos).find((m: any) => m.raNumber === ra.raNumber);
+    expect(memo?.returnAuth).toEqual({ customerPaysReturnFreight: true, customerPaysRestockingFee: false, customerPaysOriginalFreight: true });
+  });
+});
+
+describe("vendor profiles (sprint 5)", () => {
+  it("totals the open balance from open POs (one part received), counts closed POs, lists preferred items and notes; gated on vendors", async () => {
+    const root = await admin();
+    const vendor = await makeVendor(root, "Profile Supply");
+    const other = await makeVendor(root, "Other Supply");
+    await makeItem(root, "BR-1001", 10);
+    await makeItem(root, "BR-2002", 3);
+    // BR-1001 prefers this vendor.
+    const item = ok(await root.get("/api/items")).find((i: any) => i.itemNumber === "BR-1001");
+    ok(await root.put(`/api/items/${item.id}`, { ...item, rate: Number(item.rate), weight: Number(item.weight), cost: item.cost === null ? null : Number(item.cost), preferredVendorId: vendor.id }));
+    // PO A: 10 @ 2.00, 4 received -> 6 x 2 = 12 outstanding. PO B: 5 @ 3.00 -> 15. PO C fully received -> closed.
+    const a = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 10, cost: 2 }]);
+    ok(await receive(root, a, [4]));
+    await makePo(root, vendor, [{ itemNumber: "BR-2002", orderedQty: 5, cost: 3 }]);
+    const c = await makePo(root, vendor, [{ itemNumber: "BR-2002", orderedQty: 2, cost: 1 }]);
+    ok(await receive(root, c, [2]));
+    await makePo(root, other, [{ itemNumber: "BR-1001", orderedQty: 99, cost: 9 }]);
+    const profile = ok(await root.get(`/api/vendors/${vendor.id}/profile`));
+    expect(profile.vendor).toMatchObject({ id: vendor.id, name: "Profile Supply", active: true });
+    expect(profile.openPos.map((p: any) => [p.poNumber, p.outstandingQty, p.outstandingValue])).toEqual(expect.arrayContaining([[a.poNumber, 6, 12], [expect.any(String), 5, 15]]));
+    expect(profile.openPos).toHaveLength(2);
+    expect(profile.openBalance).toBe(27);
+    expect(profile.closedPoCount).toBe(1);
+    expect(profile.lastPoDate).toBe("2026-09-28");
+    expect(profile.items.map((i: any) => i.itemNumber)).toEqual(["BR-1001"]);
+    expect(profile.items[0]).toMatchObject({ qtyOnHand: 14, qtyOnPurchaseOrder: 6 + 99, cost: 2 });
+    // Notes go to the VendorNote table with the author.
+    const note = ok(await root.post(`/api/vendors/${vendor.id}/notes`, { text: "Ships Fridays" }), 201);
+    expect(note).toMatchObject({ vendorId: vendor.id, text: "Ships Fridays", author: "admin" });
+    expect(ok(await root.get(`/api/vendors/${vendor.id}/profile`)).notes.map((n: any) => n.text)).toEqual(["Ships Fridays"]);
+    expect(ok(await root.get(`/api/vendors/${vendor.id}/profile`)).vendor.notes).toBe("");
+    // The profile fields round-trip through the vendor PUT; inactive is a flag, not a delete.
+    const fresh = ok(await root.get("/api/vendors")).find((v: any) => v.id === vendor.id);
+    const edited = ok(await root.put(`/api/vendors/${vendor.id}`, { ...fresh, accountNumber: "ACME-77", terms: "Net 45", leadTimeDays: 21, website: "acme.example", notes: "Call before 3pm", active: false }));
+    expect(edited).toMatchObject({ accountNumber: "ACME-77", terms: "Net 45", leadTimeDays: 21, website: "acme.example", notes: "Call before 3pm", active: false });
+    // Gate: vendors view reads the profile (costs only where cost is visible); no vendors page is refused; view cannot add a note.
+    const viewer = await as("vview", { permissions: { vendors: "view" } });
+    const seen = ok(await viewer.get(`/api/vendors/${vendor.id}/profile`));
+    expect(seen.openBalance).toBeNull();
+    expect(seen.openPos[0].outstandingValue).toBeNull();
+    expect(seen.items[0].cost).toBeUndefined();
+    const buyer = await as("vbuyer", { permissions: { vendors: "view", "purchase-orders": "view" } });
+    expect(ok(await buyer.get(`/api/vendors/${vendor.id}/profile`)).openBalance).toBe(27);
+    expect((await viewer.post(`/api/vendors/${vendor.id}/notes`, { text: "nope" })).status).toBe(403);
+    const nobody = await as("vnone", { permissions: { "order-entry": "edit" } });
+    expect((await nobody.get(`/api/vendors/${vendor.id}/profile`)).status).toBe(403);
+    expect((await root.get(`/api/vendors/does-not-exist/profile`)).status).toBe(404);
   });
 });

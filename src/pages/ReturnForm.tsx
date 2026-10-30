@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import CustomerPaysFlags from "../components/CustomerPaysFlags";
+import BackLink from "../components/BackLink";
 import { moveOnEnter } from "../lib/formKeys";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import SearchSelect from "../components/SearchSelect";
 import { useAuth } from "../lib/authContext";
@@ -122,9 +124,7 @@ export default function ReturnForm() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/returns" className="link-btn">
-          &larr; Returns
-        </Link>
+        <BackLink fallback="/returns" label="Returns" />
         <h1>New Return Authorization</h1>
         <p className="muted">
           Record a customer return and generate a Return Authorization (RA) form.
@@ -188,6 +188,11 @@ export default function ReturnForm() {
             onChange={(e) => set("reason", e.target.value)}
           />
         </label>
+
+        <div className="ship-locations-header">
+          <h3>Who pays</h3>
+        </div>
+        <CustomerPaysFlags value={ra} onChange={(next) => setRa((r) => ({ ...r, ...next }))} />
 
         <div className="line-items">
           <div className="ship-locations-header">

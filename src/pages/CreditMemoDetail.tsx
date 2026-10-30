@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import CustomerPaysFlags from "../components/CustomerPaysFlags";
+import BackLink from "../components/BackLink";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SyncPill from "../components/SyncPill";
 import { ApiError } from "../lib/apiClient";
@@ -70,7 +72,7 @@ function CreditMemoDetailInner() {
     return (
       <div className="page">
         <p>Credit memo not found.</p>
-        <Link to="/invoices?tab=credit-memos">&larr; Back to Credit Memos</Link>
+        <BackLink fallback="/invoices?tab=credit-memos" label="Credit Memos" />
       </div>
     );
   }
@@ -157,9 +159,7 @@ function CreditMemoDetailInner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to="/invoices?tab=credit-memos" className="link-btn">
-          &larr; Back to Credit Memos
-        </Link>
+        <BackLink fallback="/invoices?tab=credit-memos" label="Credit Memos" />
         <div className="inline-actions">
           <span className="muted">QuickBooks:</span> <SyncPill sync={memo.sync} />
           <button className="secondary-btn print-btn" onClick={() => window.print()} disabled={memo.status === "DRAFT"}>
@@ -220,6 +220,13 @@ function CreditMemoDetailInner() {
             </table>
           </div>
         </div>
+
+        {memo.returnAuth && (
+          <div className="customer-pays-block">
+            <div className="so-notes-label muted">Return terms (from {memo.raNumber}; add any deduction below by hand)</div>
+            <CustomerPaysFlags value={memo.returnAuth} compact />
+          </div>
+        )}
 
         <div className="so-addresses">
           <fieldset className="address-box">

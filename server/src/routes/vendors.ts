@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { logAudit } from "../lib/audit.js";
 import { ConflictError } from "../lib/conflictError.js";
+import { canSeeCost } from "../lib/orderView.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -30,9 +31,95 @@ const vendorSchema = z.object({
       notes: z.string().optional(),
     })
     .nullish(),
+  // Vendor profile (sprint 5).
+  accountNumber: z.string().max(100).nullish(),
+  terms: z.string().max(100).nullish(),
+  leadTimeDays: z.number().int().min(0).max(3650).nullish(),
+  website: z.string().max(300).nullish(),
+  notes: z.string().max(5000).optional(),
+  active: z.boolean().optional(),
 });
 
+const noteSchema = z.object({ text: z.string().trim().min(1).max(5000) });
+
+const OPEN_PO_STATUSES = ["OPEN", "PARTIALLY_RECEIVED"] as const;
+const CLOSED_PO_STATUSES = ["RECEIVED", "CLOSED"] as const;
+
 router.use(requireAuth);
+
+// The vendor profile page (sprint 5): the vendor, its open POs with the
+// outstanding quantity and value, closed PO count and last PO date, the
+// open balance (outstanding value on open POs, ordered less received at
+// line cost), the items that prefer it with on hand, on PO and last cost,
+// and its notes. Values are left out for an account that may not see cost.
+router.get("/:id/profile", requirePermission("vendors", "view"), async (req: AuthedRequest, res) => {
+  const vendor = await prisma.vendor.findUnique({ where: { id: req.params.id }, include: { vendorNotes: { orderBy: { createdAt: "desc" } } } });
+  if (!vendor) {
+    res.status(404).json({ error: "Vendor not found" });
+    return;
+  }
+  const showCost = canSeeCost(req.account!);
+  const [openPos, closedPoCount, lastPo, items] = await Promise.all([
+    prisma.vendorPurchaseOrder.findMany({ where: { vendorId: vendor.id, status: { in: [...OPEN_PO_STATUSES] } }, orderBy: [{ expectedDate: { sort: "asc", nulls: "last" } }, { orderDate: "asc" }], include: { lines: true } }),
+    prisma.vendorPurchaseOrder.count({ where: { vendorId: vendor.id, status: { in: [...CLOSED_PO_STATUSES] } } }),
+    prisma.vendorPurchaseOrder.findFirst({ where: { vendorId: vendor.id }, orderBy: [{ orderDate: "desc" }, { createdAt: "desc" }], select: { orderDate: true, poNumber: true } }),
+    prisma.item.findMany({ where: { preferredVendorId: vendor.id }, orderBy: { itemNumber: "asc" }, select: { id: true, itemNumber: true, description: true, qtyOnHand: true, qtyOnPurchaseOrder: true, qtyReserved: true, cost: true } }),
+  ]);
+  const day = (d: Date | null | undefined) => (d ? d.toISOString().slice(0, 10) : null);
+  const poRows = openPos.map((po) => {
+    let outstandingQty = 0;
+    let outstandingValue = 0;
+    for (const l of po.lines) {
+      const out = Math.max(0, l.orderedQty - l.receivedQty);
+      outstandingQty += out;
+      outstandingValue += out * Number(l.cost);
+    }
+    return {
+      poNumber: po.poNumber,
+      orderDate: day(po.orderDate),
+      expectedDate: day(po.expectedDate),
+      status: po.status === "OPEN" ? "Open" : "Partially Received",
+      lines: po.lines.length,
+      outstandingQty,
+      outstandingValue: showCost ? Math.round(outstandingValue * 100) / 100 : null,
+    };
+  });
+  const openBalance = poRows.reduce((sum, r) => sum + (r.outstandingValue ?? 0), 0);
+  const { vendorNotes, ...rest } = vendor;
+  res.json({
+    vendor: rest,
+    openPos: poRows,
+    closedPoCount,
+    lastPoDate: day(lastPo?.orderDate),
+    lastPoNumber: lastPo?.poNumber ?? null,
+    openBalance: showCost ? Math.round(openBalance * 100) / 100 : null,
+    items: items.map((i) => ({ ...i, cost: showCost ? (i.cost === null ? null : Number(i.cost)) : undefined })),
+    notes: vendorNotes,
+  });
+});
+
+// Dated notes, saved to VendorNote (not the free-text field) with who wrote them.
+router.post("/:id/notes", requirePermission("vendors", "edit"), async (req: AuthedRequest, res) => {
+  const parsed = noteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  const vendor = await prisma.vendor.findUnique({ where: { id: req.params.id }, select: { id: true, name: true } });
+  if (!vendor) {
+    res.status(404).json({ error: "Vendor not found" });
+    return;
+  }
+  const note = await prisma.vendorNote.create({ data: { vendorId: vendor.id, text: parsed.data.text, author: req.account!.username } });
+  logAudit(req.account!, "VENDOR_NOTE_ADDED", "vendor", vendor.id, vendor.name, { noteId: note.id });
+  res.status(201).json(note);
+});
+
+router.delete("/:id/notes/:noteId", requirePermission("vendors", "edit"), async (req: AuthedRequest, res) => {
+  const gone = await prisma.vendorNote.deleteMany({ where: { id: req.params.noteId, vendorId: req.params.id } });
+  if (gone.count > 0) logAudit(req.account!, "VENDOR_NOTE_DELETED", "vendor", req.params.id, null, { noteId: req.params.noteId });
+  res.status(204).end();
+});
 
 router.get("/", requirePermission("vendors", "view"), async (_req, res) => {
   const vendors = await prisma.vendor.findMany({ orderBy: { name: "asc" } });

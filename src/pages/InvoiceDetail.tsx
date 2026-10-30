@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import BackLink from "../components/BackLink";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SyncPill from "../components/SyncPill";
 import { ApiError } from "../lib/apiClient";
@@ -81,7 +82,7 @@ function InvoiceDetailInner() {
     return (
       <div className="page">
         <p>Invoice not found.</p>
-        <Link to="/invoices">&larr; Back to Invoices</Link>
+        <BackLink fallback="/invoices" label="Invoices" />
       </div>
     );
   }
@@ -169,9 +170,7 @@ function InvoiceDetailInner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to={invoice.status === "DRAFT" ? "/invoices?status=DRAFT" : "/invoices"} className="link-btn">
-          &larr; Back to Invoices
-        </Link>
+        <BackLink fallback={invoice.status === "DRAFT" ? "/invoices?status=DRAFT" : "/invoices"} label="Invoices" />
         <div className="inline-actions">
           <span className="muted">QuickBooks:</span> <SyncPill sync={invoice.sync} />
           <button className="secondary-btn print-btn" onClick={() => window.print()} disabled={invoice.status === "DRAFT"} title={invoice.status === "DRAFT" ? "Issue the invoice before printing it" : undefined}>

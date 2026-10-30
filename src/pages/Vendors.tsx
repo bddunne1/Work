@@ -1,6 +1,7 @@
 import { showToast } from "../lib/toast";
 import ListWindow from "../components/ListWindow";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { deleteVendor, listVendors, saveVendor, updateVendor } from "../lib/vendorStore";
@@ -73,8 +74,8 @@ export default function Vendors() {
       <div className="page-header">
         <h1>Vendors</h1>
         <p className="muted">
-          Suppliers you buy from - used on item profiles as a preferred vendor, and on outbound purchase
-          orders.
+          Suppliers you buy from - used on item profiles as a preferred vendor, and on outbound purchase orders. Open a vendor for
+          its profile: open POs, balance, items and notes.
         </p>
       </div>
 
@@ -118,6 +119,7 @@ export default function Vendors() {
               <th>Contact</th>
               <th>Phone</th>
               <th>Email</th>
+              <th>Profile</th>
               {canEdit && <th></th>}
             </tr>
           </thead>
@@ -155,6 +157,12 @@ export default function Vendors() {
                     onBlur={() => commitVendor(v.id)}
                     onChange={(e) => editField(v, { email: e.target.value })}
                   />
+                </td>
+                <td>
+                  <Link to={`/vendors/${v.id}`} className="row-action-outline">
+                    Open
+                  </Link>
+                  {v.active === false && <span className="muted"> inactive</span>}
                 </td>
                 {canEdit && (
                   <td>

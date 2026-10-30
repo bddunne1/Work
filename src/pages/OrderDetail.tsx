@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -29,7 +30,7 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
       return { label: "To Release Orders", to: `/pick-pack/${order.soNumber}` };
     case "Pick & Packed":
       return order.pickListPrintedAt
-        ? { label: order.readyAt ? "To the Dock" : "To the Pack Check", to: `/open-picks/${order.soNumber}` }
+        ? { label: order.readyAt ? "To the Dock" : "To the Pack Check", to: `/pack-check/${order.soNumber}` }
         : { label: "To Release Orders", to: "/pick-pack" };
     default:
       return null;
@@ -87,7 +88,7 @@ function OrderDetailInner() {
     return (
       <div className="page">
         <p>Order not found.</p>
-        <Link to="/open-orders">&larr; Back to Open Orders</Link>
+        <BackLink fallback="/open-orders" label="Open Orders" />
       </div>
     );
   }
@@ -263,9 +264,7 @@ function OrderDetailInner() {
   return (
     <div className="page order-detail-page">
       <div className="page-header no-print">
-        <button className="link-btn" onClick={() => navigate(-1)}>
-          &larr; Back
-        </button>
+        <BackLink fallback="/open-orders" label="Open Orders" />
         <div className="inline-actions">
           {canEditOrder && !editing && (
             <button type="button" className="secondary-btn" onClick={startEdit}>
@@ -527,6 +526,7 @@ function OrderDetailInner() {
                   <tr>
                     <th>Date</th>
                     <th>Lines Shipped</th>
+                    <th>Picked / Checked</th>
                     <th>Carrier</th>
                     <th>PRO #</th>
                   </tr>
@@ -536,6 +536,7 @@ function OrderDetailInner() {
                     <tr key={rec.id}>
                       <td>{new Date(rec.shippedAt).toLocaleString()}</td>
                       <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+                      <td>{rec.pickedBy || rec.checkedBy ? `${rec.pickedBy || "—"} / ${rec.checkedBy || "—"}` : "—"}</td>
                       <td>{[rec.carrier, rec.scac].filter(Boolean).join(" · ") || "—"}</td>
                       <td>{rec.proNumber || "—"}</td>
                     </tr>

@@ -1,6 +1,7 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { getCustomer, saveRoutingGuide } from "../lib/customerStore";
@@ -56,7 +57,7 @@ function RoutingGuideDetailInner() {
     return (
       <div className="page">
         <p>Customer not found.</p>
-        <Link to="/customers/routing-guide">&larr; Back to Routing Guide</Link>
+        <BackLink fallback="/customers/routing-guide" label="Routing Guide" />
       </div>
     );
   }
@@ -100,9 +101,7 @@ function RoutingGuideDetailInner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to="/customers/routing-guide" className="link-btn">
-          &larr; Back to Routing Guide
-        </Link>
+        <BackLink fallback="/customers/routing-guide" label="Routing Guide" />
         <div className="inline-actions">
           {canEdit && !editing && (
             <button type="button" className="secondary-btn" onClick={startEdit}>

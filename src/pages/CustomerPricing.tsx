@@ -1,6 +1,6 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
@@ -119,9 +119,7 @@ export default function CustomerPricing() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/customers" className="link-btn">
-          &larr; Customers
-        </Link>
+        <BackLink fallback="/customers" label="Customers" />
         <h1>Customer Pricing</h1>
         <p className="muted">
           Set item price overrides for a customer - they auto-fill on Order Entry instead of the catalog

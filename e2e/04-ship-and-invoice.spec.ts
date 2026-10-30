@@ -10,11 +10,20 @@ test("pack check, ship an order and issue its invoice", async ({ page }) => {
   acceptDialogs(page);
   await signIn(page);
 
-  await page.goto(`/#/open-picks/${order.soNumber}`);
+  await page.goto(`/#/pack-check/${order.soNumber}`);
   await expect(page.getByRole("heading", { name: "Pack check" })).toBeVisible();
   await page.getByRole("button", { name: "Ready to ship · print packing slip" }).click();
   await expect(page.getByRole("heading", { name: "Ready to ship" })).toBeVisible();
   await expect.poll(async () => (await api("GET", so(order))).readyAt).toBeTruthy();
+  // The packing slip that just printed is in the DOM, outside anything the
+  // print stylesheet hides, with the order's lines (the blank-slip bug).
+  await page.emulateMedia({ media: "print" });
+  const slip = page.getByTestId("print-docs").locator(".print-only", { hasText: "Packing Slip" });
+  await expect(slip).toBeVisible();
+  await expect(slip).toContainText(state.itemNumbers[0]);
+  await expect(slip.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator(".no-print .print-only")).toHaveCount(0);
+  await page.emulateMedia({ media: "screen" });
   await page.getByRole("button", { name: "Mark Shipped" }).click();
   await expect.poll(async () => (await api("GET", so(order))).status).toBe("Shipped");
 

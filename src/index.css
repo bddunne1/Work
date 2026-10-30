@@ -1974,12 +1974,6 @@ a.dash-lookup-row:focus-visible {
   flex: 0 1 260px;
 }
 
-.release-review-btn {
-  margin-left: auto;
-  padding: 5px 12px;
-  font-size: 13px;
-}
-
 .release-message {
   display: flex;
   flex-wrap: wrap;
@@ -4459,4 +4453,80 @@ a.dash-lookup-row:focus-visible {
     grid-template-columns: 1fr 1fr;
     gap: 10px 28px;
   }
+}
+
+/* The single pack check page (sprint 5): ship-to and notes above the panel. */
+.pack-check-shipto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.pack-check-reprint {
+  margin-top: 12px;
+}
+@media (max-width: 720px) {
+  .pack-check-shipto {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pack-initials-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+.doc-initials {
+  margin-bottom: 8px;
+}
+
+/* A page body being rebuilt (sprint 5). */
+.under-construction {
+  max-width: 560px;
+  padding: 24px 28px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--panel-bg);
+}
+.under-construction-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-h);
+  margin-bottom: 6px;
+}
+.under-construction p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+/* Purchase order document (sprint 5). */
+.po-pill-open { background: rgba(28, 126, 214, 0.15); color: #1c7ed6; }
+.po-pill-partially-received { background: rgba(245, 159, 0, 0.18); color: #e67700; }
+.po-pill-received { background: rgba(47, 158, 68, 0.15); color: #2f9e44; }
+.po-pill-closed { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.po-vendor-name { font-weight: 700; font-size: 15px; }
+.po-vendor-picker { margin: 0; }
+.po-lines .col-amount { width: 110px; }
+
+/* Customer-pays flags on a return (sprint 5). */
+.customer-pays { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; }
+.customer-pays-flag { color: var(--muted); }
+.customer-pays-flag.is-yes { color: var(--text-h); }
+.customer-pays-edit { flex-direction: column; gap: 8px; }
+.customer-pays-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 480px; }
+.customer-pays-row .decision-buttons { margin: 0; }
+.customer-pays-block { margin: 12px 0 16px; }
+
+/* Vendor profile (sprint 5). */
+.vendor-inactive-pill { margin-left: 10px; vertical-align: middle; font-size: 12px; }
+.vendor-stats { margin-bottom: 16px; }
+.vendor-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.vendor-cards { display: flex; flex-direction: column; gap: 16px; }
+.vendor-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13.5px; }
+.vendor-dl dt { color: var(--muted); }
+.vendor-dl dd { margin: 0; }
+.vendor-notes-text { white-space: pre-line; }
+.vendor-details h3, .vendor-cards h3 { margin: 0 0 10px; }
+@media (max-width: 1199px) {
+  .vendor-layout { grid-template-columns: 1fr; }
 }
