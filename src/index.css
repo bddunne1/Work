@@ -880,6 +880,17 @@ a.brand:hover .wordmark {
   color: #2f9e44;
 }
 
+/* Inbound shipment statuses (sprint 4). */
+.inbound-pill-booked { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.inbound-pill-in-transit { background: rgba(28, 126, 214, 0.15); color: #1c7ed6; }
+.inbound-pill-at-port { background: rgba(245, 159, 0, 0.18); color: #e67700; }
+.inbound-pill-arrived { background: rgba(12, 166, 120, 0.15); color: #0ca678; }
+.inbound-pill-received { background: rgba(47, 158, 68, 0.15); color: #2f9e44; }
+.inbound-pill-cancelled { background: rgba(224, 49, 49, 0.12); color: #e03131; }
+.inbound-line-on td { background: color-mix(in srgb, var(--page-accent, #0ca678) 8%, transparent); }
+.inbound-status-row { flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.is-late { color: var(--danger); font-weight: 600; }
+
 .status-pill-group {
   display: inline-flex;
   align-items: center;

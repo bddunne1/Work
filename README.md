@@ -287,6 +287,29 @@ carrier comes from an earlier BOL or shipment, else the customer's routing
 guide, else the order's Ship Via. The shipping label fills itself the same
 way when an S.O. # is typed.
 
+### Inbound shipments
+
+**Inbound Shipments** (`/inbound-shipments`, page key `inbound-shipments`,
+group Purchasing; edit in the Purchasing preset, view in the Analyst
+preset) is one record per container or inbound shipment on its way from a
+vendor: reference (container #, tracking # or BOL), carrier, vendor,
+status (Booked, In Transit, At Port, Arrived, Received, Cancelled), ETD,
+ETA and notes, linked to the vendor PO lines it carries with a quantity
+per line. The list shows what is still expected, soonest ETA first, and
+searches by reference, carrier, vendor or PO #; the form picks a vendor,
+then its open PO lines with the outstanding quantity. The API is
+`/api/inbound-shipments` (list with `?open=1`, `q`, `poNumber` and
+`page`; get; create; version-checked update; `POST /:id/status`; delete),
+every write on the activity log; Purchase Orders, Receiving and the Back
+Order Queue may read it. Lines go with a deleted shipment, and a PO line
+an inbound shipment carries cannot be removed from the PO.
+
+Receiving stays on the PO. The Back Order Queue's projected arrival
+prefers the ETA of an open inbound shipment carrying the PO line over
+the PO's expected date (the row names the shipment), the Purchase Order
+page lists the shipments against the PO, and the receipt that completes
+every PO line a shipment carries marks it Received.
+
 ### Receiving, cost and margin
 
 On a purchase order, "Receive all outstanding" fills every line with what

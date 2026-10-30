@@ -25,6 +25,8 @@ import Customers from "./pages/Customers";
 import CustomerPricing from "./pages/CustomerPricing";
 import CustomersHub from "./pages/CustomersHub";
 import Dashboard from "./pages/Dashboard";
+import InboundShipmentForm from "./pages/InboundShipmentForm";
+import InboundShipments from "./pages/InboundShipments";
 import Inventory from "./pages/Inventory";
 import InventoryAdjust from "./pages/InventoryAdjust";
 import ItemForm from "./pages/ItemForm";
@@ -126,6 +128,9 @@ function App() {
             <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
             <Route path="purchase-orders/:poNumber" element={<PurchaseOrderDetail />} />
             <Route path="receiving" element={<Receiving />} />
+            <Route path="inbound-shipments" element={<InboundShipments />} />
+            <Route path="inbound-shipments/new" element={<InboundShipmentForm />} />
+            <Route path="inbound-shipments/:id" element={<InboundShipmentForm />} />
             <Route path="returns" element={<Returns />} />
             <Route path="returns/new" element={<ReturnForm />} />
             <Route path="returns/:raNumber" element={<ReturnDetail />} />

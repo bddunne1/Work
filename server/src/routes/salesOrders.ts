@@ -11,6 +11,7 @@ import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
 import { adjustOnHand, findItemByNumber, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { assertAllocationAvailable, syncReservations } from "../lib/reservations.js";
+import { OPEN_INBOUND_STATUSES } from "../lib/inbound.js";
 import { hidePrices, requireOrderRead } from "../lib/orderView.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -379,15 +380,30 @@ router.get("/back-orders", async (req: AuthedRequest, res) => {
   const poLines = itemIds.length
     ? await prisma.vendorPoLine.findMany({
         where: { itemId: { in: itemIds }, vendorPo: { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } },
-        include: { vendorPo: { select: { poNumber: true, expectedDate: true } } },
+        include: {
+          vendorPo: { select: { poNumber: true, expectedDate: true } },
+          // An open inbound shipment carrying the line knows better than the
+          // PO's expected date when the stock lands.
+          inboundLines: { where: { shipment: { status: { in: [...OPEN_INBOUND_STATUSES] } } }, select: { shipment: { select: { reference: true, eta: true, status: true } } } },
+        },
       })
     : [];
+  // The projected date for a PO line: the earliest ETA among the open inbound
+  // shipments carrying it, else the PO's expected date.
+  const arrivalFor = (l: (typeof poLines)[number]): { date: Date | null; inbound: { reference: string; eta: string | null; status: string } | null } => {
+    const inbound = l.inboundLines
+      .map((il) => il.shipment)
+      .sort((a, b) => (a.eta?.getTime() ?? Infinity) - (b.eta?.getTime() ?? Infinity))[0];
+    if (inbound) return { date: inbound.eta ?? l.vendorPo.expectedDate, inbound: { reference: inbound.reference, eta: inbound.eta ? inbound.eta.toISOString().slice(0, 10) : null, status: inbound.status } };
+    return { date: l.vendorPo.expectedDate, inbound: null };
+  };
   // Earliest open PO per item with something still to come.
-  const poByItem = new Map<string, { poNumber: string; expectedDate: string | null; outstanding: number }>();
-  for (const l of poLines.sort((a, b) => (a.vendorPo.expectedDate?.getTime() ?? Infinity) - (b.vendorPo.expectedDate?.getTime() ?? Infinity))) {
+  const poByItem = new Map<string, { poNumber: string; expectedDate: string | null; outstanding: number; inbound: { reference: string; eta: string | null; status: string } | null }>();
+  for (const l of poLines.sort((a, b) => (arrivalFor(a).date?.getTime() ?? Infinity) - (arrivalFor(b).date?.getTime() ?? Infinity))) {
     const outstanding = l.orderedQty - l.receivedQty;
     if (!l.itemId || outstanding <= 0 || poByItem.has(l.itemId)) continue;
-    poByItem.set(l.itemId, { poNumber: l.vendorPo.poNumber, expectedDate: l.vendorPo.expectedDate ? l.vendorPo.expectedDate.toISOString().slice(0, 10) : null, outstanding });
+    const { date, inbound } = arrivalFor(l);
+    poByItem.set(l.itemId, { poNumber: l.vendorPo.poNumber, expectedDate: date ? date.toISOString().slice(0, 10) : null, outstanding, inbound });
   }
   const rows = orders.map((o) => {
     const shipped = shippedByLine(o);

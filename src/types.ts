@@ -648,6 +648,49 @@ export function matchesVendorPoQuery(po: Pick<VendorPurchaseOrder, "poNumber" | 
   return po.poNumber.toLowerCase().includes(q) || po.vendorName.toLowerCase().includes(q);
 }
 
+// --- Inbound shipments (sprint 4) ------------------------------------------
+// One record per container or inbound shipment from a vendor, linked to the
+// vendor PO lines it carries. Receiving stays on the PO.
+
+export type InboundStatus = "Booked" | "In Transit" | "At Port" | "Arrived" | "Received" | "Cancelled";
+export const INBOUND_STATUSES: InboundStatus[] = ["Booked", "In Transit", "At Port", "Arrived", "Received", "Cancelled"];
+export const OPEN_INBOUND_STATUSES: InboundStatus[] = ["Booked", "In Transit", "At Port", "Arrived"];
+
+export interface InboundShipmentLine {
+  id?: string;
+  vendorPoLineId: string;
+  qty: number;
+  // From the PO line, for display.
+  poNumber?: string;
+  itemNumber?: string;
+  description?: string;
+  orderedQty?: number;
+  receivedQty?: number;
+}
+
+export interface InboundShipment {
+  id: string;
+  reference: string;
+  carrier: string;
+  vendorId: string | null;
+  vendorName: string | null;
+  status: InboundStatus;
+  etd: string | null;
+  eta: string | null;
+  arrivedAt: string | null;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+  lines: InboundShipmentLine[];
+  poNumbers: string[];
+  units: number;
+}
+
+export function inboundStatusSlug(status: InboundStatus): string {
+  return status.toLowerCase().replace(/\s+/g, "-");
+}
+
 // --- Returns / Return Authorization (RA) -----------------------------------
 // Foundation for the return process: a customer-facing Return Authorization
 // document, generated the same way a BOL or PO is. Kept deliberately simple

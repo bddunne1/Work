@@ -7,6 +7,7 @@ import { idempotent } from "../middleware/idempotency.js";
 import { auditIn, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { adjustOnHand, itemIdFor, lockItems, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
+import { closeReceivedInbound } from "../lib/inbound.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -208,6 +209,13 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         const foreign = await tx.vendorPoLine.count({ where: { id: { in: ids }, poNumber: { not: poNumber } } });
         if (foreign > 0) throw new HttpError(400, "Some lines on this PO belong to a different PO - reload and try again.");
       }
+      // A line an inbound shipment carries stays on the PO (the FK restricts
+      // the delete); say which shipment rather than failing the save.
+      const removed = existing.lines.filter((l) => !after.has(l.id)).map((l) => l.id);
+      if (removed.length > 0) {
+        const carried = await tx.inboundShipmentLine.findFirst({ where: { vendorPoLineId: { in: removed } }, select: { vendorPoLine: { select: { itemNumber: true } }, shipment: { select: { reference: true } } } });
+        if (carried) throw new HttpError(409, `${carried.vendorPoLine.itemNumber} on ${poNumber} is on inbound shipment ${carried.shipment.reference} - take it off the shipment before removing the line.`, { conflict: true });
+      }
 
       const merged = data.lines.map((l) => ({ orderedQty: l.orderedQty, receivedQty: (l.id && before.get(l.id)?.receivedQty) || 0 }));
       const derived = derivedStatus(merged);
@@ -310,6 +318,8 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       data: { status: derivedStatus(poLines), version: { increment: 1 } },
     });
     await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemId));
+    // An inbound shipment whose every line is now fully received is done.
+    const inboundClosed = await closeReceivedInbound(tx, received.map((r) => r.lineId));
     // Back orders waiting on what just arrived are flagged for an analyst,
     // never filled by the system (decided 1 Oct, G-06).
     const arrivedItems = [...new Set(received.map((r) => byId.get(r.lineId)?.itemId).filter((id): id is string => Boolean(id)))];
@@ -323,6 +333,7 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       units: received.reduce((sum, l) => sum + l.qty, 0),
       lines: received.length,
       backOrdersFlagged: flagged.count,
+      ...(inboundClosed.length > 0 ? { inboundShipmentsReceived: inboundClosed.length } : {}),
     });
   });
   const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });

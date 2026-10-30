@@ -237,7 +237,10 @@ export interface BackOrderLine {
   remaining: number;
   free: number;
   coverage: "full" | "partial" | "none" | "shipped";
-  po: { poNumber: string; expectedDate: string | null; outstanding: number } | null;
+  // The first open PO with stock still to come. `expectedDate` is the
+  // projected arrival: an open inbound shipment's ETA when one carries the
+  // line (named in `inbound`), else the PO's own expected date.
+  po: { poNumber: string; expectedDate: string | null; outstanding: number; inbound?: { reference: string; eta: string | null; status: string } | null } | null;
 }
 export interface BackOrderRow extends PurchaseOrder {
   group: "arrived" | "covered" | "uncovered";

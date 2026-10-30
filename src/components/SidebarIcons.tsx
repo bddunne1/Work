@@ -261,6 +261,19 @@ export function ReceivingIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+// A container ship: inbound shipments on their way.
+export function InboundIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3 17.5h18l-1.8 2.5H4.8L3 17.5Z" />
+      <path d="M5 17.5V13h14v4.5" />
+      <path d="M7.5 13V9.5h4V13" />
+      <path d="M11.5 13V7.5h4.5V13" />
+      <path d="M3 13h18" />
+    </svg>
+  );
+}
+
 export function VendorsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base(props)}>

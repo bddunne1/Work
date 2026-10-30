@@ -11,6 +11,7 @@ import {
   CatalogIcon,
   CustomersIcon,
   ForkliftIcon,
+  InboundIcon,
   InventoryIcon,
   LabelsIcon,
   OpenPicksIcon,
@@ -91,6 +92,7 @@ const LANES: Lane[] = [
     modules: [
       { name: "Purchase Orders", description: "Write and track orders to vendors", to: "/purchase-orders", icon: PurchaseOrdersIcon },
       { name: "Receiving", description: "Receive stock against an open PO", to: "/receiving", icon: ReceivingIcon },
+      { name: "Inbound Shipments", description: "Containers and shipments on their way, by ETA", to: "/inbound-shipments", icon: InboundIcon },
       { name: "Returns", description: "Issue an RA; receive returned goods back", to: "/returns", icon: ReturnsIcon },
       { name: "Vendors", description: "Supplier contacts", to: "/vendors", icon: VendorsIcon },
     ],

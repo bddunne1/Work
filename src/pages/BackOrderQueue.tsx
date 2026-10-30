@@ -121,7 +121,19 @@ export default function BackOrderQueue() {
                               {o.fillableNow ? " · can fill now" : " · partly"}
                             </span>
                           ) : g.key === "covered" ? (
-                            o.projectedArrival ? <span className="schedule-ship-date">{o.projectedArrival}</span> : <span className="muted">PO has no expected date</span>
+                            o.projectedArrival ? (
+                              <>
+                                <span className="schedule-ship-date">{o.projectedArrival}</span>
+                                {o.coverage.some((l) => l.po?.inbound) && (
+                                  <span className="muted" title={o.coverage.map((l) => l.po?.inbound ? `${l.item}: ${l.po.inbound.reference} (${l.po.inbound.status})` : null).filter(Boolean).join("; ")}>
+                                    {" "}
+                                    · inbound {[...new Set(o.coverage.map((l) => l.po?.inbound?.reference).filter(Boolean))].join(", ")}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="muted">PO has no expected date</span>
+                            )
                           ) : (
                             <StatusPill order={o} />
                           )}

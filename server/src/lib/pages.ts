@@ -30,6 +30,7 @@ export const PAGE_LABELS: Record<string, string> = {
   reports: "Reports",
   "purchase-orders": "Purchase Orders",
   receiving: "Receiving",
+  "inbound-shipments": "Inbound Shipments",
   vendors: "Vendors",
   accounts: "Accounts",
   settings: "Settings",
