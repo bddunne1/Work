@@ -10,7 +10,7 @@ test("pack check, ship an order and issue its invoice", async ({ page }) => {
   acceptDialogs(page);
   await signIn(page);
 
-  await page.goto(`/#/open-picks/${order.soNumber}`);
+  await page.goto(`/#/pack-check/${order.soNumber}`);
   await expect(page.getByRole("heading", { name: "Pack check" })).toBeVisible();
   await page.getByRole("button", { name: "Ready to ship · print packing slip" }).click();
   await expect(page.getByRole("heading", { name: "Ready to ship" })).toBeVisible();

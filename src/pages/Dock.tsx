@@ -57,7 +57,7 @@ export default function Dock() {
   const units = (o: PurchaseOrder) => (o.pendingShipment ?? []).reduce((s, l) => s + l.qty, 0);
 
   const card = (o: PurchaseOrder, sub: string) => (
-    <button key={o.soNumber} type="button" className="dock-card" onClick={() => navigate(`/dock/${o.soNumber}`)}>
+    <button key={o.soNumber} type="button" className="dock-card" onClick={() => navigate(`/pack-check/${o.soNumber}`)}>
       <span className="dock-card-so">#{o.soNumber}</span>
       <span className="dock-card-name">{o.shipTo.name || o.billTo.name}</span>
       <span className="dock-card-sub">
@@ -111,7 +111,7 @@ export default function Dock() {
           <ul className="dock-shipped">
             {shipped.map((r) => (
               <li key={r.id}>
-                <Link to={`/dock/${r.soNumber}`}>#{r.soNumber}</Link> {r.customer} · {r.units} units · {new Date(r.shippedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                <Link to={`/pack-check/${r.soNumber}`}>#{r.soNumber}</Link> {r.customer} · {r.units} units · {new Date(r.shippedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
               </li>
             ))}
           </ul>

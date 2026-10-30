@@ -61,10 +61,11 @@ export const PAGE_DEFS: PageDef[] = [
   // being able to release them.
   { key: "pick-pack", label: "Release Orders (print pick lists)", group: "Fulfillment", rules: simplePage("/pick-pack") },
   { key: "pick-release", label: "Release Orders (release to warehouse)", group: "Fulfillment", rules: simplePage("/pick-pack/") },
-  { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: simplePage("/open-picks") },
+  // Open Picks and the Dock share the pack check page (/pack-check/<S.O. #>).
+  { key: "open-picks", label: "Open Picks", group: "Fulfillment", rules: (access) => [{ prefix: "/pack-check", access }, { prefix: "/open-picks", access }] },
   // The warehouse's own screen: being picked, the pack check, ready to ship,
   // shipped at pickup, pull from floor. No prices anywhere on it.
-  { key: "dock", label: "Dock (warehouse floor)", group: "Fulfillment", rules: simplePage("/dock") },
+  { key: "dock", label: "Dock (warehouse floor)", group: "Fulfillment", rules: (access) => [{ prefix: "/pack-check", access }, { prefix: "/dock", access }] },
   {
     key: "warehouse-capacity",
     label: "Warehouse Capacity",
@@ -132,11 +133,19 @@ export const PAGE_DEFS: PageDef[] = [
 // pages which are themselves gated.
 const ALWAYS_VIEW_EXACT = new Set(["/", "/login", "/change-password", "/preferences", "/customers"]);
 
+const ACCESS_RANK: Record<AccessLevel, number> = { none: 0, view: 1, edit: 2 };
+
 function buildRules(permissions: Record<string, AccessLevel>): RouteRule[] {
-  const rules: RouteRule[] = [];
+  // A prefix two pages share (the pack check, from Open Picks or the Dock)
+  // takes the higher of the two accesses.
+  const byPrefix = new Map<string, RouteRule>();
   for (const def of PAGE_DEFS) {
-    rules.push(...def.rules(permissions[def.key] ?? "none"));
+    for (const rule of def.rules(permissions[def.key] ?? "none")) {
+      const cur = byPrefix.get(rule.prefix);
+      if (!cur || ACCESS_RANK[rule.access] > ACCESS_RANK[cur.access]) byPrefix.set(rule.prefix, rule);
+    }
   }
+  const rules = [...byPrefix.values()];
   // Longer prefixes are always the more specific ones in this route table
   // (e.g. "/inventory/adjust" vs "/inventory"), so sorting by length gives
   // "most specific first" without having to hand-order the list.

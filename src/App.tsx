@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, HashRouter, Routes } from "react-router-dom";
+import { Navigate, Route, HashRouter, Routes, useParams } from "react-router-dom";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuth } from "./lib/authContext";
 import ChangePassword from "./pages/ChangePassword";
@@ -35,9 +35,8 @@ import ItemQuickReport from "./pages/ItemQuickReport";
 import Items from "./pages/Items";
 import Login from "./pages/Login";
 import OpenPicks from "./pages/OpenPicks";
-import OpenPicksDetail from "./pages/OpenPicksDetail";
 import Dock from "./pages/Dock";
-import DockPick from "./pages/DockPick";
+import PackCheck from "./pages/PackCheck";
 import OrderDetail from "./pages/OrderDetail";
 import OrderEntry from "./pages/OrderEntry";
 import Preferences from "./pages/Preferences";
@@ -71,6 +70,11 @@ const ProductLabels = lazy(() => import("./pages/ProductLabels"));
 const ReportRunner = lazy(() => import("./pages/ReportRunner"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ShippingLabelCreate = lazy(() => import("./pages/ShippingLabelCreate"));
+
+function RedirectToPackCheck() {
+  const { soNumber } = useParams<{ soNumber: string }>();
+  return <Navigate to={`/pack-check/${soNumber ?? ""}`} replace />;
+}
 
 function App() {
   return (
@@ -110,9 +114,11 @@ function App() {
             <Route path="pick-pack" element={<PickPack />} />
             <Route path="pick-pack/:soNumber" element={<PickPackDetail />} />
             <Route path="open-picks" element={<OpenPicks />} />
-            <Route path="open-picks/:soNumber" element={<OpenPicksDetail />} />
             <Route path="dock" element={<Dock />} />
-            <Route path="dock/:soNumber" element={<DockPick />} />
+            {/* One pack check page for Open Picks and the Dock; the old per-page routes redirect to it. */}
+            <Route path="pack-check/:soNumber" element={<PackCheck />} />
+            <Route path="open-picks/:soNumber" element={<RedirectToPackCheck />} />
+            <Route path="dock/:soNumber" element={<RedirectToPackCheck />} />
             <Route path="warehouse-capacity" element={<WarehouseCapacity />} />
             <Route path="schedule" element={<ScheduleShipments />} />
             <Route path="shipment-history" element={<ShipmentHistory />} />

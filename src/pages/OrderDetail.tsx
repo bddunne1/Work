@@ -29,7 +29,7 @@ function nextStageFor(order: PurchaseOrder): { label: string; to: string } | nul
       return { label: "To Release Orders", to: `/pick-pack/${order.soNumber}` };
     case "Pick & Packed":
       return order.pickListPrintedAt
-        ? { label: order.readyAt ? "To the Dock" : "To the Pack Check", to: `/open-picks/${order.soNumber}` }
+        ? { label: order.readyAt ? "To the Dock" : "To the Pack Check", to: `/pack-check/${order.soNumber}` }
         : { label: "To Release Orders", to: "/pick-pack" };
     default:
       return null;

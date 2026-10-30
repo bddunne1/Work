@@ -15,6 +15,7 @@ test("the dock does the pack check with a short, then ships what was packed", as
   await page.goto("/#/dock");
   await expect(page.getByRole("heading", { name: /Being picked/ })).toBeVisible();
   await page.locator(".dock-card", { hasText: `#${order.soNumber}` }).first().click();
+  await expect(page).toHaveURL(new RegExp(`#/pack-check/${order.soNumber}$`));
   await expect(page.getByRole("heading", { name: "Pack check" })).toBeVisible();
   // No prices on the floor.
   await expect(page.locator("body")).not.toContainText("$");
