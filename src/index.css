@@ -4498,3 +4498,12 @@ a.dash-lookup-row:focus-visible {
   margin: 0 0 14px;
   color: var(--muted);
 }
+
+/* Purchase order document (sprint 5). */
+.po-pill-open { background: rgba(28, 126, 214, 0.15); color: #1c7ed6; }
+.po-pill-partially-received { background: rgba(245, 159, 0, 0.18); color: #e67700; }
+.po-pill-received { background: rgba(47, 158, 68, 0.15); color: #2f9e44; }
+.po-pill-closed { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.po-vendor-name { font-weight: 700; font-size: 15px; }
+.po-vendor-picker { margin: 0; }
+.po-lines .col-amount { width: 110px; }

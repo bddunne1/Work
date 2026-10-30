@@ -156,6 +156,8 @@ router.post("/", requirePermission("purchase-orders", "edit"), idempotent("vendo
         expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
         status: "OPEN",
         notes: data.notes,
+        createdBy: req.account!.username,
+        createdById: req.account!.id,
         lines: {
           create: data.lines.map((l) => ({
             itemId: itemIdFor(itemIds, l.itemNumber),

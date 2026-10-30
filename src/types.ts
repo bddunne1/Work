@@ -578,6 +578,14 @@ export interface Vendor {
   phone?: string;
   email?: string;
   address?: Address;
+  // Vendor profile fields (sprint 5).
+  accountNumber?: string | null;
+  terms?: string | null;
+  leadTimeDays?: number | null;
+  website?: string | null;
+  notes?: string;
+  // Inactive vendors are hidden from the PO form's vendor picker.
+  active?: boolean;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
@@ -631,6 +639,8 @@ export interface VendorPurchaseOrder {
   status: VendorPoStatus;
   notes: string;
   receivingHistory?: VendorReceivingRecord[];
+  // Who wrote the PO (sprint 5).
+  createdBy?: string | null;
   createdAt: string;
   // Optimistic concurrency - see Customer.version.
   version?: number;
