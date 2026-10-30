@@ -81,14 +81,13 @@ export default function ShipmentHistory() {
   }
 
   function exportCsv() {
-    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Lines", "Units", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
+    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Units", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
     const body = rows.map((r) => [
       new Date(r.shippedAt).toLocaleString(),
       String(r.soNumber),
       r.poNumber,
       r.customer,
       `${r.shipTo.city}, ${r.shipTo.state}`,
-      r.lines.map((l) => `${l.item} x ${l.qty}`).join("; "),
       String(r.units),
       r.carrier ?? "",
       r.scac ?? "",
@@ -170,7 +169,6 @@ export default function ShipmentHistory() {
               <th>P.O. #</th>
               <th>Customer</th>
               <th>Ship To</th>
-              <th>Lines</th>
               <th className="amount-cell">Units</th>
               <th>Carrier</th>
               <th>PRO #</th>
@@ -194,7 +192,6 @@ export default function ShipmentHistory() {
                 <td>
                   {r.shipTo.city}, {r.shipTo.state}
                 </td>
-                <td>{r.lines.map((l) => `${l.item} × ${l.qty}`).join(", ")}</td>
                 <td className="amount-cell">{r.units.toLocaleString()}</td>
                 <td>{[r.carrier, r.scac].filter(Boolean).join(" · ") || "—"}</td>
                 <td>{r.proNumber || "—"}</td>
