@@ -1,6 +1,7 @@
 import { useState } from "react";
 import BatchPrintDocs from "./BatchPrintDocs";
 import { isConflictError } from "../lib/apiClient";
+import { useAuth } from "../lib/authContext";
 import { localIsoDate } from "../lib/dateUtils";
 import { getOrder, readyOrder, shipOrder, unreadyOrder } from "../lib/orderStore";
 import { showToast } from "../lib/toast";
@@ -14,16 +15,19 @@ import type { CarrierDetails, PurchaseOrder } from "../types";
 interface Props {
   order: PurchaseOrder;
   onChange: (order: PurchaseOrder) => void;
-  // The dock's shared login types the packer's initials; an office login is
-  // stamped from its account.
+  // The dock's shared login types who picked and who checked; an office
+  // login's own initials are prefilled and can be changed.
   askInitials?: boolean;
   onShipped?: (order: PurchaseOrder) => void;
 }
 
 export default function PackCheckPanel({ order, onChange, askInitials, onShipped }: Props) {
+  const { account } = useAuth();
   const pending = order.pendingShipment ?? [];
   const [qtys, setQtys] = useState<Record<string, number>>(() => Object.fromEntries(pending.map((l) => [l.lineItemId, l.qty])));
-  const [initials, setInitials] = useState("");
+  const own = askInitials ? "" : (account?.initials ?? "").toUpperCase();
+  const [pickedBy, setPickedBy] = useState(own);
+  const [checkedBy, setCheckedBy] = useState(own);
   const [busy, setBusy] = useState(false);
   const [printing, setPrinting] = useState<PurchaseOrder | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +52,8 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
 
   async function markReady() {
     if (busy) return;
-    if (askInitials && !initials.trim()) {
-      setError("Type your initials so the pack check says who did it.");
+    if (!pickedBy.trim() || !checkedBy.trim()) {
+      setError("Type the initials of who picked and who checked, so the pack check says who did it.");
       return;
     }
     setBusy(true);
@@ -58,7 +62,7 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
       const updated = await readyOrder(
         order,
         pending.map((l) => ({ lineItemId: l.lineItemId, qty: qtys[l.lineItemId] ?? 0 })),
-        askInitials ? initials.trim() : undefined
+        { pickedBy: pickedBy.trim(), checkedBy: checkedBy.trim() }
       );
       onChange(updated);
       setPrinting(updated);
@@ -171,12 +175,16 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
               </tbody>
             </table>
           </div>
-          {askInitials && (
+          <div className="pack-initials-row">
             <label className="form-field pack-initials">
-              Packed by (initials)
-              <input value={initials} maxLength={6} onChange={(e) => setInitials(e.target.value.toUpperCase())} placeholder="e.g. KM" />
+              Picked by (initials)
+              <input value={pickedBy} maxLength={6} onChange={(e) => setPickedBy(e.target.value.toUpperCase())} placeholder="e.g. JR" />
             </label>
-          )}
+            <label className="form-field pack-initials">
+              Checked by (initials)
+              <input value={checkedBy} maxLength={6} onChange={(e) => setCheckedBy(e.target.value.toUpperCase())} placeholder="e.g. KM" />
+            </label>
+          </div>
           {error && (
             <div className="form-error" role="alert">
               {error}
@@ -200,7 +208,8 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
           </div>
           <p className="muted">
             Packed {order.readyAt ? new Date(order.readyAt).toLocaleString() : ""}
-            {order.readyBy ? ` by ${order.readyBy}` : ""}. The packing slip has printed from these quantities.
+            {order.pickedByInitials ? ` · picked by ${order.pickedByInitials}` : ""}
+            {order.checkedByInitials || order.readyBy ? ` · checked by ${order.checkedByInitials ?? order.readyBy}` : ""}. The packing slip has printed from these quantities.
           </p>
           <div className="scroll-window">
             <table className="data-table line-item-table">

@@ -26,14 +26,17 @@ test("the dock does the pack check with a short, then ships what was packed", as
 
   // One short on the first line: 4 of 5 packed.
   await page.locator("input.allocate-qty-input").first().fill("4");
-  await page.getByLabel("Packed by (initials)").fill("km");
+  await page.getByLabel("Picked by (initials)").fill("jr");
+  await page.getByLabel("Checked by (initials)").fill("km");
   await page.getByRole("button", { name: "Ready to ship · print packing slip" }).click();
   await expect(page.getByRole("heading", { name: "Ready to ship" })).toBeVisible();
-  await expect(page.getByText(/by KM/)).toBeVisible();
+  await expect(page.getByText(/picked by JR · checked by KM/)).toBeVisible();
 
   const ready = await api("GET", so(order));
   expect(ready.readyAt).toBeTruthy();
   expect(ready.readyBy).toBe("KM");
+  expect(ready.pickedByInitials).toBe("JR");
+  expect(ready.checkedByInitials).toBe("KM");
   expect(ready.pendingShipment.map((l: any) => l.qty).sort()).toEqual([2, 4]);
 
   // The dock lists it as Ready to ship, then ships exactly what was packed.

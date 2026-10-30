@@ -117,6 +117,18 @@ function PackingSlipDoc({ order, pageClass }: { order: PurchaseOrder; pageClass:
       </div>
 
       <DocNotes order={order} />
+      {(order.pickedByInitials || order.checkedByInitials || order.readyBy) && (
+        <div className="doc-notes doc-initials">
+          <div className="doc-notes-block">
+            <span className="doc-notes-label">Picked by</span>
+            <span className="doc-notes-text">{order.pickedByInitials || "—"}</span>
+          </div>
+          <div className="doc-notes-block">
+            <span className="doc-notes-label">Checked by</span>
+            <span className="doc-notes-text">{order.checkedByInitials || order.readyBy || "—"}</span>
+          </div>
+        </div>
+      )}
       <table className="data-table line-item-table">
         <thead>
           <tr>

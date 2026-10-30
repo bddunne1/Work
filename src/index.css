@@ -4476,3 +4476,12 @@ a.dash-lookup-row:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.pack-initials-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+.doc-initials {
+  margin-bottom: 8px;
+}

@@ -188,7 +188,11 @@ const readySchema = z.object({
   version: z.number().int(),
   // Packed quantities per line: at most what was staged, never more.
   lines: z.array(shipmentLineSchema).max(500).optional(),
-  // Who packed it, typed on a shared floor login (decided 1 Oct).
+  // Who picked and who checked, typed on the shared floor login (sprint 5);
+  // an office login is stamped from its account. `packedBy` is the old
+  // single field, taken as both when sent on its own.
+  pickedBy: z.string().trim().max(40).optional(),
+  checkedBy: z.string().trim().max(40).optional(),
   packedBy: z.string().trim().max(40).optional(),
 });
 const cancelSchema = z.object({ version: z.number().int(), reason: z.string().trim().min(1, "Give a reason for cancelling").max(2000) });
@@ -280,7 +284,7 @@ const MAX_SHIPPED_SINCE_DAYS = 90;
 const ORDER_SHIP_PAGES = ["open-picks", "shipment-history", "dock"];
 // The pack check: the warehouse's dock screen, or Logistics from Open Picks (decided 1 Oct).
 const READY_PAGES = ["dock", "open-picks"];
-const CLEAR_READY = { readyAt: null, readyBy: null, readyById: null } as const;
+const CLEAR_READY = { readyAt: null, readyBy: null, readyById: null, pickedByInitials: null, checkedByInitials: null } as const;
 const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
 const ALLOCATE_PAGES = ["allocation", "back-orders"];
 const OVER_ALLOCATION_PAGE = "allocation-override";
@@ -980,7 +984,8 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
         );
       }
     }
-    const record = await tx.shipmentRecord.create({ data: { soNumber, shippedAt, lines: shipped, ...carrierNow } });
+    // The shipment keeps who picked and checked: Mark Shipped clears them on the order.
+    const record = await tx.shipmentRecord.create({ data: { soNumber, shippedAt, lines: shipped, ...carrierNow, pickedBy: order.pickedByInitials, checkedBy: order.checkedByInitials } });
     // The invoice for this shipment, from the order's prices as they stand,
     // queued for the accounting bridge in this same transaction.
     const invoice = await createInvoiceForShipment(tx, order, { id: record.id, shippedAt: record.shippedAt, lines: shipped }, account);
@@ -1179,6 +1184,8 @@ router.post("/:soNumber/ready", requireAnyPermission(READY_PAGES, "edit"), async
   }
   const { version, lines, packedBy } = parsed.data;
   const account = req.account!;
+  const pickedBy = parsed.data.pickedBy || packedBy || account.initials;
+  const checkedBy = parsed.data.checkedBy || packedBy || account.initials;
   const outcome = await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, version);
     assertStatus(order, ["PICK_PACKED"], "marked ready to ship");
@@ -1208,11 +1215,11 @@ router.post("/:soNumber/ready", requireAnyPermission(READY_PAGES, "edit"), async
     const now = new Date();
     await tx.salesOrder.update({
       where: { soNumber },
-      data: { pendingShipment: next, packingSlipPrintedAt: now, readyAt: now, readyBy: packedBy || account.initials, readyById: account.id, version: { increment: 1 } },
+      data: { pendingShipment: next, packingSlipPrintedAt: now, readyAt: now, readyBy: checkedBy, readyById: account.id, pickedByInitials: pickedBy, checkedByInitials: checkedBy, version: { increment: 1 } },
     });
     if (lines) await syncReservations(tx, soNumber);
     const units = next.reduce((s, l) => s + l.qty, 0);
-    await auditIn(tx, account, "ORDER_READY", "sales-order", String(soNumber), `S.O. #${soNumber}`, { units, shorts, packedBy: packedBy || account.initials });
+    await auditIn(tx, account, "ORDER_READY", "sales-order", String(soNumber), `S.O. #${soNumber}`, { units, shorts, pickedBy, checkedBy });
     return { units, shorts };
   });
   void outcome;

@@ -527,6 +527,7 @@ function OrderDetailInner() {
                   <tr>
                     <th>Date</th>
                     <th>Lines Shipped</th>
+                    <th>Picked / Checked</th>
                     <th>Carrier</th>
                     <th>PRO #</th>
                   </tr>
@@ -536,6 +537,7 @@ function OrderDetailInner() {
                     <tr key={rec.id}>
                       <td>{new Date(rec.shippedAt).toLocaleString()}</td>
                       <td>{rec.lines.map((l) => `${itemLabel(view, l.lineItemId)} × ${l.qty}`).join(", ")}</td>
+                      <td>{rec.pickedBy || rec.checkedBy ? `${rec.pickedBy || "—"} / ${rec.checkedBy || "—"}` : "—"}</td>
                       <td>{[rec.carrier, rec.scac].filter(Boolean).join(" · ") || "—"}</td>
                       <td>{rec.proNumber || "—"}</td>
                     </tr>

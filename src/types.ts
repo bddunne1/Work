@@ -72,6 +72,9 @@ export interface ShipmentRecord {
   scac?: string | null;
   proNumber?: string | null;
   pickupDate?: string | null;
+  // Who picked and who checked the pack this shipment came from.
+  pickedBy?: string | null;
+  checkedBy?: string | null;
 }
 
 // Carrier details saved on the order at the BOL step or at Mark Shipped
@@ -143,7 +146,11 @@ export interface PurchaseOrder {
   // The pack check (sprint 3): packed, checked and on the dock; the packing
   // slip printed from the packed quantities; Mark Shipped ships exactly those.
   readyAt?: string | null;
+  // The checker (kept for anything that read it before sprint 5).
   readyBy?: string | null;
+  // Who picked and who checked at the pack check.
+  pickedByInitials?: string | null;
+  checkedByInitials?: string | null;
   shipmentHistory?: ShipmentRecord[];
   estimatedShipDate?: string;
   pickPackStatus?: "Partial" | "Complete";

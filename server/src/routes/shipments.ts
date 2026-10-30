@@ -94,6 +94,8 @@ router.get("/", requireAnyPermission(VIEW_PAGES, "view"), async (req: AuthedRequ
       scac: r.scac,
       proNumber: r.proNumber,
       pickupDate: r.pickupDate ? r.pickupDate.toISOString().slice(0, 10) : null,
+      pickedBy: r.pickedBy,
+      checkedBy: r.checkedBy,
       invoiceId: r.invoice?.id ?? null,
       invoiceNumber: r.invoice?.invoiceNumber ?? null,
       invoiceTotal: r.invoice && showPrices ? r.invoice.total.toString() : null,

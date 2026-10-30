@@ -19,6 +19,9 @@ export interface ShipmentRow {
   scac: string | null;
   proNumber: string | null;
   pickupDate: string | null;
+  // Who picked and who checked at the pack check (sprint 5).
+  pickedBy: string | null;
+  checkedBy: string | null;
   invoiceId: string | null;
   invoiceNumber: string | null;
   invoiceTotal: string | null;

@@ -176,10 +176,11 @@ export function markPrinted(c: Client, o: any, lines?: { lineItemId: string; qty
   return c.post(`${so(o)}/mark-printed`, { version: o.version, pickList: true, packingSlip: true, lines });
 }
 // The pack check (sprint 3): packed quantities by line index (default: what
-// was staged), optionally who packed it.
-export function ready(c: Client, o: any, qtys?: number[], packedBy?: string) {
+// was staged), optionally who picked and who checked (one string sets both).
+export function ready(c: Client, o: any, qtys?: number[], initials?: string | { pickedBy: string; checkedBy: string }) {
   const lines = qtys ? o.lineItems.map((li: any, i: number) => ({ lineItemId: li.id, qty: qtys[i] })) : undefined;
-  return c.post(`${so(o)}/ready`, { version: o.version, lines, packedBy });
+  const who = typeof initials === "string" ? { pickedBy: initials, checkedBy: initials } : initials;
+  return c.post(`${so(o)}/ready`, { version: o.version, lines, ...who });
 }
 export function unready(c: Client, o: any) {
   return c.post(`${so(o)}/unready`, { version: o.version });

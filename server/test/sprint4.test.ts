@@ -2,7 +2,7 @@
 // shipments, and the Purchase Orders open/closed filter.
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/prisma.js";
-import { admin, allocate, as, check, getOrder, makeItem, makeOrder, makePo, makeVendor, ok, receive, resetDb } from "./helpers.js";
+import { admin, allocate, as, check, getOrder, makeItem, makeOrder, makePo, makeVendor, ok, receive, resetDb, ship, so, walkToPrinted } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -221,5 +221,31 @@ describe("purchase orders: open and closed (list filters)", () => {
     expect(searched.counts).toEqual({ open: 0, closed: 1 });
     // open wins if both flags are sent.
     expect(numbers(ok(await root.get("/api/vendor-purchase-orders?open=1&closed=1")))).toEqual([open.poNumber, partial.poNumber].sort());
+  });
+});
+
+describe("picked-by and checked-by at the pack check (sprint 5)", () => {
+  it("stores both initials, keeps readyBy as the checker, audits them and copies them onto the shipment", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 50);
+    const o = await walkToPrinted(root, await makeOrder(root, [{ item: "BR-1001", ordered: 6 }]));
+    const dock = await as("floor2", { permissions: { dock: "edit" } });
+    const packed = ok(await dock.post(`${so(o)}/ready`, { version: o.version, pickedBy: " jr ", checkedBy: "km" }));
+    expect(packed).toMatchObject({ pickedByInitials: "jr", checkedByInitials: "km", readyBy: "km" });
+    await expect.poll(async () => (await prisma.auditLog.findFirst({ where: { action: "ORDER_READY", targetId: String(o.soNumber) } }))?.detail).toMatchObject({ pickedBy: "jr", checkedBy: "km", units: 6 });
+    // Un-ready clears them with the rest of the ready stamp.
+    const back = ok(await dock.post(`${so(packed)}/unready`, { version: packed.version }));
+    expect(back).toMatchObject({ readyAt: null, pickedByInitials: null, checkedByInitials: null });
+    // An office login without initials is stamped from its account for both.
+    const again = ok(await root.post(`${so(back)}/ready`, { version: back.version }));
+    expect(again.pickedByInitials).toBe(again.checkedByInitials);
+    expect(again.pickedByInitials).toBeTruthy();
+    // The shipment keeps them after Mark Shipped clears the order's ready fields.
+    const shipped = ok(await ship(root, again));
+    expect(shipped).toMatchObject({ status: "Shipped", pickedByInitials: null, checkedByInitials: null });
+    expect(shipped.shipmentHistory[0]).toMatchObject({ pickedBy: again.pickedByInitials, checkedBy: again.checkedByInitials });
+    const history = ok(await root.get("/api/shipments?from=2000-01-01&to=2100-01-01"));
+    const row = (history.rows ?? history).find((r: any) => r.soNumber === Number(o.soNumber));
+    expect(row).toMatchObject({ pickedBy: again.pickedByInitials, checkedBy: again.checkedByInitials });
   });
 });
