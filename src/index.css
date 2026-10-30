@@ -3359,8 +3359,28 @@ a.dash-lookup-row:focus-visible {
   padding: 4px 0;
 }
 
+/* The calendar and (when a day is picked) its side panel. Rows fill the
+   viewport below the chrome (--chrome-height is measured by
+   useViewportHeight; the fallback is a typical header + toolbar). */
+.ship-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.ship-calendar-layout.has-panel {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+}
+.ship-calendar-body {
+  --cal-rows: 5;
+  grid-auto-rows: minmax(92px, 1fr);
+  height: max(300px, calc(100dvh - var(--chrome-height, 300px)));
+}
+.ship-calendar-week {
+  grid-auto-rows: 1fr;
+}
 .ship-calendar-cell {
-  min-height: 92px;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px;
@@ -3368,6 +3388,96 @@ a.dash-lookup-row:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.ship-calendar-cell:not(.empty):hover,
+.ship-calendar-cell:not(.empty):focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+.ship-calendar-cell.is-selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.ship-calendar-cell.is-weekend,
+.ship-calendar-weekday.is-weekend {
+  opacity: 0.72;
+}
+.ship-calendar-cell.is-weekend {
+  background: color-mix(in srgb, var(--border) 25%, var(--panel-bg));
+}
+.ship-calendar-cell.is-past .ship-calendar-stats {
+  color: var(--danger);
+}
+.ship-calendar-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ship-calendar-day-name {
+  color: var(--muted);
+  font-weight: 500;
+}
+.ship-calendar-stats {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ship-calendar-more {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+.ship-calendar-order-name {
+  color: var(--text);
+  font-weight: 500;
+}
+.ship-calendar-unscheduled.is-on {
+  text-decoration: underline;
+}
+.ship-calendar-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-bg);
+  padding: 12px 14px;
+  position: sticky;
+  top: 72px;
+}
+.ship-calendar-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ship-calendar-panel-title {
+  font-weight: 700;
+  color: var(--text-h);
+}
+.ship-calendar-panel-sub {
+  font-size: 12px;
+}
+.ship-calendar-panel-list {
+  max-height: max(200px, calc(100dvh - var(--chrome-height, 300px) - 60px));
+}
+.ship-calendar-panel-list .schedule-date-input {
+  width: 100%;
+}
+@media (max-width: 1199px) {
+  .ship-calendar-layout.has-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ship-calendar-panel {
+    position: static;
+  }
 }
 
 .ship-calendar-cell.empty {
@@ -3391,7 +3501,8 @@ a.dash-lookup-row:focus-visible {
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
-  max-height: 68px;
+  min-height: 0;
+  flex: 1;
 }
 
 .ship-calendar-order {
@@ -3686,12 +3797,10 @@ a.dash-lookup-row:focus-visible {
 
 @media (max-width: 720px) {
   .ship-calendar-cell {
-    min-height: 54px;
     padding: 4px;
   }
-
-  .ship-calendar-orders {
-    max-height: 34px;
+  .ship-calendar-body {
+    grid-auto-rows: minmax(54px, 1fr);
   }
 
   .ship-calendar-order {
