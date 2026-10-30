@@ -76,10 +76,10 @@ type Check = { value?: number; error?: string };
 // Rates are kept to four decimals, which is what the server accepts and the
 // database holds; a longer figure from a spreadsheet is rounded here so the
 // preview shows the rate that will be saved.
-function money(label: string, raw: string, opts: { allowNegative?: boolean } = {}): Check {
+function money(label: string, raw: string): Check {
   const n = parseMoney(raw);
   if (n === null) return { error: `${label} "${raw}" isn't a number` };
-  if (n < 0 && !opts.allowNegative) return { error: `${label} can't be negative` };
+  if (n < 0) return { error: `${label} can't be negative` };
   return { value: Math.round(n * 10_000) / 10_000 };
 }
 
@@ -342,8 +342,10 @@ export function parseSalesOrders(
         errors.push(`${at(i)}Item "${itemNumber}" is not in the catalog - add it under Items first`);
         return;
       }
+      // The server's line schema refuses a negative rate (lineItemSchema in
+      // server/src/routes/salesOrders.ts); say so in the preview (item 6).
       const rateStr = field(row, "Rate", "Price", "Unit Price");
-      const rate = rateStr ? money("Rate", rateStr, { allowNegative: true }) : { value: catalogItem?.rate ?? 0 };
+      const rate = rateStr ? money("Rate", rateStr) : { value: catalogItem?.rate ?? 0 };
       if (rate.error) {
         errors.push(`${at(i)}${rate.error}`);
         return;
