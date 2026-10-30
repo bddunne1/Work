@@ -2,9 +2,9 @@ import { Prisma, type InvoiceStatus } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { enqueueSync } from "../integrations/sync.js";
-import { logAudit } from "../lib/audit.js";
+import { auditIn } from "../lib/audit.js";
 import { HttpError } from "../lib/conflictError.js";
-import { CHARGE_CODES, documentTotals, issueCreditMemo, issueInvoice, reviewedLines } from "../lib/documents.js";
+import { CHARGE_CODES, documentTotals, issueCreditMemo, issueInvoice, lockCreditMemo, lockInvoice, reviewedLines } from "../lib/documents.js";
 import { fromCents } from "../lib/money.js";
 import { requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { prisma } from "../prisma.js";
@@ -178,6 +178,7 @@ router.put("/credit-memos/:ref", requirePermission("invoices", "edit"), async (r
   const found = await findMemo(req.params.ref);
   if (!found) throw new HttpError(404, "Credit memo not found");
   await prisma.$transaction(async (tx) => {
+    await lockCreditMemo(tx, found.id);
     const memo = await tx.creditMemo.findUnique({ where: { id: found.id }, include: { lines: true } });
     if (!memo) throw new HttpError(404, "Credit memo not found");
     if (memo.status !== "DRAFT") throw new HttpError(409, `${memo.creditMemoNumber} has been issued and can't be edited. Void it and receive the return again if it is wrong.`, { conflict: true });
@@ -205,8 +206,11 @@ router.post("/credit-memos/:ref/issue", requirePermission("invoices", "edit"), a
   if (!parsed.success) throw new HttpError(400, "Invalid request");
   const found = await findMemo(req.params.ref);
   if (!found) throw new HttpError(404, "Credit memo not found");
-  const issued = await prisma.$transaction((tx) => issueCreditMemo(tx, found.id, parsed.data.version, req.account!));
-  logAudit(req.account!, "CREDIT_MEMO_ISSUED", "credit-memo", issued.creditMemoNumber!, issued.creditMemoNumber!, { raNumber: issued.raNumber, total: issued.total.toString() });
+  const issued = await prisma.$transaction(async (tx) => {
+    const memo = await issueCreditMemo(tx, found.id, parsed.data.version, req.account!);
+    await auditIn(tx, req.account!, "CREDIT_MEMO_ISSUED", "credit-memo", memo.creditMemoNumber!, memo.creditMemoNumber!, { raNumber: memo.raNumber, total: memo.total.toString() });
+    return memo;
+  });
   res.json((await withSync([issued], "credit-memo", "creditMemoNumber"))[0]);
 });
 
@@ -216,14 +220,15 @@ router.post("/credit-memos/:ref/void", requirePermission("invoices", "edit"), as
   const found = await findMemo(req.params.ref);
   if (!found) throw new HttpError(404, "Credit memo not found");
   await prisma.$transaction(async (tx) => {
+    await lockCreditMemo(tx, found.id);
     const memo = await tx.creditMemo.findUnique({ where: { id: found.id } });
     if (!memo) throw new HttpError(404, "Credit memo not found");
     if (memo.status === "DRAFT") throw new HttpError(409, "A draft has not been issued, so there is nothing to void. It disappears if the return is reopened.", { conflict: true });
     if (memo.status === "VOID") throw new HttpError(409, `${memo.creditMemoNumber} is already void.`, { conflict: true });
     await tx.creditMemo.update({ where: { id: memo.id }, data: { status: "VOID", voidedAt: new Date(), voidedBy: req.account!.username, voidReason: parsed.data.reason } });
     await enqueueSync(tx, "credit-memo", memo.creditMemoNumber!, "VOID");
+    await auditIn(tx, req.account!, "CREDIT_MEMO_VOIDED", "credit-memo", memo.creditMemoNumber!, memo.creditMemoNumber!, { reason: parsed.data.reason });
   });
-  logAudit(req.account!, "CREDIT_MEMO_VOIDED", "credit-memo", found.creditMemoNumber!, found.creditMemoNumber!, { reason: parsed.data.reason });
   const memo = await findMemo(found.id);
   res.json((await withSync([memo!], "credit-memo", "creditMemoNumber"))[0]);
 });
@@ -244,6 +249,7 @@ router.put("/:ref", requirePermission("invoices", "edit"), async (req: AuthedReq
   if (!found) throw new HttpError(404, "Invoice not found");
   const changes: Record<string, unknown> = {};
   await prisma.$transaction(async (tx) => {
+    await lockInvoice(tx, found.id);
     const invoice = await tx.invoice.findUnique({ where: { id: found.id }, include: { lines: true } });
     if (!invoice) throw new HttpError(404, "Invoice not found");
     if (invoice.status !== "DRAFT") throw new HttpError(409, `${invoice.invoiceNumber} has been issued and can't be edited. Void it and undo the shipment if it is wrong.`, { conflict: true });
@@ -272,8 +278,8 @@ router.put("/:ref", requirePermission("invoices", "edit"), async (req: AuthedReq
         version: { increment: 1 },
       },
     });
+    await auditIn(tx, req.account!, "INVOICE_DRAFT_UPDATED", "invoice", found.id, `Draft for S.O. #${found.soNumber}`, changes);
   });
-  logAudit(req.account!, "INVOICE_DRAFT_UPDATED", "invoice", found.id, `Draft for S.O. #${found.soNumber}`, changes);
   const invoice = await findInvoice(found.id);
   res.json((await withSync([invoice!], "invoice", "invoiceNumber"))[0]);
 });
@@ -284,8 +290,11 @@ router.post("/:ref/issue", requirePermission("invoices", "edit"), async (req: Au
   if (!parsed.success) throw new HttpError(400, "Invalid request");
   const found = await findInvoice(req.params.ref);
   if (!found) throw new HttpError(404, "Invoice not found");
-  const issued = await prisma.$transaction((tx) => issueInvoice(tx, found.id, parsed.data.version, req.account!));
-  logAudit(req.account!, "INVOICE_ISSUED", "invoice", issued.invoiceNumber!, issued.invoiceNumber!, { soNumber: issued.soNumber, total: issued.total.toString(), charges: issued.lines.filter((l) => l.kind === "CHARGE").length });
+  const issued = await prisma.$transaction(async (tx) => {
+    const invoice = await issueInvoice(tx, found.id, parsed.data.version, req.account!);
+    await auditIn(tx, req.account!, "INVOICE_ISSUED", "invoice", invoice.invoiceNumber!, invoice.invoiceNumber!, { soNumber: invoice.soNumber, total: invoice.total.toString(), charges: invoice.lines.filter((l) => l.kind === "CHARGE").length });
+    return invoice;
+  });
   res.json((await withSync([issued], "invoice", "invoiceNumber"))[0]);
 });
 
@@ -298,14 +307,15 @@ router.post("/:ref/void", requirePermission("invoices", "edit"), async (req: Aut
   const found = await findInvoice(req.params.ref);
   if (!found) throw new HttpError(404, "Invoice not found");
   await prisma.$transaction(async (tx) => {
+    await lockInvoice(tx, found.id);
     const invoice = await tx.invoice.findUnique({ where: { id: found.id } });
     if (!invoice) throw new HttpError(404, "Invoice not found");
     if (invoice.status === "DRAFT") throw new HttpError(409, "A draft has not been issued, so there is nothing to void. Undo the shipment to remove it.", { conflict: true });
     if (invoice.status === "VOID") throw new HttpError(409, `${invoice.invoiceNumber} is already void.`, { conflict: true });
     await tx.invoice.update({ where: { id: invoice.id }, data: { status: "VOID", voidedAt: new Date(), voidedBy: req.account!.username, voidReason: parsed.data.reason } });
     await enqueueSync(tx, "invoice", invoice.invoiceNumber!, "VOID");
+    await auditIn(tx, req.account!, "INVOICE_VOIDED", "invoice", invoice.invoiceNumber!, invoice.invoiceNumber!, { reason: parsed.data.reason });
   });
-  logAudit(req.account!, "INVOICE_VOIDED", "invoice", found.invoiceNumber!, found.invoiceNumber!, { reason: parsed.data.reason });
   const invoice = await findInvoice(found.id);
   res.json((await withSync([invoice!], "invoice", "invoiceNumber"))[0]);
 });

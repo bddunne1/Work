@@ -22,6 +22,18 @@ export const CREDIT_MEMO_START = 30001;
 export const CHARGE_CODES = ["FREIGHT", "HANDLING", "OTHER", "DEDUCTION"] as const;
 export type ChargeCode = (typeof CHARGE_CODES)[number];
 
+// Takes the row lock on a document for the rest of the transaction. Issue,
+// void and draft edits all read the row, compare its version and status in
+// JS, then write it; without the lock two requests that both read the same
+// version both pass the checks and both write (October review, item 1).
+// With it the second waits here until the first commits, then reads the
+// state the first left and fails its own check with the usual 409.
+async function lockDocument(tx: Tx, table: "Invoice" | "CreditMemo", id: string): Promise<void> {
+  await tx.$queryRaw(Prisma.sql`SELECT 1 FROM ${Prisma.raw(`"${table}"`)} WHERE "id" = ${id} FOR UPDATE`);
+}
+export const lockInvoice = (tx: Tx, id: string) => lockDocument(tx, "Invoice", id);
+export const lockCreditMemo = (tx: Tx, id: string) => lockDocument(tx, "CreditMemo", id);
+
 async function nextNumber(tx: Tx, key: string, start: number, prefix: string): Promise<string> {
   const counter = await tx.counter.upsert({
     where: { key },
@@ -243,6 +255,7 @@ export function reviewedLines(current: DraftLineRow[], input: DraftLineInput[], 
 // Issues a reviewed draft: assigns the number, stamps who approved it,
 // recomputes the totals from the lines as stored, and queues it.
 export async function issueInvoice(tx: Tx, id: string, version: number, actor: Actor) {
+  await lockInvoice(tx, id);
   const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true } });
   if (!invoice) throw new HttpError(404, "Invoice not found");
   if (invoice.status !== "DRAFT") throw new HttpError(409, `${invoice.invoiceNumber ?? "This invoice"} has already been issued.`, { conflict: true });
@@ -352,6 +365,7 @@ export async function createCreditMemoForReturn(tx: Tx, ra: ReturnForCredit, _ac
 }
 
 export async function issueCreditMemo(tx: Tx, id: string, version: number, actor: Actor) {
+  await lockCreditMemo(tx, id);
   const memo = await tx.creditMemo.findUnique({ where: { id }, include: { lines: true } });
   if (!memo) throw new HttpError(404, "Credit memo not found");
   if (memo.status !== "DRAFT") throw new HttpError(409, `${memo.creditMemoNumber ?? "This credit memo"} has already been issued.`, { conflict: true });
