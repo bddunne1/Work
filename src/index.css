@@ -4507,3 +4507,12 @@ a.dash-lookup-row:focus-visible {
 .po-vendor-name { font-weight: 700; font-size: 15px; }
 .po-vendor-picker { margin: 0; }
 .po-lines .col-amount { width: 110px; }
+
+/* Customer-pays flags on a return (sprint 5). */
+.customer-pays { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; }
+.customer-pays-flag { color: var(--muted); }
+.customer-pays-flag.is-yes { color: var(--text-h); }
+.customer-pays-edit { flex-direction: column; gap: 8px; }
+.customer-pays-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 480px; }
+.customer-pays-row .decision-buttons { margin: 0; }
+.customer-pays-block { margin: 12px 0 16px; }

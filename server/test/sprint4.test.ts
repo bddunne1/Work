@@ -249,3 +249,30 @@ describe("picked-by and checked-by at the pack check (sprint 5)", () => {
     expect(row).toMatchObject({ pickedBy: again.pickedByInitials, checkedBy: again.checkedByInitials });
   });
 });
+
+describe("return customer-pays flags (sprint 5)", () => {
+  it("round-trips the three flags, lets them change at any status, and audits the change", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 20);
+    const body = { billTo: { name: "Acme", addressLine1: "1 Main", addressLine2: "", city: "Manteno", state: "IL", zip: "60950", notes: "" }, requestDate: "2026-10-30", reason: "Overstock", notes: "", lines: [{ itemNumber: "BR-1001", description: "BR-1001", um: "EA", qty: 2, rate: 2.5, reason: "", restock: true }] };
+    // Default false; set at creation.
+    const plain = ok(await root.post("/api/returns", body), 201);
+    expect(plain).toMatchObject({ customerPaysReturnFreight: false, customerPaysRestockingFee: false, customerPaysOriginalFreight: false });
+    const ra = ok(await root.post("/api/returns", { ...body, customerPaysReturnFreight: true, customerPaysRestockingFee: true }), 201);
+    expect(ra).toMatchObject({ customerPaysReturnFreight: true, customerPaysRestockingFee: true, customerPaysOriginalFreight: false });
+    expect(ok(await root.get(`/api/returns/${ra.raNumber}`))).toMatchObject({ customerPaysRestockingFee: true });
+    // Receive the goods, then change a flag on the Received RA: the lines are frozen, the billing decision is not.
+    const received = ok(await root.post(`/api/returns/${ra.raNumber}/receive`, { version: ra.version, lines: [] }));
+    expect(received.status).toBe("Received");
+    const put = { ...received, lines: received.lines.map((l: any) => ({ ...l, rate: Number(l.rate) })), customerPaysRestockingFee: false, customerPaysOriginalFreight: true };
+    const updated = ok(await root.put(`/api/returns/${ra.raNumber}`, put));
+    expect(updated).toMatchObject({ status: "Received", customerPaysReturnFreight: true, customerPaysRestockingFee: false, customerPaysOriginalFreight: true });
+    await expect.poll(async () => (await prisma.auditLog.findFirst({ where: { action: "RETURN_UPDATED", targetId: ra.raNumber }, orderBy: { createdAt: "desc" } }))?.detail).toMatchObject({
+      customerPays: { customerPaysRestockingFee: { from: true, to: false }, customerPaysOriginalFreight: { from: false, to: true } },
+    });
+    // The credit memo raised for the received return carries the flags for Accounting.
+    const memos = ok(await root.get(`/api/invoices/credit-memos?q=${ra.raNumber}&page=1&pageSize=10`));
+    const memo = (memos.rows ?? memos).find((m: any) => m.raNumber === ra.raNumber);
+    expect(memo?.returnAuth).toEqual({ customerPaysReturnFreight: true, customerPaysRestockingFee: false, customerPaysOriginalFreight: true });
+  });
+});

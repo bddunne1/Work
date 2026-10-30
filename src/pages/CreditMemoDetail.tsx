@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CustomerPaysFlags from "../components/CustomerPaysFlags";
 import BackLink from "../components/BackLink";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SyncPill from "../components/SyncPill";
@@ -219,6 +220,13 @@ function CreditMemoDetailInner() {
             </table>
           </div>
         </div>
+
+        {memo.returnAuth && (
+          <div className="customer-pays-block">
+            <div className="so-notes-label muted">Return terms (from {memo.raNumber}; add any deduction below by hand)</div>
+            <CustomerPaysFlags value={memo.returnAuth} compact />
+          </div>
+        )}
 
         <div className="so-addresses">
           <fieldset className="address-box">

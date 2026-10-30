@@ -63,14 +63,17 @@ async function withSync<T extends { status: string; [k: string]: unknown }>(rows
 }
 
 const invoiceInclude = { lines: { orderBy: { position: "asc" as const } } };
+// A credit memo also carries its return's customer-pays flags (sprint 5):
+// read-only context for Accounting, which adds any deduction by hand.
+const memoInclude = { ...invoiceInclude, returnAuth: { select: { customerPaysReturnFreight: true, customerPaysRestockingFee: true, customerPaysOriginalFreight: true } } };
 
 async function findInvoice(ref: string) {
   const byNumber = /^INV-/i.test(ref) ? await prisma.invoice.findUnique({ where: { invoiceNumber: ref.toUpperCase() }, include: invoiceInclude }) : null;
   return byNumber ?? (await prisma.invoice.findUnique({ where: { id: ref }, include: invoiceInclude }));
 }
 async function findMemo(ref: string) {
-  const byNumber = /^CM-/i.test(ref) ? await prisma.creditMemo.findUnique({ where: { creditMemoNumber: ref.toUpperCase() }, include: invoiceInclude }) : null;
-  return byNumber ?? (await prisma.creditMemo.findUnique({ where: { id: ref }, include: invoiceInclude }));
+  const byNumber = /^CM-/i.test(ref) ? await prisma.creditMemo.findUnique({ where: { creditMemoNumber: ref.toUpperCase() }, include: memoInclude }) : null;
+  return byNumber ?? (await prisma.creditMemo.findUnique({ where: { id: ref }, include: memoInclude }));
 }
 
 // ---- lists ---------------------------------------------------------------
@@ -137,7 +140,7 @@ router.get("/credit-memos", requirePermission("invoices", "view"), async (req, r
   const orderBy: Prisma.CreditMemoOrderByWithRelationInput[] = status === "DRAFT" ? [{ createdAt: "asc" }] : [{ memoDate: "desc" }, { createdAt: "desc" }];
   const [total, rows] = await Promise.all([
     prisma.creditMemo.count({ where }),
-    prisma.creditMemo.findMany({ where, orderBy, skip, take: pageSize, include: invoiceInclude }),
+    prisma.creditMemo.findMany({ where, orderBy, skip, take: pageSize, include: memoInclude }),
   ]);
   res.json({ rows: await withSync(rows, "credit-memo", "creditMemoNumber"), total, page, pageSize });
 });

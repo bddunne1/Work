@@ -52,8 +52,15 @@ const createSchema = z.object({
   requestDate: isoDate,
   reason: z.string().max(2000).default(""),
   notes: z.string().max(5000).default(""),
+  // Customer-pays flags (sprint 5): billing decisions, changeable at any
+  // status; they never move stock or change the credit memo math.
+  customerPaysReturnFreight: z.boolean().default(false),
+  customerPaysRestockingFee: z.boolean().default(false),
+  customerPaysOriginalFreight: z.boolean().default(false),
   lines: z.array(lineSchema).max(500).default([]),
 });
+
+const CUSTOMER_PAYS_FLAGS = ["customerPaysReturnFreight", "customerPaysRestockingFee", "customerPaysOriginalFreight"] as const;
 
 const updateSchema = createSchema.extend({
   status: z.enum(["Issued", "Received", "Closed"]),
@@ -198,6 +205,9 @@ router.post("/", requirePermission("returns", "edit"), idempotent("return"), asy
         billTo: data.billTo,
         requestDate: new Date(data.requestDate),
         reason: data.reason,
+        customerPaysReturnFreight: data.customerPaysReturnFreight,
+        customerPaysRestockingFee: data.customerPaysRestockingFee,
+        customerPaysOriginalFreight: data.customerPaysOriginalFreight,
         status: "ISSUED",
         notes: data.notes,
         writtenBy: req.account!.initials,
@@ -219,7 +229,11 @@ router.post("/", requirePermission("returns", "edit"), idempotent("return"), asy
       include,
     });
   });
-  logAudit(req.account!, "RETURN_ISSUED", "return", ra.raNumber, ra.raNumber, { soNumber: ra.soNumber, lines: ra.lines.length });
+  logAudit(req.account!, "RETURN_ISSUED", "return", ra.raNumber, ra.raNumber, {
+    soNumber: ra.soNumber,
+    lines: ra.lines.length,
+    customerPays: { returnFreight: ra.customerPaysReturnFreight, restockingFee: ra.customerPaysRestockingFee, originalFreight: ra.customerPaysOriginalFreight },
+  });
   res.status(201).json(mapOut(ra));
 });
 
@@ -291,6 +305,9 @@ router.put("/:raNumber", async (req: AuthedRequest, res) => {
           reason: data.reason,
           status: STATUS_IN[data.status],
           notes: data.notes,
+          customerPaysReturnFreight: data.customerPaysReturnFreight,
+          customerPaysRestockingFee: data.customerPaysRestockingFee,
+          customerPaysOriginalFreight: data.customerPaysOriginalFreight,
           version: { increment: 1 },
         },
       });
@@ -314,9 +331,12 @@ router.put("/:raNumber", async (req: AuthedRequest, res) => {
     throw err;
   }
 
+  // Which customer-pays flags this save changed, old and new.
+  const flagChanges = Object.fromEntries(CUSTOMER_PAYS_FLAGS.filter((k) => existing[k] !== data[k]).map((k) => [k, { from: existing[k], to: data[k] }]));
   logAudit(req.account!, existing.status !== STATUS_IN[data.status] ? "RETURN_STATUS_CHANGED" : "RETURN_UPDATED", "return", raNumber, raNumber, {
     from: STATUS_OUT[existing.status],
     to: data.status,
+    ...(Object.keys(flagChanges).length > 0 ? { customerPays: flagChanges } : {}),
   });
   const updated = await prisma.returnAuthorization.findUnique({ where: { raNumber }, include });
   res.json(mapOut(updated!));

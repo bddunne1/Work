@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CustomerPaysFlags from "../components/CustomerPaysFlags";
 import BackLink from "../components/BackLink";
 import { moveOnEnter } from "../lib/formKeys";
 import { useNavigate } from "react-router-dom";
@@ -187,6 +188,11 @@ export default function ReturnForm() {
             onChange={(e) => set("reason", e.target.value)}
           />
         </label>
+
+        <div className="ship-locations-header">
+          <h3>Who pays</h3>
+        </div>
+        <CustomerPaysFlags value={ra} onChange={(next) => setRa((r) => ({ ...r, ...next }))} />
 
         <div className="line-items">
           <div className="ship-locations-header">

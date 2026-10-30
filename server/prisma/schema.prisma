@@ -559,6 +559,11 @@ model ReturnAuthorization {
   reason         String       @default("")
   status         ReturnStatus @default(ISSUED)
   notes          String       @default("")
+  // Billing decisions on the return (sprint 5): read by Accounting on the
+  // credit memo; they never move stock or change the credit memo math.
+  customerPaysReturnFreight   Boolean @default(false)
+  customerPaysRestockingFee   Boolean @default(false)
+  customerPaysOriginalFreight Boolean @default(false)
   writtenBy      String?
   writtenById    String?
   writtenByColor String?

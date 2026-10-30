@@ -745,6 +745,11 @@ export interface ReturnAuthorization {
   lines: ReturnLine[];
   status: ReturnStatus;
   notes: string;
+  // Customer-pays flags (sprint 5): billing decisions Accounting reads on
+  // the credit memo; changeable at any status.
+  customerPaysReturnFreight: boolean;
+  customerPaysRestockingFee: boolean;
+  customerPaysOriginalFreight: boolean;
   // Initials + account id of whoever wrote this RA - same signature/edit
   // pattern as a sales order's writtenBy.
   writtenBy?: string;
@@ -767,9 +772,18 @@ export function emptyReturn(raNumber: string): ReturnAuthorization {
     lines: [emptyReturnLine()],
     status: "Issued",
     notes: "",
+    customerPaysReturnFreight: false,
+    customerPaysRestockingFee: false,
+    customerPaysOriginalFreight: false,
     createdAt: new Date().toISOString(),
   };
 }
+
+export const CUSTOMER_PAYS_FLAGS: { key: "customerPaysReturnFreight" | "customerPaysRestockingFee" | "customerPaysOriginalFreight"; label: string }[] = [
+  { key: "customerPaysReturnFreight", label: "Customer pays return freight" },
+  { key: "customerPaysRestockingFee", label: "Customer pays restocking fee" },
+  { key: "customerPaysOriginalFreight", label: "Customer pays original freight" },
+];
 
 export function returnTotal(ra: Pick<ReturnAuthorization, "lines">): number {
   return ra.lines.reduce((sum, l) => sum + l.qty * l.rate, 0);
@@ -893,5 +907,7 @@ export interface CreditMemo {
   version: number;
   createdAt: string;
   lines: CreditMemoLine[];
+  // The return's customer-pays flags, read-only context for Accounting.
+  returnAuth?: { customerPaysReturnFreight: boolean; customerPaysRestockingFee: boolean; customerPaysOriginalFreight: boolean } | null;
   sync?: SyncInfo | null;
 }

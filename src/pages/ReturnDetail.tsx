@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import CustomerPaysFlags from "../components/CustomerPaysFlags";
 import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -267,6 +268,15 @@ function ReturnDetailInner() {
             </tr>
           </tbody>
         </table>
+
+        <div className="customer-pays-block">
+          <div className="so-notes-label muted">Who pays</div>
+          {editing ? (
+            <CustomerPaysFlags value={view} onChange={(next) => setDraft((d) => (d ? { ...d, ...next } : d))} />
+          ) : (
+            <CustomerPaysFlags value={view} />
+          )}
+        </div>
 
         <div className="line-items">
           {editing && (
