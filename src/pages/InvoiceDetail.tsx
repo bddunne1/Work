@@ -6,7 +6,7 @@ import { ApiError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { getInvoice, invoicePath, issueInvoice, money, saveInvoiceDraft, voidInvoice, type DraftLineInput } from "../lib/invoiceStore";
-import { fromCents, lineAmountCents, taxCents, toCents } from "../lib/money";
+import { fromCents, lineAmountCents, taxCents } from "../lib/money";
 import type { Invoice } from "../types";
 
 // The invoice document. While it is a draft (the shipment has been
@@ -70,7 +70,7 @@ function InvoiceDetailInner() {
 
   // Live totals while editing, in cents with the server's rounding.
   const preview = useMemo(() => {
-    const rows = lines.map((l) => ({ cents: l.kind === "CHARGE" ? Math.round(toCents(l.rate) * l.qty) : lineAmountCents(l.qty, l.rate), taxable: l.taxable }));
+    const rows = lines.map((l) => ({ cents: lineAmountCents(l.qty, l.rate), taxable: l.taxable }));
     const subtotal = rows.reduce((s, r) => s + r.cents, 0);
     const taxable = rows.reduce((s, r) => s + (r.taxable ? r.cents : 0), 0);
     const tax = taxCents(taxable, invoice?.taxRate ?? 0);

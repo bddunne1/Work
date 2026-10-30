@@ -13,8 +13,22 @@ export function fromCents(cents: number): Prisma.Decimal {
   return new Prisma.Decimal(cents).div(100);
 }
 
+// The one line-amount rule, on the server and in src/lib/money.ts alike:
+// multiply the quantity by the full-precision rate, then round half up to
+// the cent (3 x 1.005 = 3.015 -> 3.02; 500 x 0.4875 = 243.75 exactly).
+// Rounding the rate to cents first, as the client once did, gave a different
+// figure for any rate with three or four decimals (October review, item 2).
 export function lineAmountCents(qty: number, rate: Money): number {
   return Math.round(new Prisma.Decimal(rate).mul(qty).mul(100).toNumber());
+}
+
+// Rates are kept to four decimals: that is what the Decimal(12, 4) columns
+// hold, so a rate with more would be rounded on the way in and the stored
+// amount would no longer follow from the stored rate. The line schemas
+// refuse such a rate rather than quietly rounding it.
+export const RATE_DECIMALS_MESSAGE = "Rates are kept to four decimals";
+export function hasAtMostFourDecimals(n: number): boolean {
+  return Number.isFinite(n) && Math.abs(n * 10_000 - Math.round(n * 10_000)) < 1e-6;
 }
 
 // `taxRatePercent` is e.g. 6.25 for 6.25%.

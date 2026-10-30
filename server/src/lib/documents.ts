@@ -243,7 +243,7 @@ export function reviewedLines(current: DraftLineRow[], input: DraftLineInput[], 
       um: "EA",
       qty,
       rate,
-      amountCents: Math.round(toCents(Number(rate)) * qty),
+      amountCents: lineAmountCents(qty, rate),
       taxable: l.taxable,
     };
   });

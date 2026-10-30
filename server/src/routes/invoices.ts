@@ -5,7 +5,7 @@ import { enqueueSync } from "../integrations/sync.js";
 import { auditIn } from "../lib/audit.js";
 import { HttpError } from "../lib/conflictError.js";
 import { CHARGE_CODES, documentTotals, issueCreditMemo, issueInvoice, lockCreditMemo, lockInvoice, reviewedLines } from "../lib/documents.js";
-import { fromCents } from "../lib/money.js";
+import { fromCents, hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE } from "../lib/money.js";
 import { requireAuth, requirePermission, type AuthedRequest } from "../middleware/auth.js";
 import { prisma } from "../prisma.js";
 
@@ -154,7 +154,7 @@ const lineSchema = z.object({
   description: z.string().trim().max(500),
   um: z.string().trim().max(20).optional(),
   qty: z.number().int(),
-  rate: z.number().finite(),
+  rate: z.number().finite().refine(hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE),
   taxable: z.boolean(),
 });
 const draftSchema = z.object({

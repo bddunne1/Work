@@ -73,11 +73,14 @@ export function parseNumber(raw: string): number | null {
 // A parsed cell: its value, or why it was rejected.
 type Check = { value?: number; error?: string };
 
+// Rates are kept to four decimals, which is what the server accepts and the
+// database holds; a longer figure from a spreadsheet is rounded here so the
+// preview shows the rate that will be saved.
 function money(label: string, raw: string, opts: { allowNegative?: boolean } = {}): Check {
   const n = parseMoney(raw);
   if (n === null) return { error: `${label} "${raw}" isn't a number` };
   if (n < 0 && !opts.allowNegative) return { error: `${label} can't be negative` };
-  return { value: n };
+  return { value: Math.round(n * 10_000) / 10_000 };
 }
 
 function decimal(label: string, raw: string): Check {

@@ -15,6 +15,7 @@ import { OPEN_INBOUND_STATUSES } from "../lib/inbound.js";
 import { hidePrices, requireOrderRead } from "../lib/orderView.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
+import { hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE } from "../lib/money.js";
 import { prisma } from "../prisma.js";
 
 // Sales orders.
@@ -69,7 +70,7 @@ void STATUS_IN;
 const SO_COUNTER_KEY = "salesOrder";
 const SO_START = 10001;
 
-const money = z.number().finite().nonnegative();
+const money = z.number().finite().nonnegative().refine(hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE);
 
 const addressSchema = z.object({
   name: z.string().max(200),

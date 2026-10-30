@@ -2,8 +2,9 @@
 // (docs/review/open-bugs.md). One describe per item.
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
+import { lineAmountCents } from "../src/lib/money.js";
 import { prisma } from "../src/prisma.js";
-import { admin, issueInvoiceFor, makeCustomer, makeItem, ok, orderReadyToShip, resetDb, ship } from "./helpers.js";
+import { admin, issueInvoiceFor, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -125,5 +126,49 @@ describe("item 1: issuing, voiding and editing a document is serialized", () => 
     const after = await prisma.creditMemo.findUniqueOrThrow({ where: { id: memo.id }, include: { lines: true } });
     expect(after.version).toBe(memo.version + 1);
     expect(after.lines.filter((l) => l.kind === "CHARGE")).toHaveLength(1);
+  });
+});
+
+describe("item 2: one line-amount rule - multiply, then round half up to the cent", () => {
+  // The same table runs against the client helper in src/lib/money.test.ts.
+  it.each([
+    [100, 1.2345, 12345],
+    [500, 0.4875, 24375],
+    [18, 15.125, 27225],
+    [1000, 0.005, 500],
+    [3, 1.005, 302],
+  ])("%d x %s = %d cents", (qty, rate, cents) => {
+    expect(lineAmountCents(qty, rate)).toBe(cents);
+  });
+
+  it("prices charge lines on a draft by the same rule as item lines", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100, 1.005);
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 3, rate: 1.005 }])));
+    const draft = await draftInvoiceFor(root, o.soNumber);
+    expect(draft.lines[0].amount).toBe("3.02");
+    const saved = ok(await root.put(`/api/invoices/${draft.id}`, {
+      version: draft.version,
+      lines: [
+        ...asInput(draft.lines),
+        { kind: "CHARGE", item: "FREIGHT", description: "3 cartons", qty: 3, rate: 1.005, taxable: false },
+        { kind: "CHARGE", item: "HANDLING", description: "500 pieces", qty: 500, rate: 0.4875, taxable: false },
+      ],
+    }));
+    const charges = saved.lines.filter((l: any) => l.kind === "CHARGE").map((l: any) => l.amount);
+    expect(charges).toEqual(["3.02", "243.75"]);
+    expect(saved.subtotal).toBe("249.79");
+  });
+
+  it("refuses a rate with more than four decimals, which is what the columns hold", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }])));
+    const draft = await draftInvoiceFor(root, o.soNumber);
+    const res = await root.put(`/api/invoices/${draft.id}`, { version: draft.version, lines: [...asInput(draft.lines), { kind: "CHARGE", item: "FREIGHT", description: "x", qty: 1, rate: 1.23456, taxable: false }] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/four decimals/);
+    const order = await makeOrder(root, [{ item: "BR-1001", ordered: 1, rate: 0.33333 }]).catch((e: Error) => e);
+    expect(order).toBeInstanceOf(Error);
   });
 });

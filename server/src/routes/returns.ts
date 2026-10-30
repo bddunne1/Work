@@ -9,6 +9,7 @@ import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createCreditMemoForReturn } from "../lib/documents.js";
 import { adjustOnHand, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { syncChildren } from "../lib/syncChildren.js";
+import { hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE } from "../lib/money.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -37,7 +38,7 @@ const lineSchema = z.object({
   description: z.string().max(500),
   um: z.string().max(20).default("EA"),
   qty: z.number().int().positive(),
-  rate: z.number().finite().nonnegative(),
+  rate: z.number().finite().nonnegative().refine(hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE),
   reason: z.string().max(500).default(""),
   // false = damaged/scrap: received but not put back on the shelf.
   restock: z.boolean().default(true),
