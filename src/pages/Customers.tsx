@@ -1,5 +1,6 @@
 import { showToast } from "../lib/toast";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useViewportHeight } from "../lib/useViewportHeight";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import CustomerEditor from "../components/CustomerEditor";
 import { isConflictError } from "../lib/apiClient";
@@ -19,6 +20,8 @@ function CustomersInner() {
   const navigate = useNavigate();
   const canEdit = useCanEdit();
   const [query, setQuery] = useState("");
+  const nameListRef = useRef<HTMLUListElement>(null);
+  useViewportHeight(nameListRef, 40);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Customer | undefined>();
@@ -163,7 +166,7 @@ function CustomersInner() {
           {filtered.length === 0 ? (
             <p className="muted">No customers found.</p>
           ) : (
-            <ul className="customers-name-list">
+            <ul className="customers-name-list" ref={nameListRef}>
               {filtered.map((c) => (
                 <li key={c.id}>
                   <button

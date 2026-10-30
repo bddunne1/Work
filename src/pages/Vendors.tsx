@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import ListWindow from "../components/ListWindow";
 import { useEffect, useRef, useState } from "react";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
@@ -109,7 +110,8 @@ export default function Vendors() {
       {vendors.length === 0 ? (
         <p className="muted">No vendors yet.</p>
       ) : (
-        <table className="data-table">
+        <ListWindow>
+<table className="data-table">
           <thead>
             <tr>
               <th>Name</th>
@@ -169,6 +171,7 @@ export default function Vendors() {
             ))}
           </tbody>
         </table>
+</ListWindow>
       )}
     </div>
   );

@@ -4,15 +4,15 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
-import { isConflictError } from "../lib/apiClient";
+import { errorShortages, isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { invoicePath, invoicesForOrder, money } from "../lib/invoiceStore";
 import { getCustomer } from "../lib/customerStore";
-import { allocateOrder, cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
-import { canView, canEdit as canEditPath } from "../lib/permissions";
+import { allocateOrder, cancelOrder, getOrder, unallocateOrderCmd, undoShipment, updateOrder } from "../lib/orderStore";
+import { canView, canEdit as canEditPath, hasPageAccess } from "../lib/permissions";
 import type { Customer, Invoice, PurchaseOrder } from "../types";
-import { allocatedQtyFor, itemLabel, orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
+import { allocatedQtyFor, canUnallocate, itemLabel, orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
 
 // Where "continue working this order" should go next, based on its current
 // stage - so a Sales Order view can drop you straight into whatever screen
@@ -62,6 +62,7 @@ function OrderDetailInner() {
   const [revising, setRevising] = useState(false);
   const [reviseQtys, setReviseQtys] = useState<Record<string, number>>({});
   const [reviseError, setReviseError] = useState<string | null>(null);
+  const [reviseShortage, setReviseShortage] = useState<string[] | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
@@ -116,6 +117,11 @@ function OrderDetailInner() {
     Boolean(account && (canEditPath("/allocation", account) || canEditPath("/back-orders", account))) &&
     (order.status === "Allocated" || order.status === "Backordered");
   const onFloor = order.status === "Pick & Packed" && Boolean(order.pickListPrintedAt || order.packingSlipPrintedAt);
+  // Unallocate (back to Checked, nothing held): an Allocated order, or a
+  // released one whose documents have not printed - the pages the server's
+  // UNALLOCATE_PAGES allow (Allocation, Release Orders' release step).
+  const canUnallocateHere =
+    Boolean(account && (canEditPath("/allocation", account) || canEditPath("/pick-pack/review", account))) && canUnallocate(order);
 
   function startEdit() {
     if (!order) return;
@@ -149,14 +155,38 @@ function OrderDetailInner() {
     setRevising(true);
   }
 
-  async function applyRevision() {
+  async function applyRevision(allowOverAllocation = false) {
     if (!order) return;
+    setReviseShortage(null);
     try {
       const lines = order.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: Math.max(0, Math.min(reviseQtys[li.id] ?? 0, remainingToShip(order, li))) }));
-      setOrder(await allocateOrder(order, lines));
+      setOrder(await allocateOrder(order, lines, undefined, { allowOverAllocation }));
       setRevising(false);
     } catch (err) {
       setReviseError(err instanceof Error ? err.message : String(err));
+      if (isConflictError(err)) {
+        const short = errorShortages(err);
+        // A shortage keeps the typed quantities; anything else is a stale copy.
+        if (short) setReviseShortage(short);
+        else setOrder(await getOrder(order.soNumber));
+      }
+    }
+  }
+
+  async function handleUnallocate() {
+    if (!order) return;
+    if (
+      !confirm(
+        `Unallocate S.O. #${order.soNumber}? Its reserved stock is freed${order.status === "Pick & Packed" ? ", the staged pick is withdrawn" : ""} and the order goes back to Checked for a fresh allocation decision.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setOrder(await unallocateOrderCmd(order));
+      showToast(`S.O. #${order.soNumber} is back to Checked - nothing is held for it now.`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
       if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
     }
   }
@@ -231,7 +261,7 @@ function OrderDetailInner() {
   }
 
   return (
-    <div className="page">
+    <div className="page order-detail-page">
       <div className="page-header no-print">
         <button className="link-btn" onClick={() => navigate(-1)}>
           &larr; Back
@@ -621,17 +651,28 @@ function OrderDetailInner() {
         </p>
       )}
 
-      {!editing && canRevise && (
+      {!editing && (canRevise || canUnallocateHere) && (
         <div className="shipment-history no-print">
           <div className="so-notes-label muted">Allocation</div>
           {!revising ? (
             <div className="button-row">
-              <button type="button" className="secondary-btn" onClick={startRevise}>
-                {order.status === "Backordered" ? "Allocate stock now" : "Revise allocation"}
-              </button>
-              <Link to={`/allocation/${order.soNumber}`} className="link-btn">
-                Open in Allocation
-              </Link>
+              {canRevise && (
+                <button type="button" className="secondary-btn" onClick={startRevise}>
+                  {order.status === "Backordered" ? "Allocate stock now" : "Revise allocation"}
+                </button>
+              )}
+              {/* The Allocation decision page refuses a second allocation of an
+                  Allocated order, so the link is only offered where it can act. */}
+              {canRevise && order.status === "Backordered" && (
+                <Link to={`/allocation/${order.soNumber}`} className="link-btn">
+                  Open in Allocation
+                </Link>
+              )}
+              {canUnallocateHere && (
+                <button type="button" className="secondary-btn danger-btn" onClick={handleUnallocate}>
+                  Unallocate order
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -667,9 +708,29 @@ function OrderDetailInner() {
                   })}
                 </tbody>
               </table>
-              {reviseError && <div className="form-error" role="alert">{reviseError}</div>}
+              {reviseError && !reviseShortage && <div className="form-error" role="alert">{reviseError}</div>}
+              {reviseShortage && (
+                <div className="decision-shortage" role="alert">
+                  <div className="decision-outcome-label">Not enough stock</div>
+                  <ul className="decision-shortage-list">
+                    {reviseShortage.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                  {account && hasPageAccess(account, "allocation-override", "edit") ? (
+                    <>
+                      <p className="muted decision-hint">Available goes negative for these items until stock arrives; the order ships only what is physically there.</p>
+                      <button type="button" className="secondary-btn danger-btn" onClick={() => applyRevision(true)}>
+                        Allocate anyway
+                      </button>
+                    </>
+                  ) : (
+                    <p className="muted decision-hint">Lower the quantities to what is available.</p>
+                  )}
+                </div>
+              )}
               <div className="button-row">
-                <button type="button" className="primary-btn" onClick={applyRevision}>
+                <button type="button" className="primary-btn" onClick={() => applyRevision()}>
                   Apply
                 </button>
                 <button type="button" className="secondary-btn" onClick={() => setRevising(false)}>

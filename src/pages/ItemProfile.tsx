@@ -211,7 +211,8 @@ function ItemProfileInner() {
         )}
       </div>
 
-      <div className="sales-order narrow-form">
+      <div className="sales-order item-profile-card">
+        <div className="item-profile-main">
         <div className="form-row">
           <label className="form-field">
             U/M
@@ -351,6 +352,8 @@ function ItemProfileInner() {
           </label>
         </div>
 
+        </div>
+        <div className="item-profile-side">
         <div className="ship-locations">
           <div className="ship-locations-header">
             <h3>Components</h3>
@@ -489,6 +492,7 @@ function ItemProfileInner() {
         </label>
 
         {!editing && <ItemSalesOrders itemNumber={item.itemNumber} />}
+        </div>
       </div>
 
       <div className="item-profile-section">

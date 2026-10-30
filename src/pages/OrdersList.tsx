@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
 import StatusPill from "../components/StatusPill";
@@ -64,7 +65,8 @@ function OrdersListInner({ closed }: Props) {
       {filtered.length === 0 ? (
         <p className="muted">{loaded ? "No orders found." : "Loading..."}</p>
       ) : (
-        <table className="data-table">
+        <ListWindow reserve={76}>
+<table className="data-table">
           <thead>
             <tr>
               <th>S.O. #</th>
@@ -100,6 +102,7 @@ function OrdersListInner({ closed }: Props) {
             ))}
           </tbody>
         </table>
+</ListWindow>
       )}
 
       <Pager

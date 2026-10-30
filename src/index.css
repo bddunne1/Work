@@ -386,9 +386,22 @@ a.brand:hover .wordmark {
   padding: 28px 24px 60px;
 }
 
+/* The page shell: 1040px on a small screen; at 1200px and up it uses the
+   content width; at 1600px and up it takes the extra width and pages with a
+   side panel go two-column (the per-page rules at the end of this file). */
 .page {
   max-width: 1040px;
   margin: 0 auto;
+}
+@media (min-width: 1200px) {
+  .page {
+    max-width: 1280px;
+  }
+}
+@media (min-width: 1600px) {
+  .page {
+    max-width: none;
+  }
 }
 
 .page-header {
@@ -880,6 +893,17 @@ a.brand:hover .wordmark {
   color: #2f9e44;
 }
 
+/* Inbound shipment statuses (sprint 4). */
+.inbound-pill-booked { background: rgba(100, 116, 139, 0.15); color: #64748b; }
+.inbound-pill-in-transit { background: rgba(28, 126, 214, 0.15); color: #1c7ed6; }
+.inbound-pill-at-port { background: rgba(245, 159, 0, 0.18); color: #e67700; }
+.inbound-pill-arrived { background: rgba(12, 166, 120, 0.15); color: #0ca678; }
+.inbound-pill-received { background: rgba(47, 158, 68, 0.15); color: #2f9e44; }
+.inbound-pill-cancelled { background: rgba(224, 49, 49, 0.12); color: #e03131; }
+.inbound-line-on td { background: color-mix(in srgb, var(--page-accent, #0ca678) 8%, transparent); }
+.inbound-status-row { flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.is-late { color: var(--danger); font-weight: 600; }
+
 .status-pill-group {
   display: inline-flex;
   align-items: center;
@@ -1080,7 +1104,7 @@ a.brand:hover .wordmark {
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  max-height: 260px;
+  max-height: min(50dvh, 420px);
   overflow-y: auto;
   z-index: 20;
   list-style: none;
@@ -1211,7 +1235,8 @@ a.brand:hover .wordmark {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 65vh;
+  /* Measured by useViewportHeight: fills the window below the search box. */
+  max-height: max(240px, calc(100dvh - var(--chrome-height, 320px)));
   overflow-y: auto;
 }
 
@@ -1265,7 +1290,7 @@ a.brand:hover .wordmark {
   flex-direction: column;
   gap: 10px;
   margin: 14px 0;
-  max-height: 340px;
+  max-height: max(200px, calc(60dvh - 120px));
   overflow-y: auto;
 }
 
@@ -1403,6 +1428,21 @@ a.brand:hover .wordmark {
   font-weight: 700;
   color: var(--text-h);
   margin-bottom: 4px;
+}
+
+/* A refused allocation: what is short, and "Allocate anyway" for an
+   account with edit on allocation-override. */
+.decision-shortage {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface, transparent));
+}
+.decision-shortage-list {
+  margin: 4px 0 8px;
+  padding-left: 1.1em;
+  font-size: 13px;
 }
 
 .decision-outcome-detail {
@@ -1572,7 +1612,7 @@ a.brand:hover .wordmark {
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
-  max-height: 380px;
+  max-height: min(60dvh, 520px);
   overflow: auto;
   padding: 4px 0;
 }
@@ -2074,7 +2114,7 @@ a.dash-lookup-row:focus-visible {
 /* Long orders (20+ lines) scroll inside the row instead of pushing the
    rest of the list - and the release bar - off screen. */
 .release-lines {
-  max-height: 340px;
+  max-height: max(200px, calc(50dvh - 80px));
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -3333,8 +3373,28 @@ a.dash-lookup-row:focus-visible {
   padding: 4px 0;
 }
 
+/* The calendar and (when a day is picked) its side panel. Rows fill the
+   viewport below the chrome (--chrome-height is measured by
+   useViewportHeight; the fallback is a typical header + toolbar). */
+.ship-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.ship-calendar-layout.has-panel {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+}
+.ship-calendar-body {
+  --cal-rows: 5;
+  grid-auto-rows: minmax(92px, 1fr);
+  height: max(300px, calc(100dvh - var(--chrome-height, 300px)));
+}
+.ship-calendar-week {
+  grid-auto-rows: 1fr;
+}
 .ship-calendar-cell {
-  min-height: 92px;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px;
@@ -3342,6 +3402,96 @@ a.dash-lookup-row:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.ship-calendar-cell:not(.empty):hover,
+.ship-calendar-cell:not(.empty):focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+.ship-calendar-cell.is-selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.ship-calendar-cell.is-weekend,
+.ship-calendar-weekday.is-weekend {
+  opacity: 0.72;
+}
+.ship-calendar-cell.is-weekend {
+  background: color-mix(in srgb, var(--border) 25%, var(--panel-bg));
+}
+.ship-calendar-cell.is-past .ship-calendar-stats {
+  color: var(--danger);
+}
+.ship-calendar-cell-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ship-calendar-day-name {
+  color: var(--muted);
+  font-weight: 500;
+}
+.ship-calendar-stats {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ship-calendar-more {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+.ship-calendar-order-name {
+  color: var(--text);
+  font-weight: 500;
+}
+.ship-calendar-unscheduled.is-on {
+  text-decoration: underline;
+}
+.ship-calendar-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-bg);
+  padding: 12px 14px;
+  position: sticky;
+  top: 72px;
+}
+.ship-calendar-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ship-calendar-panel-title {
+  font-weight: 700;
+  color: var(--text-h);
+}
+.ship-calendar-panel-sub {
+  font-size: 12px;
+}
+.ship-calendar-panel-list {
+  max-height: max(200px, calc(100dvh - var(--chrome-height, 300px) - 60px));
+}
+.ship-calendar-panel-list .schedule-date-input {
+  width: 100%;
+}
+@media (max-width: 1199px) {
+  .ship-calendar-layout.has-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ship-calendar-panel {
+    position: static;
+  }
 }
 
 .ship-calendar-cell.empty {
@@ -3365,7 +3515,8 @@ a.dash-lookup-row:focus-visible {
   flex-direction: column;
   gap: 2px;
   overflow-y: auto;
-  max-height: 68px;
+  min-height: 0;
+  flex: 1;
 }
 
 .ship-calendar-order {
@@ -3660,12 +3811,10 @@ a.dash-lookup-row:focus-visible {
 
 @media (max-width: 720px) {
   .ship-calendar-cell {
-    min-height: 54px;
     padding: 4px;
   }
-
-  .ship-calendar-orders {
-    max-height: 34px;
+  .ship-calendar-body {
+    grid-auto-rows: minmax(54px, 1fr);
   }
 
   .ship-calendar-order {
@@ -3719,7 +3868,7 @@ a.dash-lookup-row:focus-visible {
 }
 
 .import-results-scroll {
-  max-height: 460px;
+  max-height: max(240px, calc(100dvh - var(--chrome-height, 420px)));
   overflow: auto;
   margin: 12px 0;
   border-radius: 8px;
@@ -3760,9 +3909,12 @@ a.dash-lookup-row:focus-visible {
   color: var(--danger);
 }
 
-/* Scroll windows: long lists above action buttons */
+/* Scroll windows: long lists above action buttons. The height comes from
+   the viewport: `--chrome-height` is the measured header + page header +
+   toolbar above the window (useViewportHeight / ListWindow), with a fallback
+   for windows nobody measures (tables inside a detail page). */
 .scroll-window {
-  max-height: min(60vh, 560px);
+  max-height: max(220px, calc(100dvh - var(--chrome-height, 320px)));
   max-width: 100%;
   overflow: auto;
   overscroll-behavior: contain;
@@ -3957,9 +4109,6 @@ a.dash-lookup-row:focus-visible {
 .backorder-group { margin-top: 20px; }
 .backorder-group-title { margin: 0 0 4px; font-size: 1.05rem; }
 .backorder-group-arrived .backorder-group-title { color: #12b886; }
-.backorder-lines { margin: 0; padding-left: 1em; font-size: 13px; }
-.backorder-lines .coverage-full { color: #12b886; }
-.backorder-lines .coverage-none { color: var(--danger); }
 .backorder-fillable { color: #12b886; font-weight: 600; }
 
 /* ---- The floor: Open Picks stages, the dock screen, the pack check (sprint 3) ---- */
@@ -4136,4 +4285,178 @@ a.dash-lookup-row:focus-visible {
 }
 :root[data-theme="dark"] .theme-dark-only {
   display: block;
+}
+
+
+/* ---- Dead-space audit (sprint 4): denser desktop layout. Screen only, so
+   pick lists, packing slips, BOLs and invoices print exactly as before. ---- */
+@media screen and (min-width: 1200px) {
+  .content {
+    padding: 16px 20px 28px;
+  }
+  .page-header {
+    margin-bottom: 10px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  /* A page whose header is just a title and an intro keeps them on one
+     line; the intro is clamped to a line and opens on hover or focus. */
+  .page-header:has(> h1:first-child + p.muted:last-child) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 18px;
+  }
+  .page-header:has(> h1:first-child + p.muted:last-child) > h1 {
+    flex: none;
+  }
+  .page-header:has(> h1:first-child + p.muted:last-child) > p.muted {
+    flex: 1 1 320px;
+    min-width: 0;
+    margin: 0;
+  }
+  .page-header > p.muted {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    cursor: help;
+  }
+  .page-header:hover > p.muted,
+  .page-header:focus-within > p.muted {
+    -webkit-line-clamp: unset;
+  }
+  .toolbar {
+    margin-bottom: 10px;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 7px 10px;
+  }
+  .sales-order {
+    padding: 16px 20px;
+  }
+  .so-header {
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .so-addresses {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .address-box {
+    padding: 8px 12px;
+    gap: 3px;
+  }
+  .review-meta {
+    margin-top: 6px;
+    padding: 8px 12px;
+  }
+  .import-panel {
+    padding: 14px 16px;
+  }
+  .form-field {
+    margin-bottom: 10px;
+  }
+  .ship-locations,
+  .shipment-history,
+  .line-items,
+  .lane-section {
+    margin-bottom: 12px;
+  }
+  .ship-locations-header {
+    margin-bottom: 8px;
+  }
+  .decision-step,
+  .decision-outcome {
+    padding: 12px 14px;
+  }
+  .validation-panel {
+    gap: 16px;
+  }
+  .dash-head {
+    margin-bottom: 10px;
+  }
+  .dash-today {
+    margin-bottom: 14px;
+  }
+  .dash-section {
+    margin-bottom: 16px;
+  }
+  .dash-section-title {
+    margin-bottom: 6px;
+  }
+  .backorder-group,
+  .floor-stage,
+  .dock-stage {
+    margin-top: 12px;
+  }
+  /* Settings and the other panel forms: fields on one row, not a 480px
+     column with the rest of the panel empty. */
+  .import-panel > .narrow-form {
+    max-width: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0 14px;
+    align-items: end;
+  }
+  .import-panel > .narrow-form > .form-row {
+    display: contents;
+  }
+  .import-panel > .narrow-form > .inline-actions,
+  .import-panel > .narrow-form > p,
+  .import-panel > .narrow-form > .login-error {
+    grid-column: 1 / -1;
+  }
+  /* Item Profile: stock and profile on the left, components, links, notes
+     and the item's open orders on the right. */
+  .item-profile-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 28px;
+    align-items: start;
+  }
+  .item-profile-main .form-row,
+  .item-profile-side .form-row {
+    max-width: 480px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  /* The decision pages: lines on the left, the decision beside them. */
+  .validation-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+  }
+  .validation-panel > .line-items {
+    margin-bottom: 0;
+  }
+  /* Sales Order View: the document on the left, its shipment history,
+     invoices, allocation and notices beside it. */
+  .order-detail-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    gap: 0 20px;
+    align-items: start;
+  }
+  .order-detail-page > .page-header {
+    grid-column: 1 / -1;
+  }
+  .order-detail-page > .sales-order {
+    grid-column: 1;
+    grid-row: 2 / span 40;
+  }
+  .order-detail-page > :not(.page-header):not(.sales-order) {
+    grid-column: 2;
+    min-width: 0;
+  }
+  /* The Dashboard's Go to lanes in two columns. */
+  .dash-lanes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 28px;
+  }
 }

@@ -11,6 +11,7 @@ import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
 import { adjustOnHand, findItemByNumber, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { assertAllocationAvailable, syncReservations } from "../lib/reservations.js";
+import { OPEN_INBOUND_STATUSES } from "../lib/inbound.js";
 import { hidePrices, requireOrderRead } from "../lib/orderView.js";
 import { pageLabels } from "../lib/pages.js";
 import { syncChildren } from "../lib/syncChildren.js";
@@ -146,6 +147,10 @@ const allocateSchema = z.object({
   // The ship-complete decision for a partial allocation. Omitted = use the
   // customer record's flag.
   shipCompleteOnly: z.boolean().nullish(),
+  // "Allocate anyway": hold more than is on hand. Honoured only for an
+  // account with edit on allocation-override; otherwise ignored and the
+  // shortage is refused as usual.
+  allowOverAllocation: z.boolean().optional(),
 });
 const markPrintedSchema = z.object({
   version: z.number().int(),
@@ -278,6 +283,7 @@ const READY_PAGES = ["dock", "open-picks"];
 const CLEAR_READY = { readyAt: null, readyBy: null, readyById: null } as const;
 const ORDER_CANCEL_PAGES = ["order-detail", "allocation"];
 const ALLOCATE_PAGES = ["allocation", "back-orders"];
+const OVER_ALLOCATION_PAGE = "allocation-override";
 const REVISE_ALLOCATION_PAGES = ["allocation", "back-orders", "pick-release"];
 const UNALLOCATE_PAGES = ["allocation", "pick-release"];
 const PRINT_PAGES = ["pick-pack", "open-picks"];
@@ -374,15 +380,30 @@ router.get("/back-orders", async (req: AuthedRequest, res) => {
   const poLines = itemIds.length
     ? await prisma.vendorPoLine.findMany({
         where: { itemId: { in: itemIds }, vendorPo: { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } },
-        include: { vendorPo: { select: { poNumber: true, expectedDate: true } } },
+        include: {
+          vendorPo: { select: { poNumber: true, expectedDate: true } },
+          // An open inbound shipment carrying the line knows better than the
+          // PO's expected date when the stock lands.
+          inboundLines: { where: { shipment: { status: { in: [...OPEN_INBOUND_STATUSES] } } }, select: { shipment: { select: { reference: true, eta: true, status: true } } } },
+        },
       })
     : [];
+  // The projected date for a PO line: the earliest ETA among the open inbound
+  // shipments carrying it, else the PO's expected date.
+  const arrivalFor = (l: (typeof poLines)[number]): { date: Date | null; inbound: { reference: string; eta: string | null; status: string } | null } => {
+    const inbound = l.inboundLines
+      .map((il) => il.shipment)
+      .sort((a, b) => (a.eta?.getTime() ?? Infinity) - (b.eta?.getTime() ?? Infinity))[0];
+    if (inbound) return { date: inbound.eta ?? l.vendorPo.expectedDate, inbound: { reference: inbound.reference, eta: inbound.eta ? inbound.eta.toISOString().slice(0, 10) : null, status: inbound.status } };
+    return { date: l.vendorPo.expectedDate, inbound: null };
+  };
   // Earliest open PO per item with something still to come.
-  const poByItem = new Map<string, { poNumber: string; expectedDate: string | null; outstanding: number }>();
-  for (const l of poLines.sort((a, b) => (a.vendorPo.expectedDate?.getTime() ?? Infinity) - (b.vendorPo.expectedDate?.getTime() ?? Infinity))) {
+  const poByItem = new Map<string, { poNumber: string; expectedDate: string | null; outstanding: number; inbound: { reference: string; eta: string | null; status: string } | null }>();
+  for (const l of poLines.sort((a, b) => (arrivalFor(a).date?.getTime() ?? Infinity) - (arrivalFor(b).date?.getTime() ?? Infinity))) {
     const outstanding = l.orderedQty - l.receivedQty;
     if (!l.itemId || outstanding <= 0 || poByItem.has(l.itemId)) continue;
-    poByItem.set(l.itemId, { poNumber: l.vendorPo.poNumber, expectedDate: l.vendorPo.expectedDate ? l.vendorPo.expectedDate.toISOString().slice(0, 10) : null, outstanding });
+    const { date, inbound } = arrivalFor(l);
+    poByItem.set(l.itemId, { poNumber: l.vendorPo.poNumber, expectedDate: date ? date.toISOString().slice(0, 10) : null, outstanding, inbound });
   }
   const rows = orders.map((o) => {
     const shipped = shippedByLine(o);
@@ -750,12 +771,20 @@ router.post("/:soNumber/allocate", async (req: AuthedRequest, res) => {
       ...(fullyAllocated ? {} : { shipCompleteOnly: shipCompleteOnly ?? false }),
       decidedAt: new Date().toISOString(),
     };
-    await assertAllocationAvailable(tx, soNumber, { status, lineItems: order.lineItems, allocation, pendingShipment: order.pendingShipment });
+    const allowOver = parsed.data.allowOverAllocation === true && hasPermission(account, OVER_ALLOCATION_PAGE, "edit");
+    const shortages = await assertAllocationAvailable(tx, soNumber, { status, lineItems: order.lineItems, allocation, pendingShipment: order.pendingShipment }, allowOver);
     // Any decision clears the claim and the stock-arrived flag (G-06): the
     // analyst has looked at it.
     await tx.salesOrder.update({ where: { soNumber }, data: { status, allocation, stockArrivedAt: null, ...CLEAR_CLAIM, version: { increment: 1 } } });
     await syncReservations(tx, soNumber);
-    return { from: STATUS_OUT[order.status], to: STATUS_OUT[status], units: hold ? 0 : total, fullyAllocated };
+    return {
+      from: STATUS_OUT[order.status],
+      to: STATUS_OUT[status],
+      units: hold ? 0 : total,
+      fullyAllocated,
+      // The override, with what each item was short by, stays on the record.
+      ...(shortages.length > 0 ? { overAllocated: true, shortages } : {}),
+    };
   });
   logAudit(account, outcome.from === outcome.to ? "ORDER_ALLOCATION_REVISED" : "ORDER_STATUS_CHANGED", "sales-order", String(soNumber), `S.O. #${soNumber}`, outcome);
   res.json(await reload(soNumber, req.account!));

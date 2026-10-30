@@ -4,9 +4,11 @@ import { Link, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { canEdit as canEditPath } from "../lib/permissions";
+import { listInboundForPo } from "../lib/inboundShipmentStore";
+import { canView } from "../lib/permissions";
 import { getVendorPo, receivePo } from "../lib/vendorPoStore";
-import type { VendorPurchaseOrder, VendorReceivingLine } from "../types";
-import { vendorPoCostTotal, vendorPoLineOutstanding } from "../types";
+import type { InboundShipment, VendorPurchaseOrder, VendorReceivingLine } from "../types";
+import { inboundStatusSlug, vendorPoCostTotal, vendorPoLineOutstanding } from "../types";
 
 export default function PurchaseOrderDetail() {
   const { poNumber } = useParams<{ poNumber: string }>();
@@ -25,6 +27,9 @@ function PurchaseOrderDetailInner() {
   const [po, setPo] = useState<VendorPurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [qtys, setQtys] = useState<Record<string, number>>({});
+  // Inbound shipments carrying a line of this PO (sprint 4).
+  const [inbound, setInbound] = useState<InboundShipment[] | null>(null);
+  const canSeeInbound = Boolean(account && canView("/inbound-shipments", account));
 
   useEffect(() => {
     if (!poNumber) return;
@@ -33,6 +38,15 @@ function PurchaseOrderDetailInner() {
       setLoading(false);
     });
   }, [poNumber]);
+
+  useEffect(() => {
+    if (!poNumber) return;
+    // The server lets every PO reader list them; the link only shows where
+    // the account can open the page.
+    listInboundForPo(poNumber)
+      .then(setInbound)
+      .catch(() => setInbound([]));
+  }, [poNumber, po?.version]);
 
   if (loading) {
     return <div className="page" />;
@@ -172,6 +186,41 @@ function PurchaseOrderDetailInner() {
               Receive
             </button>
           </div>
+        </div>
+      )}
+
+      {inbound && inbound.length > 0 && (
+        <div className="shipment-history">
+          <div className="so-notes-label muted">Inbound Shipments</div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Carrier</th>
+                <th>Status</th>
+                <th>ETA</th>
+                <th>Lines from this PO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inbound.map((s) => (
+                <tr key={s.id}>
+                  <td>{canSeeInbound ? <Link to={`/inbound-shipments/${s.id}`}>{s.reference}</Link> : s.reference}</td>
+                  <td>{s.carrier || "—"}</td>
+                  <td>
+                    <span className={`status-pill inbound-pill inbound-pill-${inboundStatusSlug(s.status)}`}>{s.status}</span>
+                  </td>
+                  <td>{s.eta ?? "—"}</td>
+                  <td>
+                    {s.lines
+                      .filter((l) => l.poNumber === po.poNumber)
+                      .map((l) => `${l.itemNumber} × ${l.qty}`)
+                      .join(", ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

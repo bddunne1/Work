@@ -24,11 +24,22 @@ export function setToken(token: string | null): void {
 export class ApiError extends Error {
   status: number;
   method: string;
-  constructor(status: number, message: string, method = "GET") {
+  // The response body, for the structured detail some refusals carry
+  // (e.g. `shortages` on an allocation that would hold more than is free).
+  body: Record<string, unknown> | null;
+  constructor(status: number, message: string, method = "GET", body: Record<string, unknown> | null = null) {
     super(message);
     this.status = status;
     this.method = method;
+    this.body = body;
   }
+}
+
+// The per-item shortages on a refused allocation, if the error carries them.
+export function errorShortages(err: unknown): string[] | null {
+  if (!(err instanceof ApiError) || !err.body) return null;
+  const s = err.body.shortages;
+  return Array.isArray(s) && s.length > 0 ? s.map(String) : null;
 }
 
 // A whole-object save (item/customer/vendor/vendor PO/return/order) was
@@ -78,7 +89,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (!window.location.hash.startsWith("#/change-password")) window.location.assign("#/change-password");
   }
   if (!res.ok) {
-    throw new ApiError(res.status, errorText(body, res.status), (options.method ?? "GET").toUpperCase());
+    throw new ApiError(res.status, errorText(body, res.status), (options.method ?? "GET").toUpperCase(), body && typeof body === "object" ? (body as Record<string, unknown>) : null);
   }
   return body as T;
 }

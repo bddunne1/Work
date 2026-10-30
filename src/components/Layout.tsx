@@ -4,7 +4,7 @@ import BrandMark, { Wordmark } from "./BrandMark";
 import ErrorBoundary from "./ErrorBoundary";
 import ToastHost from "./Toast";
 import MoreMenu from "./MoreMenu";
-import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, ForkliftIcon, InventoryIcon } from "./SidebarIcons";
+import { AnalyticsIcon, CatalogIcon, CustomersIcon, DashboardIcon, ForkliftIcon, InboundIcon, InventoryIcon } from "./SidebarIcons";
 import { useAuth } from "../lib/authContext";
 import { getPageAccent } from "../lib/pageAccent";
 import { getAccessLevel } from "../lib/permissions";
@@ -87,6 +87,12 @@ export default function Layout() {
             <NavLink to="/dock" className={({ isActive }) => (isActive ? "active" : "")}>
               <ForkliftIcon />
               Dock
+            </NavLink>
+          )}
+          {canGo("/inbound-shipments") && (
+            <NavLink to="/inbound-shipments" className={({ isActive }) => (isActive ? "active" : "")}>
+              <InboundIcon />
+              Inbound
             </NavLink>
           )}
         </div>

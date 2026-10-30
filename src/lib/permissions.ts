@@ -39,6 +39,9 @@ export const PAGE_DEFS: PageDef[] = [
   { key: "validation", label: "Validation", group: "Order Prep", rules: simplePage("/validation") },
   { key: "allocation", label: "Allocation", group: "Order Prep", rules: simplePage("/allocation") },
   { key: "back-orders", label: "Back Order Queue", group: "Order Prep", rules: simplePage("/back-orders") },
+  // Not a page: edit here lets an allocator confirm "Allocate anyway" when an
+  // allocation would hold more than is on hand (Available goes negative).
+  { key: "allocation-override", label: "Allocate beyond on hand", group: "Order Prep", rules: () => [] },
   { key: "labels", label: "Create Labels", group: "Order Prep", rules: simplePage("/labels") },
 
   { key: "open-orders", label: "Open Orders", group: "Orders", rules: simplePage("/open-orders") },
@@ -109,6 +112,12 @@ export const PAGE_DEFS: PageDef[] = [
     rules: pageWithEditGatedSubpaths("/purchase-orders", ["/purchase-orders/new"]),
   },
   { key: "receiving", label: "Receiving", group: "Purchasing", rules: simplePage("/receiving") },
+  {
+    key: "inbound-shipments",
+    label: "Inbound Shipments",
+    group: "Purchasing",
+    rules: pageWithEditGatedSubpaths("/inbound-shipments", ["/inbound-shipments/new"]),
+  },
   { key: "vendors", label: "Vendors", group: "Purchasing", rules: simplePage("/vendors") },
 
   { key: "invoices", label: "Invoices & Credit Memos", group: "Accounting", rules: simplePage("/invoices") },
@@ -142,6 +151,13 @@ export function getAccessLevel(pathname: string, account: Account): AccessLevel 
   return rule?.access ?? "none";
 }
 
+// Access to a permission key that is not a route (allocation-override).
+export function hasPageAccess(account: Account, key: string, level: Exclude<AccessLevel, "none">): boolean {
+  if (account.role === "admin") return true;
+  const access = account.permissions?.[key] ?? "none";
+  return level === "view" ? access !== "none" : access === "edit";
+}
+
 export function canView(pathname: string, account: Account): boolean {
   return getAccessLevel(pathname, account) !== "none";
 }
@@ -169,6 +185,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
     permissions: {
       "purchase-orders": "edit",
       receiving: "edit",
+      "inbound-shipments": "edit",
       vendors: "edit",
       inventory: "edit",
       catalog: "edit",
@@ -244,6 +261,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       customers: "view",
       "purchase-orders": "view",
       receiving: "view",
+      "inbound-shipments": "view",
       reports: "edit",
       analytics: "view",
     },
@@ -308,10 +326,10 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       "Every page at full access. For account management too (Accounts page), give the account the Admin role instead.",
     permissions: Object.fromEntries(
       [
-        "order-entry", "validation", "allocation", "back-orders", "labels", "open-orders", "closed-orders",
+        "order-entry", "validation", "allocation", "allocation-override", "back-orders", "labels", "open-orders", "closed-orders",
         "order-detail", "returns", "pick-pack", "pick-release", "open-picks", "dock", "warehouse-capacity", "schedule",
         "bol", "shipment-history", "customers", "customer-pricing", "routing-guide", "catalog", "inventory",
-        "import", "analytics", "reports", "purchase-orders", "receiving", "vendors", "invoices", "settings", "audit-log",
+        "import", "analytics", "reports", "purchase-orders", "receiving", "inbound-shipments", "vendors", "invoices", "settings", "audit-log",
       ].map((k) => [k, "edit" as AccessLevel])
     ),
   },

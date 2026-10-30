@@ -30,6 +30,7 @@ import savedReportsRouter from "./routes/savedReports.js";
 import settingsRouter from "./routes/settings.js";
 import stockMovementsRouter from "./routes/stockMovements.js";
 import vendorPurchaseOrdersRouter from "./routes/vendorPurchaseOrders.js";
+import inboundShipmentsRouter from "./routes/inboundShipments.js";
 import vendorsRouter from "./routes/vendors.js";
 
 
@@ -71,6 +72,7 @@ export function createApp(): express.Express {
   app.use("/api/saved-reports", savedReportsRouter);
   app.use("/api/counters", countersRouter);
   app.use("/api/vendor-purchase-orders", vendorPurchaseOrdersRouter);
+  app.use("/api/inbound-shipments", inboundShipmentsRouter);
   app.use("/api/returns", returnsRouter);
   // Must come before the sales-orders router, whose "/:soNumber" would
   // otherwise claim "/search".

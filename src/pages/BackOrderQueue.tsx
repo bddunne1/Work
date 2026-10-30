@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
 import StatusPill from "../components/StatusPill";
@@ -11,19 +12,13 @@ import { matchesOrderQuery, orderTotalLabel } from "../types";
 // Orders waiting on stock, from GET /api/sales-orders/back-orders (G-06):
 // grouped as stock arrived (a receipt landed what they wait on; an analyst
 // reviews them, nothing is filled by the system), covered by an open PO,
-// and uncovered. Each row shows its short lines, what is free now and the
-// first PO that covers each.
+// and uncovered. Line detail (what is short, what is free now, the PO that
+// covers it) is on the order itself; the queue stays one row per order.
 const GROUPS: { key: BackOrderRow["group"]; title: string; blurb: string }[] = [
   { key: "arrived", title: "Stock arrived - review", blurb: "A receipt landed stock for a short line. Open each one and decide: allocate what it can take, or hold it again." },
   { key: "covered", title: "Covered by a purchase order", blurb: "Every short line has an open PO; the projected date is the latest expected delivery among them." },
   { key: "uncovered", title: "Not covered", blurb: "At least one short line has no open PO. Purchasing needs to order it." },
 ];
-
-function coverageLabel(l: BackOrderRow["coverage"][number]): string {
-  if (l.coverage === "full") return `${l.item}: ${l.remaining} needed, ${l.free} free`;
-  if (l.coverage === "partial") return `${l.item}: ${l.remaining} needed, ${l.free} free`;
-  return `${l.item}: ${l.remaining} needed, none free`;
-}
 
 export default function BackOrderQueue() {
   const navigate = useNavigate();
@@ -95,7 +90,7 @@ export default function BackOrderQueue() {
                 {g.title} <span className="muted">({rows.length})</span>
               </h2>
               <p className="muted">{g.blurb}</p>
-              <div className="scroll-window">
+              <ListWindow>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -103,7 +98,6 @@ export default function BackOrderQueue() {
                       <th>P.O. #</th>
                       <th>Customer</th>
                       <th>Due</th>
-                      <th>Short lines</th>
                       <th>{g.key === "covered" ? "Projected arrival" : g.key === "arrived" ? "Arrived" : "Status"}</th>
                       <th>Total</th>
                       {canEdit && g.key === "covered" && <th></th>}
@@ -122,29 +116,25 @@ export default function BackOrderQueue() {
                         <td>{o.billTo.name}</td>
                         <td>{o.dueDate}</td>
                         <td>
-                          <ul className="backorder-lines">
-                            {o.coverage.map((l) => (
-                              <li key={l.lineItemId} className={`coverage-${l.coverage}`}>
-                                {coverageLabel(l)}
-                                {l.po && l.coverage !== "full" && (
-                                  <span className="muted">
-                                    {" "}
-                                    · {l.po.outstanding} on {l.po.poNumber}
-                                    {l.po.expectedDate ? ` due ${l.po.expectedDate}` : ""}
-                                  </span>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
-                        <td>
                           {g.key === "arrived" ? (
                             <span className={o.fillableNow ? "backorder-fillable" : undefined}>
                               {o.stockArrivedAt ? new Date(o.stockArrivedAt).toLocaleString() : ""}
                               {o.fillableNow ? " · can fill now" : " · partly"}
                             </span>
                           ) : g.key === "covered" ? (
-                            o.projectedArrival ? <span className="schedule-ship-date">{o.projectedArrival}</span> : <span className="muted">PO has no expected date</span>
+                            o.projectedArrival ? (
+                              <>
+                                <span className="schedule-ship-date">{o.projectedArrival}</span>
+                                {o.coverage.some((l) => l.po?.inbound) && (
+                                  <span className="muted" title={o.coverage.map((l) => l.po?.inbound ? `${l.item}: ${l.po.inbound.reference} (${l.po.inbound.status})` : null).filter(Boolean).join("; ")}>
+                                    {" "}
+                                    · inbound {[...new Set(o.coverage.map((l) => l.po?.inbound?.reference).filter(Boolean))].join(", ")}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="muted">PO has no expected date</span>
+                            )
                           ) : (
                             <StatusPill order={o} />
                           )}
@@ -168,7 +158,7 @@ export default function BackOrderQueue() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ListWindow>
             </section>
           );
         })

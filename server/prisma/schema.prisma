@@ -53,6 +53,19 @@ enum VendorPoStatus {
   CLOSED
 }
 
+// An inbound shipment (a container, a truckload, a parcel) on its way from
+// a vendor: BOOKED -> IN_TRANSIT -> AT_PORT -> ARRIVED -> RECEIVED, or
+// CANCELLED. Receiving stays on the PO; RECEIVED is set by hand or by the
+// receipt that completes every PO line the shipment carries.
+enum InboundStatus {
+  BOOKED
+  IN_TRANSIT
+  AT_PORT
+  ARRIVED
+  RECEIVED
+  CANCELLED
+}
+
 enum ReturnStatus {
   ISSUED
   RECEIVED
@@ -204,6 +217,7 @@ model Vendor {
 
   itemsPreferring      Item[]
   vendorPurchaseOrders VendorPurchaseOrder[]
+  inboundShipments     InboundShipment[]
 
   @@index([name])
 }
@@ -464,9 +478,50 @@ model VendorPoLine {
   receivedQty Int                 @default(0)
   cost        Decimal             @db.Decimal(12, 4)
 
+  inboundLines InboundShipmentLine[]
+
   @@index([poNumber])
   @@index([itemNumber])
   @@index([itemId])
+}
+
+// One record per container or inbound shipment, linked to the vendor PO
+// lines it carries (sprint 4). The Back Order Queue prefers an open
+// shipment's ETA over the PO's expected date, and the PO page lists them.
+model InboundShipment {
+  id        String        @id @default(uuid())
+  // Container #, tracking # or BOL - whatever identifies the shipment.
+  reference String
+  carrier   String        @default("")
+  vendorId  String?
+  vendor    Vendor?       @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  status    InboundStatus @default(BOOKED)
+  etd       DateTime?     @db.Date
+  eta       DateTime?     @db.Date
+  arrivedAt DateTime?
+  notes     String        @default("")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+  // Optimistic concurrency - see Item.version.
+  version   Int           @default(1)
+
+  lines InboundShipmentLine[]
+
+  @@index([status])
+  @@index([eta])
+  @@index([vendorId])
+}
+
+model InboundShipmentLine {
+  id             String          @id @default(uuid())
+  shipmentId     String
+  shipment       InboundShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  vendorPoLineId String
+  vendorPoLine   VendorPoLine    @relation(fields: [vendorPoLineId], references: [id], onDelete: Restrict)
+  qty            Int
+
+  @@index([shipmentId])
+  @@index([vendorPoLineId])
 }
 
 model VendorReceivingRecord {

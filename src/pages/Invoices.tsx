@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Pager from "../components/Pager";
 import SyncPill from "../components/SyncPill";
@@ -102,7 +103,7 @@ export default function Invoices() {
         ) : invoices.rows.length === 0 ? (
           <p className="muted">{emptyText("invoices")}</p>
         ) : (
-          <div className="scroll-window">
+          <ListWindow reserve={76}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -141,14 +142,14 @@ export default function Invoices() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ListWindow>
         )
       ) : !memos ? (
         <p className="muted">Loading...</p>
       ) : memos.rows.length === 0 ? (
         <p className="muted">{emptyText("credit memos")}</p>
       ) : (
-        <div className="scroll-window">
+        <ListWindow reserve={76}>
           <table className="data-table">
             <thead>
               <tr>
@@ -185,7 +186,7 @@ export default function Invoices() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ListWindow>
       )}
 
       <Pager page={page} pageSize={pageSize} total={total} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />

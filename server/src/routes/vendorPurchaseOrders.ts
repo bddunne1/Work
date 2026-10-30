@@ -7,6 +7,7 @@ import { idempotent } from "../middleware/idempotency.js";
 import { auditIn, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
 import { adjustOnHand, itemIdFor, lockItems, recomputeQtyOnPurchaseOrder, resolveItemIds } from "../lib/inventory.js";
+import { closeReceivedInbound } from "../lib/inbound.js";
 import { syncChildren } from "../lib/syncChildren.js";
 import { prisma } from "../prisma.js";
 
@@ -86,25 +87,34 @@ router.use(requireAuth);
 // `?open=1` returns only POs still waiting on stock (Open / Partially
 // Received) - what the Dashboard's receiving numbers need - instead of every
 // PO ever written.
-// Plain: every PO (or `?open=1` the open ones). With `?page=N` the list is
-// paged and searched on the server - `{ rows, total, page, pageSize }` -
-// so the Purchase Orders page stops downloading every PO ever written
-// (PF-03). `q` matches the PO # or the vendor name.
+// Plain: every PO (or `?open=1` the open ones, `?closed=1` the received and
+// closed ones). With `?page=N` the list is paged and searched on the server
+// - `{ rows, total, page, pageSize, counts: { open, closed } }` - so the
+// Purchase Orders page stops downloading every PO ever written (PF-03) and
+// its Open / Closed tabs can show their counts. `q` matches the PO # or
+// the vendor name.
+const OPEN_PO_STATUSES = ["OPEN", "PARTIALLY_RECEIVED"] as const;
+const CLOSED_PO_STATUSES = ["RECEIVED", "CLOSED"] as const;
 router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req, res) => {
-  const openOnly = req.query.open === "1" || req.query.open === "true";
+  const flag = (name: string) => req.query[name] === "1" || req.query[name] === "true";
+  const openOnly = flag("open");
+  const closedOnly = !openOnly && flag("closed");
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const search: Prisma.VendorPurchaseOrderWhereInput = q ? { OR: [{ poNumber: { contains: q, mode: "insensitive" } }, { vendorName: { contains: q, mode: "insensitive" } }] } : {};
   const where: Prisma.VendorPurchaseOrderWhereInput = {
-    ...(openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : {}),
-    ...(q ? { OR: [{ poNumber: { contains: q, mode: "insensitive" } }, { vendorName: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(openOnly ? { status: { in: [...OPEN_PO_STATUSES] } } : closedOnly ? { status: { in: [...CLOSED_PO_STATUSES] } } : {}),
+    ...search,
   };
   const page = Number(req.query.page);
   if (Number.isInteger(page) && page > 0) {
     const pageSize = Math.min(Math.max(1, Number(req.query.pageSize) || 50), 500);
-    const [rows, total] = await Promise.all([
+    const [rows, total, open, closed] = await Promise.all([
       prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include, skip: (page - 1) * pageSize, take: pageSize }),
       prisma.vendorPurchaseOrder.count({ where }),
+      prisma.vendorPurchaseOrder.count({ where: { ...search, status: { in: [...OPEN_PO_STATUSES] } } }),
+      prisma.vendorPurchaseOrder.count({ where: { ...search, status: { in: [...CLOSED_PO_STATUSES] } } }),
     ]);
-    res.json({ rows: rows.map(mapOut), total, page, pageSize });
+    res.json({ rows: rows.map(mapOut), total, page, pageSize, counts: { open, closed } });
     return;
   }
   const pos = await prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include });
@@ -208,6 +218,13 @@ router.put("/:poNumber", requirePermission("purchase-orders", "edit"), async (re
         const foreign = await tx.vendorPoLine.count({ where: { id: { in: ids }, poNumber: { not: poNumber } } });
         if (foreign > 0) throw new HttpError(400, "Some lines on this PO belong to a different PO - reload and try again.");
       }
+      // A line an inbound shipment carries stays on the PO (the FK restricts
+      // the delete); say which shipment rather than failing the save.
+      const removed = existing.lines.filter((l) => !after.has(l.id)).map((l) => l.id);
+      if (removed.length > 0) {
+        const carried = await tx.inboundShipmentLine.findFirst({ where: { vendorPoLineId: { in: removed } }, select: { vendorPoLine: { select: { itemNumber: true } }, shipment: { select: { reference: true } } } });
+        if (carried) throw new HttpError(409, `${carried.vendorPoLine.itemNumber} on ${poNumber} is on inbound shipment ${carried.shipment.reference} - take it off the shipment before removing the line.`, { conflict: true });
+      }
 
       const merged = data.lines.map((l) => ({ orderedQty: l.orderedQty, receivedQty: (l.id && before.get(l.id)?.receivedQty) || 0 }));
       const derived = derivedStatus(merged);
@@ -310,6 +327,8 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       data: { status: derivedStatus(poLines), version: { increment: 1 } },
     });
     await recomputeQtyOnPurchaseOrder(tx, poLines.map((l) => l.itemId));
+    // An inbound shipment whose every line is now fully received is done.
+    const inboundClosed = await closeReceivedInbound(tx, received.map((r) => r.lineId));
     // Back orders waiting on what just arrived are flagged for an analyst,
     // never filled by the system (decided 1 Oct, G-06).
     const arrivedItems = [...new Set(received.map((r) => byId.get(r.lineId)?.itemId).filter((id): id is string => Boolean(id)))];
@@ -323,6 +342,7 @@ router.post("/:poNumber/receive", requireAnyPermission(PO_RECEIVE_PAGES, "edit")
       units: received.reduce((sum, l) => sum + l.qty, 0),
       lines: received.length,
       backOrdersFlagged: flagged.count,
+      ...(inboundClosed.length > 0 ? { inboundShipmentsReceived: inboundClosed.length } : {}),
     });
   });
   const updated = await prisma.vendorPurchaseOrder.findUnique({ where: { poNumber }, include });

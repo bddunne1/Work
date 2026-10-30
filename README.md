@@ -147,7 +147,24 @@ release, trim at print, ship, undo, cancel), in the same transaction, and
 keeps `Item.qtyReserved` as the sum. Available on every screen is
 `qtyOnHand - qtyReserved`; the allocation screens subtract the order's own
 hold first (`reservedElsewhere` in `src/types.ts`). An allocation that would
-hold more than is free is refused with 409 under a row lock on the item.
+hold more than is free is refused with 409 under a row lock on the item,
+and the refusal lists the per-item `shortages`.
+
+### Allocating beyond on hand
+
+An account with edit on the permission key `allocation-override`
+("Allocate beyond on hand", not a page) sees **Allocate anyway** beside
+those shortages on the Allocation page and the Sales Order View's revise
+panel. It retries the same decision with `allowOverAllocation: true`;
+the `allocate` command honours the flag only for such an account (anyone
+else gets the same 409 as before), reserves the full quantity through the
+reservation table so Available goes negative honestly on every screen,
+and records `overAllocated: true` with the per-item shortages on the
+ORDER_STATUS_CHANGED / ORDER_ALLOCATION_REVISED activity entry. Release and
+Ship are unchanged: an over-allocated order can be released, but shipping
+still refuses to take on hand below zero, so it ships only what is
+physically there. The Director preset carries the key; the Analyst preset
+does not, so it is granted per account.
 
 A partial shipment sends the remainder back to Back Orders with nothing held
 (the allocation is released), so the stock can go to whichever order needs
@@ -210,7 +227,28 @@ access; the returns queue counts as Receiving's work. Warehouse capacity
 groups shipments by local calendar day, and item responses carry the
 preferred vendor's name. The stage between release and shipment reads as
 Released on screen (its stored status name is unchanged); a new order line
-scrolls into view; the Release Orders tile shows "to release · to print".
+scrolls into view; the Release Orders tile shows the "to release" count, and
+the Dashboard's six queues (To Validate, To Allocate, To Release, On the
+Floor, Ready to Ship, Open POs) are the same for every login; printing is
+only on Release Orders (Print Picks).
+
+### Layout and the sprint 4 screens
+
+Lists size to the window rather than to a fixed height: `ListWindow`
+(`src/components/ListWindow.tsx`, on the hook `useViewportHeight`)
+measures the header, page header and toolbar above a list and sets
+`--chrome-height`, and `.scroll-window` is `calc(100dvh -
+var(--chrome-height))`, so a list reaches the bottom of a 16:9 screen and
+still scrolls inside the page on a tall or narrow one. The page shell is
+1040px wide below 1200px, 1280px from 1200px and the full content width
+from 1600px, where pages with a side panel go two-column (Order Entry, the
+Schedule calendar's day panel, the decision pages, Sales Order View, Item
+Profile). Release Orders' second tab is **Print Picks** (`?tab=print`),
+Purchase Orders has Open and Closed tabs (`?tab=closed`; `?closed=1` on
+the list route, with `counts` on the paged response), and the Schedule
+calendar has month and week views with a day panel. Before and after
+screenshots of every page at 1920×1080 and 1366×768 are in
+`docs/review/screens/sprint4/`.
 
 ## A human at every step
 
@@ -266,6 +304,29 @@ packages per handling unit, the unit names, freight class and NMFC). The
 carrier comes from an earlier BOL or shipment, else the customer's routing
 guide, else the order's Ship Via. The shipping label fills itself the same
 way when an S.O. # is typed.
+
+### Inbound shipments
+
+**Inbound Shipments** (`/inbound-shipments`, page key `inbound-shipments`,
+group Purchasing; edit in the Purchasing preset, view in the Analyst
+preset) is one record per container or inbound shipment on its way from a
+vendor: reference (container #, tracking # or BOL), carrier, vendor,
+status (Booked, In Transit, At Port, Arrived, Received, Cancelled), ETD,
+ETA and notes, linked to the vendor PO lines it carries with a quantity
+per line. The list shows what is still expected, soonest ETA first, and
+searches by reference, carrier, vendor or PO #; the form picks a vendor,
+then its open PO lines with the outstanding quantity. The API is
+`/api/inbound-shipments` (list with `?open=1`, `q`, `poNumber` and
+`page`; get; create; version-checked update; `POST /:id/status`; delete),
+every write on the activity log; Purchase Orders, Receiving and the Back
+Order Queue may read it. Lines go with a deleted shipment, and a PO line
+an inbound shipment carries cannot be removed from the PO.
+
+Receiving stays on the PO. The Back Order Queue's projected arrival
+prefers the ETA of an open inbound shipment carrying the PO line over
+the PO's expected date (the row names the shipment), the Purchase Order
+page lists the shipments against the PO, and the receipt that completes
+every PO line a shipment carries marks it Received.
 
 ### Receiving, cost and margin
 

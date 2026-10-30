@@ -1,15 +1,17 @@
 import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { isConflictError } from "../lib/apiClient";
+import { errorShortages, isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { allocateOrder, getOrder } from "../lib/orderStore";
+import { useAuth } from "../lib/authContext";
+import { allocateOrder, getOrder, unallocateOrderCmd } from "../lib/orderStore";
+import { canEdit as canEditPath, hasPageAccess } from "../lib/permissions";
 import { useClaim } from "../lib/useClaim";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
-import { availableQty, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor, statusLabel } from "../types";
+import { availableQty, canUnallocate, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor, statusLabel } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -23,6 +25,7 @@ function AllocationDecisionInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
+  const { account } = useAuth();
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   // Hold the order while it is open here (C-08); the decision ends the claim.
@@ -31,6 +34,10 @@ function AllocationDecisionInner() {
   const [customer, setCustomer] = useState<Customer | undefined>();
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(null);
+  // The server refused the last decision for want of stock: what was short.
+  // "Allocate anyway" retries the same decision with allowOverAllocation.
+  const [shortage, setShortage] = useState<string[] | null>(null);
+  const canOverAllocate = Boolean(account && hasPageAccess(account, "allocation-override", "edit"));
   const [items, setItems] = useState<Item[]>([]);
   const itemsByNumber = itemsIndex(items);
 
@@ -141,10 +148,32 @@ function AllocationDecisionInner() {
   // already allocated/packed/shipped, confirming would drag it backwards.
   const staleStatus = order.status !== "Checked" && order.status !== "Backordered";
   const blocked = staleStatus || Boolean(heldBy);
+  // An Allocated order can be sent back to Checked from here (the server's
+  // UNALLOCATE_PAGES: Allocation or the release step of Release Orders),
+  // after which this page allocates it afresh.
+  const canUnallocateHere =
+    Boolean(account && (canEditPath("/allocation", account) || canEditPath("/pick-pack/review", account))) && canUnallocate(order);
 
-  async function applyDecision() {
+  async function handleUnallocate() {
+    if (!order) return;
+    if (!confirm(`Unallocate S.O. #${order.soNumber}? Its reserved stock is freed and the order goes back to Checked for a fresh allocation decision.`)) return;
+    try {
+      const next = await unallocateOrderCmd(order);
+      setOrder(next);
+      const qtys: Record<string, number> = {};
+      for (const li of next.lineItems) qtys[li.id] = 0;
+      setQtys(qtys);
+      showToast(`S.O. #${order.soNumber} is back to Checked - allocate it again below.`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
+      if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
+    }
+  }
+
+  async function applyDecision(allowOverAllocation = false) {
     if (!order || !outcomeStatus || blocked) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
+    setShortage(null);
     const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
     // Allocating zero units has nothing to pick, so it's really a hold -
     // otherwise the order lands in Release Orders with no allocated lines and
@@ -158,9 +187,16 @@ function AllocationDecisionInner() {
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
     }));
     try {
-      await allocateOrder(order, lines, fullyAllocated ? undefined : shipCompleteOnly);
+      await allocateOrder(order, lines, fullyAllocated ? undefined : shipCompleteOnly, { allowOverAllocation });
     } catch (err) {
       if (isConflictError(err)) {
+        const short = errorShortages(err);
+        if (short) {
+          // Keep the typed quantities on screen with the shortage beside
+          // them; a permitted account may confirm the over-allocation.
+          setShortage(short);
+          return;
+        }
         showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
@@ -213,6 +249,14 @@ function AllocationDecisionInner() {
         <p className="stale-status-notice">
           This order is already {statusLabel(order.status)} - someone else moved it on since this queue was loaded, so it can't be
           re-allocated from here.
+          {canUnallocateHere && (
+            <>
+              {" "}
+              <button type="button" className="secondary-btn danger-btn" onClick={handleUnallocate}>
+                Unallocate order
+              </button>
+            </>
+          )}
         </p>
       )}
       {!staleStatus && heldBy && (
@@ -316,11 +360,35 @@ function AllocationDecisionInner() {
             </div>
           )}
 
+          {shortage && (
+            <div className="decision-shortage" role="alert">
+              <div className="decision-outcome-label">Not enough stock</div>
+              <ul className="decision-shortage-list">
+                {shortage.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              {canOverAllocate ? (
+                <>
+                  <p className="muted decision-hint">
+                    You may allocate beyond what is on hand. Available goes negative for these items until stock arrives; the order can be
+                    released but ships only what is physically there.
+                  </p>
+                  <button type="button" className="secondary-btn danger-btn" onClick={() => applyDecision(true)} disabled={blocked}>
+                    Allocate anyway
+                  </button>
+                </>
+              ) : (
+                <p className="muted decision-hint">Lower the quantities to what is available, or hold the order.</p>
+              )}
+            </div>
+          )}
+
           {outcomeStatus && (
             <div className={`decision-outcome ${outcomeClass}`}>
               <div className="decision-outcome-label">{outcomeLabel}</div>
               <div className="decision-outcome-detail">{outcomeDetail}</div>
-              <button type="button" className="primary-btn" onClick={applyDecision} disabled={blocked}>
+              <button type="button" className="primary-btn" onClick={() => applyDecision()} disabled={blocked}>
                 Confirm &amp; Apply
               </button>
             </div>

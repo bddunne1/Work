@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { useNavigate } from "react-router-dom";
 import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { VendorPurchaseOrder } from "../types";
@@ -38,7 +39,8 @@ export default function Receiving() {
       {filtered.length === 0 ? (
         <p className="muted">Nothing waiting to be received right now.</p>
       ) : (
-        <table className="data-table">
+        <ListWindow>
+<table className="data-table">
           <thead>
             <tr>
               <th>PO #</th>
@@ -66,6 +68,7 @@ export default function Receiving() {
             ))}
           </tbody>
         </table>
+</ListWindow>
       )}
     </div>
   );

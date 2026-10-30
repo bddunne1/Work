@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import ListWindow from "../components/ListWindow";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
@@ -81,14 +82,13 @@ export default function ShipmentHistory() {
   }
 
   function exportCsv() {
-    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Lines", "Units", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
+    const headers = ["Shipped", "S.O. #", "P.O. #", "Customer", "Ship To", "Units", "Carrier", "SCAC", "PRO #", "Pickup Date", "Invoice", "Invoice Total"];
     const body = rows.map((r) => [
       new Date(r.shippedAt).toLocaleString(),
       String(r.soNumber),
       r.poNumber,
       r.customer,
       `${r.shipTo.city}, ${r.shipTo.state}`,
-      r.lines.map((l) => `${l.item} x ${l.qty}`).join("; "),
       String(r.units),
       r.carrier ?? "",
       r.scac ?? "",
@@ -162,7 +162,8 @@ export default function ShipmentHistory() {
       ) : rows.length === 0 ? (
         <p className="muted">{loading ? "Loading..." : debouncedQuery ? "No shipments match your search." : "Nothing shipped in this range."}</p>
       ) : (
-        <table className="data-table">
+        <ListWindow reserve={76}>
+<table className="data-table">
           <thead>
             <tr>
               <th>Shipped</th>
@@ -170,7 +171,6 @@ export default function ShipmentHistory() {
               <th>P.O. #</th>
               <th>Customer</th>
               <th>Ship To</th>
-              <th>Lines</th>
               <th className="amount-cell">Units</th>
               <th>Carrier</th>
               <th>PRO #</th>
@@ -194,7 +194,6 @@ export default function ShipmentHistory() {
                 <td>
                   {r.shipTo.city}, {r.shipTo.state}
                 </td>
-                <td>{r.lines.map((l) => `${l.item} × ${l.qty}`).join(", ")}</td>
                 <td className="amount-cell">{r.units.toLocaleString()}</td>
                 <td>{[r.carrier, r.scac].filter(Boolean).join(" · ") || "—"}</td>
                 <td>{r.proNumber || "—"}</td>
@@ -229,6 +228,7 @@ export default function ShipmentHistory() {
             </tr>
           </tfoot>
         </table>
+</ListWindow>
       )}
 
       <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />
