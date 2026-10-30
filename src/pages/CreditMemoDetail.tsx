@@ -7,7 +7,7 @@ import { ApiError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { creditMemoPath, getCreditMemo, issueCreditMemo, money, saveCreditMemoDraft, voidCreditMemo, type DraftLineInput } from "../lib/invoiceStore";
-import { fromCents, lineAmountCents, taxCents, toCents } from "../lib/money";
+import { fromCents, lineAmountCents, taxCents } from "../lib/money";
 import type { CreditMemo } from "../types";
 
 // The credit memo document. A draft (the return has been received,
@@ -60,7 +60,7 @@ function CreditMemoDetailInner() {
   const editing = Boolean(memo && memo.status === "DRAFT" && canEdit);
 
   const preview = useMemo(() => {
-    const rows = lines.map((l) => ({ cents: l.kind === "CHARGE" ? Math.round(toCents(l.rate) * l.qty) : lineAmountCents(l.qty, l.rate), taxable: l.taxable }));
+    const rows = lines.map((l) => ({ cents: lineAmountCents(l.qty, l.rate), taxable: l.taxable }));
     const subtotal = rows.reduce((s, r) => s + r.cents, 0);
     const taxable = rows.reduce((s, r) => s + (r.taxable ? r.cents : 0), 0);
     const tax = taxCents(taxable, memo?.taxRate ?? 0);

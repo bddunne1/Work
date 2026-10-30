@@ -235,6 +235,20 @@ export interface SyncRunSummary {
 
 let running = false;
 
+// A row is marked PROCESSING while its call is in flight. If the process dies
+// there, the row keeps that status for good and no later run selects it
+// (October review, item 3). A PROCESSING row that has not been touched for
+// this long is taken to be abandoned and picked up again.
+const STALE_PROCESSING_MS = 5 * 60_000;
+
+// Once at start-up: nothing can be mid-flight in a process that has just
+// begun, so every PROCESSING row left by the previous one goes back to
+// PENDING and is retried on the first run.
+export async function recoverProcessingRows(): Promise<number> {
+  const result = await prisma.syncOutbox.updateMany({ where: { system: SYSTEM, status: "PROCESSING" }, data: { status: "PENDING" } });
+  return result.count;
+}
+
 export async function processOutbox(opts: { limit?: number; now?: Date; ids?: string[] } = {}): Promise<SyncRunSummary> {
   const now = opts.now ?? new Date();
   const summary: SyncRunSummary = { attempted: 0, done: 0, failed: 0, dead: 0, skipped: 0 };
@@ -246,7 +260,13 @@ export async function processOutbox(opts: { limit?: number; now?: Date; ids?: st
   try {
     const where: Prisma.SyncOutboxWhereInput = opts.ids
       ? { id: { in: opts.ids }, system: SYSTEM }
-      : { system: SYSTEM, status: { in: ["PENDING", "FAILED"] }, nextAttemptAt: { lte: now } };
+      : {
+          system: SYSTEM,
+          OR: [
+            { status: { in: ["PENDING", "FAILED"] }, nextAttemptAt: { lte: now } },
+            { status: "PROCESSING", updatedAt: { lte: new Date(now.getTime() - STALE_PROCESSING_MS) } },
+          ],
+        };
     const rows = await prisma.syncOutbox.findMany({ where, orderBy: { createdAt: "asc" }, take: opts.limit ?? 100 });
     if (rows.length === 0) return summary;
     if (!(await isConnected())) {
@@ -352,6 +372,11 @@ export async function reconcileInvoices(from: string, to: string): Promise<Recon
 export function startSyncScheduler(): (() => void) | null {
   const interval = Number(process.env.QBO_SYNC_INTERVAL_MS ?? 60_000);
   if (!Number.isFinite(interval) || interval <= 0) return null;
+  recoverProcessingRows()
+    .then((n) => {
+      if (n > 0) console.log(`QuickBooks sync: ${n} row(s) left in PROCESSING by the previous run will be retried`);
+    })
+    .catch((err) => console.error("QuickBooks sync recovery failed:", err));
   const timer = setInterval(() => {
     processOutbox().then((s) => {
       if (s.attempted > 0) console.log(`QuickBooks sync: ${s.done} done, ${s.failed} to retry, ${s.dead} dead`);

@@ -22,6 +22,18 @@ export const CREDIT_MEMO_START = 30001;
 export const CHARGE_CODES = ["FREIGHT", "HANDLING", "OTHER", "DEDUCTION"] as const;
 export type ChargeCode = (typeof CHARGE_CODES)[number];
 
+// Takes the row lock on a document for the rest of the transaction. Issue,
+// void and draft edits all read the row, compare its version and status in
+// JS, then write it; without the lock two requests that both read the same
+// version both pass the checks and both write (October review, item 1).
+// With it the second waits here until the first commits, then reads the
+// state the first left and fails its own check with the usual 409.
+async function lockDocument(tx: Tx, table: "Invoice" | "CreditMemo", id: string): Promise<void> {
+  await tx.$queryRaw(Prisma.sql`SELECT 1 FROM ${Prisma.raw(`"${table}"`)} WHERE "id" = ${id} FOR UPDATE`);
+}
+export const lockInvoice = (tx: Tx, id: string) => lockDocument(tx, "Invoice", id);
+export const lockCreditMemo = (tx: Tx, id: string) => lockDocument(tx, "CreditMemo", id);
+
 async function nextNumber(tx: Tx, key: string, start: number, prefix: string): Promise<string> {
   const counter = await tx.counter.upsert({
     where: { key },
@@ -56,7 +68,18 @@ interface OrderForInvoice {
 interface ShipmentForInvoice {
   id: string;
   shippedAt: Date;
+  // The calendar day at the dock ("YYYY-MM-DD", from the browser's clock);
+  // the UTC day of shippedAt when the client did not send one.
+  localDate?: string;
   lines: { lineItemId: string; qty: number }[];
+}
+
+// A calendar day as a date-only value, the way the date columns hold it.
+// Documents are dated by the day where the work was done: in the evening in
+// Illinois it is already tomorrow in UTC, so the UTC day of the timestamp
+// is only the fallback (October review, item 5).
+export function calendarDay(localDate: string | undefined, at: Date): Date {
+  return new Date(`${localDate ?? at.toISOString().slice(0, 10)}T00:00:00.000Z`);
 }
 
 // Raises the draft invoice for one shipment from the order's lines and
@@ -89,7 +112,7 @@ export async function createInvoiceForShipment(tx: Tx, order: OrderForInvoice, s
     });
   const taxRate = customer?.taxExempt ? 0 : order.taxRate;
   const totals = documentTotals(lines, taxRate);
-  const invoiceDate = new Date(shipment.shippedAt.toISOString().slice(0, 10));
+  const invoiceDate = calendarDay(shipment.localDate, shipment.shippedAt);
   const billToName = (order.billTo as { name?: string } | null)?.name;
   return tx.invoice.create({
     data: {
@@ -231,7 +254,7 @@ export function reviewedLines(current: DraftLineRow[], input: DraftLineInput[], 
       um: "EA",
       qty,
       rate,
-      amountCents: Math.round(toCents(Number(rate)) * qty),
+      amountCents: lineAmountCents(qty, rate),
       taxable: l.taxable,
     };
   });
@@ -243,6 +266,7 @@ export function reviewedLines(current: DraftLineRow[], input: DraftLineInput[], 
 // Issues a reviewed draft: assigns the number, stamps who approved it,
 // recomputes the totals from the lines as stored, and queues it.
 export async function issueInvoice(tx: Tx, id: string, version: number, actor: Actor) {
+  await lockInvoice(tx, id);
   const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true } });
   if (!invoice) throw new HttpError(404, "Invoice not found");
   if (invoice.status !== "DRAFT") throw new HttpError(409, `${invoice.invoiceNumber ?? "This invoice"} has already been issued.`, { conflict: true });
@@ -273,6 +297,8 @@ interface ReturnForCredit {
   billTo: unknown;
   reason: string;
   receivedAt: Date | null;
+  // See ShipmentForInvoice.localDate.
+  localDate?: string;
   lines: { id: string; itemId: string | null; itemNumber: string; description: string; um: string; qty: number; rate: Prisma.Decimal }[];
 }
 
@@ -315,7 +341,7 @@ export async function createCreditMemoForReturn(tx: Tx, ra: ReturnForCredit, _ac
   });
   const taxRate = ra.lines.map((l) => priceFor(l.itemNumber)?.taxRate).find((t) => t !== undefined) ?? 0;
   const totals = documentTotals(lines, taxRate);
-  const memoDate = new Date((ra.receivedAt ?? new Date()).toISOString().slice(0, 10));
+  const memoDate = calendarDay(ra.localDate, ra.receivedAt ?? new Date());
   return tx.creditMemo.create({
     data: {
       status: "DRAFT",
@@ -352,6 +378,7 @@ export async function createCreditMemoForReturn(tx: Tx, ra: ReturnForCredit, _ac
 }
 
 export async function issueCreditMemo(tx: Tx, id: string, version: number, actor: Actor) {
+  await lockCreditMemo(tx, id);
   const memo = await tx.creditMemo.findUnique({ where: { id }, include: { lines: true } });
   if (!memo) throw new HttpError(404, "Credit memo not found");
   if (memo.status !== "DRAFT") throw new HttpError(409, `${memo.creditMemoNumber ?? "This credit memo"} has already been issued.`, { conflict: true });

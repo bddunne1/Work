@@ -7,6 +7,7 @@ import { auditIn, diffFields, logAudit } from "../lib/audit.js";
 import { canSeeCost, canSeePrices } from "../lib/orderView.js";
 import { ConflictError } from "../lib/conflictError.js";
 import { syncChildren } from "../lib/syncChildren.js";
+import { hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE } from "../lib/money.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -31,7 +32,7 @@ const itemSchema = z.object({
   itemNumber: z.string().min(1),
   description: z.string().min(1),
   um: z.string().max(20).default("EA"),
-  rate: z.number().finite().nonnegative().default(0),
+  rate: z.number().finite().nonnegative().refine(hasAtMostFourDecimals, RATE_DECIMALS_MESSAGE).default(0),
   // Last purchase cost (E-05); null while unknown. Catalog edit sets it,
   // every PO receipt overwrites it with the line's cost.
   cost: z.number().finite().nonnegative().nullish(),
@@ -294,6 +295,11 @@ router.patch("/by-number/:itemNumber/qty", requireAnyPermission(["catalog", "inv
       }
       changedBy = setQtyOnHand - (expectedQtyOnHand as number);
     } else if (qtyOnHandDelta) {
+      // A negative delta may not take on-hand below zero: the row is locked
+      // and read inside the transaction so a shipment that posted a moment
+      // ago counts (October review, item 4).
+      const [locked] = await tx.$queryRaw<{ qtyOnHand: number }[]>`SELECT "qtyOnHand" FROM "Item" WHERE "id" = ${current.id} FOR UPDATE`;
+      if (locked.qtyOnHand + qtyOnHandDelta < 0) return locked.qtyOnHand;
       await tx.item.update({ where: { id: current.id }, data: { qtyOnHand: { increment: qtyOnHandDelta }, version: { increment: 1 } } });
       changedBy = qtyOnHandDelta;
     }
@@ -320,7 +326,10 @@ router.patch("/by-number/:itemNumber/qty", requireAnyPermission(["catalog", "inv
   });
   if (conflictAt !== undefined) {
     res.status(409).json({
-      error: `On-hand for ${current.itemNumber} changed to ${conflictAt} since you loaded it (a shipment or receipt just posted). Recount against the new figure and save again.`,
+      error:
+        qtyOnHandDelta && setQtyOnHand === undefined
+          ? `On-hand for ${current.itemNumber} is ${conflictAt}; an adjustment of ${qtyOnHandDelta} would take it below zero. Recount and enter the figure on hand instead.`
+          : `On-hand for ${current.itemNumber} changed to ${conflictAt} since you loaded it (a shipment or receipt just posted). Recount against the new figure and save again.`,
       conflict: true,
       qtyOnHand: conflictAt,
     });
