@@ -148,7 +148,6 @@ const QUEUES: QueueDef[] = [
   { key: "backorder", label: "Back ordered", to: "/back-orders", tile: "/back-orders", workPath: "/back-orders", viewPath: "/back-orders", color: "#12b886", lateLabel: "past ship date", note: "waiting on stock" },
   { key: "arrived", label: "Stock arrived, to review", to: "/back-orders", tile: "/back-orders", workPath: "/back-orders", viewPath: "/back-orders", color: "#12b886", lateLabel: "past ship date" },
   { key: "release", label: "To release", to: "/pick-pack?tab=ready", tile: "/pick-pack", workPath: "/pick-pack/review", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
-  { key: "print", label: "To print", to: "/pick-pack?tab=print", tile: "/pick-pack", workPath: "/pick-pack", viewPath: "/pick-pack", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "pack", label: "On the floor, being picked", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "ship", label: "Ready to ship, awaiting pickup", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#7c6ff2", lateLabel: "past ship date" },
   { key: "pull", label: "To pull from floor", to: "/open-picks", tile: "/open-picks", workPath: "/open-picks", viewPath: "/open-picks", color: "#f06595", lateLabel: "", note: "cancelled after printing" },
@@ -156,8 +155,18 @@ const QUEUES: QueueDef[] = [
   { key: "returns", label: "Returns to receive", to: "/returns", tile: "/returns", workPath: "/receiving", viewPath: "/returns", color: "#1c7ed6", lateLabel: "" },
 ];
 
-// The queues an order passes through (the rest are stock coming in).
-const ORDER_QUEUE_KEYS = ["validate", "allocate", "backorder", "arrived", "release", "print", "pack", "ship"];
+// "Your queues": the six stops every signed-in person sees at the top of the
+// Dashboard, in the order work moves through the building. Printing is not a
+// queue here; it lives on the Release Orders page (Print Picks tab). The
+// other QUEUES entries still count towards the tile badges below.
+const YOUR_QUEUES: { key: string; label: string }[] = [
+  { key: "validate", label: "To Validate" },
+  { key: "allocate", label: "To Allocate" },
+  { key: "release", label: "To Release" },
+  { key: "pack", label: "On the Floor" },
+  { key: "ship", label: "Ready to Ship" },
+  { key: "receive", label: "Open POs" },
+];
 
 function isoDay(d: Date): string {
   return d.toLocaleDateString("en-CA");
@@ -333,26 +342,27 @@ export default function Dashboard() {
   const queueData = useMemo(() => buildQueues(summary, pos, ras, today), [summary, pos, ras, today]);
 
   const visibleQueues = QUEUES.filter((qd) => access(qd.viewPath) !== "none" && queueData[qd.key] !== null);
-  const workQueues = visibleQueues.filter((qd) => access(qd.workPath) === "edit");
-  // Anyone who doesn't work an order queue themselves (customer service,
-  // sales) still gets the whole order pipeline, read-only - "where's my
-  // order?" is most of their day. Order counts are readable by every
-  // signed-in account; a card only links if they can open that page.
-  const pipelineQueues = QUEUES.filter((qd) => ORDER_QUEUE_KEYS.includes(qd.key));
-  const showPipeline = !workQueues.some((qd) => ORDER_QUEUE_KEYS.includes(qd.key));
+  // The six fixed queues. Order counts come from the server for every
+  // signed-in account; the PO count needs a purchasing page. A card links
+  // only where the account can open that page, and shows a dash where it
+  // cannot read the count at all.
+  const yourQueues = YOUR_QUEUES.map(({ key, label }) => ({ ...QUEUES.find((qd) => qd.key === key)!, label }));
 
   function renderQueue(qd: QueueDef, linkable: boolean) {
     const q = queueData[qd.key];
+    const unreadable = qd.key === "receive" && !canSeePos;
     const count = q?.count ?? 0;
     const lateCount = q?.late ?? 0;
     const oldest = q?.oldest ? new Date(q.oldest).getTime() : undefined;
     const body = (
       <>
         <span className="dash-queue-label">{qd.label}</span>
-        <span className="dash-queue-count">{loading ? "…" : count}</span>
+        <span className="dash-queue-count">{unreadable ? "—" : loading || q === null ? "…" : count}</span>
         <span className="dash-queue-meta">
-          {loading || count === 0 ? (
-            count === 0 && !loading ? "All clear" : " "
+          {unreadable ? (
+            "needs a purchasing page"
+          ) : loading || q === null || count === 0 ? (
+            count === 0 && !loading && q !== null ? "All clear" : " "
           ) : (
             <>
               {oldest !== undefined && <span>oldest {ageLabel(loadedAt - oldest)}</span>}
@@ -381,8 +391,9 @@ export default function Dashboard() {
   }
 
   // Tile badges: how many are waiting in the queue(s) behind each tile.
-  // A tile behind two queues (Release Orders: to release and to print)
-  // shows both figures rather than one sum (C-17).
+  // A tile behind two queues (Open Picks: on the floor and ready to ship;
+  // Back Order Queue: back ordered and stock arrived) shows both figures
+  // rather than one sum (C-17). Release Orders shows the "to release" count only.
   const tileCounts = new Map<string, { count: number; late: number; parts: string[] }>();
   for (const qd of visibleQueues) {
     const q = queueData[qd.key];
@@ -469,21 +480,10 @@ export default function Dashboard() {
         )}
       </section>
 
-      {workQueues.length > 0 && (
-        <section className="dash-section">
-          <h2 className="dash-section-title">Your queues</h2>
-          <div className="dash-queues">{workQueues.map((qd) => renderQueue(qd, true))}</div>
-        </section>
-      )}
-
-      {showPipeline && (
-        <section className="dash-section">
-          <h2 className="dash-section-title">Order pipeline · where open orders are right now</h2>
-          <div className="dash-queues">
-            {pipelineQueues.map((qd) => renderQueue(qd, access(qd.viewPath) !== "none"))}
-          </div>
-        </section>
-      )}
+      <section className="dash-section">
+        <h2 className="dash-section-title">Your queues</h2>
+        <div className="dash-queues">{yourQueues.map((qd) => renderQueue(qd, access(qd.viewPath) !== "none"))}</div>
+      </section>
 
       <section className="dash-section">
         <h2 className="dash-section-title">Go to</h2>

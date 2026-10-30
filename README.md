@@ -210,7 +210,10 @@ access; the returns queue counts as Receiving's work. Warehouse capacity
 groups shipments by local calendar day, and item responses carry the
 preferred vendor's name. The stage between release and shipment reads as
 Released on screen (its stored status name is unchanged); a new order line
-scrolls into view; the Release Orders tile shows "to release · to print".
+scrolls into view; the Release Orders tile shows the "to release" count, and
+the Dashboard's six queues (To Validate, To Allocate, To Release, On the
+Floor, Ready to Ship, Open POs) are the same for every login; printing is
+only on Release Orders (Print Picks).
 
 ## A human at every step
 
