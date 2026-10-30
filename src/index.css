@@ -4479,3 +4479,22 @@ a.dash-lookup-row:focus-visible {
 .doc-initials {
   margin-bottom: 8px;
 }
+
+/* A page body being rebuilt (sprint 5). */
+.under-construction {
+  max-width: 560px;
+  padding: 24px 28px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--panel-bg);
+}
+.under-construction-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-h);
+  margin-bottom: 6px;
+}
+.under-construction p {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
