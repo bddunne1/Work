@@ -232,6 +232,24 @@ the Dashboard's six queues (To Validate, To Allocate, To Release, On the
 Floor, Ready to Ship, Open POs) are the same for every login; printing is
 only on Release Orders (Print Picks).
 
+### Layout and the sprint 4 screens
+
+Lists size to the window rather than to a fixed height: `ListWindow`
+(`src/components/ListWindow.tsx`, on the hook `useViewportHeight`)
+measures the header, page header and toolbar above a list and sets
+`--chrome-height`, and `.scroll-window` is `calc(100dvh -
+var(--chrome-height))`, so a list reaches the bottom of a 16:9 screen and
+still scrolls inside the page on a tall or narrow one. The page shell is
+1040px wide below 1200px, 1280px from 1200px and the full content width
+from 1600px, where pages with a side panel go two-column (Order Entry, the
+Schedule calendar's day panel, the decision pages, Sales Order View, Item
+Profile). Release Orders' second tab is **Print Picks** (`?tab=print`),
+Purchase Orders has Open and Closed tabs (`?tab=closed`; `?closed=1` on
+the list route, with `counts` on the paged response), and the Schedule
+calendar has month and week views with a day panel. Before and after
+screenshots of every page at 1920×1080 and 1366×768 are in
+`docs/review/screens/sprint4/`.
+
 ## A human at every step
 
 An order is never checked or allocated by the system. The person who
