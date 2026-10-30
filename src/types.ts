@@ -591,6 +591,27 @@ export interface Vendor {
   version?: number;
 }
 
+export interface VendorNote {
+  id: string;
+  vendorId: string;
+  text: string;
+  author?: string | null;
+  createdAt: string;
+}
+
+// GET /api/vendors/:id/profile (sprint 5). Cost figures are null/undefined
+// for an account that may not see cost.
+export interface VendorProfile {
+  vendor: Vendor;
+  openPos: { poNumber: string; orderDate: string | null; expectedDate: string | null; status: string; lines: number; outstandingQty: number; outstandingValue: number | null }[];
+  closedPoCount: number;
+  lastPoDate: string | null;
+  lastPoNumber: string | null;
+  openBalance: number | null;
+  items: { id: string; itemNumber: string; description: string; qtyOnHand: number; qtyOnPurchaseOrder: number; qtyReserved: number; cost?: number | null }[];
+  notes: VendorNote[];
+}
+
 export function emptyVendor(): Vendor {
   return {
     id: crypto.randomUUID(),

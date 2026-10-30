@@ -4516,3 +4516,17 @@ a.dash-lookup-row:focus-visible {
 .customer-pays-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 480px; }
 .customer-pays-row .decision-buttons { margin: 0; }
 .customer-pays-block { margin: 12px 0 16px; }
+
+/* Vendor profile (sprint 5). */
+.vendor-inactive-pill { margin-left: 10px; vertical-align: middle; font-size: 12px; }
+.vendor-stats { margin-bottom: 16px; }
+.vendor-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.vendor-cards { display: flex; flex-direction: column; gap: 16px; }
+.vendor-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13.5px; }
+.vendor-dl dt { color: var(--muted); }
+.vendor-dl dd { margin: 0; }
+.vendor-notes-text { white-space: pre-line; }
+.vendor-details h3, .vendor-cards h3 { margin: 0 0 10px; }
+@media (max-width: 1199px) {
+  .vendor-layout { grid-template-columns: 1fr; }
+}

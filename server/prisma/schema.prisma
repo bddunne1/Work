@@ -210,6 +210,14 @@ model Vendor {
   phone       String?
   email       String?
   address     Json?
+  // Vendor profile (sprint 5).
+  accountNumber String?
+  terms         String?
+  leadTimeDays  Int?
+  website       String?
+  notes         String   @default("")
+  // Inactive vendors stay on their POs and items but leave the PO form's picker.
+  active        Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
   // Optimistic concurrency - see Item.version.
@@ -218,8 +226,21 @@ model Vendor {
   itemsPreferring      Item[]
   vendorPurchaseOrders VendorPurchaseOrder[]
   inboundShipments     InboundShipment[]
+  vendorNotes          VendorNote[]
 
   @@index([name])
+}
+
+// Dated notes on a vendor (sprint 5), like CustomerNote, with who wrote each.
+model VendorNote {
+  id        String   @id @default(uuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  text      String
+  author    String?
+  createdAt DateTime @default(now())
+
+  @@index([vendorId])
 }
 
 model Item {

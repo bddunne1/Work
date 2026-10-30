@@ -57,6 +57,7 @@ import Settings from "./pages/Settings";
 import ShipmentHistory from "./pages/ShipmentHistory";
 import Validation from "./pages/Validation";
 import ValidationDecision from "./pages/ValidationDecision";
+import VendorProfile from "./pages/VendorProfile";
 import Vendors from "./pages/Vendors";
 import WarehouseCapacity from "./pages/WarehouseCapacity";
 
@@ -130,6 +131,7 @@ function App() {
             <Route path="analytics" element={<Analytics />} />
             <Route path="bol" element={<GenerateBOL />} />
             <Route path="vendors" element={<Vendors />} />
+            <Route path="vendors/:id" element={<VendorProfile />} />
             <Route path="purchase-orders" element={<PurchaseOrders />} />
             <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
             <Route path="purchase-orders/:poNumber" element={<PurchaseOrderDetail />} />

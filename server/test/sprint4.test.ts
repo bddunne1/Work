@@ -276,3 +276,53 @@ describe("return customer-pays flags (sprint 5)", () => {
     expect(memo?.returnAuth).toEqual({ customerPaysReturnFreight: true, customerPaysRestockingFee: false, customerPaysOriginalFreight: true });
   });
 });
+
+describe("vendor profiles (sprint 5)", () => {
+  it("totals the open balance from open POs (one part received), counts closed POs, lists preferred items and notes; gated on vendors", async () => {
+    const root = await admin();
+    const vendor = await makeVendor(root, "Profile Supply");
+    const other = await makeVendor(root, "Other Supply");
+    await makeItem(root, "BR-1001", 10);
+    await makeItem(root, "BR-2002", 3);
+    // BR-1001 prefers this vendor.
+    const item = ok(await root.get("/api/items")).find((i: any) => i.itemNumber === "BR-1001");
+    ok(await root.put(`/api/items/${item.id}`, { ...item, rate: Number(item.rate), weight: Number(item.weight), cost: item.cost === null ? null : Number(item.cost), preferredVendorId: vendor.id }));
+    // PO A: 10 @ 2.00, 4 received -> 6 x 2 = 12 outstanding. PO B: 5 @ 3.00 -> 15. PO C fully received -> closed.
+    const a = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 10, cost: 2 }]);
+    ok(await receive(root, a, [4]));
+    await makePo(root, vendor, [{ itemNumber: "BR-2002", orderedQty: 5, cost: 3 }]);
+    const c = await makePo(root, vendor, [{ itemNumber: "BR-2002", orderedQty: 2, cost: 1 }]);
+    ok(await receive(root, c, [2]));
+    await makePo(root, other, [{ itemNumber: "BR-1001", orderedQty: 99, cost: 9 }]);
+    const profile = ok(await root.get(`/api/vendors/${vendor.id}/profile`));
+    expect(profile.vendor).toMatchObject({ id: vendor.id, name: "Profile Supply", active: true });
+    expect(profile.openPos.map((p: any) => [p.poNumber, p.outstandingQty, p.outstandingValue])).toEqual(expect.arrayContaining([[a.poNumber, 6, 12], [expect.any(String), 5, 15]]));
+    expect(profile.openPos).toHaveLength(2);
+    expect(profile.openBalance).toBe(27);
+    expect(profile.closedPoCount).toBe(1);
+    expect(profile.lastPoDate).toBe("2026-09-28");
+    expect(profile.items.map((i: any) => i.itemNumber)).toEqual(["BR-1001"]);
+    expect(profile.items[0]).toMatchObject({ qtyOnHand: 14, qtyOnPurchaseOrder: 6 + 99, cost: 2 });
+    // Notes go to the VendorNote table with the author.
+    const note = ok(await root.post(`/api/vendors/${vendor.id}/notes`, { text: "Ships Fridays" }), 201);
+    expect(note).toMatchObject({ vendorId: vendor.id, text: "Ships Fridays", author: "admin" });
+    expect(ok(await root.get(`/api/vendors/${vendor.id}/profile`)).notes.map((n: any) => n.text)).toEqual(["Ships Fridays"]);
+    expect(ok(await root.get(`/api/vendors/${vendor.id}/profile`)).vendor.notes).toBe("");
+    // The profile fields round-trip through the vendor PUT; inactive is a flag, not a delete.
+    const fresh = ok(await root.get("/api/vendors")).find((v: any) => v.id === vendor.id);
+    const edited = ok(await root.put(`/api/vendors/${vendor.id}`, { ...fresh, accountNumber: "ACME-77", terms: "Net 45", leadTimeDays: 21, website: "acme.example", notes: "Call before 3pm", active: false }));
+    expect(edited).toMatchObject({ accountNumber: "ACME-77", terms: "Net 45", leadTimeDays: 21, website: "acme.example", notes: "Call before 3pm", active: false });
+    // Gate: vendors view reads the profile (costs only where cost is visible); no vendors page is refused; view cannot add a note.
+    const viewer = await as("vview", { permissions: { vendors: "view" } });
+    const seen = ok(await viewer.get(`/api/vendors/${vendor.id}/profile`));
+    expect(seen.openBalance).toBeNull();
+    expect(seen.openPos[0].outstandingValue).toBeNull();
+    expect(seen.items[0].cost).toBeUndefined();
+    const buyer = await as("vbuyer", { permissions: { vendors: "view", "purchase-orders": "view" } });
+    expect(ok(await buyer.get(`/api/vendors/${vendor.id}/profile`)).openBalance).toBe(27);
+    expect((await viewer.post(`/api/vendors/${vendor.id}/notes`, { text: "nope" })).status).toBe(403);
+    const nobody = await as("vnone", { permissions: { "order-entry": "edit" } });
+    expect((await nobody.get(`/api/vendors/${vendor.id}/profile`)).status).toBe(403);
+    expect((await root.get(`/api/vendors/does-not-exist/profile`)).status).toBe(404);
+  });
+});

@@ -303,7 +303,7 @@ function ItemProfileInner() {
           </div>
         ) : (
           <p>
-            <strong>Preferred Vendor:</strong> {preferredVendor?.name ?? "—"}
+            <strong>Preferred Vendor:</strong> {preferredVendor ? <Link to={`/vendors/${preferredVendor.id}`}>{preferredVendor.name}</Link> : "—"}
           </p>
         )}
 
