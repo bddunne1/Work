@@ -97,7 +97,6 @@ export default function PickPack() {
   const [orders, setOrders] = useState<PurchaseOrder[] | null>(null);
   const [weights, setWeights] = useState<Map<string, number>>(new Map());
   const [shipFilter, setShipFilter] = useState<ShipFilter>("all");
-  const [carrier, setCarrier] = useState("");
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string; details?: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -144,11 +143,6 @@ export default function PickPack() {
     () => ({ ready: readyToRelease(all), print: releasedToPrint(all), floor: onTheFloor(all) }),
     [all]
   );
-  const carriers = useMemo(
-    () =>
-      [...new Set([...lists.ready, ...lists.print, ...lists.floor].map((o) => o.shipVia).filter(Boolean))].sort(),
-    [lists]
-  );
 
   const q = search.trim().toLowerCase();
   function matches(o: PurchaseOrder): boolean {
@@ -156,7 +150,6 @@ export default function PickPack() {
     if (shipFilter === "due" && d > today) return false;
     if (shipFilter === "tomorrow" && d !== tomorrow) return false;
     if (shipFilter === "later" && d <= tomorrow) return false;
-    if (carrier && o.shipVia !== carrier) return false;
     if (q && ![o.soNumber, o.poNumber, o.billTo.name].some((v) => (v ?? "").toLowerCase().includes(q))) return false;
     return true;
   }
@@ -321,7 +314,7 @@ export default function PickPack() {
     navigate(`/pick-pack/${reviewQueue[0]}`, { state: { queue: reviewQueue, pos: 0 } });
   }
 
-  // ---- Released: print documents --------------------------------------------
+  // ---- Print Picks: released orders whose documents print here -------------
 
   const selectedPrint = lists.print.filter((o) => printSel[o.soNumber]);
   // Printing marks orders printed (a save), so it needs edit on this page.
@@ -383,7 +376,7 @@ export default function PickPack() {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "ready", label: "Ready to release" },
-    { key: "print", label: "Released · print documents" },
+    { key: "print", label: "Print Picks" },
     { key: "floor", label: "On the floor" },
   ];
 
@@ -400,7 +393,7 @@ export default function PickPack() {
         <h1>Release Orders</h1>
         <p className="muted">
           Turn allocated orders into physical pick lists and packing slips for the warehouse. Release orders
-          from the first tab, print their documents from the second, and follow them on the floor in the third.
+          from the first tab, print the picks from Print Picks, and follow them on the floor in the third.
         </p>
       </div>
 
@@ -435,20 +428,6 @@ export default function PickPack() {
               {f.label}
             </button>
           ))}
-          <select
-            id="release-carrier"
-            className="release-select"
-            value={carrier}
-            onChange={(e) => setCarrier(e.target.value)}
-            aria-label="Carrier"
-          >
-            <option value="">All carriers</option>
-            {carriers.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
           <input
             id="release-search"
             className="release-search"
