@@ -220,3 +220,24 @@ describe("item 3: outbox rows stuck in PROCESSING are retried", () => {
     }
   });
 });
+
+describe("item 4: a quantity delta can't take stock negative", () => {
+  it("refuses a delta below zero with a 409 that names the current figure", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 10);
+    const res = await root.patch("/api/items/by-number/BR-1001/qty", { qtyOnHandDelta: -12 });
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ conflict: true, qtyOnHand: 10 });
+    expect(res.body.error).toMatch(/10/);
+    expect((await prisma.item.findUniqueOrThrow({ where: { itemNumber: "BR-1001" } })).qtyOnHand).toBe(10);
+    expect(await prisma.stockMovement.count({ where: { reason: "ADJUST" } })).toBe(0);
+  });
+
+  it("applies a delta that leaves stock at or above zero", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 10);
+    expect(ok(await root.patch("/api/items/by-number/BR-1001/qty", { qtyOnHandDelta: -10 })).qtyOnHand).toBe(0);
+    expect(ok(await root.patch("/api/items/by-number/BR-1001/qty", { qtyOnHandDelta: 3 })).qtyOnHand).toBe(3);
+    expect(await prisma.stockMovement.count({ where: { reason: "ADJUST" } })).toBe(2);
+  });
+});
