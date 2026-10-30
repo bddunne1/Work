@@ -2,6 +2,7 @@
 // (docs/review/open-bugs.md). One describe per item.
 import { beforeEach, describe, expect, it } from "vitest";
 import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
+import { processOutbox, recoverProcessingRows, startSyncScheduler } from "../src/integrations/sync.js";
 import { lineAmountCents } from "../src/lib/money.js";
 import { prisma } from "../src/prisma.js";
 import { admin, issueInvoiceFor, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship } from "./helpers.js";
@@ -170,5 +171,52 @@ describe("item 2: one line-amount rule - multiply, then round half up to the cen
     expect(res.body.error).toMatch(/four decimals/);
     const order = await makeOrder(root, [{ item: "BR-1001", ordered: 1, rate: 0.33333 }]).catch((e: Error) => e);
     expect(order).toBeInstanceOf(Error);
+  });
+});
+
+describe("item 3: outbox rows stuck in PROCESSING are retried", () => {
+  // A row the processor marked PROCESSING and never finished (the process
+  // died mid-call) used to be invisible to every later run.
+  async function stuckRow(root: Awaited<ReturnType<typeof admin>>, ageMs: number) {
+    await makeItem(root, "BR-1001", 100);
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }])));
+    await issueInvoiceFor(root, o.soNumber);
+    const row = await prisma.syncOutbox.findFirstOrThrow({ where: { entityType: "invoice" } });
+    await prisma.syncOutbox.update({ where: { id: row.id }, data: { status: "PROCESSING" } });
+    await prisma.$executeRaw`UPDATE "SyncOutbox" SET "updatedAt" = now() - make_interval(secs => ${ageMs / 1000}) WHERE "id" = ${row.id}`;
+    return row;
+  }
+
+  it("attempts a PROCESSING row older than five minutes", async () => {
+    const root = await admin();
+    const row = await stuckRow(root, 6 * 60_000);
+    expect(await processOutbox()).toMatchObject({ attempted: 1, done: 1 });
+    expect((await prisma.syncOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe("DONE");
+  });
+
+  it("leaves a fresh PROCESSING row alone - another run may still be on it", async () => {
+    const root = await admin();
+    const row = await stuckRow(root, 30_000);
+    expect(await processOutbox()).toMatchObject({ attempted: 0 });
+    expect((await prisma.syncOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe("PROCESSING");
+  });
+
+  it("resets PROCESSING rows to PENDING once when the scheduler starts", async () => {
+    const root = await admin();
+    const row = await stuckRow(root, 30_000);
+    // Nothing else can be mid-flight when the process has just started.
+    await recoverProcessingRows();
+    expect((await prisma.syncOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe("PENDING");
+    await prisma.syncOutbox.update({ where: { id: row.id }, data: { status: "PROCESSING" } });
+    const previous = process.env.QBO_SYNC_INTERVAL_MS;
+    process.env.QBO_SYNC_INTERVAL_MS = "3600000";
+    const stop = startSyncScheduler();
+    process.env.QBO_SYNC_INTERVAL_MS = previous;
+    try {
+      expect(stop).not.toBeNull();
+      await expect.poll(async () => (await prisma.syncOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe("PENDING");
+    } finally {
+      stop?.();
+    }
   });
 });
