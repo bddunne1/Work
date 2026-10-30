@@ -98,6 +98,12 @@ export async function syncReservations(tx: Tx, soNumber: number): Promise<void> 
   }
 }
 
+export interface Shortage {
+  itemNumber: string;
+  available: number;
+  requested: number;
+}
+
 // Rejects an allocation that would hold more of an item than is free: on
 // hand, less what every other open order holds (Item.qtyReserved, minus this
 // order's own current rows). Only items whose hold this save increases are
@@ -105,27 +111,33 @@ export async function syncReservations(tx: Tx, soNumber: number): Promise<void> 
 // a stock count correction isn't blocked by unrelated edits. The order's
 // item rows are locked first, so two people allocating the same scarce item
 // at the same moment queue instead of both being told it's available.
-export async function assertAllocationAvailable(tx: Tx, soNumber: number, after: HoldingOrder): Promise<void> {
+// With `allowOver` (an account with edit on allocation-override confirming
+// "Allocate anyway") the shortages are returned instead of thrown, so the
+// caller can record them; the reservation is still written in full and
+// Available goes negative on every screen.
+export async function assertAllocationAvailable(tx: Tx, soNumber: number, after: HoldingOrder, allowOver = false): Promise<Shortage[]> {
   const wanted = heldByItem(after);
-  if (wanted.size === 0) return;
+  if (wanted.size === 0) return [];
   const mine = new Map<string, number>();
   for (const a of await tx.allocation.findMany({ where: { soNumber }, select: { itemId: true, qty: true } })) {
     mine.set(a.itemId, (mine.get(a.itemId) ?? 0) + a.qty);
   }
   const increased = [...wanted.entries()].filter(([itemId, qty]) => qty > (mine.get(itemId) ?? 0));
-  if (increased.length === 0) return;
+  if (increased.length === 0) return [];
   const ids = increased.map(([itemId]) => itemId);
   // Lock the whole order's items (see syncReservations), then read the increased ones.
   await lockItems(tx, after.lineItems.map((l) => l.itemId));
   const items = new Map((await tx.item.findMany({ where: { id: { in: ids } }, select: { id: true, itemNumber: true, qtyOnHand: true, qtyReserved: true } })).map((i) => [i.id, i]));
-  const shortages: string[] = [];
+  const short: Shortage[] = [];
   for (const [itemId, qty] of increased) {
     const item = items.get(itemId);
     if (!item) continue;
     const available = item.qtyOnHand - (item.qtyReserved - (mine.get(itemId) ?? 0));
-    if (qty > available) shortages.push(`${item.itemNumber}: ${Math.max(0, available)} available, ${qty} requested`);
+    if (qty > available) short.push({ itemNumber: item.itemNumber, available, requested: qty });
   }
-  if (shortages.length > 0) {
+  if (short.length > 0 && !allowOver) {
+    const shortages = short.map((x) => `${x.itemNumber}: ${Math.max(0, x.available)} available, ${x.requested} requested`);
     throw new HttpError(409, `Not enough stock to allocate - someone else may have just allocated it. ${shortages.join("; ")}. Reload and try again.`, { conflict: true, shortages });
   }
+  return short;
 }

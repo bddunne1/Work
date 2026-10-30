@@ -7,6 +7,7 @@ export const PAGE_LABELS: Record<string, string> = {
   validation: "Validation",
   allocation: "Allocation",
   "back-orders": "Back Order Queue",
+  "allocation-override": "Allocate beyond on hand",
   labels: "Create Labels",
   "open-orders": "Open Orders",
   "closed-orders": "Closed Orders",

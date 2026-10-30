@@ -192,12 +192,15 @@ export function uncheckOrder(order: PurchaseOrder): Promise<PurchaseOrder> {
 // The server decides the outcome: every remaining unit -> Allocated; nothing,
 // or a partial for a ship-complete-only customer -> Backordered (held, no
 // stock reserved); a partial otherwise -> Allocated for what's on hand.
+// `allowOverAllocation` is "Allocate anyway" after a shortage refusal; the
+// server honours it only for an account with edit on allocation-override.
 export function allocateOrder(
   order: PurchaseOrder,
   lines: { lineItemId: string; allocatedQty: number }[],
-  shipCompleteOnly?: boolean | null
+  shipCompleteOnly?: boolean | null,
+  opts: { allowOverAllocation?: boolean } = {}
 ): Promise<PurchaseOrder> {
-  return command(order, "allocate", { lines, shipCompleteOnly: shipCompleteOnly ?? undefined });
+  return command(order, "allocate", { lines, shipCompleteOnly: shipCompleteOnly ?? undefined, ...(opts.allowOverAllocation ? { allowOverAllocation: true } : {}) });
 }
 
 // Frees an order's reserved stock and sends it back to Checked. Refused once

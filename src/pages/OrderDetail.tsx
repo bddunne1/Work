@@ -4,13 +4,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
 import LineItemsTable from "../components/LineItemsTable";
 import StatusPill from "../components/StatusPill";
-import { isConflictError } from "../lib/apiClient";
+import { errorShortages, isConflictError } from "../lib/apiClient";
 import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { invoicePath, invoicesForOrder, money } from "../lib/invoiceStore";
 import { getCustomer } from "../lib/customerStore";
 import { allocateOrder, cancelOrder, getOrder, unallocateOrderCmd, undoShipment, updateOrder } from "../lib/orderStore";
-import { canView, canEdit as canEditPath } from "../lib/permissions";
+import { canView, canEdit as canEditPath, hasPageAccess } from "../lib/permissions";
 import type { Customer, Invoice, PurchaseOrder } from "../types";
 import { allocatedQtyFor, canUnallocate, itemLabel, orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
 
@@ -62,6 +62,7 @@ function OrderDetailInner() {
   const [revising, setRevising] = useState(false);
   const [reviseQtys, setReviseQtys] = useState<Record<string, number>>({});
   const [reviseError, setReviseError] = useState<string | null>(null);
+  const [reviseShortage, setReviseShortage] = useState<string[] | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   useEffect(() => {
@@ -154,15 +155,21 @@ function OrderDetailInner() {
     setRevising(true);
   }
 
-  async function applyRevision() {
+  async function applyRevision(allowOverAllocation = false) {
     if (!order) return;
+    setReviseShortage(null);
     try {
       const lines = order.lineItems.map((li) => ({ lineItemId: li.id, allocatedQty: Math.max(0, Math.min(reviseQtys[li.id] ?? 0, remainingToShip(order, li))) }));
-      setOrder(await allocateOrder(order, lines));
+      setOrder(await allocateOrder(order, lines, undefined, { allowOverAllocation }));
       setRevising(false);
     } catch (err) {
       setReviseError(err instanceof Error ? err.message : String(err));
-      if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
+      if (isConflictError(err)) {
+        const short = errorShortages(err);
+        // A shortage keeps the typed quantities; anything else is a stale copy.
+        if (short) setReviseShortage(short);
+        else setOrder(await getOrder(order.soNumber));
+      }
     }
   }
 
@@ -701,9 +708,29 @@ function OrderDetailInner() {
                   })}
                 </tbody>
               </table>
-              {reviseError && <div className="form-error" role="alert">{reviseError}</div>}
+              {reviseError && !reviseShortage && <div className="form-error" role="alert">{reviseError}</div>}
+              {reviseShortage && (
+                <div className="decision-shortage" role="alert">
+                  <div className="decision-outcome-label">Not enough stock</div>
+                  <ul className="decision-shortage-list">
+                    {reviseShortage.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                  {account && hasPageAccess(account, "allocation-override", "edit") ? (
+                    <>
+                      <p className="muted decision-hint">Available goes negative for these items until stock arrives; the order ships only what is physically there.</p>
+                      <button type="button" className="secondary-btn danger-btn" onClick={() => applyRevision(true)}>
+                        Allocate anyway
+                      </button>
+                    </>
+                  ) : (
+                    <p className="muted decision-hint">Lower the quantities to what is available.</p>
+                  )}
+                </div>
+              )}
               <div className="button-row">
-                <button type="button" className="primary-btn" onClick={applyRevision}>
+                <button type="button" className="primary-btn" onClick={() => applyRevision()}>
                   Apply
                 </button>
                 <button type="button" className="secondary-btn" onClick={() => setRevising(false)}>

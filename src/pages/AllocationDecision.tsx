@@ -1,12 +1,12 @@
 import { showToast } from "../lib/toast";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { isConflictError } from "../lib/apiClient";
+import { errorShortages, isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { useAuth } from "../lib/authContext";
 import { allocateOrder, getOrder, unallocateOrderCmd } from "../lib/orderStore";
-import { canEdit as canEditPath } from "../lib/permissions";
+import { canEdit as canEditPath, hasPageAccess } from "../lib/permissions";
 import { useClaim } from "../lib/useClaim";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
@@ -34,6 +34,10 @@ function AllocationDecisionInner() {
   const [customer, setCustomer] = useState<Customer | undefined>();
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [shipCompleteOnly, setShipCompleteOnly] = useState<boolean | null>(null);
+  // The server refused the last decision for want of stock: what was short.
+  // "Allocate anyway" retries the same decision with allowOverAllocation.
+  const [shortage, setShortage] = useState<string[] | null>(null);
+  const canOverAllocate = Boolean(account && hasPageAccess(account, "allocation-override", "edit"));
   const [items, setItems] = useState<Item[]>([]);
   const itemsByNumber = itemsIndex(items);
 
@@ -166,9 +170,10 @@ function AllocationDecisionInner() {
     }
   }
 
-  async function applyDecision() {
+  async function applyDecision(allowOverAllocation = false) {
     if (!order || !outcomeStatus || blocked) return;
     if (!fullyAllocated && shipCompleteOnly === null) return;
+    setShortage(null);
     const totalAllocated = order.lineItems.reduce((sum, li) => sum + (qtys[li.id] ?? 0), 0);
     // Allocating zero units has nothing to pick, so it's really a hold -
     // otherwise the order lands in Release Orders with no allocated lines and
@@ -182,9 +187,16 @@ function AllocationDecisionInner() {
       allocatedQty: hold ? 0 : (qtys[li.id] ?? 0),
     }));
     try {
-      await allocateOrder(order, lines, fullyAllocated ? undefined : shipCompleteOnly);
+      await allocateOrder(order, lines, fullyAllocated ? undefined : shipCompleteOnly, { allowOverAllocation });
     } catch (err) {
       if (isConflictError(err)) {
+        const short = errorShortages(err);
+        if (short) {
+          // Keep the typed quantities on screen with the shortage beside
+          // them; a permitted account may confirm the over-allocation.
+          setShortage(short);
+          return;
+        }
         showToast(err.message);
         setOrder(await getOrder(order.soNumber));
         return;
@@ -348,11 +360,35 @@ function AllocationDecisionInner() {
             </div>
           )}
 
+          {shortage && (
+            <div className="decision-shortage" role="alert">
+              <div className="decision-outcome-label">Not enough stock</div>
+              <ul className="decision-shortage-list">
+                {shortage.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              {canOverAllocate ? (
+                <>
+                  <p className="muted decision-hint">
+                    You may allocate beyond what is on hand. Available goes negative for these items until stock arrives; the order can be
+                    released but ships only what is physically there.
+                  </p>
+                  <button type="button" className="secondary-btn danger-btn" onClick={() => applyDecision(true)} disabled={blocked}>
+                    Allocate anyway
+                  </button>
+                </>
+              ) : (
+                <p className="muted decision-hint">Lower the quantities to what is available, or hold the order.</p>
+              )}
+            </div>
+          )}
+
           {outcomeStatus && (
             <div className={`decision-outcome ${outcomeClass}`}>
               <div className="decision-outcome-label">{outcomeLabel}</div>
               <div className="decision-outcome-detail">{outcomeDetail}</div>
-              <button type="button" className="primary-btn" onClick={applyDecision} disabled={blocked}>
+              <button type="button" className="primary-btn" onClick={() => applyDecision()} disabled={blocked}>
                 Confirm &amp; Apply
               </button>
             </div>

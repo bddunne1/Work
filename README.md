@@ -147,7 +147,24 @@ release, trim at print, ship, undo, cancel), in the same transaction, and
 keeps `Item.qtyReserved` as the sum. Available on every screen is
 `qtyOnHand - qtyReserved`; the allocation screens subtract the order's own
 hold first (`reservedElsewhere` in `src/types.ts`). An allocation that would
-hold more than is free is refused with 409 under a row lock on the item.
+hold more than is free is refused with 409 under a row lock on the item,
+and the refusal lists the per-item `shortages`.
+
+### Allocating beyond on hand
+
+An account with edit on the permission key `allocation-override`
+("Allocate beyond on hand", not a page) sees **Allocate anyway** beside
+those shortages on the Allocation page and the Sales Order View's revise
+panel. It retries the same decision with `allowOverAllocation: true`;
+the `allocate` command honours the flag only for such an account (anyone
+else gets the same 409 as before), reserves the full quantity through the
+reservation table so Available goes negative honestly on every screen,
+and records `overAllocated: true` with the per-item shortages on the
+ORDER_STATUS_CHANGED / ORDER_ALLOCATION_REVISED activity entry. Release and
+Ship are unchanged: an over-allocated order can be released, but shipping
+still refuses to take on hand below zero, so it ships only what is
+physically there. The Director preset carries the key; the Analyst preset
+does not, so it is granted per account.
 
 A partial shipment sends the remainder back to Back Orders with nothing held
 (the allocation is released), so the stock can go to whichever order needs

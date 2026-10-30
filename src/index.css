@@ -1405,6 +1405,21 @@ a.brand:hover .wordmark {
   margin-bottom: 4px;
 }
 
+/* A refused allocation: what is short, and "Allocate anyway" for an
+   account with edit on allocation-override. */
+.decision-shortage {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface, transparent));
+}
+.decision-shortage-list {
+  margin: 4px 0 8px;
+  padding-left: 1.1em;
+  font-size: 13px;
+}
+
 .decision-outcome-detail {
   font-size: 13px;
   color: var(--muted);

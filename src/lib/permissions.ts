@@ -39,6 +39,9 @@ export const PAGE_DEFS: PageDef[] = [
   { key: "validation", label: "Validation", group: "Order Prep", rules: simplePage("/validation") },
   { key: "allocation", label: "Allocation", group: "Order Prep", rules: simplePage("/allocation") },
   { key: "back-orders", label: "Back Order Queue", group: "Order Prep", rules: simplePage("/back-orders") },
+  // Not a page: edit here lets an allocator confirm "Allocate anyway" when an
+  // allocation would hold more than is on hand (Available goes negative).
+  { key: "allocation-override", label: "Allocate beyond on hand", group: "Order Prep", rules: () => [] },
   { key: "labels", label: "Create Labels", group: "Order Prep", rules: simplePage("/labels") },
 
   { key: "open-orders", label: "Open Orders", group: "Orders", rules: simplePage("/open-orders") },
@@ -140,6 +143,13 @@ export function getAccessLevel(pathname: string, account: Account): AccessLevel 
   const rules = buildRules(account.permissions ?? {});
   const rule = rules.find((r) => pathname.startsWith(r.prefix));
   return rule?.access ?? "none";
+}
+
+// Access to a permission key that is not a route (allocation-override).
+export function hasPageAccess(account: Account, key: string, level: Exclude<AccessLevel, "none">): boolean {
+  if (account.role === "admin") return true;
+  const access = account.permissions?.[key] ?? "none";
+  return level === "view" ? access !== "none" : access === "edit";
 }
 
 export function canView(pathname: string, account: Account): boolean {
@@ -308,7 +318,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       "Every page at full access. For account management too (Accounts page), give the account the Admin role instead.",
     permissions: Object.fromEntries(
       [
-        "order-entry", "validation", "allocation", "back-orders", "labels", "open-orders", "closed-orders",
+        "order-entry", "validation", "allocation", "allocation-override", "back-orders", "labels", "open-orders", "closed-orders",
         "order-detail", "returns", "pick-pack", "pick-release", "open-picks", "dock", "warehouse-capacity", "schedule",
         "bol", "shipment-history", "customers", "customer-pricing", "routing-guide", "catalog", "inventory",
         "import", "analytics", "reports", "purchase-orders", "receiving", "vendors", "invoices", "settings", "audit-log",
