@@ -1974,12 +1974,6 @@ a.dash-lookup-row:focus-visible {
   flex: 0 1 260px;
 }
 
-.release-review-btn {
-  margin-left: auto;
-  padding: 5px 12px;
-  font-size: 13px;
-}
-
 .release-message {
   display: flex;
   flex-wrap: wrap;

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import ListWindow from "../components/ListWindow";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
 import { isConflictError } from "../lib/apiClient";
@@ -80,7 +80,6 @@ function sinceLabel(iso: string | undefined, now: number): string {
 const nf = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
 export default function PickPack() {
-  const navigate = useNavigate();
   const canEdit = useCanEdit();
   const { account } = useAuth();
   // Releasing is its own permission - order entry prints released orders
@@ -309,12 +308,6 @@ export default function PickPack() {
     setBusy(false);
   }
 
-  function startReviewQueue() {
-    const reviewQueue = visible.map((o) => o.soNumber);
-    if (reviewQueue.length === 0) return;
-    navigate(`/pick-pack/${reviewQueue[0]}`, { state: { queue: reviewQueue, pos: 0 } });
-  }
-
   // ---- Print Picks: released orders whose documents print here -------------
 
   const selectedPrint = lists.print.filter((o) => printSel[o.soNumber]);
@@ -437,11 +430,6 @@ export default function PickPack() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          {tab === "ready" && canRelease && visible.length > 0 && (
-            <button type="button" className="secondary-btn release-review-btn" onClick={startReviewQueue}>
-              Review one by one
-            </button>
-          )}
         </div>
 
         {message && (

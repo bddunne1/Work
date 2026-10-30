@@ -1,12 +1,10 @@
 import { showToast } from "../lib/toast";
 import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { itemsIndex, listItems } from "../lib/itemStore";
 import { allocateOrder, getOrder, releaseOrders, unallocateOrderCmd } from "../lib/orderStore";
-import type { ReviewQueueState } from "../lib/reviewQueue";
-import { nextQueueSoNumber, queueProgressLabel } from "../lib/reviewQueue";
 import type { Item, PurchaseOrder } from "../types";
 import { allocatedQtyFor, availableQty, canUnallocate, remainingToShip, reservedElsewhere, statusLabel } from "../types";
 
@@ -21,8 +19,6 @@ export default function PickPackDetail() {
 function PickPackDetailInner() {
   const { soNumber } = useParams<{ soNumber: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const queueState = location.state as ReviewQueueState | undefined;
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
@@ -64,13 +60,9 @@ function PickPackDetailInner() {
     setSaved(false);
   }
 
+  // After the decision, back to the Release Orders list.
   function goNext() {
-    const next = nextQueueSoNumber(queueState);
-    if (next) {
-      navigate(`/pick-pack/${next}`, { state: { queue: queueState!.queue, pos: queueState!.pos + 1 } });
-    } else {
-      navigate("/pick-pack");
-    }
+    navigate("/pick-pack");
   }
 
   async function reviseAllocation() {
@@ -154,13 +146,7 @@ function PickPackDetailInner() {
   return (
     <div className="page">
       <div className="page-header">
-        {queueState ? (
-          <Link to="/pick-pack" className="link-btn">
-            &larr; Exit Queue
-          </Link>
-        ) : (
-          <BackLink fallback="/pick-pack" label="Release Orders" />
-        )}
+        <BackLink fallback="/pick-pack" label="Release Orders" />
         <h1>Review S.O. #{order.soNumber}</h1>
         <div className="review-meta">
           <span>
@@ -168,7 +154,6 @@ function PickPackDetailInner() {
           </span>
           <span className="review-meta-sep">·</span>
           <strong>{order.billTo.name}</strong>
-          {queueState && <span className="review-meta-queue">{queueProgressLabel(queueState)}</span>}
         </div>
       </div>
 
