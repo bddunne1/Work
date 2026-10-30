@@ -4,12 +4,14 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
 import { getCustomer } from "../lib/customerStore";
 import { itemsIndex, listItems } from "../lib/itemStore";
-import { allocateOrder, getOrder } from "../lib/orderStore";
+import { useAuth } from "../lib/authContext";
+import { allocateOrder, getOrder, unallocateOrderCmd } from "../lib/orderStore";
+import { canEdit as canEditPath } from "../lib/permissions";
 import { useClaim } from "../lib/useClaim";
 import type { ReviewQueueState } from "../lib/reviewQueue";
 import { nextQueueSoNumber, queueProgressLabel, skipSoNumber } from "../lib/reviewQueue";
 import type { Customer, Item, OrderStatus, PurchaseOrder } from "../types";
-import { availableQty, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor, statusLabel } from "../types";
+import { availableQty, canUnallocate, orderTotalLabel, remainingToShip, reservedElsewhere, shippedQtyFor, statusLabel } from "../types";
 
 export default function AllocationDecision() {
   const { soNumber } = useParams<{ soNumber: string }>();
@@ -23,6 +25,7 @@ function AllocationDecisionInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const queueState = location.state as ReviewQueueState | undefined;
+  const { account } = useAuth();
   const [order, setOrder] = useState<PurchaseOrder | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   // Hold the order while it is open here (C-08); the decision ends the claim.
@@ -141,6 +144,27 @@ function AllocationDecisionInner() {
   // already allocated/packed/shipped, confirming would drag it backwards.
   const staleStatus = order.status !== "Checked" && order.status !== "Backordered";
   const blocked = staleStatus || Boolean(heldBy);
+  // An Allocated order can be sent back to Checked from here (the server's
+  // UNALLOCATE_PAGES: Allocation or the release step of Release Orders),
+  // after which this page allocates it afresh.
+  const canUnallocateHere =
+    Boolean(account && (canEditPath("/allocation", account) || canEditPath("/pick-pack/review", account))) && canUnallocate(order);
+
+  async function handleUnallocate() {
+    if (!order) return;
+    if (!confirm(`Unallocate S.O. #${order.soNumber}? Its reserved stock is freed and the order goes back to Checked for a fresh allocation decision.`)) return;
+    try {
+      const next = await unallocateOrderCmd(order);
+      setOrder(next);
+      const qtys: Record<string, number> = {};
+      for (const li of next.lineItems) qtys[li.id] = 0;
+      setQtys(qtys);
+      showToast(`S.O. #${order.soNumber} is back to Checked - allocate it again below.`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
+      if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
+    }
+  }
 
   async function applyDecision() {
     if (!order || !outcomeStatus || blocked) return;
@@ -213,6 +237,14 @@ function AllocationDecisionInner() {
         <p className="stale-status-notice">
           This order is already {statusLabel(order.status)} - someone else moved it on since this queue was loaded, so it can't be
           re-allocated from here.
+          {canUnallocateHere && (
+            <>
+              {" "}
+              <button type="button" className="secondary-btn danger-btn" onClick={handleUnallocate}>
+                Unallocate order
+              </button>
+            </>
+          )}
         </p>
       )}
       {!staleStatus && heldBy && (

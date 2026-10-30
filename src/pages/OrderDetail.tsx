@@ -9,10 +9,10 @@ import { useAuth, useCanEdit } from "../lib/authContext";
 import { companyAddressLine, getCompanyInfo } from "../lib/companyStore";
 import { invoicePath, invoicesForOrder, money } from "../lib/invoiceStore";
 import { getCustomer } from "../lib/customerStore";
-import { allocateOrder, cancelOrder, getOrder, undoShipment, updateOrder } from "../lib/orderStore";
+import { allocateOrder, cancelOrder, getOrder, unallocateOrderCmd, undoShipment, updateOrder } from "../lib/orderStore";
 import { canView, canEdit as canEditPath } from "../lib/permissions";
 import type { Customer, Invoice, PurchaseOrder } from "../types";
-import { allocatedQtyFor, itemLabel, orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
+import { allocatedQtyFor, canUnallocate, itemLabel, orderSubtotal, orderTax, orderTotalLabel, remainingToShip } from "../types";
 
 // Where "continue working this order" should go next, based on its current
 // stage - so a Sales Order view can drop you straight into whatever screen
@@ -116,6 +116,11 @@ function OrderDetailInner() {
     Boolean(account && (canEditPath("/allocation", account) || canEditPath("/back-orders", account))) &&
     (order.status === "Allocated" || order.status === "Backordered");
   const onFloor = order.status === "Pick & Packed" && Boolean(order.pickListPrintedAt || order.packingSlipPrintedAt);
+  // Unallocate (back to Checked, nothing held): an Allocated order, or a
+  // released one whose documents have not printed - the pages the server's
+  // UNALLOCATE_PAGES allow (Allocation, Release Orders' release step).
+  const canUnallocateHere =
+    Boolean(account && (canEditPath("/allocation", account) || canEditPath("/pick-pack/review", account))) && canUnallocate(order);
 
   function startEdit() {
     if (!order) return;
@@ -157,6 +162,24 @@ function OrderDetailInner() {
       setRevising(false);
     } catch (err) {
       setReviseError(err instanceof Error ? err.message : String(err));
+      if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
+    }
+  }
+
+  async function handleUnallocate() {
+    if (!order) return;
+    if (
+      !confirm(
+        `Unallocate S.O. #${order.soNumber}? Its reserved stock is freed${order.status === "Pick & Packed" ? ", the staged pick is withdrawn" : ""} and the order goes back to Checked for a fresh allocation decision.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setOrder(await unallocateOrderCmd(order));
+      showToast(`S.O. #${order.soNumber} is back to Checked - nothing is held for it now.`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
       if (isConflictError(err)) setOrder(await getOrder(order.soNumber));
     }
   }
@@ -621,17 +644,28 @@ function OrderDetailInner() {
         </p>
       )}
 
-      {!editing && canRevise && (
+      {!editing && (canRevise || canUnallocateHere) && (
         <div className="shipment-history no-print">
           <div className="so-notes-label muted">Allocation</div>
           {!revising ? (
             <div className="button-row">
-              <button type="button" className="secondary-btn" onClick={startRevise}>
-                {order.status === "Backordered" ? "Allocate stock now" : "Revise allocation"}
-              </button>
-              <Link to={`/allocation/${order.soNumber}`} className="link-btn">
-                Open in Allocation
-              </Link>
+              {canRevise && (
+                <button type="button" className="secondary-btn" onClick={startRevise}>
+                  {order.status === "Backordered" ? "Allocate stock now" : "Revise allocation"}
+                </button>
+              )}
+              {/* The Allocation decision page refuses a second allocation of an
+                  Allocated order, so the link is only offered where it can act. */}
+              {canRevise && order.status === "Backordered" && (
+                <Link to={`/allocation/${order.soNumber}`} className="link-btn">
+                  Open in Allocation
+                </Link>
+              )}
+              {canUnallocateHere && (
+                <button type="button" className="secondary-btn danger-btn" onClick={handleUnallocate}>
+                  Unallocate order
+                </button>
+              )}
             </div>
           ) : (
             <>
