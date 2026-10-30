@@ -192,3 +192,34 @@ describe("inbound shipments", () => {
     expect(ok(await root.get("/api/inbound-shipments?open=1"))).toHaveLength(0);
   });
 });
+
+describe("purchase orders: open and closed (list filters)", () => {
+  it("filters with ?open=1 / ?closed=1 and reports both counts on the paged list", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 0);
+    const vendor = await makeVendor(root);
+    const open = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 10 }]);
+    const partial = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 10 }]);
+    ok(await receive(root, partial, [4]));
+    const received = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 5 }]);
+    ok(await receive(root, received, [5]));
+    const closed = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 7 }]);
+    ok(await root.put(`/api/vendor-purchase-orders/${closed.poNumber}`, { ...closed, status: "Closed", lines: closed.lines.map((l: any) => ({ ...l, cost: Number(l.cost) })) }));
+    const numbers = (res: any) => (res.rows ?? res).map((p: any) => p.poNumber).sort();
+    expect(numbers(ok(await root.get("/api/vendor-purchase-orders?open=1")))).toEqual([open.poNumber, partial.poNumber].sort());
+    expect(numbers(ok(await root.get("/api/vendor-purchase-orders?closed=1")))).toEqual([received.poNumber, closed.poNumber].sort());
+    expect(numbers(ok(await root.get("/api/vendor-purchase-orders")))).toHaveLength(4);
+    const pagedOpen = ok(await root.get("/api/vendor-purchase-orders?page=1&pageSize=50&open=1"));
+    expect(pagedOpen.total).toBe(2);
+    expect(pagedOpen.counts).toEqual({ open: 2, closed: 2 });
+    const pagedClosed = ok(await root.get("/api/vendor-purchase-orders?page=1&pageSize=1&closed=1"));
+    expect(pagedClosed.total).toBe(2);
+    expect(pagedClosed.rows).toHaveLength(1);
+    expect(pagedClosed.counts).toEqual({ open: 2, closed: 2 });
+    // The search narrows the counts too.
+    const searched = ok(await root.get(`/api/vendor-purchase-orders?page=1&closed=1&q=${closed.poNumber}`));
+    expect(searched.counts).toEqual({ open: 0, closed: 1 });
+    // open wins if both flags are sent.
+    expect(numbers(ok(await root.get("/api/vendor-purchase-orders?open=1&closed=1")))).toEqual([open.poNumber, partial.poNumber].sort());
+  });
+});

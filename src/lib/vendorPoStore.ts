@@ -41,12 +41,23 @@ export async function listVendorPos(): Promise<VendorPurchaseOrder[]> {
   return pos.map(mapPo);
 }
 
-// One page of POs, searched on the server (PF-03).
-export async function searchVendorPos(params: { q?: string; page: number; pageSize: number }): Promise<{ rows: VendorPurchaseOrder[]; total: number }> {
+export interface VendorPoSearchResult {
+  rows: VendorPurchaseOrder[];
+  total: number;
+  // Open (Open / Partially Received) and closed (Received / Closed) POs
+  // matching the search, for the tab labels.
+  counts: { open: number; closed: number };
+}
+
+// One page of POs, searched and filtered on the server (PF-03): `status`
+// "open" is Open and Partially Received, "closed" is Received and Closed.
+export async function searchVendorPos(params: { q?: string; status?: "open" | "closed"; page: number; pageSize: number }): Promise<VendorPoSearchResult> {
   const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
   if (params.q) qs.set("q", params.q);
-  const res = await api.get<{ rows: VendorPurchaseOrder[]; total: number }>(`/api/vendor-purchase-orders?${qs.toString()}`);
-  return { rows: res.rows.map(mapPo), total: res.total };
+  if (params.status === "open") qs.set("open", "1");
+  if (params.status === "closed") qs.set("closed", "1");
+  const res = await api.get<VendorPoSearchResult>(`/api/vendor-purchase-orders?${qs.toString()}`);
+  return { rows: res.rows.map(mapPo), total: res.total, counts: res.counts ?? { open: 0, closed: 0 } };
 }
 
 // Only POs still waiting on stock (Open / Partially Received).

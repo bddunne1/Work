@@ -87,25 +87,34 @@ router.use(requireAuth);
 // `?open=1` returns only POs still waiting on stock (Open / Partially
 // Received) - what the Dashboard's receiving numbers need - instead of every
 // PO ever written.
-// Plain: every PO (or `?open=1` the open ones). With `?page=N` the list is
-// paged and searched on the server - `{ rows, total, page, pageSize }` -
-// so the Purchase Orders page stops downloading every PO ever written
-// (PF-03). `q` matches the PO # or the vendor name.
+// Plain: every PO (or `?open=1` the open ones, `?closed=1` the received and
+// closed ones). With `?page=N` the list is paged and searched on the server
+// - `{ rows, total, page, pageSize, counts: { open, closed } }` - so the
+// Purchase Orders page stops downloading every PO ever written (PF-03) and
+// its Open / Closed tabs can show their counts. `q` matches the PO # or
+// the vendor name.
+const OPEN_PO_STATUSES = ["OPEN", "PARTIALLY_RECEIVED"] as const;
+const CLOSED_PO_STATUSES = ["RECEIVED", "CLOSED"] as const;
 router.get("/", requireAnyPermission(PO_VIEW_PAGES, "view"), async (req, res) => {
-  const openOnly = req.query.open === "1" || req.query.open === "true";
+  const flag = (name: string) => req.query[name] === "1" || req.query[name] === "true";
+  const openOnly = flag("open");
+  const closedOnly = !openOnly && flag("closed");
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const search: Prisma.VendorPurchaseOrderWhereInput = q ? { OR: [{ poNumber: { contains: q, mode: "insensitive" } }, { vendorName: { contains: q, mode: "insensitive" } }] } : {};
   const where: Prisma.VendorPurchaseOrderWhereInput = {
-    ...(openOnly ? { status: { in: ["OPEN", "PARTIALLY_RECEIVED"] } } : {}),
-    ...(q ? { OR: [{ poNumber: { contains: q, mode: "insensitive" } }, { vendorName: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(openOnly ? { status: { in: [...OPEN_PO_STATUSES] } } : closedOnly ? { status: { in: [...CLOSED_PO_STATUSES] } } : {}),
+    ...search,
   };
   const page = Number(req.query.page);
   if (Number.isInteger(page) && page > 0) {
     const pageSize = Math.min(Math.max(1, Number(req.query.pageSize) || 50), 500);
-    const [rows, total] = await Promise.all([
+    const [rows, total, open, closed] = await Promise.all([
       prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include, skip: (page - 1) * pageSize, take: pageSize }),
       prisma.vendorPurchaseOrder.count({ where }),
+      prisma.vendorPurchaseOrder.count({ where: { ...search, status: { in: [...OPEN_PO_STATUSES] } } }),
+      prisma.vendorPurchaseOrder.count({ where: { ...search, status: { in: [...CLOSED_PO_STATUSES] } } }),
     ]);
-    res.json({ rows: rows.map(mapOut), total, page, pageSize });
+    res.json({ rows: rows.map(mapOut), total, page, pageSize, counts: { open, closed } });
     return;
   }
   const pos = await prisma.vendorPurchaseOrder.findMany({ where, orderBy: { createdAt: "desc" }, include });
