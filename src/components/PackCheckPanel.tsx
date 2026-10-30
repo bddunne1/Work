@@ -29,7 +29,9 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
   const [pickedBy, setPickedBy] = useState(own);
   const [checkedBy, setCheckedBy] = useState(own);
   const [busy, setBusy] = useState(false);
-  const [printing, setPrinting] = useState<PurchaseOrder | null>(null);
+  // The last packing slip printed from here. It stays mounted (hidden on
+  // screen) and reprints by remounting with a new key.
+  const [printing, setPrinting] = useState<{ order: PurchaseOrder; key: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Carrier details at pickup (G-07): what the BOL step saved, else the
   // order's Ship Via; the PRO is usually typed here when the driver hands
@@ -65,11 +67,7 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
         { pickedBy: pickedBy.trim(), checkedBy: checkedBy.trim() }
       );
       onChange(updated);
-      setPrinting(updated);
-      setTimeout(() => {
-        window.print();
-        setPrinting(null);
-      }, 50);
+      setPrinting((p) => ({ order: updated, key: (p?.key ?? 0) + 1 }));
     } catch (err) {
       if (isConflictError(err)) {
         showToast(err.message);
@@ -120,11 +118,7 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
   }
 
   function reprintSlip() {
-    setPrinting(order);
-    setTimeout(() => {
-      window.print();
-      setPrinting(null);
-    }, 50);
+    setPrinting((p) => ({ order, key: (p?.key ?? 0) + 1 }));
   }
 
   if (pending.length === 0) return <p className="muted">Nothing staged on this order.</p>;
@@ -271,7 +265,7 @@ export default function PackCheckPanel({ order, onChange, askInitials, onShipped
           </div>
         </>
       )}
-      {printing && <BatchPrintDocs orders={[printing]} includePick={false} includeSlip />}
+      {printing && <BatchPrintDocs key={printing.key} orders={[printing.order]} includePick={false} includeSlip autoPrint />}
     </div>
   );
 }

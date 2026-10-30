@@ -27,7 +27,8 @@ function PackCheckInner() {
   const { account } = useAuth();
   const [order, setOrder] = useState<PurchaseOrder | undefined>();
   const [loading, setLoading] = useState(true);
-  const [printing, setPrinting] = useState(false);
+  // The pick list reprint: stays mounted, remounts (and prints) on each click.
+  const [printing, setPrinting] = useState<{ order: PurchaseOrder; key: number } | null>(null);
 
   useEffect(() => {
     if (!soNumber) return;
@@ -58,10 +59,12 @@ function PackCheckInner() {
 
   async function reprintPick() {
     if (!order) return;
+    let stamped: PurchaseOrder;
     try {
       // Keep the server's copy (new version) - otherwise Mark Shipped right
       // after a reprint is a guaranteed "changed by someone else" 409.
-      setOrder(await markPrinted(order, { pickList: true }, (order.pendingShipment ?? []).map((l) => ({ lineItemId: l.lineItemId, qty: l.qty }))));
+      stamped = await markPrinted(order, { pickList: true }, (order.pendingShipment ?? []).map((l) => ({ lineItemId: l.lineItemId, qty: l.qty })));
+      setOrder(stamped);
     } catch (err) {
       if (isConflictError(err)) {
         showToast(err.message);
@@ -70,11 +73,7 @@ function PackCheckInner() {
       }
       throw err;
     }
-    setPrinting(true);
-    setTimeout(() => {
-      window.print();
-      setPrinting(false);
-    }, 50);
+    setPrinting((p) => ({ order: stamped, key: (p?.key ?? 0) + 1 }));
   }
 
   return (
@@ -147,7 +146,7 @@ function PackCheckInner() {
           )}
         </div>
       )}
-      {printing && <BatchPrintDocs orders={[order]} includePick includeSlip={false} />}
+      {printing && <BatchPrintDocs key={printing.key} orders={[printing.order]} includePick includeSlip={false} autoPrint />}
     </div>
   );
 }

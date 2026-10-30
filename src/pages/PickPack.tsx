@@ -234,11 +234,8 @@ export default function PickPack() {
         { print }
       );
       if (print && res.orders.length > 0) {
+        // Rendered and printed by BatchPrintDocs once it is in the DOM.
         setJustReleased(res.orders);
-        setTimeout(() => {
-          window.print();
-          setJustReleased(null);
-        }, 50);
       }
       const released = res.results.filter((r) => r.ok).map((r) => r.soNumber);
       const failed = res.results.filter((r) => !r.ok);
@@ -316,11 +313,14 @@ export default function PickPack() {
 
   function printBatch() {
     if (!canPrint) return;
-    const batch = selectedPrint;
     setPrinting(true);
-    setTimeout(async () => {
-      window.print();
-      setPrinting(false);
+  }
+
+  // After BatchPrintDocs has printed the selected batch.
+  function afterBatchPrint() {
+    const batch = selectedPrint;
+    setPrinting(false);
+    void (async () => {
       // window.print() gives no way to tell whether the user actually
       // printed or hit Cancel, so ask directly rather than assuming success
       // - otherwise a canceled print still knocked the order out of the
@@ -351,7 +351,7 @@ export default function PickPack() {
       );
       await reload();
       setBusy(false);
-    }, 50);
+    })();
   }
 
   // ---- Shared ---------------------------------------------------------------
@@ -714,8 +714,8 @@ export default function PickPack() {
         )}
       </div>
 
-      {printing && <BatchPrintDocs orders={selectedPrint} includePick={includePick} includeSlip={includeSlip} />}
-      {justReleased && <BatchPrintDocs orders={justReleased} includePick includeSlip={false} />}
+      {printing && <BatchPrintDocs orders={selectedPrint} includePick={includePick} includeSlip={includeSlip} autoPrint onPrinted={afterBatchPrint} />}
+      {justReleased && <BatchPrintDocs orders={justReleased} includePick includeSlip={false} autoPrint onPrinted={() => setJustReleased(null)} />}
     </div>
   );
 }

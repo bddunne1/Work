@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { PurchaseOrder } from "../types";
 import { shippedQtyFor } from "../types";
 
@@ -5,6 +7,11 @@ interface Props {
   orders: PurchaseOrder[];
   includePick: boolean;
   includeSlip: boolean;
+  // Print as soon as the documents are in the DOM (one call per mount), then
+  // tell the caller. Replaces callers' own setTimeout(window.print): the
+  // documents are guaranteed rendered first.
+  autoPrint?: boolean;
+  onPrinted?: () => void;
 }
 
 function lineFor(order: PurchaseOrder, lineItemId: string) {
@@ -165,14 +172,35 @@ function PackingSlipDoc({ order, pageClass }: { order: PurchaseOrder; pageClass:
   );
 }
 
-export default function BatchPrintDocs({ orders, includePick, includeSlip }: Props) {
+// The documents are rendered through a portal at the end of <body>, never
+// inside the page that asked for them. A page's on-screen panel is wrapped
+// in .no-print, and anything printed from inside it is hidden by the print
+// stylesheet along with its parent - the "blank packing slip" (sprint 5).
+export default function BatchPrintDocs({ orders, includePick, includeSlip, autoPrint = false, onPrinted }: Props) {
   type Doc = { type: "pick" | "slip"; order: PurchaseOrder };
   const docs: Doc[] = [];
   if (includePick) for (const order of orders) docs.push({ type: "pick", order });
   if (includeSlip) for (const order of orders) docs.push({ type: "slip", order });
 
-  return (
-    <>
+  const printed = useRef(false);
+  const onPrintedRef = useRef(onPrinted);
+  useEffect(() => {
+    onPrintedRef.current = onPrinted;
+  });
+  useEffect(() => {
+    if (!autoPrint || printed.current) return;
+    // After this commit has painted, so the print preview has the documents.
+    const frame = window.requestAnimationFrame(() => {
+      printed.current = true;
+      window.print();
+      onPrintedRef.current?.();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [autoPrint]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="batch-print-docs" data-testid="print-docs">
       {docs.map((doc, idx) => {
         const isLast = idx === docs.length - 1;
         const pageClass = `sales-order print-only ${isLast ? "" : "batch-page-break"}`;
@@ -182,6 +210,7 @@ export default function BatchPrintDocs({ orders, includePick, includeSlip }: Pro
           <PackingSlipDoc key={`slip-${doc.order.soNumber}`} order={doc.order} pageClass={pageClass} />
         );
       })}
-    </>
+    </div>,
+    document.body
   );
 }
