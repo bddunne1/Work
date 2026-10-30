@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
@@ -49,7 +50,7 @@ function PackCheckInner() {
     return (
       <div className="page dock">
         <p>Order not found.</p>
-        <Link to={home}>&larr; Back</Link>
+        <BackLink fallback={home} label={home === "/open-picks" ? "Open Picks" : "Dock"} />
       </div>
     );
   }
@@ -79,9 +80,7 @@ function PackCheckInner() {
   return (
     <div className="page dock pack-check-page">
       <div className="page-header no-print">
-        <Link to={home} className="link-btn">
-          &larr; {home === "/open-picks" ? "Open Picks" : "Dock"}
-        </Link>
+        <BackLink fallback={home} label={home === "/open-picks" ? "Open Picks" : "Dock"} />
         <h1>
           #{order.soNumber} · {order.shipTo.name || order.billTo.name}
         </h1>

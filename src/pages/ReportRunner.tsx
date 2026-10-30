@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import BackLink from "../components/BackLink";
 import { Link, useParams } from "react-router-dom";
 import { ApiError } from "../lib/apiClient";
 import { useAuth } from "../lib/authContext";
@@ -140,9 +141,7 @@ export default function ReportRunner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to="/reports" className="link-btn">
-          &larr; Reports
-        </Link>
+        <BackLink fallback="/reports" label="Reports" />
         <h1>{preset?.label ?? savedReport?.name ?? "Custom Report"}</h1>
         <p className="muted">{preset?.description ?? dataSource?.description ?? "Pick a data source to begin."}</p>
       </div>

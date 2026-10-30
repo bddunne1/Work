@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import BackLink from "../components/BackLink";
+import { useNavigate } from "react-router-dom";
 import type { Customer } from "../types";
 import { listCustomers } from "../lib/customerStore";
 
@@ -27,9 +28,7 @@ export default function RoutingGuide() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/customers" className="link-btn">
-          &larr; Customers
-        </Link>
+        <BackLink fallback="/customers" label="Customers" />
         <h1>Routing Guide</h1>
         <p className="muted">
           Every customer's preferred carrier and routing account #, at a glance. Click a customer for

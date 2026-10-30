@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import BackLink from "../components/BackLink";
+import { useParams } from "react-router-dom";
 import { getItem, getItemQuickReport } from "../lib/itemStore";
 import type { ReportRow } from "../lib/reports/types";
 import type { Item } from "../types";
@@ -120,7 +121,7 @@ export default function ItemQuickReport() {
     return (
       <div className="page">
         <p>Item not found.</p>
-        <Link to="/items">&larr; Back to Item Catalog</Link>
+        <BackLink fallback="/items" label="Item Catalog" />
       </div>
     );
   }
@@ -141,9 +142,7 @@ export default function ItemQuickReport() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to={`/items/${item.id}`} className="link-btn">
-          &larr; Back to {item.itemNumber}
-        </Link>
+        <BackLink fallback={`/items/${item.id}`} label={item.itemNumber} />
         <div className="inline-actions">
           <button type="button" className="secondary-btn print-btn" onClick={() => window.print()}>
             Print / Preview

@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -56,7 +57,7 @@ function PurchaseOrderDetailInner() {
     return (
       <div className="page">
         <p>Purchase order not found.</p>
-        <Link to="/purchase-orders">&larr; Back to Purchase Orders</Link>
+        <BackLink fallback="/purchase-orders" label="Purchase Orders" />
       </div>
     );
   }
@@ -98,9 +99,7 @@ function PurchaseOrderDetailInner() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/purchase-orders" className="link-btn">
-          &larr; Back to Purchase Orders
-        </Link>
+        <BackLink fallback="/purchase-orders" label="Purchase Orders" />
         <h1>Purchase Order #{po.poNumber}</h1>
         <p className="muted">
           {po.vendorName} · Ordered {po.orderDate}

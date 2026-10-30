@@ -1,6 +1,6 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
 import { listItems, setQtyOnHandIfUnchanged } from "../lib/itemStore";
@@ -144,7 +144,7 @@ export default function InventoryAdjust() {
       </div>
 
       <p>
-        <Link to="/inventory">&larr; Back to Inventory</Link>
+        <BackLink fallback="/inventory" label="Inventory" />
       </p>
     </div>
   );

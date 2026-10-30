@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -87,7 +88,7 @@ function OrderDetailInner() {
     return (
       <div className="page">
         <p>Order not found.</p>
-        <Link to="/open-orders">&larr; Back to Open Orders</Link>
+        <BackLink fallback="/open-orders" label="Open Orders" />
       </div>
     );
   }
@@ -263,9 +264,7 @@ function OrderDetailInner() {
   return (
     <div className="page order-detail-page">
       <div className="page-header no-print">
-        <button className="link-btn" onClick={() => navigate(-1)}>
-          &larr; Back
-        </button>
+        <BackLink fallback="/open-orders" label="Open Orders" />
         <div className="inline-actions">
           {canEditOrder && !editing && (
             <button type="button" className="secondary-btn" onClick={startEdit}>

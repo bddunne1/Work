@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import BackLink from "../components/BackLink";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SearchSelect from "../components/SearchSelect";
 import { isConflictError } from "../lib/apiClient";
@@ -152,7 +153,7 @@ function InboundShipmentFormInner() {
     return (
       <div className="page">
         <p>Inbound shipment not found.</p>
-        <Link to="/inbound-shipments">&larr; Back to Inbound Shipments</Link>
+        <BackLink fallback="/inbound-shipments" label="Inbound Shipments" />
       </div>
     );
   }
@@ -164,9 +165,7 @@ function InboundShipmentFormInner() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/inbound-shipments" className="link-btn">
-          &larr; Inbound Shipments
-        </Link>
+        <BackLink fallback="/inbound-shipments" label="Inbound Shipments" />
         <h1>{isNew ? "New Inbound Shipment" : `Inbound ${shipment!.reference}`}</h1>
         {shipment ? (
           <div className="review-meta">

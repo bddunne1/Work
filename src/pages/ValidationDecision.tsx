@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LineItemsTable from "../components/LineItemsTable";
@@ -45,7 +46,7 @@ function ValidationDecisionInner() {
     return (
       <div className="page">
         <p>Order not found.</p>
-        <Link to="/validation">&larr; Back to Validation</Link>
+        <BackLink fallback="/validation" label="Validation" />
       </div>
     );
   }
@@ -91,9 +92,13 @@ function ValidationDecisionInner() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/validation" className="link-btn">
-          &larr; {queueState ? "Exit Queue" : "Back to Validation"}
-        </Link>
+        {queueState ? (
+          <Link to="/validation" className="link-btn">
+            &larr; Exit Queue
+          </Link>
+        ) : (
+          <BackLink fallback="/validation" label="Validation" />
+        )}
         <h1>Review S.O. #{order.soNumber}</h1>
         <div className="review-meta">
           <span>

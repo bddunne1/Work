@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useViewportHeight } from "../lib/useViewportHeight";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -143,9 +144,7 @@ function CustomersInner() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/customers" className="link-btn">
-          &larr; Customers
-        </Link>
+        <BackLink fallback="/customers" label="Customers" />
         <h1>Customer List</h1>
         <p className="muted">Select a customer to view and edit their details.</p>
       </div>

@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { isConflictError } from "../lib/apiClient";
@@ -53,7 +54,7 @@ function PickPackDetailInner() {
     return (
       <div className="page">
         <p>Order not found.</p>
-        <Link to="/pick-pack">&larr; Back to Release Orders</Link>
+        <BackLink fallback="/pick-pack" label="Release Orders" />
       </div>
     );
   }
@@ -153,9 +154,13 @@ function PickPackDetailInner() {
   return (
     <div className="page">
       <div className="page-header">
-        <Link to="/pick-pack" className="link-btn">
-          &larr; {queueState ? "Exit Queue" : "Back to Release Orders"}
-        </Link>
+        {queueState ? (
+          <Link to="/pick-pack" className="link-btn">
+            &larr; Exit Queue
+          </Link>
+        ) : (
+          <BackLink fallback="/pick-pack" label="Release Orders" />
+        )}
         <h1>Review S.O. #{order.soNumber}</h1>
         <div className="review-meta">
           <span>

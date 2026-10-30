@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import BackLink from "../components/BackLink";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import AddressFields from "../components/AddressFields";
@@ -55,7 +56,7 @@ function ReturnDetailInner() {
     return (
       <div className="page">
         <p>Return not found.</p>
-        <Link to="/returns">&larr; Back to Returns</Link>
+        <BackLink fallback="/returns" label="Returns" />
       </div>
     );
   }
@@ -138,9 +139,7 @@ function ReturnDetailInner() {
   return (
     <div className="page">
       <div className="page-header no-print">
-        <Link to="/returns" className="link-btn">
-          &larr; Back to Returns
-        </Link>
+        <BackLink fallback="/returns" label="Returns" />
         <div className="inline-actions">
           {canEditRa && !editing && (
             <button type="button" className="secondary-btn" onClick={startEdit}>
