@@ -3957,9 +3957,6 @@ a.dash-lookup-row:focus-visible {
 .backorder-group { margin-top: 20px; }
 .backorder-group-title { margin: 0 0 4px; font-size: 1.05rem; }
 .backorder-group-arrived .backorder-group-title { color: #12b886; }
-.backorder-lines { margin: 0; padding-left: 1em; font-size: 13px; }
-.backorder-lines .coverage-full { color: #12b886; }
-.backorder-lines .coverage-none { color: var(--danger); }
 .backorder-fillable { color: #12b886; font-weight: 600; }
 
 /* ---- The floor: Open Picks stages, the dock screen, the pack check (sprint 3) ---- */
