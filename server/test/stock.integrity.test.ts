@@ -164,23 +164,26 @@ describe("purchase orders (R5-03)", () => {
     await makeItem(root, "BR-1002", 0);
     const vendor = await makeVendor(root);
     let po = await makePo(root, vendor, [{ itemNumber: "BR-1001", orderedQty: 50 }, { itemNumber: "BR-1002", orderedQty: 20 }]);
-    po = ok(await receive(root, po, [30, 0]));
+    // The API returns PO lines in no promised order, so address them by item.
+    const line = (p: any, itemNumber: string) => p.lines.find((l: any) => l.itemNumber === itemNumber);
+    const qtys = (p: any, by: Record<string, number>) => p.lines.map((l: any) => by[l.itemNumber] ?? 0);
+    po = ok(await receive(root, po, qtys(po, { "BR-1001": 30 })));
     expect(po.status).toBe("Partially Received");
     expect((await itemByNumber("BR-1001")).qtyOnPurchaseOrder).toBe(20);
     // Can't remove or shrink the received line below 30; can edit the other.
-    expect((await editPo(root, po, { lines: [po.lines[1]] })).status).toBe(409);
-    expect((await editPo(root, po, { lines: [{ ...po.lines[0], orderedQty: 29 }, po.lines[1]] })).status).toBe(409);
-    po = ok(await editPo(root, po, { lines: [po.lines[0], { ...po.lines[1], orderedQty: 25 }] }));
-    expect(po.lines[0].receivedQty).toBe(30);
+    expect((await editPo(root, po, { lines: [line(po, "BR-1002")] })).status).toBe(409);
+    expect((await editPo(root, po, { lines: [{ ...line(po, "BR-1001"), orderedQty: 29 }, line(po, "BR-1002")] })).status).toBe(409);
+    po = ok(await editPo(root, po, { lines: [line(po, "BR-1001"), { ...line(po, "BR-1002"), orderedQty: 25 }] }));
+    expect(line(po, "BR-1001").receivedQty).toBe(30);
     // A typo of 2000 against 20 outstanding is refused; a case over is fine.
-    expect((await receive(root, po, [20, 2000])).status).toBe(400);
-    po = ok(await receive(root, po, [20, 27]));
+    expect((await receive(root, po, qtys(po, { "BR-1001": 20, "BR-1002": 2000 }))).status).toBe(400);
+    po = ok(await receive(root, po, qtys(po, { "BR-1001": 20, "BR-1002": 27 })));
     expect(po.status).toBe("Received");
     expect((await itemByNumber("BR-1002")).qtyOnHand).toBe(27);
     // Closed POs don't receive; reopening restores the derived status.
     po = ok(await editPo(root, po, { status: "Closed" }));
     expect(po.status).toBe("Closed");
-    expect((await receive(root, po, [1, 0])).status).toBe(409);
+    expect((await receive(root, po, qtys(po, { "BR-1001": 1 }))).status).toBe(409);
     po = ok(await editPo(root, po, { status: "Open" }));
     expect(po.status).toBe("Received");
     await expectLedgerReconciles("BR-1001", 0);
