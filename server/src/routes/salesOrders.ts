@@ -8,7 +8,7 @@ import { hasPermission, requireAnyPermission, requireAuth, requirePermission, ty
 import { idempotent } from "../middleware/idempotency.js";
 import { auditIn, logAudit } from "../lib/audit.js";
 import { ConflictError, HttpError } from "../lib/conflictError.js";
-import { createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
+import { calendarDay, createInvoiceForShipment, voidInvoiceForShipment } from "../lib/documents.js";
 import { adjustOnHand, findItemByNumber, itemIdFor, lockItems, resolveItemIds } from "../lib/inventory.js";
 import { assertAllocationAvailable, syncReservations } from "../lib/reservations.js";
 import { OPEN_INBOUND_STATUSES } from "../lib/inbound.js";
@@ -184,7 +184,11 @@ function carrierData(c: CarrierInput | undefined) {
   return data;
 }
 const setBolSchema = z.object({ version: z.number().int(), bol: bolSchema, carrier: carrierSchema.optional() });
-const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500), carrier: carrierSchema.optional() });
+// `localDate` is the calendar day on the browser's clock when the command was
+// sent: the invoice date and the default pickup date follow it rather than
+// the UTC day, which is already tomorrow in the US evening (item 5).
+const shipSchema = z.object({ version: z.number().int(), lines: z.array(shipmentLineSchema).max(500), carrier: carrierSchema.optional(), localDate: isoDate.optional() });
+const undoShipmentSchema = z.object({ version: z.number().int(), localDate: isoDate.optional() });
 const readySchema = z.object({
   version: z.number().int(),
   // Packed quantities per line: at most what was staged, never more.
@@ -928,19 +932,19 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  const { version, lines, carrier } = parsed.data;
+  const { version, lines, carrier, localDate } = parsed.data;
   const account = req.account!;
   await prisma.$transaction(async (tx) => {
     const order = await lockOrder(tx, soNumber, version);
     assertStatus(order, ["PICK_PACKED"], "shipped");
     // Carrier details for this shipment: what was just entered over what the
-    // BOL step saved; the pickup date defaults to today.
+    // BOL step saved; the pickup date defaults to today at the dock.
     const shippedAt = new Date();
     const carrierNow = {
       carrier: order.carrier,
       scac: order.scac,
       proNumber: order.proNumber,
-      pickupDate: order.pickupDate ?? new Date(`${shippedAt.toISOString().slice(0, 10)}T00:00:00.000Z`),
+      pickupDate: order.pickupDate ?? calendarDay(localDate, shippedAt),
       ...carrierData(carrier),
     };
     // The pack check comes first (decided 1 Oct): what ships is exactly what
@@ -989,7 +993,7 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
     const record = await tx.shipmentRecord.create({ data: { soNumber, shippedAt, lines: shipped, ...carrierNow, pickedBy: order.pickedByInitials, checkedBy: order.checkedByInitials } });
     // The invoice for this shipment, from the order's prices as they stand,
     // queued for the accounting bridge in this same transaction.
-    const invoice = await createInvoiceForShipment(tx, order, { id: record.id, shippedAt: record.shippedAt, lines: shipped }, account);
+    const invoice = await createInvoiceForShipment(tx, order, { id: record.id, shippedAt: record.shippedAt, localDate, lines: shipped }, account);
     const history = await tx.shipmentRecord.findMany({ where: { soNumber } });
     const totals = shippedByLine({ shipmentHistory: history });
     const fullyShipped = order.lineItems.every((li) => (totals.get(li.id) ?? 0) >= li.ordered);
@@ -1021,7 +1025,10 @@ router.post("/:soNumber/ship", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), a
 // atomically, for the same reason as /ship above.
 router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "edit"), async (req: AuthedRequest, res) => {
   const soNumber = parseSo(req.params.soNumber);
-  const parsed = versionSchema.safeParse(req.body);
+  // Undoing stamps no calendar date of its own (the draft is removed, an
+  // issued invoice is voided), so localDate is validated and kept in the
+  // audit entry: the client sends it on every shipping command.
+  const parsed = undoShipmentSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
@@ -1090,6 +1097,7 @@ router.post("/:soNumber/undo-shipment", requireAnyPermission(ORDER_SHIP_PAGES, "
     await syncReservations(tx, soNumber);
     await auditIn(tx, req.account!, "SHIPMENT_UNDONE", "sales-order", String(soNumber), `S.O. #${soNumber}`, {
       units: lines.reduce((sum, l) => sum + (l.qty > 0 ? l.qty : 0), 0),
+      ...(parsed.data.localDate ? { localDate: parsed.data.localDate } : {}),
       ...(voided ? (voided.status === "DELETED" ? { invoiceDraftRemoved: true } : { invoiceVoided: voided.invoiceNumber }) : {}),
     });
   });

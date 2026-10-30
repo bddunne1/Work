@@ -5,7 +5,7 @@ import { fakeQuickBooks } from "../src/integrations/quickbooks/fake.js";
 import { processOutbox, recoverProcessingRows, startSyncScheduler } from "../src/integrations/sync.js";
 import { lineAmountCents } from "../src/lib/money.js";
 import { prisma } from "../src/prisma.js";
-import { admin, issueInvoiceFor, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship } from "./helpers.js";
+import { admin, issueInvoiceFor, makeCustomer, makeItem, makeOrder, ok, orderReadyToShip, resetDb, ship, so } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -239,5 +239,56 @@ describe("item 4: a quantity delta can't take stock negative", () => {
     expect(ok(await root.patch("/api/items/by-number/BR-1001/qty", { qtyOnHandDelta: -10 })).qtyOnHand).toBe(0);
     expect(ok(await root.patch("/api/items/by-number/BR-1001/qty", { qtyOnHandDelta: 3 })).qtyOnHand).toBe(3);
     expect(await prisma.stockMovement.count({ where: { reason: "ADJUST" } })).toBe(2);
+  });
+});
+
+describe("item 5: document dates follow the browser's calendar day, not UTC's", () => {
+  // Late in the evening in Illinois it is already tomorrow in UTC; the
+  // commands take the day from the browser's clock when it is sent.
+  const utcToday = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const day = (d: Date | string) => new Date(d).toISOString().slice(0, 10);
+
+  it("dates the invoice and the default pickup date by localDate when the shipment is confirmed", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const cust = await makeCustomer(root, "Acme Fabrication", { terms: "Net 30" });
+    const o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }], { customerId: cust.id, terms: "Net 30" });
+    const shipped = ok(await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment, localDate: yesterday }));
+    expect(day(shipped.shipmentHistory[0].pickupDate)).toBe(yesterday);
+    const invoice = await prisma.invoice.findFirstOrThrow({ where: { soNumber: Number(o.soNumber) } });
+    expect(day(invoice.invoiceDate)).toBe(yesterday);
+    expect((invoice.dueDate.getTime() - invoice.invoiceDate.getTime()) / 86_400_000).toBe(30);
+  });
+
+  it("falls back to the UTC day when no localDate is sent, and refuses a malformed one", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const o = await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }]);
+    expect((await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment, localDate: "30/10/2026" })).status).toBe(400);
+    ok(await root.post(`${so(o)}/ship`, { version: o.version, lines: o.pendingShipment }));
+    const invoice = await prisma.invoice.findFirstOrThrow({ where: { soNumber: Number(o.soNumber) } });
+    expect(day(invoice.invoiceDate)).toBe(utcToday);
+  });
+
+  it("dates the credit memo by localDate when the return is received", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100, 3);
+    const cust = await makeCustomer(root, "Acme Fabrication");
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 10, rate: 3 }], { customerId: cust.id })));
+    await issueInvoiceFor(root, o.soNumber);
+    const ra = ok(await root.post("/api/returns", { customerId: cust.id, soNumber: String(o.soNumber), billTo: cust.billTo, requestDate: "2026-09-29", lines: [{ itemNumber: "BR-1001", description: "x", qty: 4, rate: 3, restock: true }] }), 201);
+    ok(await root.post(`/api/returns/${ra.raNumber}/receive`, { version: ra.version, lines: [], localDate: yesterday }));
+    const memo = await prisma.creditMemo.findUniqueOrThrow({ where: { raNumber: ra.raNumber } });
+    expect(day(memo.memoDate)).toBe(yesterday);
+  });
+
+  it("accepts localDate on undo-shipment too, so the client can send it on every shipping command", async () => {
+    const root = await admin();
+    await makeItem(root, "BR-1001", 100);
+    const o = ok(await ship(root, await orderReadyToShip(root, [{ item: "BR-1001", ordered: 2 }])));
+    expect((await root.post(`${so(o)}/undo-shipment`, { version: o.version, localDate: "not a date" })).status).toBe(400);
+    ok(await root.post(`${so(o)}/undo-shipment`, { version: o.version, localDate: yesterday }));
+    expect(await prisma.invoice.count()).toBe(0);
   });
 });

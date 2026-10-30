@@ -68,7 +68,18 @@ interface OrderForInvoice {
 interface ShipmentForInvoice {
   id: string;
   shippedAt: Date;
+  // The calendar day at the dock ("YYYY-MM-DD", from the browser's clock);
+  // the UTC day of shippedAt when the client did not send one.
+  localDate?: string;
   lines: { lineItemId: string; qty: number }[];
+}
+
+// A calendar day as a date-only value, the way the date columns hold it.
+// Documents are dated by the day where the work was done: in the evening in
+// Illinois it is already tomorrow in UTC, so the UTC day of the timestamp
+// is only the fallback (October review, item 5).
+export function calendarDay(localDate: string | undefined, at: Date): Date {
+  return new Date(`${localDate ?? at.toISOString().slice(0, 10)}T00:00:00.000Z`);
 }
 
 // Raises the draft invoice for one shipment from the order's lines and
@@ -101,7 +112,7 @@ export async function createInvoiceForShipment(tx: Tx, order: OrderForInvoice, s
     });
   const taxRate = customer?.taxExempt ? 0 : order.taxRate;
   const totals = documentTotals(lines, taxRate);
-  const invoiceDate = new Date(shipment.shippedAt.toISOString().slice(0, 10));
+  const invoiceDate = calendarDay(shipment.localDate, shipment.shippedAt);
   const billToName = (order.billTo as { name?: string } | null)?.name;
   return tx.invoice.create({
     data: {
@@ -286,6 +297,8 @@ interface ReturnForCredit {
   billTo: unknown;
   reason: string;
   receivedAt: Date | null;
+  // See ShipmentForInvoice.localDate.
+  localDate?: string;
   lines: { id: string; itemId: string | null; itemNumber: string; description: string; um: string; qty: number; rate: Prisma.Decimal }[];
 }
 
@@ -328,7 +341,7 @@ export async function createCreditMemoForReturn(tx: Tx, ra: ReturnForCredit, _ac
   });
   const taxRate = ra.lines.map((l) => priceFor(l.itemNumber)?.taxRate).find((t) => t !== undefined) ?? 0;
   const totals = documentTotals(lines, taxRate);
-  const memoDate = new Date((ra.receivedAt ?? new Date()).toISOString().slice(0, 10));
+  const memoDate = calendarDay(ra.localDate, ra.receivedAt ?? new Date());
   return tx.creditMemo.create({
     data: {
       status: "DRAFT",

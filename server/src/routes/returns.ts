@@ -72,6 +72,9 @@ const receiveSchema = z.object({
   version: z.number().int(),
   // Optional per-line override of the restock flag decided at the dock.
   lines: z.array(z.object({ lineId: z.string(), restock: z.boolean() })).default([]),
+  // The calendar day on the browser's clock: the credit memo is dated by it
+  // rather than by the UTC day (October review, item 5).
+  localDate: isoDate.optional(),
 });
 
 // Customer service issues RAs (returns page); the dock / purchasing receives
@@ -384,7 +387,7 @@ router.post("/:raNumber/receive", requireAnyPermission(RETURN_RECEIVE_PAGES, "ed
     });
     // Goods are back: the customer is credited, at the price they were
     // billed where that invoice can be found. Queued for QuickBooks here.
-    const memo = await createCreditMemoForReturn(tx, { ...received, lines: await tx.returnLine.findMany({ where: { raNumber } }) }, req.account!);
+    const memo = await createCreditMemoForReturn(tx, { ...received, localDate: parsed.data.localDate, lines: await tx.returnLine.findMany({ where: { raNumber } }) }, req.account!);
     await auditIn(tx, req.account!, "RETURN_RECEIVED", "return", raNumber, raNumber, {
       unitsRestocked: restocked,
       unitsScrapped: lines.reduce((sum, l) => sum + l.qty, 0) - restocked,

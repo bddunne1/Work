@@ -1,5 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue, setNextCounterValue } from "./counterStore";
+import { localIsoDate } from "./dateUtils";
 import type { BolDetails, CarrierDetails, PurchaseOrder, ShipmentLine } from "../types";
 
 const SO_COUNTER_KEY = "salesOrder";
@@ -290,6 +291,8 @@ export async function shipOrder(order: PurchaseOrder, lines: ShipmentLine[], car
       version: order.version,
       lines: lines.filter((l) => l.qty > 0),
       carrier,
+      // The day at the dock: the invoice and pickup dates follow it, not UTC.
+      localDate: localIsoDate(),
     })
   );
 }
@@ -338,6 +341,7 @@ export async function undoShipment(order: PurchaseOrder): Promise<PurchaseOrder>
   return mapOrder(
     await api.post<PurchaseOrder>(`/api/sales-orders/${encodeURIComponent(order.soNumber)}/undo-shipment`, {
       version: order.version,
+      localDate: localIsoDate(),
     })
   );
 }

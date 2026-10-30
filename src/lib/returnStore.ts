@@ -1,5 +1,6 @@
 import { api } from "./apiClient";
 import { peekNextCounterValue } from "./counterStore";
+import { localIsoDate } from "./dateUtils";
 import type { ReturnAuthorization } from "../types";
 
 const RETURN_COUNTER_KEY = "return";
@@ -26,6 +27,8 @@ export async function receiveReturn(
     await api.post<ReturnAuthorization>(`/api/returns/${encodeURIComponent(ra.raNumber)}/receive`, {
       version: ra.version,
       lines: Object.entries(restock).map(([lineId, value]) => ({ lineId, restock: value })),
+      // The day at the dock: the credit memo is dated by it, not by UTC.
+      localDate: localIsoDate(),
     })
   );
 }
