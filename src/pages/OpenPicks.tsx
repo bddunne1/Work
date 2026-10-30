@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
 import { isConflictError } from "../lib/apiClient";
@@ -130,7 +131,7 @@ export default function OpenPicks() {
         <section className="pull-list" aria-label="Pull from floor">
           <h2 className="pull-list-title">Pull from floor</h2>
           <p className="muted">These orders were cancelled after their pick list printed. The staged goods go back on the shelf; mark each one pulled once it is.</p>
-          <div className="scroll-window">
+          <ListWindow>
             <table className="data-table">
               <thead>
                 <tr>
@@ -170,7 +171,7 @@ export default function OpenPicks() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ListWindow>
         </section>
       )}
 
@@ -182,7 +183,7 @@ export default function OpenPicks() {
           <p className="muted">Nothing on the dock right now.</p>
         ) : (
           <>
-            <div className="scroll-window">
+            <ListWindow>
               <table className="data-table">
                 <thead>
                   <tr>
@@ -198,7 +199,7 @@ export default function OpenPicks() {
                 </thead>
                 <tbody>{ready.map((o) => row(o, "ready"))}</tbody>
               </table>
-            </div>
+            </ListWindow>
             {canEdit && (
               <div className="button-row">
                 <button type="button" className="primary-btn" disabled={selectedOrders.length === 0 || confirming} onClick={confirmSelected}>
@@ -218,7 +219,7 @@ export default function OpenPicks() {
         {picking.length === 0 ? (
           <p className="muted">No picks on the floor.</p>
         ) : (
-          <div className="scroll-window">
+          <ListWindow>
             <table className="data-table">
               <thead>
                 <tr>
@@ -233,7 +234,7 @@ export default function OpenPicks() {
               </thead>
               <tbody>{picking.map((o) => row(o, "picking"))}</tbody>
             </table>
-          </div>
+          </ListWindow>
         )}
         <p className="muted">Open a pick to do its pack check once it is packed.</p>
       </section>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
 import { useCanEdit } from "../lib/authContext";
@@ -58,7 +59,8 @@ export default function PurchaseOrders() {
       {filtered.length === 0 ? (
         <p className="muted">{loading ? "Loading..." : debouncedQuery ? "No purchase orders match your search." : "No purchase orders yet."}</p>
       ) : (
-        <table className="data-table">
+        <ListWindow reserve={76}>
+<table className="data-table">
           <thead>
             <tr>
               <th>PO #</th>
@@ -86,6 +88,7 @@ export default function PurchaseOrders() {
             ))}
           </tbody>
         </table>
+</ListWindow>
       )}
 
       <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
 import { useCanEdit } from "../lib/authContext";
@@ -57,7 +58,8 @@ export default function Returns() {
       {filtered.length === 0 ? (
         <p className="muted">{loading ? "Loading..." : debouncedQuery ? "No returns match your search." : "No returns yet."}</p>
       ) : (
-        <table className="data-table">
+        <ListWindow reserve={76}>
+<table className="data-table">
           <thead>
             <tr>
               <th>RA #</th>
@@ -95,6 +97,7 @@ export default function Returns() {
             ))}
           </tbody>
         </table>
+</ListWindow>
       )}
 
       <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />

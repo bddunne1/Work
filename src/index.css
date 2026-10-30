@@ -386,9 +386,22 @@ a.brand:hover .wordmark {
   padding: 28px 24px 60px;
 }
 
+/* The page shell: 1040px on a small screen; at 1200px and up it uses the
+   content width; at 1600px and up it takes the extra width and pages with a
+   side panel go two-column (the per-page rules at the end of this file). */
 .page {
   max-width: 1040px;
   margin: 0 auto;
+}
+@media (min-width: 1200px) {
+  .page {
+    max-width: 1280px;
+  }
+}
+@media (min-width: 1600px) {
+  .page {
+    max-width: none;
+  }
 }
 
 .page-header {
@@ -1091,7 +1104,7 @@ a.brand:hover .wordmark {
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  max-height: 260px;
+  max-height: min(50dvh, 420px);
   overflow-y: auto;
   z-index: 20;
   list-style: none;
@@ -1222,7 +1235,8 @@ a.brand:hover .wordmark {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 65vh;
+  /* Measured by useViewportHeight: fills the window below the search box. */
+  max-height: max(240px, calc(100dvh - var(--chrome-height, 320px)));
   overflow-y: auto;
 }
 
@@ -1276,7 +1290,7 @@ a.brand:hover .wordmark {
   flex-direction: column;
   gap: 10px;
   margin: 14px 0;
-  max-height: 340px;
+  max-height: max(200px, calc(60dvh - 120px));
   overflow-y: auto;
 }
 
@@ -1598,7 +1612,7 @@ a.brand:hover .wordmark {
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
-  max-height: 380px;
+  max-height: min(60dvh, 520px);
   overflow: auto;
   padding: 4px 0;
 }
@@ -2100,7 +2114,7 @@ a.dash-lookup-row:focus-visible {
 /* Long orders (20+ lines) scroll inside the row instead of pushing the
    rest of the list - and the release bar - off screen. */
 .release-lines {
-  max-height: 340px;
+  max-height: max(200px, calc(50dvh - 80px));
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -3854,7 +3868,7 @@ a.dash-lookup-row:focus-visible {
 }
 
 .import-results-scroll {
-  max-height: 460px;
+  max-height: max(240px, calc(100dvh - var(--chrome-height, 420px)));
   overflow: auto;
   margin: 12px 0;
   border-radius: 8px;
@@ -3895,9 +3909,12 @@ a.dash-lookup-row:focus-visible {
   color: var(--danger);
 }
 
-/* Scroll windows: long lists above action buttons */
+/* Scroll windows: long lists above action buttons. The height comes from
+   the viewport: `--chrome-height` is the measured header + page header +
+   toolbar above the window (useViewportHeight / ListWindow), with a fallback
+   for windows nobody measures (tables inside a detail page). */
 .scroll-window {
-  max-height: min(60vh, 560px);
+  max-height: max(220px, calc(100dvh - var(--chrome-height, 320px)));
   max-width: 100%;
   overflow: auto;
   overscroll-behavior: contain;

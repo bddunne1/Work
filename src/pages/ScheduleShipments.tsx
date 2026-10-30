@@ -1,10 +1,12 @@
 import { showToast } from "../lib/toast";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ListWindow from "../components/ListWindow";
 import StatusPill from "../components/StatusPill";
 import { isConflictError } from "../lib/apiClient";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
+import { useViewportHeight } from "../lib/useViewportHeight";
 import { listOpenOrders, setEstimatedShipDate as setShipDate } from "../lib/orderStore";
 import type { OrderStatus, PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotalLabel, orderWeight, weightIndex } from "../types";
@@ -70,6 +72,9 @@ export default function ScheduleShipments() {
   // Days whose "+N more" has been opened in place, and the day open in the side panel.
   const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   const [selectedDay, setSelectedDay] = useState<string | "unscheduled" | null>(null);
+  // The calendar body fills the window below the toolbar and weekday row.
+  const calendarRef = useRef<HTMLDivElement>(null);
+  useViewportHeight(calendarRef, 24, [view, calView]);
 
   useEffect(() => {
     listOpenOrders().then(setOrders);
@@ -122,15 +127,14 @@ export default function ScheduleShipments() {
   }, [filtered]);
   const unscheduled = useMemo(() => filtered.filter((o) => !o.estimatedShipDate), [filtered]);
 
-  const cellFor = (date: Date): CalendarCell => {
-    const iso = isoDate(date);
-    const dayOrders = ordersByDate.get(iso) ?? [];
-    return { date, iso, orders: dayOrders, weight: dayOrders.reduce((sum, o) => sum + orderWeight(o, weights), 0) };
-  };
-
   // Month: leading and trailing blanks make whole weeks, so every row is the
   // same height. Week: the seven days from the cursor.
   const calendarCells = useMemo<CalendarCell[]>(() => {
+    const cellFor = (date: Date): CalendarCell => {
+      const iso = isoDate(date);
+      const dayOrders = ordersByDate.get(iso) ?? [];
+      return { date, iso, orders: dayOrders, weight: dayOrders.reduce((sum, o) => sum + orderWeight(o, weights), 0) };
+    };
     if (calView === "week") return Array.from({ length: 7 }, (_, i) => cellFor(addDays(cursor, i)));
     const first = cursor;
     const startWeekday = first.getDay();
@@ -338,7 +342,7 @@ export default function ScheduleShipments() {
                 </div>
               ))}
             </div>
-            <div className={`ship-calendar-grid ship-calendar-body ship-calendar-${calView}`} style={{ "--cal-rows": rowCount } as React.CSSProperties}>
+            <div ref={calendarRef} className={`ship-calendar-grid ship-calendar-body ship-calendar-${calView}`} style={{ "--cal-rows": rowCount } as React.CSSProperties}>
               {calendarCells.map((cell, idx) => {
                 if (!cell.date || !cell.iso) return <div key={`blank-${idx}`} className="ship-calendar-cell empty" />;
                 const iso = cell.iso;
@@ -423,7 +427,7 @@ export default function ScheduleShipments() {
               {panelOrders.length === 0 ? (
                 <p className="muted">Nothing scheduled for this day.</p>
               ) : (
-                <div className="scroll-window ship-calendar-panel-list">
+                <ListWindow className="ship-calendar-panel-list">
                   <table className="data-table">
                     <thead>
                       <tr>
@@ -456,7 +460,7 @@ export default function ScheduleShipments() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ListWindow>
               )}
             </aside>
           )}

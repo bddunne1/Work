@@ -1,4 +1,5 @@
 import { showToast } from "../lib/toast";
+import ListWindow from "../components/ListWindow";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Pager from "../components/Pager";
@@ -161,7 +162,8 @@ export default function ShipmentHistory() {
       ) : rows.length === 0 ? (
         <p className="muted">{loading ? "Loading..." : debouncedQuery ? "No shipments match your search." : "Nothing shipped in this range."}</p>
       ) : (
-        <table className="data-table">
+        <ListWindow reserve={76}>
+<table className="data-table">
           <thead>
             <tr>
               <th>Shipped</th>
@@ -226,6 +228,7 @@ export default function ShipmentHistory() {
             </tr>
           </tfoot>
         </table>
+</ListWindow>
       )}
 
       <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />

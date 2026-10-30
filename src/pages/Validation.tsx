@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
 import { useAuth } from "../lib/authContext";
@@ -82,7 +83,8 @@ export default function Validation() {
       {filtered.length === 0 ? (
         <p className="muted">Nothing to validate right now.</p>
       ) : (
-        <table className="data-table">
+        <ListWindow>
+<table className="data-table">
           <thead>
             <tr>
               <th>S.O. #</th>
@@ -117,6 +119,7 @@ export default function Validation() {
             ))}
           </tbody>
         </table>
+</ListWindow>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import { useCanEdit } from "../lib/authContext";
 import { listItems } from "../lib/itemStore";
@@ -66,7 +67,8 @@ export default function Inventory() {
       {filtered.length === 0 ? (
         <p className="muted">No items found.</p>
       ) : (
-        <table className="data-table">
+        <ListWindow>
+<table className="data-table">
           <thead>
             <tr>
               <th>Item #</th>
@@ -99,6 +101,7 @@ export default function Inventory() {
             })}
           </tbody>
         </table>
+</ListWindow>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../lib/apiClient";
+import { useViewportHeight } from "../lib/useViewportHeight";
 import { useCanEdit } from "../lib/authContext";
 import { parseCsvWithHeaders, toCsv, toCsvTable, type ParsedCsv } from "../lib/csv";
 import { saveCustomer } from "../lib/customerStore";
@@ -168,6 +169,8 @@ async function saveRow(type: ImportType, data: ImportRecord): Promise<Outcome> {
 export default function Import() {
   const canEdit = useCanEdit();
   const [type, setType] = useState<ImportType>("customers");
+  const resultsRef = useRef<HTMLDivElement>(null);
+  useViewportHeight(resultsRef, 80);
   const [fileName, setFileName] = useState("");
   const [csv, setCsv] = useState<ParsedCsv | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -485,7 +488,7 @@ export default function Import() {
             )}
 
             {rows.length > 0 && (
-              <div className="import-results-scroll">
+              <div className="import-results-scroll" ref={resultsRef}>
                 <table className="data-table">
                   <thead>
                     <tr>

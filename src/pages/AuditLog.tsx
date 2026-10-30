@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link } from "react-router-dom";
 import StockLedger from "../components/StockLedger";
 import type { AuditLogEntry } from "../lib/auditStore";
@@ -149,7 +150,8 @@ export default function AuditLog() {
             <p className="muted">No activity matches.</p>
           ) : (
             <>
-              <table className="data-table">
+              <ListWindow reserve={72}>
+<table className="data-table">
                 <thead>
                   <tr>
                     <th>When</th>
@@ -175,6 +177,7 @@ export default function AuditLog() {
                   })}
                 </tbody>
               </table>
+</ListWindow>
               {hasMore && (
                 <div className="button-row">
                   <button type="button" className="secondary-btn" onClick={loadOlder}>

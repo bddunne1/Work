@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import BatchPrintDocs from "../components/BatchPrintDocs";
 import WarehouseCapacityBanner from "../components/WarehouseCapacityBanner";
@@ -473,7 +474,8 @@ export default function PickPack() {
           </p>
         ) : (
           <div className="table-scroll">
-            <table className="data-table release-table">
+            <ListWindow>
+<table className="data-table release-table">
               <thead>
                 <tr>
                   {selectable && (
@@ -671,6 +673,7 @@ export default function PickPack() {
                 })}
               </tbody>
             </table>
+            </ListWindow>
           </div>
         )}
 

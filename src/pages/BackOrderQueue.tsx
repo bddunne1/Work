@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
 import StatusPill from "../components/StatusPill";
@@ -89,7 +90,7 @@ export default function BackOrderQueue() {
                 {g.title} <span className="muted">({rows.length})</span>
               </h2>
               <p className="muted">{g.blurb}</p>
-              <div className="scroll-window">
+              <ListWindow>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -157,7 +158,7 @@ export default function BackOrderQueue() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ListWindow>
             </section>
           );
         })

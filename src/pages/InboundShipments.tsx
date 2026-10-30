@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ListWindow from "../components/ListWindow";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import LoadFailed from "../components/LoadFailed";
 import Pager from "../components/Pager";
@@ -85,7 +86,7 @@ export default function InboundShipments() {
           {loading ? "Loading..." : debouncedQuery ? "No inbound shipments match your search." : showAll ? "No inbound shipments yet." : "Nothing on the water right now."}
         </p>
       ) : (
-        <div className="scroll-window">
+        <ListWindow reserve={76}>
           <table className="data-table">
             <thead>
               <tr>
@@ -132,7 +133,7 @@ export default function InboundShipments() {
               })}
             </tbody>
           </table>
-        </div>
+        </ListWindow>
       )}
 
       <Pager page={page} pageSize={pageSize} total={current?.total ?? 0} loading={loading} onPageChange={setPage} onPageSizeChange={setPageSize} />
