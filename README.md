@@ -281,11 +281,34 @@ exactly the packed quantities; a short leaves the balance on back order.
 
 The warehouse works from the **Dock** page (`/dock`, page key `dock`,
 preset Warehouse): being picked, Ready to ship, shipped today and picks to
-pull, with no prices anywhere. The shared floor login types the packer's
-initials at the pack check. Logistics can do the same pack check from Open
-Picks under its own name. The Dashboard splits the floor into "to pack"
+pull, with no prices anywhere. The Dashboard splits the floor into "to pack"
 and "on the dock", and the Ready to ship pill marks orders waiting for the
 carrier.
+
+There is one pack check page, `/pack-check/<S.O. #>`
+(`src/pages/PackCheck.tsx`), reached from Open Picks and from the Dock
+alike; `/open-picks/<S.O. #>` and `/dock/<S.O. #>` redirect to it, and
+it is reachable from either page's access (a route prefix two pages share
+takes the higher access). It never shows a price. The pack check records
+**Picked by** and **Checked by** initials: both are typed on the shared
+floor login (Dock only) and prefilled from the account otherwise. The
+`ready` command takes `pickedBy` and `checkedBy` (stored as
+`pickedByInitials` / `checkedByInitials`; `readyBy` stays the checker),
+clears them with the rest of the ready stamp, writes them to the
+ORDER_READY activity entry and copies them onto the shipment record, so
+they show on the pack check summary, the packing slip, the Sales Order
+View's shipment history and Shipment History. Office logins land on the
+Sales Order View after Mark Shipped; the floor login goes back to the Dock.
+
+Print documents (`src/components/BatchPrintDocs.tsx`) render through a
+portal at the end of the page and print themselves once mounted, so a
+packing slip can never sit inside a container the print stylesheet hides
+(the blank packing slip). Back links on detail and decision pages
+(`BackLink`, `useBackTarget`) return to where the person came from and
+fall back to the parent list when the page was opened cold. Release
+Orders no longer has Review one by one; Create Labels and Generate BOL
+are under construction (their routes, keys and the `set-bol` command and
+BOL defaults remain).
 
 ### Carrier details and the BOL
 
@@ -334,6 +357,42 @@ On a purchase order, "Receive all outstanding" fills every line with what
 is still owed so only the exceptions need typing before Receive. Each
 receipt sets the item's last purchase cost (`Item.cost`), which the
 catalog editor can also set by hand; a new PO line starts from it.
+
+The purchase order page is a full document: header with the vendor (a
+link to its profile), dates, status, who wrote it (`createdBy`, stamped
+at creation) and notes, lines with extended cost and received value,
+totals (ordered, received and outstanding value), the receive panel,
+inbound shipments and the receiving history, and it prints. Purchase
+Orders edit changes the vendor, dates, notes and lines in place through
+the version-checked `PUT /api/vendor-purchase-orders/:po` (received
+lines keep their item and stay), with a toast on refusal and the typed
+values kept on a 409; Close and Reopen go through the same PUT's
+`status`. Receiving is unchanged.
+
+### Vendor profiles
+
+`/vendors/:id` is the vendor's profile: account number, terms, lead
+time, website, contact, address, free-text notes and an active flag
+(inactive vendors leave the PO form's picker but stay on their POs and
+items), with cards for open POs (outstanding quantity and value), the
+items that prefer the vendor (on hand, on PO, last cost), dated notes
+saved to `VendorNote` with their author, and **New PO for this vendor**.
+`GET /api/vendors/:id/profile` (vendors view) returns all of it plus the
+closed PO count, the last PO and the **open balance** (outstanding value
+on open POs, ordered less received at line cost); cost figures are left
+out for accounts that may not see cost. Notes are
+`POST /api/vendors/:id/notes` (vendors edit). The Vendors list, the PO
+page and the item profile link to the profile.
+
+### Returns: who pays
+
+A return authorization carries three customer-pays flags,
+`customerPaysReturnFreight`, `customerPaysRestockingFee` and
+`customerPaysOriginalFreight` (default no). They are set on the return
+form, changeable on the return at any status (billing decisions, not
+stock), recorded old and new in the activity log, shown on the return's
+print view and, read-only, on the credit memo. The credit memo math is
+unchanged: Accounting still adds a DEDUCTION line by hand.
 
 Cost is shown only to accounts that may see it: Purchasing (view on
 Purchase Orders or Receiving), catalog editors, the Sales Manager (edit on
