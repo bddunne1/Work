@@ -261,7 +261,7 @@ function OrderDetailInner() {
   }
 
   return (
-    <div className="page">
+    <div className="page order-detail-page">
       <div className="page-header no-print">
         <button className="link-btn" onClick={() => navigate(-1)}>
           &larr; Back

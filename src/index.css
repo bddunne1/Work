@@ -4286,3 +4286,177 @@ a.dash-lookup-row:focus-visible {
 :root[data-theme="dark"] .theme-dark-only {
   display: block;
 }
+
+
+/* ---- Dead-space audit (sprint 4): denser desktop layout. Screen only, so
+   pick lists, packing slips, BOLs and invoices print exactly as before. ---- */
+@media screen and (min-width: 1200px) {
+  .content {
+    padding: 16px 20px 28px;
+  }
+  .page-header {
+    margin-bottom: 10px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  /* A page whose header is just a title and an intro keeps them on one
+     line; the intro is clamped to a line and opens on hover or focus. */
+  .page-header:has(> h1:first-child + p.muted:last-child) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 18px;
+  }
+  .page-header:has(> h1:first-child + p.muted:last-child) > h1 {
+    flex: none;
+  }
+  .page-header:has(> h1:first-child + p.muted:last-child) > p.muted {
+    flex: 1 1 320px;
+    min-width: 0;
+    margin: 0;
+  }
+  .page-header > p.muted {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    cursor: help;
+  }
+  .page-header:hover > p.muted,
+  .page-header:focus-within > p.muted {
+    -webkit-line-clamp: unset;
+  }
+  .toolbar {
+    margin-bottom: 10px;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 7px 10px;
+  }
+  .sales-order {
+    padding: 16px 20px;
+  }
+  .so-header {
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .so-addresses {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .address-box {
+    padding: 8px 12px;
+    gap: 3px;
+  }
+  .review-meta {
+    margin-top: 6px;
+    padding: 8px 12px;
+  }
+  .import-panel {
+    padding: 14px 16px;
+  }
+  .form-field {
+    margin-bottom: 10px;
+  }
+  .ship-locations,
+  .shipment-history,
+  .line-items,
+  .lane-section {
+    margin-bottom: 12px;
+  }
+  .ship-locations-header {
+    margin-bottom: 8px;
+  }
+  .decision-step,
+  .decision-outcome {
+    padding: 12px 14px;
+  }
+  .validation-panel {
+    gap: 16px;
+  }
+  .dash-head {
+    margin-bottom: 10px;
+  }
+  .dash-today {
+    margin-bottom: 14px;
+  }
+  .dash-section {
+    margin-bottom: 16px;
+  }
+  .dash-section-title {
+    margin-bottom: 6px;
+  }
+  .backorder-group,
+  .floor-stage,
+  .dock-stage {
+    margin-top: 12px;
+  }
+  /* Settings and the other panel forms: fields on one row, not a 480px
+     column with the rest of the panel empty. */
+  .import-panel > .narrow-form {
+    max-width: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0 14px;
+    align-items: end;
+  }
+  .import-panel > .narrow-form > .form-row {
+    display: contents;
+  }
+  .import-panel > .narrow-form > .inline-actions,
+  .import-panel > .narrow-form > p,
+  .import-panel > .narrow-form > .login-error {
+    grid-column: 1 / -1;
+  }
+  /* Item Profile: stock and profile on the left, components, links, notes
+     and the item's open orders on the right. */
+  .item-profile-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 28px;
+    align-items: start;
+  }
+  .item-profile-main .form-row,
+  .item-profile-side .form-row {
+    max-width: 480px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  /* The decision pages: lines on the left, the decision beside them. */
+  .validation-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+  }
+  .validation-panel > .line-items {
+    margin-bottom: 0;
+  }
+  /* Sales Order View: the document on the left, its shipment history,
+     invoices, allocation and notices beside it. */
+  .order-detail-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    gap: 0 20px;
+    align-items: start;
+  }
+  .order-detail-page > .page-header {
+    grid-column: 1 / -1;
+  }
+  .order-detail-page > .sales-order {
+    grid-column: 1;
+    grid-row: 2 / span 40;
+  }
+  .order-detail-page > :not(.page-header):not(.sales-order) {
+    grid-column: 2;
+    min-width: 0;
+  }
+  /* The Dashboard's Go to lanes in two columns. */
+  .dash-lanes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 28px;
+  }
+}
