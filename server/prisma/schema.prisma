@@ -97,6 +97,23 @@ model Account {
   // until the person picks their own password (POST /api/auth/change-password).
   mustChangePassword Boolean @default(false)
   createdAt    DateTime @default(now())
+
+  reportPreferences ReportPreference[]
+}
+
+// A person's favorite and recently run reports in the Report Center
+// (sprint 6). `reportRef` is a standard report's key or "saved:<id>" for a
+// memorized one; `kind` is FAVORITE or RECENT.
+model ReportPreference {
+  id         String   @id @default(uuid())
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  reportRef  String
+  kind       String
+  lastUsedAt DateTime @default(now())
+
+  @@unique([accountId, reportRef, kind])
+  @@index([accountId])
 }
 
 // Administrative accountability trail - who did what, when. Scoped to the

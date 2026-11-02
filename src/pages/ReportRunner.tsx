@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import BackLink from "../components/BackLink";
 import Pager from "../components/Pager";
+import ReportCustomize from "../components/ReportCustomize";
 import ReportGrid from "../components/ReportGrid";
 import { ApiError } from "../lib/apiClient";
 import { getCompanyInfo } from "../lib/companyStore";
 import { csvCell } from "../lib/csv";
-import { describeRange } from "../lib/reports/format";
 import { listCatalog, listSources, runReport, type StandardReport } from "../lib/reports/engineClient";
+import { describeRange } from "../lib/reports/format";
+import { recordRecent, savedRef } from "../lib/reports/preferenceStore";
 import { DATE_PRESET_LABELS, DATE_PRESETS, decodeSpec, encodeSpec, type DatePreset, type ReportResult, type ReportSourceInfo, type ReportSpec } from "../lib/reports/spec";
 import { getSavedReport } from "../lib/reportStore";
 
@@ -27,6 +29,8 @@ function resultToCsv(result: ReportResult, rowDims: { key: string; label: string
   return lines.join("\n");
 }
 
+const OP_TEXT: Record<string, string> = { equals: "is", contains: "contains", in: "is one of", between: "between", gte: "≥", lte: "≤", isEmpty: "is blank" };
+
 // Runs one spec and draws its result. The spec travels in the URL (?spec=,
 // base64 JSON) so Back returns to a report with its state; a standard
 // report's key or a memorized report's id supplies the starting spec.
@@ -44,12 +48,14 @@ export default function ReportRunner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [customizing, setCustomizing] = useState(false);
   const runId = useRef(0);
 
   // The starting spec: from the URL, else the standard report, else the memorized one.
   useEffect(() => {
     let cancelled = false;
     if (presetKey) {
+      recordRecent(presetKey);
       listCatalog().then((c) => {
         if (cancelled) return;
         const r = c.find((x) => x.key === presetKey);
@@ -57,6 +63,7 @@ export default function ReportRunner() {
         if (r && !params.get("spec")) setSpec(r.spec);
       });
     } else if (savedId) {
+      recordRecent(savedRef(savedId));
       getSavedReport(savedId).then((r) => {
         if (cancelled || !r) return;
         setSavedName(r.name);
@@ -69,6 +76,18 @@ export default function ReportRunner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetKey, savedId]);
 
+  // Browser Back/Forward: follow the spec in the URL.
+  useEffect(() => {
+    const s = params.get("spec");
+    if (!s) return;
+    const decoded = decodeSpec(s);
+    if (decoded && JSON.stringify(decoded) !== JSON.stringify(spec)) {
+      setSpec(decoded);
+      setPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   useEffect(() => {
     if (!spec) return;
     listSources()
@@ -76,27 +95,24 @@ export default function ReportRunner() {
       .catch(() => {});
   }, [spec]);
 
-  const run = useCallback(
-    (s: ReportSpec, p: number) => {
-      const id = ++runId.current;
-      setLoading(true);
-      setError(undefined);
-      runReport(s, { page: p, pageSize: PAGE_SIZE })
-        .then((r) => {
-          if (id !== runId.current) return;
-          setResult(r);
-        })
-        .catch((err) => {
-          if (id !== runId.current) return;
-          setResult(null);
-          setError(err instanceof ApiError && err.status === 403 ? `Your account can't read this data: ${err.message}` : err instanceof Error ? err.message : String(err));
-        })
-        .finally(() => {
-          if (id === runId.current) setLoading(false);
-        });
-    },
-    []
-  );
+  const run = useCallback((s: ReportSpec, p: number) => {
+    const id = ++runId.current;
+    setLoading(true);
+    setError(undefined);
+    runReport(s, { page: p, pageSize: PAGE_SIZE })
+      .then((r) => {
+        if (id !== runId.current) return;
+        setResult(r);
+      })
+      .catch((err) => {
+        if (id !== runId.current) return;
+        setResult(null);
+        setError(err instanceof ApiError && err.status === 403 ? `Your account can't read this data: ${err.message}` : err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (id === runId.current) setLoading(false);
+      });
+  }, []);
 
   // A report runs when it opens and whenever its spec or page changes.
   useEffect(() => {
@@ -106,17 +122,17 @@ export default function ReportRunner() {
   function updateSpec(next: ReportSpec) {
     setSpec(next);
     setPage(1);
-    setParams((p) => {
-      p.set("spec", encodeSpec(next));
-      return p;
-    }, { replace: true });
+    setParams(
+      (p) => {
+        p.set("spec", encodeSpec(next));
+        return p;
+      },
+      { replace: true }
+    );
   }
 
-  const rowDims = useMemo(
-    () => (spec?.rows ?? []).map((k) => ({ key: k, label: source?.dimensions.find((d) => d.key === k)?.label ?? k })),
-    [spec?.rows, source]
-  );
-  const title = spec?.presentation.title || standard?.name || savedName || "Report";
+  const rowDims = useMemo(() => (spec?.rows ?? []).map((k) => ({ key: k, label: source?.dimensions.find((d) => d.key === k)?.label ?? k })), [spec?.rows, source]);
+  const title = spec?.presentation.title || standard?.name || savedName || "Custom Report";
   const company = getCompanyInfo();
 
   function exportCsv() {
@@ -145,6 +161,13 @@ export default function ReportRunner() {
 
   const rangeText = describeRange(result, spec);
   const rowCount = result ? (result.kind === "detail" ? (result.totalRows ?? result.rows.length) : result.rows.length) : 0;
+  const fieldLabel = (key: string) => source?.dimensions.find((d) => d.key === key)?.label ?? source?.fields.find((f) => f.key === key)?.label ?? key;
+  const filterText = (f: ReportSpec["filters"][number]) => {
+    const labels = result?.labels[f.field];
+    const show = (v: string) => labels?.[v] ?? v;
+    const value = f.op === "isEmpty" ? "" : f.op === "in" || f.op === "between" ? (f.values ?? []).map(show).join(f.op === "between" ? " – " : ", ") : show(f.value ?? "");
+    return `${fieldLabel(f.field)} ${OP_TEXT[f.op] ?? f.op} ${value}`.trim();
+  };
 
   return (
     <div className="page report-page">
@@ -162,16 +185,13 @@ export default function ReportRunner() {
       </div>
 
       <div className="report-toolbar no-print">
-        <label className="form-field" style={{ margin: 0 }}>
-          <span className="sr-only">Date range</span>
-          <select aria-label="Date range" value={spec.dateRange.preset} onChange={(e) => updateSpec({ ...spec, dateRange: { ...spec.dateRange, preset: e.target.value as DatePreset } })}>
-            {DATE_PRESETS.map((p) => (
-              <option key={p} value={p}>
-                {DATE_PRESET_LABELS[p]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <select aria-label="Date range" value={spec.dateRange.preset} onChange={(e) => updateSpec({ ...spec, dateRange: { ...spec.dateRange, preset: e.target.value as DatePreset } })}>
+          {DATE_PRESETS.map((p) => (
+            <option key={p} value={p}>
+              {DATE_PRESET_LABELS[p]}
+            </option>
+          ))}
+        </select>
         {spec.dateRange.preset === "custom" && (
           <>
             <input type="date" aria-label="From" value={spec.dateRange.from ?? ""} onChange={(e) => updateSpec({ ...spec, dateRange: { ...spec.dateRange, from: e.target.value || undefined } })} />
@@ -180,6 +200,9 @@ export default function ReportRunner() {
         )}
         <span className="muted">{rangeText}</span>
         <span className="spacer" />
+        <button type="button" className="secondary-btn" onClick={() => setCustomizing(true)} disabled={!source}>
+          Customize
+        </button>
         <button type="button" className="secondary-btn" onClick={() => spec && run(spec, page)} disabled={loading}>
           {loading ? "Running…" : "Refresh"}
         </button>
@@ -190,6 +213,19 @@ export default function ReportRunner() {
           Print
         </button>
       </div>
+
+      {spec.filters.length > 0 && (
+        <div className="report-active-filters no-print" aria-label="Current filters">
+          {spec.filters.map((f, i) => (
+            <span key={i} className="report-filter-chip">
+              {filterText(f)}
+              <button type="button" aria-label={`Remove ${fieldLabel(f.field)} filter`} onClick={() => updateSpec({ ...spec, filters: spec.filters.filter((_, j) => j !== i) })}>
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="form-error" role="alert">
@@ -204,12 +240,22 @@ export default function ReportRunner() {
             {` · as of ${new Date(result.generatedAt).toLocaleTimeString()}`}
           </p>
           <ReportGrid result={result} rowDims={rowDims} presentation={spec.presentation} />
-          {result.kind === "detail" && (result.totalRows ?? 0) > PAGE_SIZE && (
-            <Pager page={page} pageSize={PAGE_SIZE} total={result.totalRows ?? 0} onPageChange={setPage} loading={loading} />
-          )}
+          {result.kind === "detail" && (result.totalRows ?? 0) > PAGE_SIZE && <Pager page={page} pageSize={PAGE_SIZE} total={result.totalRows ?? 0} onPageChange={setPage} loading={loading} />}
         </>
       )}
       {spec.presentation.footer && <p className="muted report-footer">{spec.presentation.footer}</p>}
+
+      {customizing && source && (
+        <ReportCustomize
+          spec={spec}
+          source={source}
+          onClose={() => setCustomizing(false)}
+          onApply={(next) => {
+            setCustomizing(false);
+            updateSpec(next);
+          }}
+        />
+      )}
     </div>
   );
 }

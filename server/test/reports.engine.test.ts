@@ -307,3 +307,19 @@ describe("standard report catalog", () => {
     expect((await noReports.get("/api/reports/catalog")).status).toBe(403);
   });
 });
+
+describe("report center preferences", () => {
+  it("keeps favorites and the newest dozen recent reports per account", async () => {
+    const me = await as("analyst", { permissions: { reports: "view" } });
+    expect(ok(await me.get("/api/reports/preferences"))).toEqual({ favorites: [], recent: [] });
+    expect(ok(await me.post("/api/reports/preferences/favorite", { ref: "shipments-by-day", on: true })).favorites).toEqual(["shipments-by-day"]);
+    expect(ok(await me.post("/api/reports/preferences/favorite", { ref: "saved:abc", on: true })).favorites).toEqual(["saved:abc", "shipments-by-day"]);
+    expect(ok(await me.post("/api/reports/preferences/favorite", { ref: "saved:abc", on: false })).favorites).toEqual(["shipments-by-day"]);
+    for (let i = 0; i < 14; i++) expect((await me.post("/api/reports/preferences/recent", { ref: `r-${i}` })).status).toBe(204);
+    const prefs = ok(await me.get("/api/reports/preferences"));
+    expect(prefs.recent).toHaveLength(12);
+    expect(prefs.recent[0].ref).toBe("r-13");
+    // Another account sees its own, empty, list.
+    expect(ok(await root.get("/api/reports/preferences"))).toEqual({ favorites: [], recent: [] });
+  });
+});
