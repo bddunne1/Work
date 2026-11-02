@@ -97,6 +97,23 @@ model Account {
   // until the person picks their own password (POST /api/auth/change-password).
   mustChangePassword Boolean @default(false)
   createdAt    DateTime @default(now())
+
+  reportPreferences ReportPreference[]
+}
+
+// A person's favorite and recently run reports in the Report Center
+// (sprint 6). `reportRef` is a standard report's key or "saved:<id>" for a
+// memorized one; `kind` is FAVORITE or RECENT.
+model ReportPreference {
+  id         String   @id @default(uuid())
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  reportRef  String
+  kind       String
+  lastUsedAt DateTime @default(now())
+
+  @@unique([accountId, reportRef, kind])
+  @@index([accountId])
 }
 
 // Administrative accountability trail - who did what, when. Scoped to the
@@ -667,13 +684,50 @@ model Counter {
 // A "memorized" report (QuickBooks' term): the report's configuration only
 // (data source + filters + columns), never its result rows, so re-opening
 // it always re-runs live against current data.
+// A memorized report (QuickBooks' term): a spec saved under a name, by
+// someone, shared with everyone or kept to themselves, optionally in a
+// group that prints and is scheduled together (sprint 6).
 model SavedReport {
   id            String   @id @default(uuid())
   name          String
-  dataSourceKey String
-  filters       Json
-  columns       Json
+  // The previous Reports page saved these three. They are kept for one
+  // release so a downgrade still reads them; `spec` is what runs now, back-
+  // filled from them at start-up (lib/reports/legacy.ts).
+  dataSourceKey String?
+  filters       Json?
+  columns       Json?
+  spec          Json?
+  ownerId       String?
+  shared        Boolean  @default(true)
+  groupName     String?
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([ownerId])
+  @@index([groupName])
+}
+
+// A memorized report group sent by email on a schedule (sprint 6): the
+// worker in integrations/reportSchedules.ts runs due schedules, renders
+// the group in the chosen format and mails it to the recipients.
+model ReportSchedule {
+  id          String    @id @default(uuid())
+  groupName   String
+  // Five-field cron, in the server's local time: "0 7 * * 1-5".
+  cron        String
+  // pdf | csv | xlsx
+  format      String
+  // string[] of email addresses
+  recipients  Json
+  active      Boolean   @default(true)
+  lastRunAt   DateTime?
+  lastError   String?
+  createdById String?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([active])
 }
 
 // ---------------------------------------------------------------------------

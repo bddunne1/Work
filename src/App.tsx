@@ -70,6 +70,7 @@ const LabelsHome = lazy(() => import("./pages/LabelsHome"));
 const ProductLabels = lazy(() => import("./pages/ProductLabels"));
 const ReportRunner = lazy(() => import("./pages/ReportRunner"));
 const Reports = lazy(() => import("./pages/Reports"));
+const ReportGroup = lazy(() => import("./pages/ReportGroup"));
 const ShippingLabelCreate = lazy(() => import("./pages/ShippingLabelCreate"));
 
 function RedirectToPackCheck() {
@@ -144,6 +145,8 @@ function App() {
             <Route path="returns/:raNumber" element={<ReturnDetail />} />
             <Route path="reports" element={<Reports />} />
             <Route path="reports/new" element={<ReportRunner />} />
+            <Route path="reports/run" element={<ReportRunner />} />
+            <Route path="reports/group/:name" element={<ReportGroup />} />
             <Route path="reports/preset/:presetKey" element={<ReportRunner />} />
             <Route path="reports/saved/:savedId" element={<ReportRunner />} />
             <Route path="invoices" element={<Invoices />} />

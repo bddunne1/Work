@@ -196,6 +196,70 @@ inside it, so a step that rolls back leaves no entry. Settings accept only
 the keys the app knows (`lead_time_days`, `capacity_lookback_days`,
 `company_info`), each with its own validation.
 
+## Reports
+
+Reports work the way QuickBooks reports do. A report is a *spec* - a source,
+summary or detail, the measures, what to total by (up to four dimensions),
+an optional "display columns by" dimension, filters with operators, a date
+range preset, sub-columns and presentation - defined in
+`src/lib/reports/spec.ts` and mirrored by a zod schema on the server. Every
+report, standard or memorized, is one of these, and it runs on the server:
+`POST /api/reports/run` builds one parameterized query per report from the
+source definitions in `server/src/lib/reports/sources.ts`, groups it with
+`GROUPING SETS` so the rows, subtotals, column totals and grand total come
+from one scan, pages detail reports at up to 500 rows, resolves date
+presets (Today through Last Year, Last 30/90/365 Days, All, Custom) on the
+browser's calendar day from the `tzOffset` it sends, and caches identical
+requests for a minute. Eleven sources: sales order lines, shipments,
+invoice lines, credit memo lines, purchase order lines, receipts, stock
+movements, inventory, returns, customers and vendors. Money measures are
+left out for a login that may not see prices and cost measures for one that
+may not see cost (the same rules as the order pages); a source is refused to
+a login with none of its pages; a row dimension that would produce more
+than 20,000 groups is refused with a message.
+
+The **Report Center** (`/reports`) lists the standard catalog by area -
+Sales (invoiced), Orders, Purchasing, Inventory, Accounting, Lists - each a
+card with a date preset and Run, plus Memorized, Favorites and Recent (the
+last two per account). The runner draws any result: pivot column groups,
+nested subtotals, a grand total, right-aligned numbers, negatives in the
+chosen style, detail rows grouped by the row dimension with Collapse all /
+Expand all, Refresh and a row count. **Customize** opens QuickBooks' four
+tabs: Display (date range, total by, display columns by, measures, sort,
+Previous Period / Previous Year / % of Row / % of Column), Filters (a
+field list with an operator per field and a strip of current filters),
+Header/Footer (title, subtitle, company name from `company_info`, date
+prepared, page numbers, footer line) and Numbers (hide zero rows, divide by
+1,000, negative style); changes re-run on Apply. The spec rides in the URL
+as base64 JSON, so Back returns to a report with its state.
+
+**QuickZoom**: every summary number links to the detail behind it - the
+same spec as a detail report with the row and column values added as
+filters - and every detail row links to its document (order, invoice,
+credit memo, purchase order, return, item, customer or vendor).
+
+**Memorized reports** save a spec under a name, owned by whoever memorized
+it, shared with everyone or private, optionally in a group; the owner or
+an admin may change or delete one. Reports memorized before this version
+are translated into specs at start-up (`server/src/lib/reports/legacy.ts`)
+and still open. A group prints as one job (Print group) and can be
+**scheduled**: admins and Settings editors add a five-field cron, a format
+(PDF, Excel or CSV) and recipients; a worker beside the QuickBooks sync
+runs due schedules as the person who made them and mails the rendered
+group through `SMTP_URL` (nodemailer; with it unset the message is logged
+and the run still recorded). **Export** from the runner is CSV (in the
+browser), Excel or PDF (rendered by the server, with subtotal rows, page
+numbers and the footer line - the same renderers the schedules use), and
+the print stylesheet carries the header and footer fields.
+
+Environment: `SMTP_URL`, `MAIL_FROM` and `REPORT_SCHEDULE_INTERVAL_MS`
+(see `server/.env.example`). Tests: `server/test/reports.engine.test.ts`
+(every source totaled by hand, visibility, date presets at non-UTC
+offsets, the 20,000-group refusal, the catalog's permissions),
+`server/test/reports.memorized.test.ts` (memorized reports, groups,
+export, cron, schedules), the client unit tests under `src/lib/reports`
+and `e2e/08-reports.spec.ts`.
+
 ## Corrections after checking, and cancelled picks
 
 A change to a Checked order's items, quantities, prices or customer sends it
@@ -217,9 +281,8 @@ A page that fails to render shows a Reload / Try again panel inside the app
 shell instead of a blank window; messages that used to be browser alerts are
 toasts at the bottom right; the queue pages say when their list did not
 load. The BOL compares ship-to addresses ignoring case and spacing and, for
-several destinations, prints each order's ship-to in its row. Reports offer
-only the data sources the account can read, show the server's refusal, and
-ignore a slow answer that arrives after a later run. The import preview
+several destinations, prints each order's ship-to in its row. Reports are
+described under Reports below. The import preview
 flags order lines whose item is not in the catalog, shows the server's field
 errors, and no longer takes an On Purchase Order column (that figure comes
 from open vendor POs). Sidebar links appear only where the account has
