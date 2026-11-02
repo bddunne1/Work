@@ -23,6 +23,7 @@ import integrationsRouter from "./routes/integrations.js";
 import invoicesRouter from "./routes/invoices.js";
 import shipmentsRouter from "./routes/shipments.js";
 import itemsRouter from "./routes/items.js";
+import reportsRouter from "./routes/reports.js";
 import returnsRouter from "./routes/returns.js";
 import salesOrderSearchRouter from "./routes/salesOrderSearch.js";
 import salesOrdersRouter from "./routes/salesOrders.js";
@@ -70,6 +71,7 @@ export function createApp(): express.Express {
   app.use("/api/audit-log", auditLogRouter);
   app.use("/api/settings", settingsRouter);
   app.use("/api/saved-reports", savedReportsRouter);
+  app.use("/api/reports", reportsRouter);
   app.use("/api/counters", countersRouter);
   app.use("/api/vendor-purchase-orders", vendorPurchaseOrdersRouter);
   app.use("/api/inbound-shipments", inboundShipmentsRouter);
