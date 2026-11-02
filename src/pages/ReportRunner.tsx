@@ -12,7 +12,8 @@ import { describeRange } from "../lib/reports/format";
 import { recordRecent, savedRef } from "../lib/reports/preferenceStore";
 import { DATE_PRESET_LABELS, DATE_PRESETS, decodeSpec, encodeSpec, type DatePreset, type ReportResult, type ReportResultColumn, type ReportSourceInfo, type ReportSpec } from "../lib/reports/spec";
 import { zoomSpec } from "../lib/reports/zoom";
-import { getSavedReport } from "../lib/reportStore";
+import { exportReport, getSavedReport, memorizeReport, updateSavedReport, type ExportFormat, type SavedReport } from "../lib/reportStore";
+import { showToast } from "../lib/toast";
 
 const PAGE_SIZE = 200;
 
@@ -39,7 +40,11 @@ export default function ReportRunner() {
   const { presetKey, savedId } = useParams<{ presetKey?: string; savedId?: string }>();
   const [params, setParams] = useSearchParams();
   const [standard, setStandard] = useState<StandardReport | undefined>();
-  const [savedName, setSavedName] = useState<string | undefined>();
+  const [saved, setSaved] = useState<SavedReport | undefined>();
+  const savedName = saved?.name;
+  const [memorizing, setMemorizing] = useState(false);
+  const [memo, setMemo] = useState({ name: "", shared: true, groupName: "" });
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [spec, setSpec] = useState<ReportSpec | null>(() => {
     const s = params.get("spec");
     return s ? decodeSpec(s) : null;
@@ -67,7 +72,7 @@ export default function ReportRunner() {
       recordRecent(savedRef(savedId));
       getSavedReport(savedId).then((r) => {
         if (cancelled || !r) return;
-        setSavedName(r.name);
+        setSaved(r);
         if (!params.get("spec")) setSpec(r.spec);
       });
     }
@@ -136,6 +141,39 @@ export default function ReportRunner() {
   const title = spec?.presentation.title || standard?.name || savedName || "Custom Report";
   const company = getCompanyInfo();
 
+  async function handleMemorize() {
+    if (!spec || !memo.name.trim()) return;
+    try {
+      const r = await memorizeReport({ name: memo.name.trim(), spec, shared: memo.shared, groupName: memo.groupName.trim() || null });
+      setMemorizing(false);
+      showToast(`Memorized "${r.name}".`, "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), "error");
+    }
+  }
+
+  async function handleSaveChanges() {
+    if (!spec || !saved) return;
+    try {
+      setSaved(await updateSavedReport(saved.id, { spec }));
+      showToast(`Saved "${saved.name}".`, "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), "error");
+    }
+  }
+
+  async function handleExport(format: ExportFormat) {
+    if (!spec) return;
+    setExporting(format);
+    try {
+      await exportReport(spec, format, title);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err), "error");
+    } finally {
+      setExporting(null);
+    }
+  }
+
   function exportCsv() {
     if (!result) return;
     const csv = resultToCsv(result, rowDims);
@@ -175,7 +213,7 @@ export default function ReportRunner() {
   };
 
   return (
-    <div className="page report-page">
+    <div className={`page report-page${spec.presentation.showPageNumbers === false ? "" : " report-page--numbered"}`}>
       <div className="page-header no-print">
         <BackLink fallback="/reports" label="Report Center" />
         <h1>{title}</h1>
@@ -214,10 +252,55 @@ export default function ReportRunner() {
         <button type="button" className="secondary-btn" onClick={exportCsv} disabled={!result || result.rows.length === 0}>
           Export CSV
         </button>
+        <button type="button" className="secondary-btn" onClick={() => handleExport("xlsx")} disabled={!result || exporting !== null}>
+          {exporting === "xlsx" ? "Preparing…" : "Export Excel"}
+        </button>
+        <button type="button" className="secondary-btn" onClick={() => handleExport("pdf")} disabled={!result || exporting !== null}>
+          {exporting === "pdf" ? "Preparing…" : "Export PDF"}
+        </button>
         <button type="button" className="secondary-btn print-btn" onClick={() => window.print()}>
           Print
         </button>
+        {saved?.canEdit && (
+          <button type="button" className="secondary-btn" onClick={handleSaveChanges} disabled={JSON.stringify(saved.spec) === JSON.stringify(spec)}>
+            Save changes
+          </button>
+        )}
+        <button
+          type="button"
+          className="primary-btn"
+          onClick={() => {
+            setMemo({ name: saved ? `${saved.name} (copy)` : standard?.name ?? spec.presentation.title ?? "", shared: true, groupName: saved?.groupName ?? "" });
+            setMemorizing(true);
+          }}
+        >
+          Memorize
+        </button>
       </div>
+
+      {memorizing && (
+        <div className="report-memorize no-print" role="dialog" aria-label="Memorize report">
+          <label className="form-field">
+            Name
+            <input autoFocus value={memo.name} onChange={(e) => setMemo({ ...memo, name: e.target.value })} aria-label="Memorized report name" />
+          </label>
+          <label className="form-field">
+            Group
+            <input value={memo.groupName} placeholder="Optional - prints and schedules together" onChange={(e) => setMemo({ ...memo, groupName: e.target.value })} aria-label="Report group" />
+          </label>
+          <label className="checkbox-line">
+            <input type="checkbox" checked={memo.shared} onChange={(e) => setMemo({ ...memo, shared: e.target.checked })} /> Share with everyone
+          </label>
+          <div className="inline-actions">
+            <button type="button" className="primary-btn" onClick={handleMemorize} disabled={!memo.name.trim()}>
+              Memorize report
+            </button>
+            <button type="button" className="secondary-btn" onClick={() => setMemorizing(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {spec.filters.length > 0 && (
         <div className="report-active-filters no-print" aria-label="Current filters">
@@ -249,6 +332,10 @@ export default function ReportRunner() {
         </>
       )}
       {spec.presentation.footer && <p className="muted report-footer">{spec.presentation.footer}</p>}
+      <div className="report-print-footer">
+        {spec.presentation.showDatePrepared !== false ? `Prepared ${new Date().toLocaleString()}` : ""}
+        {spec.presentation.showPageNumbers !== false ? <span className="report-print-pageno" /> : null}
+      </div>
 
       {customizing && source && (
         <ReportCustomize

@@ -1,7 +1,9 @@
 import "dotenv/config";
 import { createApp } from "./app.js";
 import { secretsEncrypted } from "./integrations/secrets.js";
+import { startReportScheduler } from "./integrations/reportSchedules.js";
 import { startSyncScheduler } from "./integrations/sync.js";
+import { backfillLegacySpecs } from "./routes/savedReports.js";
 import { prisma } from "./prisma.js";
 
 // A misconfigured secret used to surface as a 500 on the first request that
@@ -17,7 +19,9 @@ function checkEnvironment(): void {
   }
   const ttl = process.env.TOKEN_TTL;
   if (ttl && !/^\d+(ms|s|m|h|d)?$/.test(ttl)) problems.push(`TOKEN_TTL "${ttl}" is not a duration (use e.g. 10h or 36000).`);
-  for (const key of ["QBO_SYNC_INTERVAL_MS", "PORT"]) {
+  const smtp = process.env.SMTP_URL;
+  if (smtp && !/^smtps?:\/\//.test(smtp)) problems.push(`SMTP_URL "${smtp}" must start with smtp:// or smtps://.`);
+  for (const key of ["QBO_SYNC_INTERVAL_MS", "REPORT_SCHEDULE_INTERVAL_MS", "PORT"]) {
     const v = process.env[key];
     if (v && !/^\d+$/.test(v)) problems.push(`${key} "${v}" is not a whole number.`);
   }
@@ -38,6 +42,14 @@ const server = app.listen(port, () => {
 });
 // Pushes invoices and credit memos to QuickBooks in the background.
 const stopSync = startSyncScheduler();
+// Mails memorized report groups on their schedules.
+const stopReports = startReportScheduler();
+// Reports memorized on the previous Reports page get a runnable spec.
+backfillLegacySpecs()
+  .then((n) => {
+    if (n > 0) console.log(`reports: ${n} memorized report(s) translated to the report engine`);
+  })
+  .catch((err) => console.error("reports: legacy translation failed:", err));
 
 // Finish in-flight requests and release the database pool on a stop signal,
 // so a deploy never cuts a ship/receive transaction off mid-way.
@@ -47,6 +59,7 @@ function shutdown(signal: string) {
   stopping = true;
   console.log(`${signal} received - shutting down`);
   stopSync?.();
+  stopReports?.();
   server.close(() => {
     prisma.$disconnect().finally(() => process.exit(0));
   });

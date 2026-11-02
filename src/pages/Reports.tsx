@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { listCatalog, REPORT_AREAS, type ReportArea, type StandardReport } from "../lib/reports/engineClient";
 import { getReportPreferences, savedRef, setFavorite, type ReportPreferences } from "../lib/reports/preferenceStore";
 import { DATE_PRESET_LABELS, DATE_PRESETS, encodeSpec, type DatePreset } from "../lib/reports/spec";
-import type { SavedReport } from "../lib/reports/types";
-import { deleteSavedReport, listSavedReports } from "../lib/reportStore";
+import { useAuth } from "../lib/authContext";
+import { canEdit } from "../lib/permissions";
+import { deleteSavedReport, listSavedReports, type SavedReport } from "../lib/reportStore";
+import ReportSchedules from "../components/ReportSchedules";
 
 type SubTab = "standard" | "memorized" | "favorites" | "recent";
 const SUB_TABS: { key: SubTab; label: string }[] = [
@@ -30,6 +32,8 @@ interface Card {
 // Favorites and Recent are the signed-in person's, kept on the server.
 export default function Reports() {
   const navigate = useNavigate();
+  const { account } = useAuth();
+  const manageSchedules = account ? canEdit("/settings", account) : false;
   const [catalog, setCatalog] = useState<StandardReport[]>([]);
   const [saved, setSaved] = useState<SavedReport[]>([]);
   const [prefs, setPrefs] = useState<ReportPreferences>({ favorites: [], recent: [] });
@@ -64,7 +68,7 @@ export default function Reports() {
     const memorized: Card[] = saved.map((s) => ({
       ref: savedRef(s.id),
       name: s.name,
-      description: `Memorized · ${s.spec?.source ?? s.dataSourceKey}`,
+      description: [s.groupName ? `Group: ${s.groupName}` : "", s.shared ? (s.ownerName ? `Shared by ${s.ownerName}` : "Shared") : "Private", s.spec?.kind === "detail" ? "Detail" : "Summary"].filter(Boolean).join(" · "),
       area: "Memorized",
       defaultPreset: s.spec?.dateRange.preset ?? "all",
       saved: s,
@@ -91,6 +95,8 @@ export default function Reports() {
     setPrefs((p) => ({ ...p, favorites: on ? [...p.favorites, card.ref] : p.favorites.filter((r) => r !== card.ref) }));
     setPrefs(await setFavorite(card.ref, on));
   }
+
+  const groups = [...new Set(saved.map((s) => s.groupName).filter((g): g is string => Boolean(g)))].sort();
 
   async function handleDelete(r: SavedReport) {
     if (!confirm(`Delete the memorized report "${r.name}"?`)) return;
@@ -139,6 +145,17 @@ export default function Reports() {
         ))}
       </div>
 
+      {sub === "memorized" && groups.length > 0 && (
+        <div className="report-groups no-print" aria-label="Report groups">
+          <span className="muted">Groups:</span>
+          {groups.map((g) => (
+            <button key={g} type="button" className="row-action-outline" onClick={() => navigate(`/reports/group/${encodeURIComponent(g)}`)}>
+              Print group · {g} ({saved.filter((s) => s.groupName === g).length})
+            </button>
+          ))}
+        </div>
+      )}
+
       <section className="lane-section">
         {shown.length === 0 ? (
           <p className="muted">
@@ -164,7 +181,7 @@ export default function Reports() {
                   <button type="button" className="primary-btn" onClick={() => c.open(presets[c.ref] ?? c.defaultPreset)}>
                     Run
                   </button>
-                  {c.saved && (
+                  {c.saved?.canEdit && (
                     <button type="button" className="row-action-outline danger-link" onClick={() => handleDelete(c.saved!)} aria-label={`Delete ${c.name}`}>
                       Delete
                     </button>
@@ -175,6 +192,8 @@ export default function Reports() {
           </div>
         )}
       </section>
+
+      {sub === "memorized" && manageSchedules && <ReportSchedules groups={groups} />}
     </div>
   );
 }

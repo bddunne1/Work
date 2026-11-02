@@ -4759,3 +4759,70 @@ a.dash-lookup-row:focus-visible {
   gap: 6px;
   margin: 0 0 10px;
 }
+
+/* ---- Memorize panel, groups, print header and footer ---- */
+.report-memorize {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+}
+.report-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+}
+.report-group-item {
+  margin-bottom: 28px;
+}
+.report-group-item h2 {
+  margin: 0 0 2px;
+  font-size: 17px;
+}
+.report-print-footer {
+  display: none;
+}
+@page {
+  margin: 14mm 12mm;
+}
+@page numbered {
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9px;
+    color: #555;
+  }
+}
+@media print {
+  .report-page--numbered {
+    page: numbered;
+  }
+  .report-print-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 6px;
+    border-top: 1px solid #999;
+    font-size: 9px;
+    color: #555;
+  }
+  .report-group-item {
+    break-inside: avoid-page;
+  }
+  .report-group-item + .report-group-item {
+    break-before: page;
+  }
+  .report-drawer-backdrop {
+    display: none;
+  }
+}
+@media print {
+  .toast-host {
+    display: none;
+  }
+}

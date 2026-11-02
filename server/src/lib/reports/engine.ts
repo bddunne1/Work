@@ -610,6 +610,22 @@ export async function runReport(spec: ReportSpec, ctx: RunContext): Promise<Repo
   return cache.get(key, () => compute(spec, ctx));
 }
 
+// Every row of a detail report (up to `maxRows`), for export, print and
+// email, where paging makes no sense; a summary is returned as is.
+export async function runReportAll(spec: ReportSpec, ctx: RunContext, maxRows = 10_000): Promise<ReportResult> {
+  if (spec.kind !== "detail") return runReport(spec, ctx);
+  const pageSize = 500;
+  const first = await runReport(spec, { ...ctx, page: 1, pageSize });
+  const rows = [...first.rows];
+  const totalRows = first.totalRows ?? rows.length;
+  for (let page = 2; rows.length < totalRows && rows.length < maxRows; page++) {
+    const next = await runReport(spec, { ...ctx, page, pageSize });
+    rows.push(...next.rows);
+    if (next.rows.length === 0) break;
+  }
+  return { ...first, rows, page: 1, pageSize: rows.length, truncated: rows.length < totalRows };
+}
+
 // What a source offers this account, for the Customize panel.
 export function describeSource(account: AuthedAccount, key: ReportSource, tzOffset = 0) {
   const source = SOURCES[key];
