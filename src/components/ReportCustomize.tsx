@@ -77,6 +77,7 @@ export default function ReportCustomize({ spec, source, onApply, onClose }: Prop
     set({ filters: draft.filters.filter((_, j) => j !== i) });
   }
   const fieldLabel = (key: string) => filterFields.find((f) => f.key === key)?.label ?? key;
+  const valueLabel = (key: string, value: string) => filterFields.find((f) => f.key === key)?.options?.find((o) => o.value === value)?.label ?? value;
   const company = getCompanyInfo();
 
   function filterValueInput(f: ReportFilter, i: number) {
@@ -260,7 +261,7 @@ export default function ReportCustomize({ spec, source, onApply, onClose }: Prop
                 <div className="report-filter-strip">
                   {draft.filters.map((f, i) => (
                     <span key={i} className="report-filter-chip">
-                      {fieldLabel(f.field)} {OP_LABELS[f.op]} {f.op === "isEmpty" ? "" : f.op === "in" || f.op === "between" ? (f.values ?? []).join(f.op === "between" ? " – " : ", ") : (f.value ?? "")}
+                      {fieldLabel(f.field)} {OP_LABELS[f.op]} {f.op === "isEmpty" ? "" : f.op === "in" || f.op === "between" ? (f.values ?? []).map((v) => valueLabel(f.field, v)).join(f.op === "between" ? " – " : ", ") : valueLabel(f.field, f.value ?? "")}
                       <button type="button" aria-label={`Remove ${fieldLabel(f.field)} filter`} onClick={() => removeFilter(i)}>
                         ✕
                       </button>

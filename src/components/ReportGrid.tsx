@@ -66,7 +66,7 @@ export default function ReportGrid({ result, rowDims, presentation = {}, zoomTo,
       else groups.push({ label: c.measure ?? "", columns: [c] });
     }
   }
-  const measureLabel = (key: string) => result.columns.find((c) => c.measure === key && (c.pivot === null || c.pivot === undefined || c.pivot === "total") && !c.sub)?.label ?? key;
+  const measureLabel = (key: string) => result.columns.find((c) => c.measure === key)?.measureLabel ?? key;
   const subLabel = (c: ReportResultColumn) => (c.sub === "previousPeriod" ? "Prev. Period" : c.sub === "previousYear" ? "Prev. Year" : c.sub === "pctOfRow" ? "% of Row" : c.sub === "pctOfColumn" ? "% of Column" : "");
   const headerText = (c: ReportResultColumn) => (c.sub ? `${pivoted ? c.label + " " : ""}${subLabel(c)}` : c.label);
 

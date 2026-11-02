@@ -146,6 +146,7 @@ export interface ReportResultColumn {
   // Summary: the measure this column carries, and the pivot value when the
   // report displays columns by a dimension ("total" for the row total).
   measure?: string;
+  measureLabel?: string;
   pivot?: string | null;
   sub?: SubColumn;
   // Detail: whether the column is summed into subtotals.

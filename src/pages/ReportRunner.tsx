@@ -10,7 +10,8 @@ import { csvCell } from "../lib/csv";
 import { listCatalog, listSources, runReport, type StandardReport } from "../lib/reports/engineClient";
 import { describeRange } from "../lib/reports/format";
 import { recordRecent, savedRef } from "../lib/reports/preferenceStore";
-import { DATE_PRESET_LABELS, DATE_PRESETS, decodeSpec, encodeSpec, type DatePreset, type ReportResult, type ReportSourceInfo, type ReportSpec } from "../lib/reports/spec";
+import { DATE_PRESET_LABELS, DATE_PRESETS, decodeSpec, encodeSpec, type DatePreset, type ReportResult, type ReportResultColumn, type ReportSourceInfo, type ReportSpec } from "../lib/reports/spec";
+import { zoomSpec } from "../lib/reports/zoom";
 import { getSavedReport } from "../lib/reportStore";
 
 const PAGE_SIZE = 200;
@@ -159,6 +160,10 @@ export default function ReportRunner() {
     );
   }
 
+  // QuickZoom: a summary cell opens the detail behind it as a new history
+  // entry, so Back returns here with this spec intact.
+  const zoomTo = (dims: Record<string, string | null>, column: ReportResultColumn | null) => `/reports/run?spec=${encodeSpec(zoomSpec(spec, dims, column, title, result?.labels ?? {}))}`;
+
   const rangeText = describeRange(result, spec);
   const rowCount = result ? (result.kind === "detail" ? (result.totalRows ?? result.rows.length) : result.rows.length) : 0;
   const fieldLabel = (key: string) => source?.dimensions.find((d) => d.key === key)?.label ?? source?.fields.find((f) => f.key === key)?.label ?? key;
@@ -239,7 +244,7 @@ export default function ReportRunner() {
             {result.hidden.length > 0 ? ` · ${result.hidden.length} column${result.hidden.length === 1 ? "" : "s"} not shown to this login` : ""}
             {` · as of ${new Date(result.generatedAt).toLocaleTimeString()}`}
           </p>
-          <ReportGrid result={result} rowDims={rowDims} presentation={spec.presentation} />
+          <ReportGrid result={result} rowDims={rowDims} presentation={spec.presentation} zoomTo={result.kind === "summary" ? zoomTo : undefined} />
           {result.kind === "detail" && (result.totalRows ?? 0) > PAGE_SIZE && <Pager page={page} pageSize={PAGE_SIZE} total={result.totalRows ?? 0} onPageChange={setPage} loading={loading} />}
         </>
       )}

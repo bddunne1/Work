@@ -34,6 +34,8 @@ export interface ResultColumn {
   label: string;
   kind: ValueKind;
   measure?: string;
+  // The measure's own label, for the group header above pivot columns.
+  measureLabel?: string;
   pivot?: string | null;
   sub?: SubColumn;
   sum?: boolean;
@@ -393,11 +395,11 @@ async function runSummary(spec: ReportSpec, b: Built, ctx: RunContext, hidden: s
   for (const bk of baseKeys) {
     const m = visible.find((x) => x.key === bk.measure)!;
     const label = bk.pivot === null ? m.label : `${pivotLabel(bk.pivot)}`;
-    columns.push({ key: bk.key, label, kind: m.kind, measure: m.key, pivot: bk.pivot });
-    for (const sub of compare.keys()) columns.push({ key: `${bk.key}~${sub}`, label, kind: m.kind, measure: m.key, pivot: bk.pivot, sub });
+    columns.push({ key: bk.key, label, kind: m.kind, measure: m.key, measureLabel: m.label, pivot: bk.pivot });
+    for (const sub of compare.keys()) columns.push({ key: `${bk.key}~${sub}`, label, kind: m.kind, measure: m.key, measureLabel: m.label, pivot: bk.pivot, sub });
     for (const sub of pctSubs) {
       if (sub === "pctOfRow" && !pivotDim) continue;
-      columns.push({ key: `${bk.key}~${sub}`, label, kind: "pct", measure: m.key, pivot: bk.pivot, sub });
+      columns.push({ key: `${bk.key}~${sub}`, label, kind: "pct", measure: m.key, measureLabel: m.label, pivot: bk.pivot, sub });
     }
   }
 
