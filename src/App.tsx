@@ -144,6 +144,7 @@ function App() {
             <Route path="returns/:raNumber" element={<ReturnDetail />} />
             <Route path="reports" element={<Reports />} />
             <Route path="reports/new" element={<ReportRunner />} />
+            <Route path="reports/run" element={<ReportRunner />} />
             <Route path="reports/preset/:presetKey" element={<ReportRunner />} />
             <Route path="reports/saved/:savedId" element={<ReportRunner />} />
             <Route path="invoices" element={<Invoices />} />

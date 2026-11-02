@@ -186,6 +186,9 @@ export interface ReportResult {
   range: { from: string | null; to: string | null };
   // Measures or columns the account may not see were left out.
   hidden: string[];
+  // Display labels for dimension values with a fixed vocabulary
+  // (status codes), keyed by dimension then raw value.
+  labels: Record<string, Record<string, string>>;
 }
 
 export interface ReportFieldInfo {

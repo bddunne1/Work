@@ -270,3 +270,40 @@ describe("report engine: filters, visibility, dates and limits", () => {
     expect(b.generatedAt).toBe(a.generatedAt);
   });
 });
+
+describe("standard report catalog", () => {
+  it("offers every standard report to admin and each one runs", async () => {
+    const catalog = ok(await root.get("/api/reports/catalog"));
+    expect(catalog.map((r: any) => r.key)).toEqual([
+      "sales-by-customer-summary", "sales-by-customer-detail", "sales-by-item-summary", "sales-by-item-detail", "sales-by-rep-summary",
+      "open-sales-orders-by-customer", "open-sales-orders-by-item", "backorders-by-item", "shipments-by-day",
+      "invoice-register", "credit-memo-register",
+      "purchases-by-vendor-summary", "purchases-by-vendor-detail", "open-purchase-orders-by-vendor", "open-purchase-orders-by-item", "receipts-by-vendor",
+      "inventory-stock-status-by-item", "inventory-valuation-summary", "item-stock-movement",
+      "customer-contact-list", "vendor-contact-list",
+    ]);
+    for (const r of catalog) {
+      const res = await run(root, { ...r.spec, dateRange: { preset: "all" } });
+      expect(res.status, `${r.key}: ${JSON.stringify(res.body)}`).toBe(200);
+    }
+    const sales = catalog.find((r: any) => r.key === "sales-by-customer-summary");
+    expect(sales).toMatchObject({ area: "Sales", defaultPreset: "this-month-to-date", spec: { source: "invoice-lines", rows: ["customer"] } });
+    const result = ok(await run(root, { ...sales.spec, dateRange: { preset: "all" } }));
+    expect(rowsByDim(result, "customer")).toEqual({ "Acme Fabrication": { qty: 4, amount: 10 } });
+  });
+
+  it("offers only the areas whose sources the account may read", async () => {
+    const buyer = await as("buyer", { permissions: { reports: "view", "purchase-orders": "view", vendors: "view" } });
+    const areas = new Set(ok(await buyer.get("/api/reports/catalog")).map((r: any) => r.area));
+    // Reports access itself grants reading orders (lib/orderView.ts ORDER_READ_PAGES), so Orders comes with it.
+    expect([...areas].sort()).toEqual(["Inventory", "Lists", "Orders", "Purchasing"]);
+    const keys = ok(await buyer.get("/api/reports/catalog")).map((r: any) => r.key);
+    expect(keys).toContain("vendor-contact-list");
+    expect(keys).not.toContain("customer-contact-list");
+    expect(keys).not.toContain("sales-by-customer-summary");
+    const none = await as("nobody", { permissions: { reports: "view" } });
+    expect(new Set(ok(await none.get("/api/reports/catalog")).map((r: any) => r.area))).toEqual(new Set(["Orders"]));
+    const noReports = await as("floor", { permissions: { dock: "view" } });
+    expect((await noReports.get("/api/reports/catalog")).status).toBe(403);
+  });
+});

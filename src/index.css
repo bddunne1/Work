@@ -4530,3 +4530,106 @@ a.dash-lookup-row:focus-visible {
 @media (max-width: 1199px) {
   .vendor-layout { grid-template-columns: 1fr; }
 }
+
+/* ---- Report engine grids (Report Center, sprint 6) ---- */
+.report-grid-wrap {
+  overflow: auto;
+}
+.report-grid th,
+.report-grid td {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.report-grid .report-pivot-group {
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.report-grid .report-group-header td {
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel-bg));
+  font-weight: 600;
+  color: var(--text-h);
+}
+.report-grid .report-subtotal td {
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+}
+.report-grid tfoot .report-total td {
+  font-weight: 700;
+  color: var(--text-h);
+  border-top: 2px solid var(--text-h);
+  background: var(--panel-bg);
+}
+.report-grid .report-negative {
+  color: var(--danger, #c62828);
+}
+.report-grid .report-row-index {
+  width: 1.5rem;
+  color: var(--text-muted);
+}
+.report-zoom {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--text-muted);
+}
+.report-zoom:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.report-group-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+.report-grid-tools {
+  margin-bottom: 8px;
+}
+.report-header-print {
+  display: none;
+}
+.report-center-areas {
+  margin-bottom: 8px;
+}
+.report-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+.report-card-actions select {
+  flex: 1;
+  min-width: 0;
+}
+.report-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.report-toolbar .spacer {
+  flex: 1;
+}
+@media print {
+  .report-header-print {
+    display: block;
+    margin-bottom: 12px;
+  }
+  .report-header-print h1 {
+    margin: 0;
+    font-size: 18px;
+  }
+  .report-header-print p {
+    margin: 2px 0;
+  }
+  .report-grid-wrap {
+    overflow: visible;
+  }
+  .report-grid th,
+  .report-grid td {
+    white-space: normal;
+  }
+}
