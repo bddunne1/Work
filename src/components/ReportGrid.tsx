@@ -183,6 +183,18 @@ export default function ReportGrid({ result, rowDims, presentation = {}, zoomTo,
                 </td>
               );
             }
+            // Document numbers on a detail row open their document even when
+            // the row's own link goes elsewhere (an invoice line's S.O. #).
+            const docHref = v !== null && v !== "" ? (c.dimension === "soNumber" ? `/storage/${v}` : c.dimension === "raNumber" ? `/returns/${v}` : null) : null;
+            if (docHref && docHref !== r.link) {
+              return (
+                <td key={c.key}>
+                  <Link to={docHref} className="report-zoom">
+                    {String(v)}
+                  </Link>
+                </td>
+              );
+            }
             if (c.dimension && !isNumericKind(c.kind)) return <td key={c.key}>{label(c.dimension, v === null ? null : String(v))}</td>;
             return cell(c, v, undefined, c.key);
           })}
