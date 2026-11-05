@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { useDismissable } from "../lib/useDismissable";
 import { getCompanyInfo } from "../lib/companyStore";
 import {
   DATE_PRESET_LABELS,
@@ -47,6 +48,9 @@ export default function ReportCustomize({ spec, source, onApply, onClose }: Prop
   const [tab, setTab] = useState<Tab>("display");
   const [draft, setDraft] = useState<ReportSpec>(spec);
   const [newFilterField, setNewFilterField] = useState("");
+  const titleId = useId();
+  // A modal drawer: focus moves in, Tab stays in, Escape closes, focus returns.
+  const drawerRef = useDismissable<HTMLElement>(true, onClose, { trap: true });
 
   const filterFields: ReportFieldInfo[] = [...source.dimensions, ...source.fields.filter((f) => !source.dimensions.some((d) => d.key === f.key))];
   const detail = draft.kind === "detail";
@@ -123,9 +127,9 @@ export default function ReportCustomize({ spec, source, onApply, onClose }: Prop
 
   return (
     <div className="report-drawer-backdrop" onClick={onClose}>
-      <aside className="report-drawer" role="dialog" aria-label="Customize report" onClick={(e) => e.stopPropagation()}>
+      <aside className="report-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={drawerRef} onClick={(e) => e.stopPropagation()}>
         <div className="report-drawer-head">
-          <h2>Customize Report</h2>
+          <h2 id={titleId}>Customize Report</h2>
           <button type="button" className="row-action-outline" onClick={onClose} aria-label="Close">
             ✕
           </button>

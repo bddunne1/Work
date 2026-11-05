@@ -121,7 +121,11 @@ export default function Invoices() {
               <tbody>
                 {invoices.rows.map((inv) => (
                   <tr key={inv.id} className={`clickable-row${inv.status === "VOID" ? " row-void" : ""}`} onClick={() => navigate(invoicePath(inv))}>
-                    <td>{inv.invoiceNumber ?? <span className="muted">Draft</span>}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <Link to={invoicePath(inv)} className="row-action-outline">
+                        {inv.invoiceNumber ?? <span className="muted">Draft</span>}
+                      </Link>
+                    </td>
                     <td>{inv.invoiceDate}</td>
                     <td>{inv.dueDate}</td>
                     <td>{inv.customerName}</td>
@@ -166,7 +170,11 @@ export default function Invoices() {
             <tbody>
               {memos.rows.map((m) => (
                 <tr key={m.id} className={`clickable-row${m.status === "VOID" ? " row-void" : ""}`} onClick={() => navigate(creditMemoPath(m))}>
-                  <td>{m.creditMemoNumber ?? <span className="muted">Draft</span>}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Link to={creditMemoPath(m)} className="row-action-outline">
+                      {m.creditMemoNumber ?? <span className="muted">Draft</span>}
+                    </Link>
+                  </td>
                   <td>{m.memoDate}</td>
                   <td>{m.customerName}</td>
                   <td onClick={(e) => e.stopPropagation()}>

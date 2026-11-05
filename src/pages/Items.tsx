@@ -65,7 +65,11 @@ export default function Items() {
           <tbody>
             {filtered.map((i) => (
               <tr key={i.id} className="clickable-row" onClick={() => navigate(`/items/${i.id}`)}>
-                <td>{i.itemNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/items/${i.id}`} className="row-action-outline">
+                    {i.itemNumber}
+                  </Link>
+                </td>
                 <td>{i.description}</td>
                 <td>{i.um}</td>
                 <td>${i.rate.toFixed(2)}</td>

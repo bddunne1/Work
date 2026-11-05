@@ -1122,7 +1122,8 @@ a.brand:hover .wordmark {
   font-size: 13.5px;
 }
 
-.search-select-menu li:hover {
+.search-select-menu li:hover,
+.search-select-menu li.is-active {
   background: var(--accent-bg);
 }
 
@@ -4825,4 +4826,56 @@ a.dash-lookup-row:focus-visible {
   .toast-host {
     display: none;
   }
+}
+
+
+/* ---- Keyboard: skip link and visible focus ---- */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -100px;
+  z-index: 100;
+  padding: 8px 14px;
+  background: var(--panel-bg);
+  color: var(--text-h);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip-link:focus {
+  top: 8px;
+}
+#main-content:focus {
+  outline: none;
+}
+/* One focus ring for the controls a keyboard user moves through: the
+   accent colour, offset so it reads against both light and dark panels. */
+.sidebar-links a:focus-visible,
+.more-menu-btn:focus-visible,
+.more-menu-item:focus-visible,
+.brand:focus-visible,
+.data-table a:focus-visible,
+.data-table button:focus-visible,
+.row-action-outline:focus-visible,
+.module-card a:focus-visible,
+.module-card button:focus-visible,
+.report-zoom:focus-visible,
+.report-group-toggle:focus-visible,
+.release-tab:focus-visible,
+.primary-btn:focus-visible,
+.secondary-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.clickable-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.clickable-row:focus-visible td {
+  background: color-mix(in srgb, var(--page-accent, var(--accent)) 8%, var(--panel-bg));
+}
+.data-table td:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }

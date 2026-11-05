@@ -107,7 +107,11 @@ export default function PurchaseOrders() {
                 className="clickable-row"
                 onClick={() => navigate(`/purchase-orders/${p.poNumber}`)}
               >
-                <td>{p.poNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/purchase-orders/${p.poNumber}`} className="row-action-outline">
+                    {p.poNumber}
+                  </Link>
+                </td>
                 <td>{p.vendorName}</td>
                 <td>{p.orderDate}</td>
                 <td>{p.status}</td>

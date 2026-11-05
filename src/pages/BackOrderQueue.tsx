@@ -8,6 +8,7 @@ import { useCanEdit } from "../lib/authContext";
 import { listBackOrders, setEstimatedShipDate, type BackOrderRow } from "../lib/orderStore";
 import { showToast } from "../lib/toast";
 import { matchesOrderQuery, orderTotalLabel } from "../types";
+import { rowKeyboardProps } from "../lib/a11y";
 
 // Orders waiting on stock, from GET /api/sales-orders/back-orders (G-06):
 // grouped as stock arrived (a receipt landed what they wait on; an analyst
@@ -105,7 +106,7 @@ export default function BackOrderQueue() {
                   </thead>
                   <tbody>
                     {rows.map((o) => (
-                      <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/allocation/${o.soNumber}`)}>
+                      <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/allocation/${o.soNumber}`)} {...rowKeyboardProps(() => navigate(`/allocation/${o.soNumber}`), `Allocate S.O. ${o.soNumber}`)}>
                         <td onClick={(e) => e.stopPropagation()}>
                           <Link to={`/storage/${o.soNumber}`} className="row-action-outline">
                             {o.soNumber}

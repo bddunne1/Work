@@ -77,7 +77,11 @@ export default function Returns() {
                 className="clickable-row"
                 onClick={() => navigate(`/returns/${r.raNumber}`)}
               >
-                <td>{r.raNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/returns/${r.raNumber}`} className="row-action-outline">
+                    {r.raNumber}
+                  </Link>
+                </td>
                 <td>{r.billTo.name}</td>
                 <td>{r.requestDate}</td>
                 <td onClick={(e) => e.stopPropagation()}>
