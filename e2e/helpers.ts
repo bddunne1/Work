@@ -87,3 +87,8 @@ export async function signIn(page: Page, username = "admin", password = ADMIN_PA
 export function acceptDialogs(page: Page): void {
   page.on("dialog", (d) => d.accept());
 }
+
+// A vendor with a unique name, for the purchasing specs.
+export async function makeVendor(name = `KB Vendor ${Date.now().toString(36).toUpperCase()}`) {
+  return api("POST", "/api/vendors", { name, contactName: "Rep", phone: "555-0100", email: "rep@example.com", address: { name, addressLine1: "2 Dock Rd", addressLine2: "", city: "Manteno", state: "IL", zip: "60950", notes: "" } });
+}

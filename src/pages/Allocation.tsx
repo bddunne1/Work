@@ -7,6 +7,7 @@ import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotal, orderTotalLabel } from "../types";
+import { rowKeyboardProps } from "../lib/a11y";
 
 type SortKey = "dueDate" | "soNumber" | "customer" | "orderDate" | "total";
 
@@ -154,6 +155,7 @@ export default function Allocation() {
                 key={o.soNumber}
                 className="clickable-row"
                 onClick={() => navigate(`/allocation/${o.soNumber}`)}
+                {...rowKeyboardProps(() => navigate(`/allocation/${o.soNumber}`), `Allocate S.O. ${o.soNumber}`)}
               >
                 <td onClick={(e) => e.stopPropagation()}>
                   <Link to={`/storage/${o.soNumber}`} className="row-action-outline">

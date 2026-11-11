@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useDismissable } from "../lib/useDismissable";
 import { Link } from "react-router-dom";
 import { MenuIcon } from "./SidebarIcons";
 import type { Account } from "../lib/authStore";
@@ -19,6 +20,23 @@ interface Props {
 export default function MoreMenu({ account }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Escape closes the menu and puts focus back on the button; opening moves
+  // focus to the first item.
+  const panelRef = useDismissable<HTMLDivElement>(open, () => setOpen(false));
+
+  // Arrow keys walk the items; Home and End jump.
+  function onPanelKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const links = [...(panelRef.current?.querySelectorAll<HTMLAnchorElement>(".more-menu-item") ?? [])];
+    const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+    const go = (n: number) => {
+      e.preventDefault();
+      links[(n + links.length) % links.length]?.focus();
+    };
+    if (e.key === "ArrowDown") go(i + 1);
+    else if (e.key === "ArrowUp") go(i - 1);
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(links.length - 1);
+  }
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -45,13 +63,19 @@ export default function MoreMenu({ account }: Props) {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" && !open) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
       >
         <MenuIcon />
       </button>
       {open && (
-        <div className="more-menu-panel">
+        <div className="more-menu-panel" role="menu" ref={panelRef} onKeyDown={onPanelKeyDown}>
           {items.map((m) => (
-            <Link key={m.to} to={m.to} className="more-menu-item" onClick={() => setOpen(false)}>
+            <Link key={m.to} to={m.to} className="more-menu-item" role="menuitem" onClick={() => setOpen(false)}>
               {m.name}
             </Link>
           ))}

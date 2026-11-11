@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import ListWindow from "../components/ListWindow";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { listOpenVendorPos } from "../lib/vendorPoStore";
 import type { VendorPurchaseOrder } from "../types";
 import { matchesVendorPoQuery, vendorPoOutstandingTotal } from "../types";
@@ -58,7 +58,11 @@ export default function Receiving() {
                 className="clickable-row"
                 onClick={() => navigate(`/purchase-orders/${p.poNumber}`)}
               >
-                <td>{p.poNumber}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/purchase-orders/${p.poNumber}`} className="row-action-outline">
+                    {p.poNumber}
+                  </Link>
+                </td>
                 <td>{p.vendorName}</td>
                 <td>{p.orderDate}</td>
                 <td>{p.expectedDate || "—"}</td>

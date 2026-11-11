@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import BrandMark, { Wordmark } from "./BrandMark";
 import ErrorBoundary from "./ErrorBoundary";
@@ -13,6 +13,7 @@ export default function Layout() {
   const { account, loading, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const mainRef = useRef<HTMLElement>(null);
 
   // React Router doesn't reset scroll on navigation the way a full page
   // load does - without this, a list page can open still scrolled to
@@ -51,6 +52,18 @@ export default function Layout() {
 
   return (
     <div className="app-shell">
+      {/* First tab stop: past the sidebar and top bar to the page. The hash
+          router owns the URL fragment, so the jump is done by focusing. */}
+      <a
+        href="#main-content"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault();
+          mainRef.current?.focus();
+        }}
+      >
+        Skip to main content
+      </a>
       <nav className="sidebar-nav no-print">
         <BrandMark className="sidebar-brand-mark theme-light-only" />
         <BrandMark className="sidebar-brand-mark theme-dark-only" tile="signal" />
@@ -113,7 +126,7 @@ export default function Layout() {
             </button>
           </div>
         </header>
-        <main className="content" style={pageAccent ? ({ "--page-accent": pageAccent } as React.CSSProperties) : undefined}>
+        <main id="main-content" tabIndex={-1} ref={mainRef} className="content" style={pageAccent ? ({ "--page-accent": pageAccent } as React.CSSProperties) : undefined}>
           {access === "none" ? (
             <div className="page">
               <div className="access-denied">

@@ -12,6 +12,7 @@ import { describeRange } from "../lib/reports/format";
 import { recordRecent, savedRef } from "../lib/reports/preferenceStore";
 import { DATE_PRESET_LABELS, DATE_PRESETS, decodeSpec, encodeSpec, type DatePreset, type ReportResult, type ReportResultColumn, type ReportSourceInfo, type ReportSpec } from "../lib/reports/spec";
 import { zoomSpec } from "../lib/reports/zoom";
+import { useDismissable } from "../lib/useDismissable";
 import { exportReport, getSavedReport, memorizeReport, updateSavedReport, type ExportFormat, type SavedReport } from "../lib/reportStore";
 import { showToast } from "../lib/toast";
 
@@ -45,6 +46,9 @@ export default function ReportRunner() {
   const [memorizing, setMemorizing] = useState(false);
   const [memo, setMemo] = useState({ name: "", shared: true, groupName: "" });
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  // The Memorize panel sits inline: focus moves in, Escape closes it and
+  // puts focus back on the Memorize button.
+  const memoRef = useDismissable<HTMLDivElement>(memorizing, () => setMemorizing(false));
   const [spec, setSpec] = useState<ReportSpec | null>(() => {
     const s = params.get("spec");
     return s ? decodeSpec(s) : null;
@@ -279,10 +283,10 @@ export default function ReportRunner() {
       </div>
 
       {memorizing && (
-        <div className="report-memorize no-print" role="dialog" aria-label="Memorize report">
+        <div className="report-memorize no-print" role="dialog" aria-label="Memorize report" ref={memoRef}>
           <label className="form-field">
             Name
-            <input autoFocus value={memo.name} onChange={(e) => setMemo({ ...memo, name: e.target.value })} aria-label="Memorized report name" />
+            <input value={memo.name} onChange={(e) => setMemo({ ...memo, name: e.target.value })} aria-label="Memorized report name" />
           </label>
           <label className="form-field">
             Group

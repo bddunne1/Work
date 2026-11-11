@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createSchedule, deleteSchedule, listSchedules, runScheduleNow, updateSchedule, type ExportFormat, type ReportSchedule, type ScheduleInput } from "../lib/reportStore";
 import { showToast } from "../lib/toast";
+import { useDismissable } from "../lib/useDismissable";
 
 interface Props {
   groups: string[];
@@ -17,6 +18,8 @@ export default function ReportSchedules({ groups }: Props) {
   const [recipientsText, setRecipientsText] = useState("");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  // The form sits inline: focus moves in, Escape closes it and returns focus.
+  const formRef = useDismissable<HTMLDivElement>(open, () => setOpen(false));
 
   const reload = () => listSchedules().then(setSchedules).catch(() => {});
   useEffect(() => {
@@ -122,7 +125,7 @@ export default function ReportSchedules({ groups }: Props) {
         </table>
       )}
       {open && (
-        <div className="report-memorize" role="dialog" aria-label={editing ? "Edit schedule" : "New schedule"}>
+        <div className="report-memorize" role="dialog" aria-label={editing ? "Edit schedule" : "New schedule"} ref={formRef}>
           <label className="form-field">
             Group
             <select value={draft.groupName} onChange={(e) => setDraft({ ...draft, groupName: e.target.value })}>

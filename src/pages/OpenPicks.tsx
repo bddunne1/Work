@@ -9,6 +9,7 @@ import { acknowledgePull, listOpenOrders, listPendingPulls, shipOrder } from "..
 import { showToast } from "../lib/toast";
 import type { PurchaseOrder } from "../types";
 import { pendingShipmentWeight, weightIndex } from "../types";
+import { rowKeyboardProps } from "../lib/a11y";
 
 // Logistics' view of the floor (sprint 3): picks being picked and packed
 // (pick list printed), picks that passed the pack check and wait on the
@@ -94,7 +95,7 @@ export default function OpenPicks() {
   }
 
   const row = (o: PurchaseOrder, stage: "picking" | "ready") => (
-    <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/pack-check/${o.soNumber}`)}>
+    <tr key={o.soNumber} className="clickable-row" onClick={() => navigate(`/pack-check/${o.soNumber}`)} {...rowKeyboardProps(() => navigate(`/pack-check/${o.soNumber}`), `Pack check S.O. ${o.soNumber}`)}>
       {stage === "ready" && (
         <td onClick={(e) => e.stopPropagation()}>
           <input type="checkbox" checked={Boolean(selected[o.soNumber])} onChange={() => setSelected((s) => ({ ...s, [o.soNumber]: !s[o.soNumber] }))} aria-label={`Select S.O. ${o.soNumber}`} />

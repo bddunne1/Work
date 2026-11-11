@@ -7,6 +7,7 @@ import { listOpenOrders } from "../lib/orderStore";
 import { byOldestFirst, skippedSoNumbers } from "../lib/reviewQueue";
 import type { PurchaseOrder } from "../types";
 import { matchesOrderQuery, orderTotalLabel } from "../types";
+import { rowKeyboardProps } from "../lib/a11y";
 
 // Orders waiting to be checked, oldest first by due date (R4-19), so the
 // backlog is worked in the order it will hurt. Skipped orders (from the
@@ -101,6 +102,7 @@ export default function Validation() {
                 key={o.soNumber}
                 className="clickable-row"
                 onClick={() => navigate(`/validation/${o.soNumber}`)}
+                {...rowKeyboardProps(() => navigate(`/validation/${o.soNumber}`), `Validate S.O. ${o.soNumber}`)}
               >
                 <td onClick={(e) => e.stopPropagation()}>
                   <Link to={`/storage/${o.soNumber}`} className="row-action-outline">

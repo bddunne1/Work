@@ -88,7 +88,11 @@ export default function Inventory() {
               const available = availableQty(i, allocated);
               return (
                 <tr key={i.id} className="clickable-row" onClick={() => navigate(`/items/${i.id}`)}>
-                  <td>{i.itemNumber}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Link to={`/items/${i.id}`} className="row-action-outline">
+                      {i.itemNumber}
+                    </Link>
+                  </td>
                   <td>{i.description}</td>
                   <td>{i.um}</td>
                   <td className="amount-cell">{i.qtyOnHand}</td>
